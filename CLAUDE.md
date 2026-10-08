@@ -39,6 +39,9 @@ CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks stat
 ## Key concepts
 
 - **GT (Ground Truth)**: 3 pre-processed `.md` files (requirements, HW restrictions, normativity) that define what "correct" means. Human-authored, not raw PDFs.
+- **T# (Test GT)**: numbered test cases (`methodology/test/T<n>_<name>/`) that serve as V-SIL system inputs — real-world GT instances used to validate and stress-test the methodology pipeline end-to-end. Each T# folder contains raw project materials (proposals, papers, design docs) from which the 3 GT files would be derived. They are the methodology's integration tests.
+  - **T1_FM-monitoring** — SDR-based FM broadcast compliance monitoring system. LaTeX specification (no executable code). RAG-informed from regulatory docs (FCC Part 73, ANE Res. 105, ITU-R BS.412/450/SM.2152, ISO/IEC 17025). Covers DSP pipeline, compliance measurands, uncertainty budgets, and decision frameworks.
+  - **T2_IoT-Indoor** — Indoor IoT radio environment mapping at 2.4 GHz ISM (Proyecto Hermes / GCPDS). Contains the Hermes proposal, radio environment mapping literature, and a variable adaptation design doc.
 - **Gate (Gn)**: verification checkpoint. Sequential — G0 must pass before G1 runs. G0 is deterministic (script-only). G1+ use AI coding agents (any runtime).
 - **Skill**: `SKILL.md` + optional scripts that define what happens at a gate. Agent-agnostic — any coding agent that reads markdown can execute them. Live in `templates/skills/`.
 - **Session**: persistent record of a project's progress through gates, stored in SQLite.

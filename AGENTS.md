@@ -26,6 +26,15 @@ codeanvil run ─────► orchestrator
                        └─ ...
 ```
 
+## Test GT cases (V-SIL system inputs)
+
+`methodology/test/T<n>_<name>/` — numbered test cases containing real-world project materials (proposals, papers, design docs) from which the 3 GT files are derived. They are the methodology's integration tests: each T# exercises the full pipeline from raw inputs through G0 validation and into agent-driven gates.
+
+| Test | Domain | Contents |
+|------|--------|----------|
+| **T1_FM-monitoring** | SDR-based FM broadcast compliance monitoring | LaTeX specification (RAG-informed from FCC Part 73, ANE Res. 105, ITU-R BS.412/450/SM.2152, ISO/IEC 17025), DSP pipeline design, compliance measurands, uncertainty budgets |
+| **T2_IoT-Indoor** | Indoor IoT radio environment mapping, 2.4 GHz ISM (Proyecto Hermes / GCPDS) | Hermes proposal, radio environment mapping literature, variable adaptation design doc |
+
 ## Gate details
 
 ### G0 — Validate GT Structure (deterministic, no agent)

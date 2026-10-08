@@ -56,6 +56,7 @@ codeanvil create <name> [-p <path>]
 | Acronym | Meaning |
 |---------|---------|
 | **GT**  | Ground Truth — the 3 `.md` files that define the project contract |
+| **T#**  | Test GT — real-world V-SIL input sets (`methodology/test/T<n>_<name>/`) used to validate the methodology end-to-end |
 | **G#**  | Gate # — a verification checkpoint in the V-SIL pipeline |
 | **COTS** | Commercial Off-The-Shelf |
 | **OOTB** | Out-Of-The-Box |
@@ -81,6 +82,10 @@ codeanvil-gcpds/
 │   └── init/
 │       ├── check.py         # Pre-flight validation
 │       └── create.py        # Scaffold projects from templates
+│
+├── methodology/test/        # Test GT cases (V-SIL system inputs)
+│   ├── T1_FM-monitoring/    # SDR-based FM compliance monitoring (LaTeX spec)
+│   └── T2_IoT-Indoor/      # Indoor IoT radio environment (Hermes/GCPDS)
 │
 ├── templates/               # The methodology (the real product)
 │   ├── GT/                  # Ground Truth document templates
