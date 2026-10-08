@@ -1,6 +1,8 @@
 # CodeAnvil
 
-Project scaffolding, templates, and agent definitions for the **V-SIL methodology** (V-model at the SIL tier, made continuous). Develops, tests, and validates software on COTS hardware — informed by Ground Truth documents — through a pipeline of deterministic and agent-driven gates.
+Agent-agnostic project scaffolding, templates, and agent definitions for the **V-SIL methodology** (V-model at the SIL tier, made continuous). Develops, tests, and validates software on COTS hardware — informed by Ground Truth documents — through a pipeline of deterministic and agent-driven gates.
+
+Works with any AI coding agent: Claude, Codex, OpenCode, Pi, or others.
 
 > This methodology does not design hardware. It targets software running on Commercial Off-The-Shelf devices (not necessarily out-of-the-box), where the GT defines what constraints that hardware imposes.
 
@@ -13,10 +15,13 @@ uv pip install -e .
 # Initialize workdir and database
 codeanvil init
 
-# Scaffold a new project
+# Scaffold a new project (in the current directory)
 codeanvil create myproject
 
-# Fill in the 3 GT files under ~/.codeanvil/projects/myproject/GT/
+# ...or in a specific path
+codeanvil create myproject -p ~/projects
+
+# Fill in the 3 GT files under myproject/GT/
 #   requirements.md      — functional and non-functional requirements
 #   hw_restrictions.md   — COTS hardware constraints (embedded, server, DAQ/SDR)
 #   normativity.md       — applicable standards (ITU, ICNIRP, IEEE, ...)
@@ -28,10 +33,10 @@ codeanvil status myproject
 ## How it works
 
 ```
-codeanvil create <name>
+codeanvil create <name> [-p <path>]
        │
        ▼
-  ~/.codeanvil/projects/<name>/
+  <path>/<name>/          (default: ./<name>/)
        ├── GT/
        │    ├── requirements.md
        │    ├── hw_restrictions.md
@@ -44,7 +49,7 @@ codeanvil create <name>
 
 1. **Fill the GT** — write the 3 Ground Truth `.md` files (pre-processed, human-authored)
 2. **G0 validates structure** — a deterministic script checks that each GT file follows the expected format. Hard pass/fail, no LLM.
-3. **G1+ gates run agents** — Claude Code skills drive design, implementation, and verification stages. Each gate reads the GT and prior gate outputs.
+3. **G1+ gates run agents** — AI coding agents (any runtime) execute skills that drive design, implementation, and verification stages. Each gate reads the GT and prior gate outputs.
 
 ## Definitions
 
@@ -89,7 +94,7 @@ codeanvil-gcpds/
 │       └── G1_start_design/
 │           └── SKILL.md
 │
-├── CLAUDE.md                # Development instructions for AI agents
+├── CLAUDE.md                # Development context for AI coding agents
 └── AGENTS.md                # Agent architecture documentation
 ```
 
@@ -98,4 +103,4 @@ codeanvil-gcpds/
 - **Python packaging** — `uv`
 - **UI** — PySide6
 - **Database** — SQLite (local, `~/.codeanvil/db/codeanvil.db`)
-- **Agent runtime** — Claude Code skills + subagents
+- **Agent runtime** — agent-agnostic (Claude, Codex, OpenCode, Pi, etc.)

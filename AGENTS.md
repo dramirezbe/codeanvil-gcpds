@@ -2,13 +2,13 @@
 
 ## Overview
 
-CodeAnvil implements the V-SIL pipeline as a chain of gates — G0 is deterministic, G1+ are Claude Code agents. The harness orchestrates them; `src/` scaffolds and tracks state.
+CodeAnvil implements the V-SIL pipeline as a chain of gates — G0 is deterministic, G1+ are AI coding agents. The harness is **agent-agnostic**: it works with any coding agent runtime (Claude, Codex, OpenCode, Pi, etc.). `src/` scaffolds and tracks state.
 
 **Scope**: software development, testing, and validation on COTS hardware (not necessarily OOTB). Does not design hardware — assumes commercial off-the-shelf devices, validates software against GT constraints.
 
 ```
-codeanvil init ────► ~/.codeanvil/ (workdir + SQLite DB)
-codeanvil create ──► scaffold project (GT templates + skills)
+codeanvil init ────► ~/.codeanvil/ (config + SQLite DB only)
+codeanvil create ──► scaffold project anywhere (GT templates + skills)
 codeanvil run ─────► orchestrator
                        │
                        ├─ G0 (deterministic — no agent)
@@ -30,7 +30,7 @@ codeanvil run ─────► orchestrator
 
 ### G0 — Validate GT Structure (deterministic, no agent)
 
-Pure Python script. No LLM, no Claude skill — just `valid_structure.py`.
+Pure Python script. No LLM, no AI agent — just `valid_structure.py`.
 
 - **Purpose**: hard gate ensuring each GT `.md` file has the required structure before any agent gate runs.
 - **Script**: `templates/skills/G0_valid_req_and_GT/scripts/valid_structure.py`
@@ -54,20 +54,20 @@ Pure Python script. No LLM, no Claude skill — just `valid_structure.py`.
 - Loads session from DB (`db/sessions.py`)
 - Determines next gate from `sessions.current_gate`
 - G0: runs `valid_structure.py` directly
-- G1+: spawns Claude Code subagent with `SKILL.md` + GT context
+- G1+: spawns AI coding agent with `SKILL.md` + GT context (any supported runtime)
 - Records result via `record_gate_result()`
 - Advances gate via `update_gate()` on pass
 
 ## Agent contract
 
-Each gate agent (G1+):
+Each gate agent (G1+), regardless of runtime:
 
 1. Receives `SKILL.md` as instructions
 2. Receives the project's GT documents as context
 3. Executes validation, generation, or review per the skill
 4. Returns structured output (pass/fail, findings, artifacts)
 
-Agents are **stateless** — all persistence is in the DB and GT files. Re-runnable without side effects.
+Agents are **stateless** and **runtime-agnostic** — all persistence is in the DB and GT files. Any coding agent that reads markdown and executes scripts can run a gate. Re-runnable without side effects.
 
 ## MCP servers (planned)
 

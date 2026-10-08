@@ -2,15 +2,14 @@ import shutil
 from pathlib import Path
 
 from codeanvil.config.logger import get_logger
-from codeanvil.config.paths import PROJECTS_DIR
 
 log = get_logger(__name__)
 
 TEMPLATES_DIR = Path(__file__).resolve().parents[3] / "templates"
 
 
-def scaffold_project(name: str) -> Path:
-    project_dir = PROJECTS_DIR / name
+def scaffold_project(name: str, target: Path) -> Path:
+    project_dir = target.resolve() / name
     project_dir.mkdir(parents=True, exist_ok=True)
 
     gt_dir = project_dir / "GT"

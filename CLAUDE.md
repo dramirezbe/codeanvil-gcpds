@@ -2,7 +2,7 @@
 
 ## What this repo is
 
-CodeAnvil is a **harness** that implements the V-SIL methodology (V-model at the SIL tier, made continuous) through Claude Code skills, agents, subagents, and MCP servers.
+CodeAnvil is an **agent-agnostic harness** that implements the V-SIL methodology (V-model at the SIL tier, made continuous) through skills, agents, subagents, and MCP servers. It is designed to work with any AI coding agent (Claude, Codex, OpenCode, Pi, etc.) — the methodology is the product, not the runtime.
 
 **Scope**: develops, tests, and validates **software on COTS hardware** (not necessarily OOTB) — it does not design hardware. All hardware is assumed commercial off-the-shelf; the GT informs what constraints that hardware imposes.
 
@@ -29,7 +29,7 @@ CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks stat
 - **`CLI/cli.py`** — argparse CLI with subcommands: `init`, `create`, `list`, `status`
 - **`UI/ui.py`** — PySide6 graphical interface (planned)
 - **`config/logger.py`** — cross-platform colored logger (`get_logger(__name__)`)
-- **`config/paths.py`** — canonical paths (`WORKDIR`, `DB_PATH`, `PROJECTS_DIR`) + `ensure_dirs()`
+- **`config/paths.py`** — canonical paths (`WORKDIR`, `DB_PATH`) + `ensure_dirs()`. Projects live wherever the user creates them, not under `~/.codeanvil/`.
 - **`db/schema.py`** — SQLite schema: `projects`, `sessions`, `gate_results` tables + `db_exists()`, `create_schema()`
 - **`db/sessions.py`** — session CRUD: `create_session`, `get_session`, `list_sessions`, `update_gate`, `record_gate_result`
 - **`db/utils.py`** — `connect_db()` (WAL mode, row factory, foreign keys) + `health_db()`
@@ -39,8 +39,8 @@ CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks stat
 ## Key concepts
 
 - **GT (Ground Truth)**: 3 pre-processed `.md` files (requirements, HW restrictions, normativity) that define what "correct" means. Human-authored, not raw PDFs.
-- **Gate (Gn)**: verification checkpoint. Sequential — G0 must pass before G1 runs. G0 is deterministic (script-only). G1+ use Claude Code agents.
-- **Skill**: `SKILL.md` + optional scripts that define what happens at a gate. Live in `templates/skills/`.
+- **Gate (Gn)**: verification checkpoint. Sequential — G0 must pass before G1 runs. G0 is deterministic (script-only). G1+ use AI coding agents (any runtime).
+- **Skill**: `SKILL.md` + optional scripts that define what happens at a gate. Agent-agnostic — any coding agent that reads markdown can execute them. Live in `templates/skills/`.
 - **Session**: persistent record of a project's progress through gates, stored in SQLite.
 
 ## Development rules

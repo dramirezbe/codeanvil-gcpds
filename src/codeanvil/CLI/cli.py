@@ -1,5 +1,6 @@
 import argparse
 import sys
+from pathlib import Path
 
 from codeanvil.config.logger import get_logger
 from codeanvil.config.paths import DB_PATH, ensure_dirs
@@ -22,10 +23,11 @@ def argparser() -> argparse.Namespace:
             "deterministic and agent-driven gates validate each stage.\n"
             "\n"
             "Typical workflow:\n"
-            "  1. codeanvil init          Set up workdir (~/.codeanvil/) and database\n"
-            "  2. codeanvil create myproj  Scaffold a project with GT templates and skills\n"
-            "  3. Fill in the 3 GT files   requirements, hw_restrictions, normativity\n"
-            "  4. codeanvil status myproj  Check session and gate progress"
+            "  1. codeanvil init                  Set up ~/.codeanvil/ and database\n"
+            "  2. codeanvil create myproj          Scaffold project in current directory\n"
+            "     codeanvil create myproj -p /tmp  ...or in a specific path\n"
+            "  3. Fill in the 3 GT files            requirements, hw_restrictions, normativity\n"
+            "  4. codeanvil status myproj           Check session and gate progress"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
@@ -38,7 +40,7 @@ def argparser() -> argparse.Namespace:
             "  G0  Deterministic structural validation of GT files (no AI)\n"
             "  G1+ Agent-driven design, implementation, and verification gates\n"
             "\n"
-            "Data is stored locally at ~/.codeanvil/"
+            "Config and DB stored at ~/.codeanvil/ — projects live anywhere."
         ),
     )
     sub = parser.add_subparsers(dest="command", required=True, title="commands")
@@ -53,13 +55,21 @@ def argparser() -> argparse.Namespace:
         "create",
         help="Scaffold a new project from GT templates",
         description=(
-            "Creates a new project directory under ~/.codeanvil/projects/<name>/\n"
-            "with GT document templates and skill definitions copied from the\n"
-            "methodology templates. Registers the project in the database."
+            "Creates a new project directory at the given path (default: current\n"
+            "directory) with GT document templates and skill definitions copied\n"
+            "from the methodology templates. Registers the project in the database.\n"
+            "\n"
+            "Projects live wherever you want — only the DB stays in ~/.codeanvil/."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     create.add_argument("name", help="Project name (used as directory name and DB identifier)")
+    create.add_argument(
+        "-p", "--path",
+        type=Path,
+        default=Path.cwd(),
+        help="Parent directory to scaffold the project in (default: current directory)",
+    )
 
     sub.add_parser(
         "list",
@@ -88,13 +98,13 @@ def cmd_init() -> None:
         log.info("already initialized")
 
 
-def cmd_create(name: str) -> None:
+def cmd_create(name: str, path: Path) -> None:
     if not preflight():
         log.error("preflight failed — run 'codeanvil init' first")
         sys.exit(1)
 
     conn = connect_db(DB_PATH)
-    project_dir = scaffold_project(name)
+    project_dir = scaffold_project(name, path)
     register_project(conn, name, project_dir)
     conn.close()
 
@@ -142,7 +152,7 @@ def choose_option(args: argparse.Namespace) -> None:
         case "init":
             cmd_init()
         case "create":
-            cmd_create(args.name)
+            cmd_create(args.name, args.path)
         case "list":
             cmd_list()
         case "status":
