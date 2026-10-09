@@ -1,0 +1,499 @@
+\documentclass[12pt,a4paper]{report}
+\input{Figures/Format}
+\input{Figures/Format_tikz}
+\usepackage{siunitx}
+\sisetup{per-mode=symbol,detect-all}
+\setcounter{section}{0} \renewcommand{\thesection}{\arabic{section}}
+\newcommand{\dB}{\ensuremath{\mathrm{dB}}}
+\newcommand{\dBm}{\ensuremath{\mathrm{dBm}}}
+\newcommand{\dBuV}{\ensuremath{\mathrm{dB}\mu\mathrm{V/m}}}
+\newcommand{\MHz}{\ensuremath{\mathrm{MHz}}}
+\newcommand{\ksps}{\ensuremath{\mathrm{kS/s}}}
+\begin{document}
+\chapter{Project Design Document}	
+\begin{center}
+{{\Large SDR-Based Spectrum Monitoring System for FM Broadcast Screening and Compliance Assessment Support}\;\
+{\large Continuous Monitoring of FM Broadcast Using HackRF One}
+}
+\end{center}
+\textbf{Abstract.}
+The document defines the end-to-end design of a low-cost, continuously operating SDR spectrum-sensing system for calibrated screening of FM broadcast services and technical support to compliance assessment. Its current required measurement outputs are per-channel calibrated received power and occupancy; duty cycle, noise-floor estimates, timing information, and related quality indicators are supporting observables. Carrier-frequency error, field strength, occupied bandwidth, adjacent-channel/out-of-band emission, and modulation-related quantities are not current required measurands unless later admitted through a controlled Requirements Baseline revision.
+The system integrates a HackRF One receiver with signal processing, measurement storage, visualization, and monitoring services. Development progresses from requirements definition and hardware calibration through sensor construction, PSD estimation, channel-power integration, adaptive occupancy detection, database logging, dashboard visualization, field validation, and multi-sensor deployment.
+ The design emphasizes fixed-gain calibrated sensing, quantitative detection and accuracy targets, reproducible validation, operational health monitoring, scalability, and mitigation of practical risks including overload, frequency drift, noise-floor errors, USB failures, and storage growth.
+ % ======================================================================
+ \section{Introduction}
+ % ======================================================================
+ \subsection*{Objective}
+ Design, build, and field-validate a continuously operating spectrum-sensing
+ sensor that monitors FM broadcast services and records per-channel received
+ power and occupancy over time. The system must be low-cost, reproducible, and
+ scalable from one sensor to a network of geographically distributed sensors
+ reporting to a central database.
+ \subsection*{Intended User}
+ The intended user is the Agencia Nacional del Espectro (ANE) of Colombia,
+ with operational use by personnel responsible for FM broadcast spectrum
+ monitoring and technical support to compliance assessment.
+ \subsection*{Operational Environment}
+ The system is intended for continuous field deployment at FM broadcast
+ monitoring sites in Colombia. The operational context includes an individual
+ sensing node and subsequent extension to geographically distributed sensing
+ nodes whose measurements are reported to a central repository. Monitoring is
+ performed from received RF signals together with site-specific reference
+ information, including applicable FM station assignments and calibration or
+ reference measurements.
+ \subsection*{Authoritative Technical and Regulatory Sources}
+ The regulatory baseline is the Colombian spectrum and FM sound-broadcasting
+ framework administered by the Agencia Nacional del Espectro (ANE). The
+ authoritative regulatory sources are the Cuadro Nacional de Atribuci\'{o}n de
+ Bandas de Frecuencias (CNABF) and the Plan T\'{e}cnico Nacional de
+ Radiodifusi\'{o}n Sonora en Frecuencia Modulada (FM), established within
+ Resoluci\'{o}n ANE 105 de 2020 and the amendments in force on the approved
+ Ctx~00 baseline date~\cite{ane105,ptnfm,cnbaf}. Supporting technical sources
+ include ITU-R BS.412, ITU-R SM.1268, and the official HackRF One
+ documentation~\cite{itur412,itur1268,hackrf}. IEC 62106 and IEEE 802.22 are
+ supporting references only where their respective RDS or spectrum-sensing
+ content is applicable.
+ \subsection*{Regulatory Source Version Rule}
+ Each authoritative regulatory source used by the project shall be recorded by
+ issuing authority, instrument or resolution identifier, applicable version or
+ amendment state, and effective date. Ctx~00 freezes the regulatory baseline
+ using the instruments in force on its approval date. A subsequent change to an
+ authoritative regulatory source requires controlled reassessment of the
+ Problem Baseline and any affected downstream requirements.
+ \subsection*{System Overview}
+ The sensor chain is:
+ \begin{center}
+ 	\textit{Antenna $\rightarrow$ HackRF One $\rightarrow$ GNU Radio DSP
+ 		$\rightarrow$ measurement writer $\rightarrow$ time-series DB
+ 		$\rightarrow$ web dashboard}
+ \end{center}
+ Figure~\ref{fig:arch} shows the end-to-end architecture for both the
+ single-sensor (Phases 0--5) and multi-sensor (Phase 6) configurations.
+ \input{Figures/End2End}
+ \subsection*{Scope}
+
+\paragraph*{Authoritative Project Boundary --- Current Scope.}
+The project is limited to calibrated screening and technical support to compliance assessment. The system may provide calibrated measurements, monitoring records, quality indicators, uncertainty information, alerts, and other technical evidence to support review by the responsible regulatory personnel. It shall not independently establish formal regulatory compliance or non-compliance.
+
+The complete Compliance-Grade / Conditional Compliance-Grade / MQR / MCC qualification framework is not required by the current project scope and shall not be incorporated as a system requirement. References to that framework in supporting technical sources shall be treated as design or assurance proposals outside the current Requirements Baseline unless a future documented stakeholder-approved scope change explicitly introduces formal compliance-grade measurement certification.
+
+Calibration, traceability, uncertainty or quality characterization, acquisition integrity, measurement-validity checks, hardware limitations, and reviewable technical evidence remain applicable where source-supported and necessary for screening/support. This boundary does not establish any new operational facts or approve additional measurands.
+
+\paragraph*{Requirements-Admission Rule.}
+Where supporting technical sources specify differing acquisition configurations, gain strategies, calibration procedures, hardware-capability claims, or additional measurands, those statements remain non-normative candidate evidence until explicitly admitted into the versioned Requirements Baseline. The current baseline shall define only the minimum controls necessary for FM channel occupancy and calibrated received-power screening and shall not inherit additional measurands, certification mechanisms, or implementation-specific controls solely because they appear in a supporting source.
+
+ \begin{itemize}
+ 	\item \textbf{In scope:} sensing and logging of FM broadcast occupancy and
+ 	power; calibration against references; web visualization; multi-sensor
+ 	aggregation.
+ 	\item \textbf{Out of scope (v1):} demodulation/recording of audio content,
+ 	transmitter geolocation, real-time regulatory enforcement actions.
+ \end{itemize}
+ % ======================================================================
+ \section{Phase 0 --- Requirements, Measurand Definition, and Calibration}
+ \label{sec:phase0}
+ % ======================================================================
+ \subsection*{Measurand Definition}
+ The current required measurement outputs are defined per FM channel $c$ with centre frequency
+ $f_c$ and channel bandwidth $B_c$. Supporting observables are retained only to validate and interpret those outputs:
+ \begin{table}[htbp]
+ 	\centering\small
+ 	\caption{Current measurement outputs and supporting observables.}
+ 	\label{tab:measurand}
+ 	\begin{tabular}{@{}llll@{}}
+ 		\toprule
+ 		\textbf{Quantity} & \textbf{Symbol} & \textbf{Unit} & \textbf{Role / definition} \\
+ 		\midrule
+ 		Calibrated channel power & $P_c$ & \dBm & Required output; integrated power over $B_c=200$ kHz \\
+ 		Occupancy flag & $o_c$ & boolean & Required output; documented detection rule applied to $P_c$ \\
+ 		Noise floor & $P_{nf}$ & \dBm/Hz or \dBm in $B_c$ & Supporting observable for threshold/quality assessment \\
+ 		Duty cycle & $D_c$ & \% & Supporting statistic derived from $o_c$ over a window \\
+ 		Full-band scan timestamp & $t$ & UTC & Supporting acquisition metadata; start of scan, ms resolution \\
+ 		Calibration/validity state & $q_c$ & -- & Supporting quality metadata for power and occupancy use \\
+ 		\bottomrule
+ 	\end{tabular}
+ \end{table}
+ Design requirements are summarized in Table~\ref{tab:reqs}. These targets characterize screening/support performance; meeting them does not certify regulatory compliance. Their admission to the Requirements Baseline remains subject to the Problem Baseline scope.
+ \begin{table}[htbp]
+ 	\centering
+ 	\caption{Top-level requirements.}
+ 	\label{tab:reqs}
+ 	\begin{tabular}{@{}lll@{}}
+ 		\toprule
+ 		\textbf{ID} & \textbf{Requirement} & \textbf{Target} \\
+ 		\midrule
+ 		R1 & Frequency range & 87.5--\SI{108}{\MHz} \\
+ 		R2 & Full-band scan period & $\leq \SI{10}{s}$ \\
+ 		R3 & Occupancy detection & $P_{fa} \le 5\%$, $P_d \ge 95\%$ at SNR $\ge 0$ dB \\
+ 		R4 & Absolute power accuracy & $\pm 3$ dB (provisional design target, post-calibration) \\
+ 		R5 & Channel-frequency mapping integrity & $\pm \SI{5}{kHz}$ at 100 MHz (supporting acquisition criterion) \\
+ 		R6 & Uptime & $\ge 95\%$ over a 30-day run \\
+ 		R7 & Scalability & $\ge 5$ sensors feeding one central DB \\
+ 		\bottomrule
+ 	\end{tabular}
+ \end{table}
+ \subsection*{HackRF One Hardware Characterization} 	\label{sec:cal}
+ \begin{description}
+ 	\item[Gain chain:] The HackRF receiver path provides three digitally controlled gain stages:
+ 	RF amplifier (AMP, 0/\SI{14}{dB}, fixed step), LNA (0--\SI{40}{dB}, \SI{8}{dB}
+ 	steps), and VGA (0--\SI{62}{dB}, \SI{2}{dB} steps). The current calibrated-screening baseline uses declared \textbf{fixed} gains. Individual gain settings and amplifier state shall be recorded with each acquisition, and clipping/integrity checks remain mandatory because a fixed gain value alone does not demonstrate valid acquisition. AGC is not part of the current baseline; it may be evaluated as an alternative only after separate validation and explicit admission into the Requirements Baseline.
+ 	Recommended starting point for a moderate-signal urban/rooftop site:
+ 	RF amp off (0 dB), $\text{LNA}=\SI{16}{dB}$, $\text{VGA}=\SI{20}{dB}$,
+ 	then adjust per site using the overload checks in Section~\ref{sec:risks}.
+ 	\item[Noise figure and dynamic range:] The noise figure is estimated in bench tests using the \emph{gain method}:
+ 	\begin{equation}
+ 		NF \approx P_{n,\text{out}} \;(\text{integrated in } B) \;-\; (-174 +
+ 		10\log_{10} B) \;-\; G_{\text{total}}
+ 		\quad [\dB],
+ 	\end{equation}
+ 	where $P_{n,\text{out}}$ is the measured output noise power with the input
+ 	terminated in \SI{50}{\ohm}, $B$ the measurement bandwidth, and $G_{\text{total}}$
+ 	the total applied gain. The usable dynamic range and compression behavior shall be characterized empirically for the deployed gain configuration. No universal 60~dB dynamic-range requirement is imposed by the current baseline; adequacy is established by validation of the admitted occupancy and calibrated-power outputs under the intended signal environment.
+ 	\item[Frequency-reference characterization.] The stock crystal is specified at roughly $\pm 20$ ppm; at \SI{100}{\MHz} this is up to $\pm \SI{2}{kHz}$. For the current occupancy/power baseline, the frequency-reference state and any correction needed to preserve channel-frequency mapping shall be recorded per device. Carrier-frequency error is not a current required measurand. A TCXO, GPSDO, or equivalent disciplined reference becomes mandatory only if a later admitted measurement objective requires accuracy or stability that cannot be demonstrated with the baseline reference/verification method.
+ 	\item[Power Calibration:] HackRF reports uncalibrated digital power; calibrated received-power screening therefore requires an amplitude-correction model tied to a defined receiver reference plane and to the active fixed-gain configuration. A reference representation is
+ 	\begin{equation}
+ 		P_c\,[\dBm] = P_{c,\text{raw}} + C_{\text{cal}}(f_c,g),
+ 	\end{equation}
+ 	where $g$ denotes the declared gain state. The correction shall be established at enough frequencies and gain conditions to demonstrate the required power accuracy over the operating band; using at least five frequencies is a reference implementation, not a universal requirement. The calibration record identifier, applicable hardware/firmware configuration, reference plane, and validity state shall be retained. Periodic verification shall detect material drift and invalidate calibrated-power reporting when the active calibration can no longer be demonstrated.
+ 	\item[Candidate future field-strength estimation --- outside current baseline:] If field strength is later admitted as a required measurand, a calibrated antenna factor $AF(f)$ for the monitoring antenna may support:
+ 	\begin{equation}
+ 		E\,[\dBuV] = P_r\,[\dBm] + 107 + AF(f)\,[\mathrm{dB/m}],
+ 	\end{equation}
+ 	since a \SI{0}{dBm} signal in a \SI{50}{\ohm} system corresponds to
+ 	\SI{107}{dB$\mu$V}. $AF(f)$ is taken from the antenna datasheet or measured
+ 	in an open-area test against a reference field.
+ \end{description}
+ % ======================================================================
+ \section{Phase 1 -- Sensor Build (HackRF One + GNU Radio)}
+ % ======================================================================
+ \paragraph*{Flowgraph.}
+ A capture-based flowgraph acquires a validated instantaneous bandwidth per capture; channel selection, filtering, and power integration happen in the DSP stage (Phase 2). The sample rate is a declared deployment parameter and shall be validated for sustained operation on the actual SDR/host configuration, including acceptable sample-loss and host-buffer-overrun performance. Figure~\ref{fig:flowgraph} shows the block topology.
+\input{Figures/Phase1}
+Table~\ref{tab:srcparams} gives the current baseline and a non-normative 20~MS/s coverage example.
+ \begin{table}[htbp]
+ 	\centering
+ 	\caption{HackRF source parameters (Phase 1).}
+ 	\label{tab:srcparams}
+ 	\begin{tabular}{@{}lll@{}}
+ 		\toprule
+ 		\textbf{Parameter} & \textbf{Value} & \textbf{Note} \\
+ 		\midrule
+ 		Sample rate & Validated deployment value & 20 MS/s is a candidate hardware setting, not a guaranteed sustained baseline \\
+ 		Capture centres & Derived from validated usable span & 93/103 MHz is the two-capture example when 20 MS/s is validated \\
+ 		Baseband filter & Consistent with validated sample rate/span & Must preserve required FM analysis region \\
+ 		LNA gain & \SI{16}{dB} starting point & Fixed, site-tunable, explicitly logged \\
+ 		VGA gain & \SI{20}{dB} starting point & Fixed, site-tunable, explicitly logged \\
+ 		RF amp & Off (0 dB) starting point & Enable only after overload/linearity validation \\
+ 		\bottomrule
+ 	\end{tabular}
+ \end{table}
+ The number of captures and their centre frequencies shall be derived from the validated usable span while covering 87.5--108~MHz with the required margin. If sustained 20~MS/s operation is demonstrated, the 93/103~MHz two-capture arrangement remains a permitted reference implementation; otherwise additional captures may be used.
+ \paragraph*{Bench Bring-up Checklist}
+ \begin{enumerate}
+ 	\item \texttt{hackrf\_info} and \texttt{hackrf\_transfer -r} CLI smoke test
+ 	(driver and USB integrity).
+ 	\item Flowgraph runs 60 s without underruns (\texttt{UuUu} counters zero).
+ 	\item Log underrun/overrun counters per full-band scan in the writer for
+ 	watchdog use (Section~\ref{sec:risks}).
+ \end{enumerate}
+ % ======================================================================
+ \section{Phase 2 --- DSP Pipeline and Validation}
+ % ======================================================================
+ \subsection*{Signal Processing Chain}
+ \begin{description}
+ 	\item[PSD estimation.] The averaged periodogram over $M$ FFT frames is
+ 	\begin{equation}
+ 		\widehat{S}_{xx}(k) = \frac{1}{M}\sum_{m=1}^{M}
+ 		\frac{1}{N_{FFT}\,f_s\,U} \left| \sum_{n=0}^{N_{FFT}-1}
+ 		w(n)\,x_m(n)\,e^{-j2\pi kn/N_{FFT}} \right|^2,
+ 		\qquad
+ 		U = \frac{1}{N_{FFT}}\sum_{n} w^2(n),
+ 	\end{equation}
+ 	with Hann window $w(n)$ and a validated FFT configuration. For $N_{FFT}=8192$, the bin width is $\Delta f=f_s/N_{FFT}$; the familiar $\approx \SI{2.44}{kHz}$ value applies only when $f_s=\SI{20}{MS/s}$. Likewise, the PSD update duration depends on $f_s$, $N_{FFT}$, and $M$. The selected combination and resulting full-band scan period shall be verified against R2 on the deployed platform rather than inferred from a nominal sample rate.
+ 	\item[Channel power integration.] Channel power is the band-integrated PSD, not a peak pick:
+ 	\begin{equation}
+ 		P_c\,[\dBm] = 10\log_{10}\!\left( \sum_{k \in \mathcal{K}_c}
+ 		\widehat{S}_{xx}(k)\,\Delta f \right) + C_{\text{cal}}(f_c,g),
+ 		\qquad \Delta f = \frac{f_s}{N_{FFT}},
+ 	\end{equation}
+ 	where $\mathcal{K}_c$ spans the channel allocation $f_c \pm \SI{100}{kHz}$.
+ 	\item[Occupancy detection] 	An \textbf{adaptive energy detector} sets the threshold from the local noise
+ 	floor using robust statistics (median and median absolute deviation):
+ 	\begin{equation}
+ 		\gamma = \operatorname{median}_{c \in \mathcal{V}}(P_c)
+ 		+ k \cdot 1.4826 \cdot \operatorname{MAD}_{c \in \mathcal{V}}(P_c),
+ 		\qquad o_c = \mathbb{1}\{P_c > \gamma\},
+ 	\end{equation}
+ 	where $\mathcal{V}$ is the set of channels classified as vacant in the
+ 	previous scan and $k \approx 4$--$6$ is tuned in Phase 2 validation.
+ 	Independently of this adaptive detector threshold, the Ctx~01 low-SNR
+	release guardrail defined by OCC-002 applies to the released channel state.
+	Under the current Requirements Baseline, an observation with estimated SNR
+	below \SI{10}{dB} relative to the locally verified receiver noise level
+	shall not be released as ``Free'' and shall instead be reported as
+	``Uncertain''. The selected \SI{10}{dB} guardrail lies within the
+	\SIrange{8}{12}{dB} noise-margin range defined by ANE in the
+	\textit{Manual de Gestión Nacional del Espectro Radioeléctrico,
+	Título V---Monitoreo del Espectro Radioeléctrico},
+	Sec.~3.3.3.4.5, \textit{Configuración del umbral}, for threshold
+	configuration when the local noise level is known. That section also
+	explicitly identifies FM/BC \SIrange{88}{108}{MHz} as requiring
+	band-specific background-noise treatment. The \SI{10}{dB} value is the
+	project-selected value within that ANE-supported range; it is not a unique
+	ANE-prescribed FM regulatory limit. The release guardrail remains subject
+	to FM-specific validation and controlled revision and does not replace the
+	adaptive occupancy-detection threshold $\gamma$.
+	\item[Upgrade path: cyclostationary detection] FM broadcasts carry a \SI{19}{kHz} stereo pilot, producing strong spectral
+ 	correlation peaks at cyclic frequencies $\alpha = \pm \SI{19}{kHz}$. An SCD
+ 	(spectral correlation density) test on candidate channels discriminates true
+ 	FM emissions from noise, interference, or intermodulation products ---
+ 	implemented as a Phase 5/6 refinement to reduce false alarms near strong
+ 	transmitters.
+ 	\item[Station identification (ground truth).] Optional RDS demodulation (GNU Radio RDS blocks or the \texttt{redsea} CLI on
+ 	narrowband-recorded IQ) extracts Program Identification (PI) codes and station
+ 	names, giving positive station identification for validation in Phase 5.
+ \end{description}
+ \subsection*{Validation Against Known References}
+ \begin{description}
+ 	\item[Test signals.] 
+ 	\begin{itemize}
+ 		\item \textbf{T1:} Recorded FM IQ replayed through a second SDR or RF
+ 		playback path (known power, known frequency).
+ 		\item \textbf{T2:} A locally receivable station with published parameters
+ 		(frequency, ERP, site coordinates).
+ 		\item \textbf{T3:} An independent reference receiver (RTL-SDR or spectrum
+ 		analyzer) logging the same band. When T3 is used to verify R4, its applicable
+ 		amplitude calibration or characterization status, reference plane, and
+ 		measurement uncertainty over the relevant frequencies and signal levels shall
+ 		be documented and adequate to determine conformity with the
+ 		$\pm\SI{3}{dB}$ R4 target. An uncharacterized receiver may support qualitative
+ 		comparison but shall not serve as the reference for R4 acceptance.
+ 	\end{itemize}
+ 	\item[Detector performance.] The atomic R3 validation observation is one annotated channel--scan pair. Use all annotated observations in the declared validation set; do not select or discard observations after detector outcomes are known. For each ground-truth occupied observation, estimate SNR over the same \SI{200}{kHz} channel allocation $\mathcal{K}_c$ used for $P_c$. Let
+ 	\begin{equation}
+ 		Q_c = 10^{P_c/10}, \qquad
+ 		Q_n = \operatorname{median}_{v \in \mathcal{V}_{GT}}\!\left(10^{P_v/10}\right),
+ 		\qquad
+ 		\text{SNR}_c = 10\log_{10}\!\left(\frac{Q_c-Q_n}{Q_n}\right),
+ 	\end{equation}
+ 	where powers are in mW, and $\mathcal{V}_{GT}$ is the set of ground-truth-vacant reference channels in the same scan, each integrated over the same \SI{200}{kHz} bandwidth and acquired under the same gain, sample-rate, and FFT configuration. If $Q_c \le Q_n$, treat the observation as $\text{SNR}<\SI{0}{dB}$. Compute $P_d$ from all ground-truth occupied observations with $\text{SNR}\ge\SI{0}{dB}$ and compute $P_{fa}$ from all ground-truth-vacant observations in the same declared validation set:
+ 	\begin{equation}
+ 		P_d = \frac{TP}{TP+FN}, \qquad P_{fa} = \frac{FP}{FP+TN}.
+ 	\end{equation}
+ 	Each denominator shall contain at least 20 observations, the minimum count that resolves empirical rates in 5-percentage-point increments. Record $TP$, $FN$, $FP$, $TN$, the two denominator counts, and the acquisition configuration used for evaluation. R3 is verified only when $P_d \ge 95\%$ and $P_{fa} \le 5\%$ under this procedure.
+ 	\item[Power accuracy and channel-mapping integrity] \begin{itemize}
+ 		\item Channel mapping: compare the receiver frequency axis against a known reference; acceptance $\pm \SI{5}{kHz}$ at 100 MHz (R5). This is an acquisition-integrity criterion, not a current carrier-frequency measurand.
+ 		\item Power: difference vs.\ the qualified T3 reference across $\ge 10$
+ 		channels; acceptance $\pm \SI{3}{dB}$ (R4), per Section~\ref{sec:cal}.
+ 		The validation record shall identify the T3 reference and its applicable
+ 		uncertainty. R4 shall not be declared satisfied when that uncertainty prevents
+ 		an unambiguous determination of conformity with the $\pm\SI{3}{dB}$ target.
+ 	\end{itemize}
+ 	\item[Plausibility check via link budget.] 	For station T2, expected received power:
+ 	\begin{equation}
+ 		P_r = P_{\text{rad}} - \text{FSPL}(d,f) - L_{\text{clutter}},
+ 		\qquad
+ 		\text{FSPL}\,[\dB] = 20\log_{10}(d_{\text{km}}) + 20\log_{10}(f_{\MHz}) + 32.44.
+ 	\end{equation}
+ 	where $P_{\text{rad}}$ is the published radiated-power value normalized to one declared ERP/EIRP reference basis for all comparisons. Agreement within $\pm \SI{10}{dB}$ (allowing clutter uncertainty) confirms
+ 	the calibration chain end-to-end.
+ \end{description}
+ % ======================================================================
+ \section{Phase 3 --- Measurement Database}
+ % ======================================================================
+ \subsection*{Technology Choice}
+ \textbf{InfluxDB 2.x} is the default: native time-series storage, downsampling
+ (retention policies), and direct Grafana integration. PostgreSQL/TimescaleDB
+ is an acceptable alternative if relational sensor metadata must be colocated.
+ \subsection*{Schema}
+ \begin{table}[htbp]
+ 	\centering
+ 	\caption{InfluxDB measurements (line-protocol tags/fields).}
+ 	\label{tab:dbschema}
+ 	\begin{tabular}{@{}llp{6.2cm}@{}}
+ 		\toprule
+ 		\textbf{Measurement} & \textbf{Tags} & \textbf{Fields} \\
+ 		\midrule
+ 		\texttt{channel\_power} & \texttt{sensor\_id}, \texttt{freq\_mhz},
+ 		\texttt{location} &
+ 		\texttt{power\_dbm}, \texttt{occupied} (bool), \texttt{noise\_floor\_dbm},
+ 		\texttt{gain\_lna}, \texttt{gain\_vga}, \texttt{amp\_state},
+ 		\texttt{calibration\_id}, \texttt{calibration\_state}, \texttt{validity\_flags} \\
+ 		\texttt{spectrum} & \texttt{sensor\_id} &
+ 		\texttt{psd} (float array / blob sidecar) --- optional waterfall history \\
+ 		\texttt{health} & \texttt{sensor\_id} &
+ 		\texttt{underruns}, \texttt{gain\_lna}, \texttt{gain\_vga}, \texttt{amp\_state},
+ 		\texttt{temp\_c}, \texttt{uptime\_s} \\
+ 		\bottomrule
+ 	\end{tabular}
+ \end{table}
+ Each calibrated \texttt{channel\_power} record shall retain the gain state used for that measurement and the \texttt{calibration\_id} of the applicable calibration record. That record shall resolve to the retained hardware/firmware applicability, receiver reference plane, and calibration validity information defined in Section~\ref{sec:cal}. Historical provenance shall therefore be reconstructable directly from persistent data without relying on temporal proximity to a separate \texttt{health} record.
+ \subsection*{Writer Service}
+ A small Python daemon subscribes to the flowgraph's ZMQ PUB socket, computes
+ per-channel metrics (Phase 2 math lives here, keeping the flowgraph thin),
+ and batch-writes line protocol (batch size 100, flush 1 s). It also emits the
+ \texttt{health} measurement every full-band scan and includes a
+ reconnect/backoff on ZMQ or DB failure.
+ % ======================================================================
+ \section{Phase 4 --- Web Dashboard}
+ % ======================================================================
+ \subsection*{Grafana Panels}
+ \begin{enumerate}
+ 	\item \textbf{Occupancy heatmap} (primary view): frequency $\times$ time,
+ 	colour = channel power. This is the key broadcast-monitoring display.
+ 	\item \textbf{Live spectrum trace}: current PSD with channel markers and
+ 	RDS-derived station labels.
+ 	\item \textbf{Per-channel trends}: 24 h power and duty cycle for selected
+ 	stations.
+ 	\item \textbf{Sensor table}: online status, last scan age, noise-floor
+ 	drift, underrun counts (multi-sensor ready).
+ \end{enumerate}
+ \subsection*{Alerting Rules}
+
+Alerts identify screening observations for personnel review; they shall not independently establish formal regulatory compliance or non-compliance.
+ \begin{itemize}
+ 	\item Channel silent: \texttt{occupied} false for $T_{\text{on-air}}$ hours
+ 	on a station previously $>90\%$ duty cycle.
+ 	\item Unexpected-channel/anomalous occupancy: \texttt{occupied} true on monitored FM channels not present in the site-specific station-assignment reference.
+ 	\item Sensor offline: no \texttt{health} point for 3 scan periods.
+ 	\item Noise-floor drift: median noise floor shifts by $>\SI{6}{dB}$ over
+ 	24 h (possible gain fault or interference).
+ \end{itemize}
+ % ======================================================================
+ \section{Phase 5 --- Field Validation}
+ % ======================================================================
+ \subsection*{Protocol}
+ \begin{enumerate}
+ 	\item Select a site with a published FM station list (regulator data:
+ 	frequency, ERP, transmitter coordinates).
+ 	\item Run the sensor continuously for 72 h (satisfies R6 partially;
+ 	extend to 30 days for full R6).
+ 	\item Independently log the band with the reference receiver (T3) for at
+ 	least 6 h overlapping the deployment.
+ 	\item Collect RDS identifications where possible for ground truth.
+ \end{enumerate}
+ \subsection*{Metrics and Acceptance}
+ \begin{itemize}
+ 	\item \textbf{Detection rate:} licensed stations detected / licensed
+ 	stations expected at the site (an ERP-and-distance filter defines
+ 	``expected''). Target $\ge 90\%$ of expected stations.
+ 	\item \textbf{Ranking consistency:} Spearman's $\rho$ between measured
+ 	power ranking and predicted ranking
+ 	($P_{\text{rad}} - \text{FSPL}$), using the same declared radiated-power reference basis as the link-budget check. Target $\rho \ge 0.8$.
+ 	\item \textbf{Stability:} no unrecovered crashes; watchdog restart count
+ 	logged; disk usage within budget (see Section~\ref{sec:deploy}).
+ 	\item \textbf{Error sources documented:} multipath fading (slow power
+ 	variation of $\pm \SI{10}{dB}$ is normal for a fixed link over a day),
+ 	intermodulation from strong FM signals (check phantom products at
+ 	$2f_1-f_2$ combinations), and front-end overload (add attenuation and
+ 	re-run if observed).
+ \end{itemize}
+ % ======================================================================
+ \section{Phase 6 --- Multi-Sensor Deployment}
+ % ======================================================================
+ \subsection*{Architecture}
+ Sensor nodes forward data to a central collector via MQTT (topic per sensor:
+ \texttt{spectrum/<sensor\_id>/channel\_power}) with the telegraf/agent or the
+ writer publishing directly over TLS. The central instance runs InfluxDB and
+ Grafana; dashboards aggregate all sensors using the \texttt{sensor\_id} tag.
+ \subsection*{Time Synchronization}
+ Cross-sensor comparison requires aligned timestamps:
+ \begin{itemize}
+ 	\item Minimum: NTP (Chrony), keeping nodes within tens of ms.
+ 	\item For interference/correlation studies: GPS PPS or a shared GPSDO;
+ 	note scan start times with sub-ms precision.
+ \end{itemize}
+ \subsection*{Deployment}
+ \label{sec:deploy}
+ Each node ships as a \texttt{docker-compose} stack:
+ \texttt{flowgraph + writer + telegraf + (node exporter)}. Per-node
+ configuration file holds sensor ID, location, validated sample rate/scan plan, calibration table reference,
+ and fixed gains --- identical images across sites, configuration via
+ environment.
+ Storage budget: at 103 channels $\times$ 4 fields $\times$ 1 full-band
+ scan/5\,s, raw \texttt{channel\_power} volume is approximately
+ \SI{30}{MB}/day/sensor for 4-byte fields and \SI{60}{MB}/day/sensor for
+ 8-byte fields, before InfluxDB overhead. A 7-day raw retention with 1 h
+ downsampling beyond 7 days keeps long-term storage negligible. Recalculate
+ for site-specific channel count and scan rate.
+ % ======================================================================
+ \section{Risk Register}
+ \label{sec:risks}
+ % ======================================================================
+ \begin{table}[htbp]
+ 	\centering\small
+ 	\caption{Top risks and mitigations.}
+ 	\label{tab:risks}
+ 	\begin{tabular}{@{}p{4.6cm}p{1.1cm}p{8.2cm}@{}}
+ 		\toprule
+ 		\textbf{Risk} & \textbf{Severity} & \textbf{Mitigation} \\
+ 		\midrule
+ 		Absolute power inaccuracy (HackRF uncalibrated) &
+ 		High &
+ 		Per-device calibration table (Sec.~\ref{sec:cal}); fixed gains; periodic
+ 		re-check against a known station (T2). \\
+ 		Front-end overload near transmitters &
+ 		High &
+ 		Monitor for intermod products at $2f_1-f_2$; reduce LNA/VGA; add external
+ 		attenuator; AMP stays off by default. \\
+ 		USB dropouts on long runs &
+ 		Medium &
+ 		Log underruns in \texttt{health}; watchdog (systemd Restart=always);
+ 		alert on missing health points. \\
+ 		Frequency-reference drift affecting channel mapping (R5) &
+		Low &
+		Characterize per-device offset/state; log drift trend in \texttt{health}; use a disciplined reference only when a later admitted objective requires it. \\
+ 		Noise-floor mis-estimation causing $P_{fa}$ violations &
+ 		Medium &
+ 		MAD-based adaptive threshold; cyclostationary confirmation (Phase 5/6). \\
+ 		Database disk growth &
+ 		Low &
+ 		Retention policies and downsampling (Sec.~\ref{sec:deploy}). \\
+ 		\bottomrule
+ 	\end{tabular}
+ \end{table}
+ % ======================================================================
+ \section{Phase-Gate Milestones}
+ ======================================================================
+ \begin{table}[htbp]
+ 	\centering
+ 	\begin{tabular}{@{}llp{7.4cm}@{}}
+ 		\toprule
+ 		\textbf{Phase} & \textbf{Gate} & \textbf{Exit criteria} \\
+ 		\midrule
+ 		0 & Spec \& calibration signed off & Occupancy/power outputs approved; amplitude calibration/verification and occupancy-threshold validation defined \\
+ 		1 & Sensor online & 60 s clean run, zero underruns, ZMQ streaming \\
+ 		2 & DSP validated & R3, R4, R5 verified on T1--T3; R3 uses the declared channel--scan/SNR evaluation contract and recorded confusion-matrix counts \\
+ 		3 & Logging live & $\ge 1$ h of queryable DB data \\
+ 		4 & Dashboard live & Heatmap + alerts firing in Grafana \\
+ 		5 & Field validated &
+ 		Detection rate and $\rho$ targets met; 72 h continuous run with no
+ 		unrecovered failures. Full R6 (30-day uptime) verified by post-gate soak. \\
+ 		6 & Network live &
+ 		$\ge 2$ sensors aggregated centrally; full R7 ($\ge 5$ sensors) verified
+ 		during network rollout. \\
+ 		\bottomrule
+ 	\end{tabular}
+ \end{table}
+ {\small
+ \textbf{Terminology}
+ \begin{itemize}
+ 	\item \textit{FFT frame:} one $N_{FFT}$-sample block.
+ 	\item \textit{PSD update:} averaged periodogram over $M$ FFT frames.
+ 	\item \textit{Capture:} one contiguous IQ block at a single centre frequency.
+ 	\item \textit{Full-band scan:} one complete measurement across the FM band
+ 	(one or more captures, depending on coverage).
+ 	\item \textit{Scan period:} time between consecutive full-band scans.
+ \end{itemize}
+ %
+ \begin{thebibliography}{12}
+ 	\bibitem{ane105} Agencia Nacional del Espectro (ANE), Colombia, \emph{Resoluci\'{o}n No. 105 de 2020}, as amended and in force at the Ctx~00 baseline date.
+ 	\bibitem{ptnfm} Agencia Nacional del Espectro (ANE), Colombia, \emph{Plan T\'{e}cnico Nacional de Radiodifusi\'{o}n Sonora en Frecuencia Modulada (FM)}, Anexo 2 de la Resoluci\'{o}n ANE 105 de 2020, current amendment state at the Ctx~00 baseline date.
+ 	\bibitem{cnbaf} Agencia Nacional del Espectro (ANE), Colombia, \emph{Cuadro Nacional de Atribuci\'{o}n de Bandas de Frecuencias (CNABF)}, version in force at the Ctx~00 baseline date.
+ 	\bibitem{itur412} ITU-R Recommendation BS.412, \emph{Planning standards for FM sound broadcasting at VHF}.
+ 	\bibitem{itur1268} ITU-R Recommendation SM.1268, \emph{Method of measuring the performance of spectrum analysers}.
+ 	\bibitem{iec62106} IEC 62106, \emph{Radio data system (RDS) for VHF/FM sound broadcasting}.
+ 	\bibitem{ieee802} IEEE 802.22, \emph{Sensing methods overview; energy and cyclostationary detection}.
+ 	\bibitem{hackrf} Great Scott Gadgets, \emph{HackRF One documentation}.
+ \end{thebibliography}}
+\end{document}
