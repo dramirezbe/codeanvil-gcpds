@@ -6,12 +6,31 @@ Works with any AI coding agent: Claude, Codex, OpenCode, Pi, or others.
 
 > This methodology does not design hardware. It targets software running on Commercial Off-The-Shelf devices (not necessarily out-of-the-box), where the GT defines what constraints that hardware imposes.
 
+## Install
+
+**One-liner** (installs `uv` if needed, then `codeanvil` from GitHub):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/dramirezbe/codeanvil-gcpds/main/install.sh | bash
+```
+
+**Developer install** (editable, from a local clone):
+
+```bash
+git clone https://github.com/dramirezbe/codeanvil-gcpds.git
+cd codeanvil-gcpds
+uv pip install -e .
+```
+
+**Uninstall**:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/dramirezbe/codeanvil-gcpds/main/install.sh | bash -s uninstall
+```
+
 ## Quick start
 
 ```bash
-# Install
-uv pip install -e .
-
 # Initialize workdir and database
 codeanvil init
 
@@ -21,10 +40,14 @@ codeanvil create myproject
 # ...or in a specific path
 codeanvil create myproject -p ~/projects
 
-# Fill in the 3 GT files under myproject/GT/
-#   requirements.md      — functional and non-functional requirements
-#   hw_restrictions.md   — COTS hardware constraints (embedded, server, DAQ/SDR)
-#   normativity.md       — applicable standards (ITU, ICNIRP, IEEE, ...)
+# Write your GT files in myproject/GT/
+#   SRS.md  — System Requirements Specification
+#   HCS.md  — Hardware Constraints Specification
+# Reference templates: .agents/skills/G0_valid_req_and_GT/templates/
+
+# Validate GT structure (deterministic, no AI)
+cd myproject
+python .agents/skills/G0_valid_req_and_GT/scripts/g0_validate.py GT/SRS.md GT/HCS.md
 
 # Check project status
 codeanvil status myproject
@@ -36,18 +59,30 @@ codeanvil status myproject
 codeanvil create <name> [-p <path>]
        │
        ▼
-  <path>/<name>/          (default: ./<name>/)
+  <path>/<name>/                    (default: ./<name>/)
        ├── GT/
-       │    ├── requirements.md
-       │    ├── hw_restrictions.md
-       │    └── normativity.md
-       └── skills/
-            ├── G0_valid_req_and_GT/   ← deterministic (script, no AI)
-            ├── G1_start_design/       ← agent-driven
-            └── ...
+       │    └── README.md           ← instructions: write SRS.md, HCS.md here
+       ├── .agents/
+       │    └── skills/             ← canonical skill store
+       │         ├── G0_valid_req_and_GT/
+       │         │    ├── SKILL.md           ← agent contract (paths rewritten)
+       │         │    ├── templates/         ← locked IEEE 29148 reference templates
+       │         │    │    ├── G0_SRS.md
+       │         │    │    └── G0_HCS.md
+       │         │    ├── references/RULES.md
+       │         │    └── scripts/g0_validate.py
+       │         └── G1_start_design/
+       │              └── SKILL.md
+       ├── .claude/skills  → ../.agents/skills
+       ├── .opencode/skills → ../.agents/skills
+       └── .codex/skills   → ../.agents/skills
 ```
 
-1. **Fill the GT** — write the 3 Ground Truth `.md` files (pre-processed, human-authored)
+Skills live in `.agents/skills/` — the single source of truth. Agent runtime directories (`.claude/skills/`, `.opencode/skills/`, `.codex/skills/`) are symlinks, so every runtime discovers the same skills automatically.
+
+GT reference templates are **locked** inside each skill (e.g. `.agents/skills/G0_.../templates/`). Users write their own GT files in `GT/`.
+
+1. **Write your GT** — author `SRS.md` and `HCS.md` in `GT/`, following the locked reference templates
 2. **G0 validates structure** — a deterministic script checks that each GT file follows the expected format. Hard pass/fail, no LLM.
 3. **G1+ gates run agents** — AI coding agents (any runtime) execute skills that drive design, implementation, and verification stages. Each gate reads the GT and prior gate outputs.
 

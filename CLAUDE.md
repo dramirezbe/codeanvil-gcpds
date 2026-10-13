@@ -34,7 +34,7 @@ CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks stat
 - **`db/sessions.py`** — session CRUD: `create_session`, `get_session`, `list_sessions`, `update_gate`, `record_gate_result`
 - **`db/utils.py`** — `connect_db()` (WAL mode, row factory, foreign keys) + `health_db()`
 - **`init/check.py`** — `preflight()` (workdir + DB checks) + `check_project_path()`
-- **`init/create.py`** — `scaffold_project()` (copies GT templates + skills) + `register_project()` in DB
+- **`init/create.py`** — `scaffold_project()` (copies skills to `.agents/skills/`, embeds GT reference templates inside skills, rewrites repo-root paths, creates agent symlinks, writes user `GT/` dir) + `register_project()` in DB (idempotent)
 
 ## Key concepts
 
@@ -48,9 +48,10 @@ CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks stat
 
 ## Active plans
 
-| Plan                | Path                  | Status  | Description                                                        |
-|---------------------|-----------------------|---------|--------------------------------------------------------------------|
-| G0 validation script | `plans/g0_skill.md`  | PLANNED | Deterministic Python script to structurally validate SRS/HCS against IEEE 29148 templates |
+| Plan                 | Path                       | Status    | Description                                                        |
+|----------------------|----------------------------|-----------|--------------------------------------------------------------------|
+| G0 validation script | `plans/g0_skill.md`        | DONE      | Deterministic Python script to structurally validate SRS/HCS against IEEE 29148 templates |
+| Scaffold CLI         | `plans/scaffold_cli.md`    | DONE      | pyproject.toml, skill dir convention (.agents/skills/ + symlinks), path rewriting, GT inside skills |
 
 ## Development rules
 

@@ -157,3 +157,12 @@ def choose_option(args: argparse.Namespace) -> None:
             cmd_list()
         case "status":
             cmd_status(args.name)
+
+
+def main() -> None:
+    """Console-script entry point (`codeanvil ...`)."""
+    choose_option(argparser())
+
+
+if __name__ == "__main__":
+    main()

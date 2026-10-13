@@ -8,8 +8,14 @@ CodeAnvil implements the V-SIL pipeline as a chain of gates — G0 is determinis
 
 ```
 codeanvil init ────► ~/.codeanvil/ (config + SQLite DB only)
-codeanvil create ──► scaffold project anywhere (GT templates + skills)
-codeanvil run ─────► orchestrator
+codeanvil create ──► scaffold project anywhere
+                       ├─ .agents/skills/  (canonical skill store)
+                       ├─ .claude/skills → ../.agents/skills  (symlink)
+                       ├─ .opencode/skills → ../.agents/skills
+                       ├─ .codex/skills → ../.agents/skills
+                       ├─ GT/README.md  (user writes SRS.md, HCS.md here)
+                       └─ DB registration (idempotent)
+codeanvil run ─────► orchestrator (planned)
                        │
                        ├─ G0 (deterministic — no agent)
                        │    ├─ reads: 3 GT .md files
@@ -42,8 +48,9 @@ codeanvil run ─────► orchestrator
 Pure Python script. No LLM, no AI agent — just `g0_validate.py`.
 
 - **Purpose**: hard gate ensuring each GT `.md` file has the required structure before any agent gate runs.
-- **Script**: `templates/skills/G0_valid_req_and_GT/scripts/g0_validate.py`
+- **Script**: `templates/skills/G0_valid_req_and_GT/scripts/g0_validate.py` (repo), `.agents/skills/G0_valid_req_and_GT/scripts/g0_validate.py` (scaffolded project)
 - **Spec**: `SKILL.md` documents the expected structure; `references/RULES.md` holds the full rule tables.
+- **GT reference templates**: locked inside the skill at `.agents/skills/G0_valid_req_and_GT/templates/` (G0_SRS.md, G0_HCS.md)
 - **Inputs** (3 pre-processed `.md` files, human-authored):
   1. **Requirements** — functional and non-functional requirements
   2. **HW Restrictions** — COTS hardware constraints (embedded, server, DAQ/SDR)
@@ -88,8 +95,36 @@ Agents are **stateless** and **runtime-agnostic** — all persistence is in the 
 
 1. Create `templates/skills/G<n>_<name>/SKILL.md`
 2. Add validation scripts under `scripts/` if needed
-3. Register the gate in the orchestrator's sequence
-4. Update DB schema if the gate produces new artifact types
+3. Add GT reference templates under `templates/` if the gate validates document structure
+4. Register the gate in the orchestrator's sequence
+5. Update DB schema if the gate produces new artifact types
+6. Run `codeanvil create` — new skills are automatically copied and path-rewritten
+
+## Scaffolded project structure
+
+After `codeanvil create myproj`, the project has this layout:
+
+```
+myproj/
+├── GT/
+│   └── README.md                    ← write SRS.md, HCS.md here
+├── .agents/
+│   └── skills/                      ← canonical skill store
+│       ├── G0_valid_req_and_GT/
+│       │   ├── SKILL.md             ← paths rewritten to project-relative
+│       │   ├── templates/           ← locked IEEE 29148 reference templates
+│       │   │   ├── G0_SRS.md
+│       │   │   └── G0_HCS.md
+│       │   ├── references/RULES.md  ← paths rewritten
+│       │   └── scripts/g0_validate.py
+│       └── G1_start_design/
+│           └── SKILL.md
+├── .claude/skills  → ../.agents/skills
+├── .opencode/skills → ../.agents/skills
+└── .codex/skills   → ../.agents/skills
+```
+
+Agent runtimes discover skills via their own symlinked directory. All point to the same `.agents/skills/`.
 
 ## Principles
 

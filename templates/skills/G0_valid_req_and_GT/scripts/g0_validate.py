@@ -2,8 +2,8 @@
 """
 G0 - deterministic structural validator for V-SIL Ground Truth documents.
 
-Validates an SRS or HCS markdown file against the IEEE 29148 templates in
-`templates/GT/`. Stdlib only. No AI, no network, no filesystem writes: it reads
+Validates an SRS or HCS markdown file against the IEEE 29148 templates.
+Stdlib only. No AI, no network, no filesystem writes: it reads
 the input `.md` files, prints a report to stdout, and exits.
 
 Usage:
