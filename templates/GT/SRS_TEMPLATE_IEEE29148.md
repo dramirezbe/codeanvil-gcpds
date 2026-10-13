@@ -1,230 +1,185 @@
-# [PROYECTO: _nombre_proyecto_]
+# [PROJECT: _project_name_]
 
-## Especificación de Requisitos del Sistema (SRS)
+## System Requirements Specification (SRS)
 
-> **Plantilla basada en:** IEEE/ISO/IEC 29148:2018 — *Systems and software engineering — Life cycle processes — Requirements engineering*, adaptada con elementos de ETSI EN 303 645 (Cyber Security for IoT) y estructura determinista para validación automatizada por IA.
+> **Template based on:** IEEE/ISO/IEC 29148:2018 — *Systems and software engineering — Life cycle processes — Requirements engineering*, adapted with elements of ETSI EN 303 645 (Cyber Security for IoT) and a deterministic structure for automated AI-based validation.
 >
-> **Versión plantilla:** 1.0.0  
-> **Fecha creación:** _YYYY-MM-DD_  
-> **Última modificación:** _YYYY-MM-DD_  
-> **Estado documento:** `BORRADOR` | `EN_REVISIÓN` | `APROBADO` | `OBSOLETO`
+> **Template version:** 1.0.0  
+> **Creation date:** _YYYY-MM-DD_  
+> **Last modified:** _YYYY-MM-DD_  
+> **Document status:** `DRAFT` | `IN_REVIEW` | `APPROVED` | `OBSOLETE`
 
 ---
 
-## Metadatos del Documento
+## Document Metadata
 
-| Campo                  | Valor                                    |
+| Field                  | Value                                    |
 |------------------------|------------------------------------------|
-| **ID Documento**       | `SRS-_SIGLAS_-_NNN_`                     |
-| **Proyecto**           | _nombre completo del proyecto_           |
-| **Organización**       | _entidad propietaria_                    |
-| **Versión**            | _X.Y.Z_ (SemVer)                        |
-| **Clasificación**      | `PÚBLICO` \| `INTERNO` \| `CONFIDENCIAL` |
-| **Autor(es)**          | _nombre (rol)_                           |
-| **Revisor(es)**        | _nombre (rol)_                           |
-| **Aprobador(es)**      | _nombre (rol)_                           |
+| **Document ID**        | `SRS-_ACRONYM_-_NNN_`                    |
+| **Project**            | _full project name_                      |
+| **Organization**       | _owning entity_                          |
+| **Version**            | _X.Y.Z_ (SemVer)                        |
+| **Classification**     | `PUBLIC` \| `INTERNAL` \| `CONFIDENTIAL`  |
+| **Author(s)**          | _name (role)_                            |
+| **Reviewer(s)**        | _name (role)_                            |
+| **Approver(s)**        | _name (role)_                            |
 
-### Control de Cambios
+### Change Log
 
-| Versión | Fecha      | Autor        | Descripción del Cambio          |
+| Version | Date       | Author       | Change Description               |
 |---------|------------|--------------|----------------------------------|
-| 0.1.0   | YYYY-MM-DD | _nombre_     | Creación inicial                 |
+| 0.1.0   | YYYY-MM-DD | _name_       | Initial creation                 |
 
 ---
 
-## 1. Introducción
+## 1. Introduction
 
-### 1.1 Propósito
+### 1.1 Purpose
 
-_Descripción del propósito del documento y del sistema. Indicar la audiencia objetivo._
+_Description of the purpose of the document and of the system. State the target audience._
 
-### 1.2 Alcance del Sistema
+### 1.2 System Scope
 
-_Nombre del sistema, qué hace y qué NO hace. Beneficios, objetivos y metas._
+_Name of the system, what it does and what it does NOT do. Benefits, objectives, and goals._
 
-### 1.3 Definiciones, Acrónimos y Abreviaciones
+### 1.3 Definitions, Acronyms, and Abbreviations
 
-| Término    | Definición                                              |
+| Term       | Definition                                              |
 |------------|---------------------------------------------------------|
-| _TÉRMINO_  | _Definición precisa_                                    |
+| _TERM_     | _Precise definition_                                    |
 
-### 1.4 Referencias
+### 1.4 References
 
-| ID Ref     | Documento                                               | Versión / Fecha |
+| Ref ID     | Document                                                | Version / Date  |
 |------------|---------------------------------------------------------|-----------------|
-| `REF-001`  | _Título del documento referenciado_                     | _vX.Y / fecha_  |
+| `REF-001`  | _Title of the referenced document_                      | _vX.Y / date_   |
 
-### 1.5 Visión General del Documento
+### 1.5 Document Overview
 
-_Descripción de la estructura de las secciones siguientes._
+_Description of the structure of the following sections._
 
 ---
 
-## 2. Descripción General del Sistema
+## 2. Overall System Description
 
-### 2.1 Perspectiva del Producto
+### 2.1 Product Perspective
 
-_Contexto del sistema: si es nuevo, reemplazo, extensión. Relación con otros sistemas._
+_System context: whether it is new, a replacement, or an extension. Relationship to other systems._
 
-#### 2.1.1 Diagrama de Contexto
+#### 2.1.1 Context Diagram
 
-_Referencia a diagrama o descripción textual de las interfaces externas._
+_Reference to a diagram or a textual description of the external interfaces._
 
-### 2.2 Funciones del Producto
+### 2.2 Product Functions
 
-_Resumen de alto nivel de las funciones principales (sin detalle de requisito)._
+_High-level summary of the main functions (without requirement-level detail)._
 
-### 2.3 Características de los Usuarios
+### 2.3 User Characteristics
 
-| Tipo de Usuario | Descripción                        | Nivel Técnico      |
+| User Type       | Description                        | Technical Level     |
 |-----------------|------------------------------------|---------------------|
-| _rol_           | _qué hace con el sistema_          | `BÁSICO` \| `TÉCNICO` \| `EXPERTO` |
+| _role_          | _what they do with the system_     | `BASIC` \| `TECHNICAL` \| `EXPERT` |
 
-### 2.4 Restricciones
+### 2.4 Constraints
 
-_Restricciones regulatorias, de hardware, de interfaz, de seguridad, etc._
+_Regulatory, hardware, interface, security, and other constraints._
 
-### 2.5 Supuestos y Dependencias
+### 2.5 Assumptions and Dependencies
 
-_Condiciones asumidas como verdaderas para que los requisitos sean válidos._
+_Conditions assumed to be true for the requirements to hold._
 
 ---
 
-## 3. Requisitos Específicos
+## 3. Specific Requirements
 
-> **Convención de IDs:**  
-> Cada requisito usa el formato `[CAT]-[SUB]-[NNN]` donde:
-> - `CAT` = Categoría (3-5 letras mayúsculas). Ej: `ARQ`, `ANAL`, `CONN`, `SEG`
-> - `SUB` = Subcategoría (2-4 letras). Ej: `PAR`, `MED`, `VIS`
-> - `NNN` = Número secuencial de 3 dígitos, iniciando en 001
+> **ID convention:**  
+> Each requirement uses the format `[CAT]-[SUB]-[NNN]`, where:
+> - `CAT` = Category (3–5 uppercase letters). E.g., `ARQ`, `ANAL`, `CONN`, `SEG`
+> - `SUB` = Subcategory (2–4 letters). E.g., `PAR`, `MED`, `VIS`
+> - `NNN` = 3-digit sequential number, starting at 001
 >
-> **Campos obligatorios por requisito** (marcados con `*`):
+> **Mandatory fields per requirement** (marked with `*`):
 >
-> | Campo              | Tipo                  | Descripción                                                   |
-> |--------------------|-----------------------|---------------------------------------------------------------|
-> | `id`*              | string                | Identificador único. Formato: `[CAT]-[SUB]-[NNN]`            |
-> | `título`*          | string (≤120 chars)   | Nombre descriptivo del requisito                               |
-> | `descripción`*     | string                | Enunciado completo usando "El sistema DEBE…" / "El sistema DEBERÍA…" |
-> | `tipo`*            | enum                  | `FUNCIONAL` \| `NO_FUNCIONAL` \| `INTERFAZ` \| `RESTRICCIÓN`  |
-> | `prioridad`*       | enum                  | `MUST` \| `SHOULD` \| `COULD` \| `WONT` (MoSCoW)             |
-> | `categoría`*       | string                | Categoría funcional del sistema                                |
-> | `subcategoría`     | string                | Agrupación dentro de la categoría                              |
-> | `criterio_aceptación`* | string[]          | Lista de condiciones verificables (mínimo 1)                   |
-> | `verificación`*    | enum                  | `INSPECCIÓN` \| `DEMOSTRACIÓN` \| `PRUEBA` \| `ANÁLISIS`      |
-> | `dependencias`     | string[]              | IDs de requisitos de los que depende                           |
-> | `estándar_ref`     | string[]              | Referencias normativas aplicables                              |
-> | `hardware_nuevo`   | boolean               | `true` si requiere hardware adicional                          |
-> | `notas`            | string                | Observaciones internas o técnicas                              |
-> | `estado`*          | enum                  | `PROPUESTO` \| `APROBADO` \| `IMPLEMENTADO` \| `VERIFICADO` \| `RECHAZADO` |
-> | `fase`             | string                | Fase de implementación. Ej: `2025`, `2026`, `FASE_2`          |
+> | Field                | Type                  | Description                                                   |
+> |----------------------|-----------------------|---------------------------------------------------------------|
+> | `id`*                | string                | Unique identifier. Format: `[CAT]-[SUB]-[NNN]`              |
+> | `title`*             | string (≤120 chars)   | Descriptive name of the requirement                           |
+> | `description`*       | string                | Full statement using "The system SHALL…" / "The system SHOULD…" |
+> | `type`*              | enum                  | `FUNCTIONAL` \| `NON_FUNCTIONAL` \| `INTERFACE` \| `CONSTRAINT` |
+> | `priority`*          | enum                  | `MUST` \| `SHOULD` \| `COULD` \| `WONT` (MoSCoW)             |
+> | `category`*          | string                | Functional category of the system                             |
+> | `subcategory`        | string                | Grouping within the category                                  |
+> | `acceptance_criteria`* | string[]            | List of verifiable conditions (minimum 1)                     |
+> | `verification`*      | enum                  | `INSPECTION` \| `DEMONSTRATION` \| `TEST` \| `ANALYSIS`       |
+> | `dependencies`       | string[]              | IDs of the requirements it depends on                         |
+> | `standard_ref`       | string[]              | Applicable normative references                               |
+> | `new_hardware`       | boolean               | `true` if it requires additional hardware                     |
+> | `notes`              | string                | Internal or technical remarks                                 |
+> | `status`*            | enum                  | `PROPOSED` \| `APPROVED` \| `IMPLEMENTED` \| `VERIFIED` \| `REJECTED` |
+> | `phase`              | string                | Implementation phase. E.g., `2025`, `2026`, `PHASE_2`         |
 
 ---
 
-### 3.1 [_CATEGORÍA 1: Nombre_]
+### 3.1 [_CATEGORY 1: Name_]
 
-#### 3.1.1 [_Subcategoría 1.1_]
+#### 3.1.1 [_Subcategory 1.1_]
 
 ---
 
-**`[CAT]-[SUB]-[NNN]` — _Título del requisito_**
+**`[CAT]-[SUB]-[NNN]` — _Requirement title_**
 
-| Campo                  | Valor                                                     |
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL` \| `NO_FUNCIONAL` \| `INTERFAZ` \| `RESTRICCIÓN` |
-| **Prioridad**          | `MUST` \| `SHOULD` \| `COULD`                             |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `INSPECCIÓN` \| `DEMOSTRACIÓN` \| `PRUEBA` \| `ANÁLISIS`  |
-| **Hardware nuevo**     | `Sí` / `No`                                               |
-| **Estándar(es)**       | _Referencias normativas_                                   |
-| **Dependencias**       | _IDs de requisitos previos_                                |
-| **Fase**               | _Fase de implementación_                                   |
+| **Type**               | `FUNCTIONAL` \| `NON_FUNCTIONAL` \| `INTERFACE` \| `CONSTRAINT` |
+| **Priority**           | `MUST` \| `SHOULD` \| `COULD`                            |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `INSPECTION` \| `DEMONSTRATION` \| `TEST` \| `ANALYSIS`   |
+| **New hardware**       | `Yes` / `No`                                              |
+| **Standard(s)**        | _Normative references_                                    |
+| **Dependencies**       | _IDs of prior requirements_                               |
+| **Phase**              | _Implementation phase_                                    |
 
-**Descripción:**  
-El sistema DEBE _[acción verificable con parámetros cuantitativos cuando aplique]_.
+**Description:**  
+The system SHALL _[verifiable action, with quantitative parameters where applicable]_.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] _Condición verificable 1_
-2. [ ] _Condición verificable 2_
+1. [ ] _Verifiable condition 1_
+2. [ ] _Verifiable condition 2_
 
-**Notas:**  
-_Observaciones técnicas o de implementación._
-
----
-
-_[Repetir bloque para cada requisito]_
+**Notes:**  
+_Technical or implementation remarks._
 
 ---
 
-## 4. Requisitos de Interfaces Externas
-
-### 4.1 Interfaces de Usuario
-### 4.2 Interfaces de Hardware
-### 4.3 Interfaces de Software
-### 4.4 Interfaces de Comunicación
+_[Repeat the block for each requirement]_
 
 ---
 
-## 5. Requisitos No Funcionales
+## 4. External Interface Requirements
 
-### 5.1 Rendimiento
-### 5.2 Seguridad
-### 5.3 Fiabilidad / Disponibilidad
-### 5.4 Mantenibilidad
-### 5.5 Portabilidad
-
----
-
-## 6. Trazabilidad
-
-_Matriz de trazabilidad de requisitos contra objetivos de negocio, casos de prueba o componentes del sistema._
-
-| ID Requisito  | Objetivo de Negocio | Caso de Prueba | Componente    |
-|---------------|---------------------|----------------|---------------|
-| `[CAT]-[SUB]-[NNN]` | _OBJ-NNN_     | _TC-NNN_       | _componente_  |
+### 4.1 User Interfaces
+### 4.2 Hardware Interfaces
+### 4.3 Software Interfaces
+### 4.4 Communication Interfaces
 
 ---
 
-## 7. Validación Estructural (para IA)
+## 5. Non-Functional Requirements
 
-> Esta sección define las reglas que un validador automatizado DEBE verificar contra este documento.
-
-### 7.1 Reglas de Formato
-
-| Regla ID | Regla                                                                 | Severidad |
-|----------|-----------------------------------------------------------------------|-----------|
-| `V-001`  | Cada requisito DEBE tener un `id` único con formato `[A-Z]{3,5}-[A-Z]{2,4}-\d{3}` | `ERROR`   |
-| `V-002`  | Cada requisito DEBE tener todos los campos marcados con `*`           | `ERROR`   |
-| `V-003`  | El campo `descripción` DEBE iniciar con "El sistema DEBE" o "El sistema DEBERÍA" | `WARNING` |
-| `V-004`  | El campo `criterio_aceptación` DEBE tener al menos 1 elemento         | `ERROR`   |
-| `V-005`  | Los valores de `tipo` DEBEN ser uno de: `FUNCIONAL`, `NO_FUNCIONAL`, `INTERFAZ`, `RESTRICCIÓN` | `ERROR`   |
-| `V-006`  | Los valores de `prioridad` DEBEN seguir MoSCoW: `MUST`, `SHOULD`, `COULD`, `WONT` | `ERROR`   |
-| `V-007`  | Los valores de `verificación` DEBEN ser: `INSPECCIÓN`, `DEMOSTRACIÓN`, `PRUEBA`, `ANÁLISIS` | `ERROR`   |
-| `V-008`  | Los valores de `estado` DEBEN ser: `PROPUESTO`, `APROBADO`, `IMPLEMENTADO`, `VERIFICADO`, `RECHAZADO` | `ERROR`   |
-| `V-009`  | Las `dependencias` referenciadas DEBEN existir como IDs en el documento | `ERROR`   |
-| `V-010`  | El `título` no DEBE exceder 120 caracteres                            | `WARNING` |
-| `V-011`  | No DEBEN existir IDs duplicados en todo el documento                   | `ERROR`   |
-| `V-012`  | Cada sección 3.x DEBE contener al menos un requisito                   | `WARNING` |
-
-### 7.2 Reglas Semánticas
-
-| Regla ID | Regla                                                                 | Severidad |
-|----------|-----------------------------------------------------------------------|-----------|
-| `S-001`  | Requisitos con `prioridad: MUST` DEBEN tener `criterio_aceptación` con valores cuantitativos | `WARNING` |
-| `S-002`  | Requisitos con `hardware_nuevo: true` DEBEN especificar el componente en notas | `WARNING` |
-| `S-003`  | Requisitos con `estándar_ref` no vacío DEBEN citar documentos listados en §1.4 | `WARNING` |
-| `S-004`  | No DEBE haber dependencias circulares entre requisitos                 | `ERROR`   |
+### 5.1 Performance
+### 5.2 Security
+### 5.3 Reliability / Availability
+### 5.4 Maintainability
+### 5.5 Portability
 
 ---
 
-## Anexo A — Estándares de Referencia
+## 6. Traceability
 
-_Lista consolidada de estándares normativos citados en los requisitos._
+_Traceability matrix of requirements against business objectives, test cases, or system components._
 
-## Anexo B — Glosario Extendido
+| Requirement ID  | Business Objective  | Test Case      | Component     |
+|-----------------|---------------------|----------------|---------------|
+| `[CAT]-[SUB]-[NNN]` | _OBJ-NNN_       | _TC-NNN_       | _component_   |
 
-_Términos técnicos específicos del dominio._
-
----
-
-> **Nota de uso:** Esta plantilla está diseñada para ser procesada por herramientas de validación automatizada (IA o scripts). Los bloques de requisitos siguen un formato tabular fijo que permite parsing determinista. Los enums restringen valores válidos. Las reglas de §7 definen el contrato de validación.

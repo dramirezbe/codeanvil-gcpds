@@ -1,105 +1,105 @@
-# PROYECTO: Sensor Edge — Sistema de Monitoreo Espectral ANE
+# PROJECT: Edge Sensor — ANE Spectrum Monitoring System
 
-## Especificación de Requisitos del Sistema (SRS)
+## System Requirements Specification (SRS)
 
-> **Plantilla basada en:** IEEE/ISO/IEC 29148:2018 — *Systems and software engineering — Life cycle processes — Requirements engineering*, adaptada con elementos de ETSI EN 303 645 (Cyber Security for IoT) y estructura determinista para validación automatizada por IA.
+> **Template based on:** IEEE/ISO/IEC 29148:2018 — *Systems and software engineering — Life cycle processes — Requirements engineering*, adapted with elements of ETSI EN 303 645 (Cyber Security for IoT) and a deterministic structure for automated AI-based validation.
 >
-> **Versión plantilla:** 1.0.0  
-> **Fecha creación:** 2026-10-13  
-> **Última modificación:** 2026-10-13  
-> **Estado documento:** `EN_REVISIÓN`
+> **Template version:** 1.0.0  
+> **Creation date:** 2026-10-13  
+> **Last modified:** 2026-10-13  
+> **Document status:** `IN_REVIEW`
 
 ---
 
-## Metadatos del Documento
+## Document Metadata
 
-| Campo                  | Valor                                                      |
+| Field                  | Value                                                      |
 |------------------------|------------------------------------------------------------|
-| **ID Documento**       | `SRS-ANE-EDGE-001`                                         |
-| **Proyecto**           | Sensor Edge — Subsistema de Monitoreo Espectral (Fase 2)   |
-| **Organización**       | Agencia Nacional del Espectro (ANE) — Colombia             |
-| **Versión**            | 0.1.0                                                      |
-| **Clasificación**      | `INTERNO`                                                  |
-| **Autor(es)**          | _Por definir_                                              |
-| **Revisor(es)**        | _Por definir_                                              |
-| **Aprobador(es)**      | _Por definir_                                              |
+| **Document ID**        | `SRS-ANE-EDGE-001`                                        |
+| **Project**            | Edge Sensor — Spectrum Monitoring Subsystem (Phase 2)      |
+| **Organization**       | National Spectrum Agency (ANE) — Colombia                  |
+| **Version**            | 0.1.0                                                     |
+| **Classification**     | `INTERNAL`                                                |
+| **Author(s)**          | _To be defined_                                           |
+| **Reviewer(s)**        | _To be defined_                                           |
+| **Approver(s)**        | _To be defined_                                           |
 
-### Control de Cambios
+### Change Log
 
-| Versión | Fecha      | Autor             | Descripción del Cambio                                  |
-|---------|------------|-------------------|----------------------------------------------------------|
-| 0.1.0   | 2026-10-13 | Generación asistida IA | Extracción de requisitos edge desde SRS-ANE-001 (sistema completo) |
+| Version | Date       | Author             | Change Description                                      |
+|---------|------------|--------------------|---------------------------------------------------------|
+| 0.1.0   | 2026-10-13 | AI-assisted generation | Extraction of edge requirements from SRS-ANE-001 (full system) |
 
 ---
 
-## 1. Introducción
+## 1. Introduction
 
-### 1.1 Propósito
+### 1.1 Purpose
 
-Este documento especifica los requisitos del **sensor edge** como subsistema autónomo del Sistema de Monitoreo Espectral de la ANE. Cubre exclusivamente lo que corre en el nodo embebido (HackRF One + Raspberry Pi): driver SDR, pipeline DSP (PSD, FFT bins, trazas), demodulación, conectividad de red (4G/5G, WiFi, Ethernet), multiplexación GPIO, GPS, almacenamiento local, alimentación autónoma y calibración.
+This document specifies the requirements for the **edge sensor** as a self-contained subsystem of the ANE Spectrum Monitoring System. It covers exclusively what runs on the embedded node (HackRF One + Raspberry Pi): the SDR driver, the DSP pipeline (PSD, FFT bins, traces), demodulation, network connectivity (4G/5G, WiFi, Ethernet), GPIO multiplexing, GPS, local storage, autonomous power, and calibration.
 
-**Excluye:** backend cloud, frontend web, APIs de integración, base de datos centralizada de la ANE, generación de reportes, y cualquier lógica que requiera conexión activa al servidor.
+**It excludes:** the cloud backend, the web frontend, integration APIs, the ANE's centralized database, report generation, and any logic that requires an active connection to the server.
 
-### 1.2 Alcance del Sistema
+### 1.2 System Scope
 
-El sensor edge es un nodo de monitoreo espectral autónomo basado en SDR (HackRF One) sobre Raspberry Pi. Captura, procesa y almacena localmente datos espectrales en el rango 1 MHz – 6 GHz. Opera de forma independiente con alimentación solar/batería y conectividad 4G/5G/WiFi/Ethernet.
+The edge sensor is an autonomous spectrum-monitoring node based on an SDR (HackRF One) running on a Raspberry Pi. It captures, processes, and locally stores spectral data in the 1 MHz – 6 GHz range. It operates independently on solar/battery power with 4G/5G/WiFi/Ethernet connectivity.
 
-**El sensor edge NO incluye:** interfaz gráfica web, dashboard centralizado, comparación contra BD de emisiones autorizadas, generación de reportes formales, ni API REST para consumo externo.
+**The edge sensor does NOT include:** a web graphical interface, a centralized dashboard, comparison against the authorized-emissions database, formal report generation, or a REST API for external consumption.
 
-### 1.3 Definiciones, Acrónimos y Abreviaciones
+### 1.3 Definitions, Acronyms, and Abbreviations
 
-| Término    | Definición                                                                           |
+| Term       | Definition                                                                           |
 |------------|--------------------------------------------------------------------------------------|
-| ANE        | Agencia Nacional del Espectro (Colombia)                                             |
-| SDR        | Software Defined Radio — Radio Definida por Software                                 |
-| RBW        | Resolution Bandwidth — Ancho de banda de resolución                                  |
-| VBW        | Video Bandwidth — Ancho de banda de video                                            |
-| DANL       | Displayed Average Noise Level — Nivel promedio de ruido mostrado                     |
-| RDS        | Radio Data System — Sistema de datos de radio FM                                     |
-| NTP        | Network Time Protocol — Protocolo de tiempo de red                                   |
-| EMC        | Electromagnetic Compatibility — Compatibilidad electromagnética                      |
-| OBW        | Occupied Bandwidth — Ancho de banda ocupado                                          |
-| PSD        | Power Spectral Density — Densidad espectral de potencia                              |
-| FFT        | Fast Fourier Transform — Transformada rápida de Fourier                              |
+| ANE        | National Spectrum Agency (Agencia Nacional del Espectro, Colombia)                   |
+| SDR        | Software Defined Radio                                                               |
+| RBW        | Resolution Bandwidth                                                                 |
+| VBW        | Video Bandwidth                                                                      |
+| DANL       | Displayed Average Noise Level                                                        |
+| RDS        | Radio Data System (FM radio data)                                                   |
+| NTP        | Network Time Protocol                                                                |
+| EMC        | Electromagnetic Compatibility                                                        |
+| OBW        | Occupied Bandwidth                                                                   |
+| PSD        | Power Spectral Density                                                               |
+| FFT        | Fast Fourier Transform                                                               |
 | GPIO       | General Purpose Input/Output                                                         |
-| ppm        | Partes por millón                                                                    |
-| SAW        | Surface Acoustic Wave (tipo de filtro)                                               |
-| OTA        | Over The Air — Actualización remota de software                                      |
-| CS8        | Complex Signed 8-bit — Formato de muestras IQ del HackRF                            |
-| AF         | Antenna Factor — Factor de antena                                                    |
+| ppm        | Parts per million                                                                    |
+| SAW        | Surface Acoustic Wave (filter type)                                                 |
+| OTA        | Over The Air — remote software update                                               |
+| CS8        | Complex Signed 8-bit — the HackRF IQ sample format                                  |
+| AF         | Antenna Factor                                                                       |
 
-### 1.4 Referencias
+### 1.4 References
 
-| ID Ref     | Documento                                                              | Versión / Fecha     |
+| Ref ID     | Document                                                               | Version / Date      |
 |------------|------------------------------------------------------------------------|---------------------|
-| `REF-001`  | ITU-R SM.1537 — Automatización y requisitos de estaciones de monitoreo | Vigente             |
-| `REF-002`  | ITU-R SM.1138 — Sensibilidad y selectividad de monitoreo              | Vigente             |
-| `REF-003`  | ITU-T K.113 — Medición de campo eléctrico en entornos urbanos         | Vigente             |
-| `REF-004`  | ITU-T K.100 — Evaluación de exposición humana a campos electromagnéticos | Vigente          |
-| `REF-007`  | IEEE/ISO/IEC 29148:2018 — Requirements engineering                    | 2018                |
-| `REF-FULL` | SRS-ANE-001 — SRS Sistema Completo Fase 2                             | 0.1.0 / 2026-10-13  |
+| `REF-001`  | ITU-R SM.1537 — Automation and requirements of monitoring stations     | In force            |
+| `REF-002`  | ITU-R SM.1138 — Monitoring sensitivity and selectivity                 | In force            |
+| `REF-003`  | ITU-T K.113 — Electric field measurement in urban environments         | In force            |
+| `REF-004`  | ITU-T K.100 — Assessment of human exposure to electromagnetic fields   | In force            |
+| `REF-007`  | IEEE/ISO/IEC 29148:2018 — Requirements engineering                     | 2018                |
+| `REF-FULL` | SRS-ANE-001 — Full-System SRS, Phase 2                                 | 0.1.0 / 2026-10-13  |
 
-### 1.5 Visión General del Documento
+### 1.5 Document Overview
 
-La sección 3 contiene los requisitos específicos del sensor edge organizados por subsistema: arquitectura RF, parametrización DSP, procesamiento de señal, detección local, almacenamiento on-device, conectividad de red, antenas, potencia, health monitoring y calibración. La sección 6 presenta la trazabilidad. La sección 7 define reglas de validación estructural.
+Section 3 contains the specific requirements of the edge sensor, organized by subsystem: RF architecture, DSP parameterization, signal processing, local detection, on-device storage, network connectivity, antennas, power, health monitoring, and calibration. Section 6 presents traceability. Section 7 defines the structural validation rules.
 
 ---
 
-## 2. Descripción General del Sistema
+## 2. Overall System Description
 
-### 2.1 Perspectiva del Producto
+### 2.1 Product Perspective
 
-Este documento describe el sensor edge como subsistema del sistema completo (ver `REF-FULL`). El sensor opera como nodo autónomo de adquisición y preprocesamiento espectral. Los requisitos aquí son un subconjunto filtrado del SRS completo, incluyendo solo los que se ejecutan o residen en el nodo embebido.
+This document describes the edge sensor as a subsystem of the full system (see `REF-FULL`). The sensor operates as an autonomous node for spectral acquisition and preprocessing. The requirements here are a filtered subset of the full SRS, including only those that run on or reside in the embedded node.
 
-#### 2.1.1 Diagrama de Contexto
+#### 2.1.1 Context Diagram
 
 ```
                     ┌─────────────────────────────────────────────┐
-                    │            SENSOR EDGE (RPi + HackRF)       │
+                    │            EDGE SENSOR (RPi + HackRF)       │
                     │                                             │
  ┌─────────┐  SMA  │  ┌──────────┐   USB    ┌──────────────┐    │
- │ Antenas  │◄─────►│  │ HackRF   │◄────────►│  Raspberry   │    │
- │ (banda)  │       │  │ One      │  IQ raw  │  Pi          │    │
+ │ Antennas │◄─────►│  │ HackRF   │◄────────►│  Raspberry   │    │
+ │ (band)   │       │  │ One      │  IQ raw  │  Pi          │    │
  └─────────┘       │  └──────────┘          │              │    │
                     │                        │  ┌─────────┐ │    │
  ┌─────────┐  UART │                        │  │ DSP     │ │    │
@@ -118,1461 +118,1389 @@ Este documento describe el sensor edge como subsistema del sistema completo (ver
                     │                                             │
  ┌─────────┐       │  ┌───────────────────────────────────┐      │
  │ Solar + │◄──────┤  │ Battery Manager + Charge Control  │      │
- │ Batería │       │  └───────────────────────────────────┘      │
+ │ Battery │       │  └───────────────────────────────────┘      │
  └─────────┘       └─────────────────────────────────────────────┘
 ```
 
-### 2.2 Funciones del Producto
+### 2.2 Product Functions
 
-El sensor edge proporciona: captura de espectro en tiempo real (1 MHz–6 GHz), procesamiento DSP (FFT, PSD, trazas, RBW/VBW), demodulación FM/AM, medición de parámetros de señal (OBW, potencia de canal, modulación), detección local de intermodulaciones e interferencias, almacenamiento forense local (JSON + CS8), gestión autónoma de conectividad (failover 4G/WiFi/ETH), sincronización NTP, y monitoreo de salud del nodo.
+The edge sensor provides: real-time spectrum capture (1 MHz–6 GHz), DSP processing (FFT, PSD, traces, RBW/VBW), FM/AM demodulation, signal-parameter measurement (OBW, channel power, modulation), local detection of intermodulation products and interference, local forensic storage (JSON + CS8), autonomous connectivity management (4G/WiFi/ETH failover), NTP synchronization, and node health monitoring.
 
-### 2.3 Características de los Usuarios
+### 2.3 User Characteristics
 
-| Tipo de Usuario       | Descripción                                    | Nivel Técnico |
-|-----------------------|------------------------------------------------|---------------|
-| Ingeniero de espectro | Configura parámetros del sensor vía acceso remoto | `EXPERTO`     |
-| Técnico de campo      | Instala, calibra y mantiene el sensor          | `TÉCNICO`     |
+| User Type         | Description                                      | Technical Level |
+|-------------------|--------------------------------------------------|-----------------|
+| Spectrum engineer | Configures the sensor parameters via remote access | `EXPERT`        |
+| Field technician  | Installs, calibrates, and maintains the sensor   | `TECHNICAL`     |
 
-### 2.4 Restricciones
+### 2.4 Constraints
 
-- Hardware base: HackRF One como SDR primario (DANL y rango dinámico inherentes).
-- Plataforma embebida: Raspberry Pi (bajo consumo, limitaciones de procesamiento).
-- Conectividad: dependencia de cobertura 4G/5G de operadores colombianos.
-- Alimentación: solar + batería con administrador de carga.
+- Base hardware: HackRF One as the primary SDR (inherent DANL and dynamic-range limitations).
+- Embedded platform: Raspberry Pi (low power, processing limitations).
+- Connectivity: dependent on 4G/5G coverage from Colombian carriers.
+- Power: solar + battery with a charge manager.
 
-### 2.5 Supuestos y Dependencias
+### 2.5 Assumptions and Dependencies
 
-- La ANE provee SIM Cards de datos para conectividad móvil.
-- Los sensores se despliegan en ubicaciones con alimentación eléctrica o donde la solución solar es viable.
-- Las antenas están correctamente conectadas y calibradas para la banda de operación.
-
----
-
-## 3. Requisitos Específicos
+- The ANE provides data SIM cards for mobile connectivity.
+- Sensors are deployed at sites with mains power or where a solar solution is viable.
+- Antennas are correctly connected and calibrated for the operating band.
 
 ---
 
-### 3.1 Arquitectura RF del Sensor
-
-#### 3.1.1 Compatibilidad Electromagnética
+## 3. Specific Requirements
 
 ---
 
-**`ANAL-EMC-001` — Optimización EMC del sensor**
+### 3.1 Sensor RF Architecture
 
-| Campo                  | Valor                                                     |
+#### 3.1.1 Electromagnetic Compatibility
+
+---
+
+**`ANAL-EMC-001` — Sensor EMC optimization**
+
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `NO_FUNCIONAL`                                            |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `PRUEBA`                                                  |
-| **Hardware nuevo**     | Sí (gasket RF)                                            |
-| **Estándar(es)**       | —                                                         |
-| **Dependencias**       | —                                                         |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `NON_FUNCTIONAL`                                          |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `TEST`                                                   |
+| **New hardware**       | Yes (RF gasket)                                          |
+| **Standard(s)**        | —                                                        |
+| **Dependencies**       | —                                                        |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE incorporar ajustes y filtrado en la recepción del sensor para evitar que señales espurias generadas por la propia electrónica aparezcan en los resultados de medición. Los ajustes EMC DEBEN ser ejecutables sobre la plataforma actual.
+**Description:**  
+The system SHALL incorporate adjustments and filtering in the sensor's receive path to prevent spurious signals generated by its own electronics from appearing in the measurement results. The EMC adjustments SHALL be feasible on the current platform.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] Las emisiones espurias internas del sensor son al menos 10 dB por debajo del piso de ruido operativo.
-2. [ ] Se implementa blindaje RF (gasket) entre módulos internos.
-3. [ ] Medición comparativa antes/después demuestra reducción de artefactos EMC.
+1. [ ] The sensor's internal spurious emissions are at least 10 dB below the operating noise floor.
+2. [ ] RF shielding (a gasket) is implemented between internal modules.
+3. [ ] A before/after comparative measurement demonstrates a reduction in EMC artifacts.
 
-**Notas:**  
-Incluye implementación de gasket RF. Responsable análisis: Bernardo.
-
----
-
-#### 3.1.2 Rango Espectral
+**Notes:**  
+Includes the implementation of an RF gasket. Analysis owner: Bernardo.
 
 ---
 
-**`ANAL-RNG-001` — Ampliación de rango de frecuencia**
+#### 3.1.2 Spectral Range
 
-| Campo                  | Valor                                                     |
+---
+
+**`ANAL-RNG-001` — Frequency-range extension**
+
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `DEMOSTRACIÓN`                                            |
-| **Hardware nuevo**     | No (HackRF One soporta el rango)                         |
-| **Estándar(es)**       | ITU-R SM.1537; `REF-001`                                  |
-| **Dependencias**       | —                                                         |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `DEMONSTRATION`                                          |
+| **New hardware**       | No (the HackRF One supports the range)                  |
+| **Standard(s)**        | ITU-R SM.1537; `REF-001`                                 |
+| **Dependencies**       | —                                                        |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE ampliar el rango de frecuencia del sensor para capturar emisiones desde 1 MHz hasta 6 GHz (o hasta el límite del hardware SDR).
+**Description:**  
+The system SHALL extend the sensor's frequency range to capture emissions from 1 MHz up to 6 GHz (or up to the limit of the SDR hardware).
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] El sistema recibe y procesa señales en el rango 1 MHz – 6 GHz.
-2. [ ] La sensibilidad a 1 MHz es verificable con generador de señales calibrado.
-3. [ ] La sensibilidad a 6 GHz es verificable con generador de señales calibrado.
+1. [ ] The system receives and processes signals in the 1 MHz – 6 GHz range.
+2. [ ] Sensitivity at 1 MHz is verifiable with a calibrated signal generator.
+3. [ ] Sensitivity at 6 GHz is verifiable with a calibrated signal generator.
 
-**Notas:**  
-El límite superior puede depender del modelo de antena conectada. Requiere antena específica para bandas bajas (AM desde 1 MHz).
+**Notes:**  
+The upper limit may depend on the model of the connected antenna. A specific antenna is required for the low bands (AM from 1 MHz).
 
 ---
 
-**`ANAL-RNG-002` — Ancho de banda de monitoreo en tiempo real**
+**`ANAL-RNG-002` — Real-time monitoring bandwidth**
 
-| Campo                  | Valor                                                     |
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `PRUEBA`                                                  |
-| **Hardware nuevo**     | No                                                        |
-| **Estándar(es)**       | —                                                         |
-| **Dependencias**       | —                                                         |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `TEST`                                                   |
+| **New hardware**       | No                                                       |
+| **Standard(s)**        | —                                                        |
+| **Dependencies**       | —                                                        |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE tener capacidad de monitoreo en tiempo real con un ancho de banda mínimo de 20 MHz. DEBE permitir configuración manual del ancho de banda entre 6 MHz y 20 MHz, y modo automático fijo en 20 MHz.
+**Description:**  
+The system SHALL provide real-time monitoring with a minimum bandwidth of 20 MHz. It SHALL allow the bandwidth to be configured manually between 6 MHz and 20 MHz, and an automatic mode fixed at 20 MHz.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] El span de monitoreo puede configurarse entre 6 MHz y 20 MHz en pasos discretos.
-2. [ ] En modo automático, el span se fija en 20 MHz.
-3. [ ] El pipeline DSP procesa el ancho de banda completo con latencia ≤ 1 segundo.
+1. [ ] The monitoring span can be configured between 6 MHz and 20 MHz in discrete steps.
+2. [ ] In automatic mode, the span is fixed at 20 MHz.
+3. [ ] The DSP pipeline processes the full bandwidth with a latency ≤ 1 second.
 
-**Notas:**  
-Manual entre 6 y 20 MHz; automático en 20 MHz.
-
----
-
-### 3.2 Parametrización DSP
-
-#### 3.2.1 Parámetros de Frecuencia y Resolución
+**Notes:**  
+Manual between 6 and 20 MHz; automatic at 20 MHz.
 
 ---
 
-**`ANAL-PAR-001` — Rango de frecuencia parametrizable**
+### 3.2 DSP Parameterization
 
-| Campo                  | Valor                                                     |
+#### 3.2.1 Frequency and Resolution Parameters
+
+---
+
+**`ANAL-PAR-001` — Parameterizable frequency range**
+
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `DEMOSTRACIÓN`                                            |
-| **Hardware nuevo**     | No                                                        |
-| **Estándar(es)**       | —                                                         |
-| **Dependencias**       | `ANAL-RNG-001`                                            |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `DEMONSTRATION`                                          |
+| **New hardware**       | No                                                       |
+| **Standard(s)**        | —                                                        |
+| **Dependencies**       | `ANAL-RNG-001`                                           |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE permitir al usuario ingresar rangos de frecuencia a analizar dentro del rango espectral disponible (span IF).
+**Description:**  
+The system SHALL allow the user to enter frequency ranges to analyze within the available spectral range (IF span).
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] El usuario puede definir frecuencia central y span, o frecuencia inicial y final.
-2. [ ] El sistema valida que el rango solicitado esté dentro de los límites del hardware.
-3. [ ] Los cambios de rango se aplican en tiempo real sin reinicio del sistema.
+1. [ ] The user can define a center frequency and span, or a start and stop frequency.
+2. [ ] The system validates that the requested range is within the hardware limits.
+3. [ ] Range changes are applied in real time without restarting the system.
 
-**Notas:**  
-Span IF = Rango de frecuencia en pantalla.
+**Notes:**  
+IF span = the frequency range on screen.
 
 ---
 
-**`ANAL-PAR-002` — Configuración de RBW**
+**`ANAL-PAR-002` — RBW configuration**
 
-| Campo                  | Valor                                                     |
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `PRUEBA`                                                  |
-| **Hardware nuevo**     | No                                                        |
-| **Estándar(es)**       | —                                                         |
-| **Dependencias**       | `ANAL-PAR-001`                                            |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `TEST`                                                   |
+| **New hardware**       | No                                                       |
+| **Standard(s)**        | —                                                        |
+| **Dependencies**       | `ANAL-PAR-001`                                           |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE permitir configurar el ancho de banda de resolución (RBW) con rango definido (span IF = RBW).
+**Description:**  
+The system SHALL allow the resolution bandwidth (RBW) to be configured over a defined range (IF span = RBW).
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] El RBW es configurable por el usuario en un conjunto de valores discretos.
-2. [ ] Los rangos de RBW disponibles están documentados (≥ 6 valores).
-3. [ ] El cambio de RBW actualiza el pipeline DSP en tiempo real.
+1. [ ] The RBW is user-configurable across a set of discrete values.
+2. [ ] The available RBW ranges are documented (≥ 6 values).
+3. [ ] Changing the RBW updates the DSP pipeline in real time.
 
-**Notas:**  
-Definir rangos de RBW ≥ 6 opciones. RBW se implementa vía tamaño de ventana FFT.
+**Notes:**  
+Define ≥ 6 RBW options. RBW is implemented via the FFT window size.
 
 ---
 
-**`ANAL-PAR-003` — Pasos de resolución de frecuencia**
+**`ANAL-PAR-003` — Frequency-resolution steps**
 
-| Campo                  | Valor                                                     |
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `PRUEBA`                                                  |
-| **Hardware nuevo**     | No                                                        |
-| **Estándar(es)**       | —                                                         |
-| **Dependencias**       | `ANAL-PAR-002`                                            |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `TEST`                                                   |
+| **New hardware**       | No                                                       |
+| **Standard(s)**        | —                                                        |
+| **Dependencies**       | `ANAL-PAR-002`                                           |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE ofrecer pasos de cambio de resolución de 500 Hz con resolución mínima de 10 Hz.
+**Description:**  
+The system SHALL offer resolution-change steps of 500 Hz, with a minimum resolution of 10 Hz.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] El step de frecuencia es configurable en pasos de 500 Hz.
-2. [ ] La resolución mínima alcanzable es 10 Hz.
-3. [ ] La precisión del step se verifica contra generador de señales.
+1. [ ] The frequency step is configurable in 500 Hz increments.
+2. [ ] The minimum achievable resolution is 10 Hz.
+3. [ ] The step accuracy is verified against a signal generator.
 
-**Notas:**  
-Ampliar gama de resoluciones en fases posteriores según demanda.
+**Notes:**  
+Expand the range of resolutions in later phases as demand requires.
 
 ---
 
-**`ANAL-PAR-004` — Configuración de VBW**
+**`ANAL-PAR-004` — VBW configuration**
 
-| Campo                  | Valor                                                     |
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `PRUEBA`                                                  |
-| **Hardware nuevo**     | Sí (filtros)                                              |
-| **Estándar(es)**       | —                                                         |
-| **Dependencias**       | `ANAL-PAR-002`                                            |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `TEST`                                                   |
+| **New hardware**       | Yes (filters)                                           |
+| **Standard(s)**        | —                                                        |
+| **Dependencies**       | `ANAL-PAR-002`                                           |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE implementar filtros de Video Bandwidth (VBW) adaptados al tipo de análisis (fino o promedio), para suavizar la señal procesada después del cálculo RBW.
+**Description:**  
+The system SHALL implement Video Bandwidth (VBW) filters suited to the type of analysis (fine or average) in order to smooth the processed signal after the RBW computation.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] El VBW es configurable independientemente del RBW.
-2. [ ] Filtros disponibles para análisis fino y promediado.
-3. [ ] La salida DSP muestra diferencia perceptible entre modos de filtrado.
+1. [ ] The VBW is configurable independently of the RBW.
+2. [ ] Filters are available for fine and averaged analysis.
+3. [ ] The DSP output shows a perceptible difference between filtering modes.
 
-**Notas:**  
-Filtrado posterior a RBW para suavizar señal. Implementación digital en el pipeline DSP.
-
----
-
-#### 3.2.2 Ubicación y Unidades
+**Notes:**  
+Filtering applied after RBW to smooth the signal. Implemented digitally in the DSP pipeline.
 
 ---
 
-**`ANAL-PAR-005` — Ingreso manual de coordenadas GPS**
+#### 3.2.2 Location and Units
 
-| Campo                  | Valor                                                     |
+---
+
+**`ANAL-PAR-005` — Manual entry of GPS coordinates**
+
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `DEMOSTRACIÓN`                                            |
-| **Hardware nuevo**     | No                                                        |
-| **Estándar(es)**       | —                                                         |
-| **Dependencias**       | —                                                         |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `DEMONSTRATION`                                          |
+| **New hardware**       | No                                                       |
+| **Standard(s)**        | —                                                        |
+| **Dependencies**       | —                                                        |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE permitir el ingreso manual de coordenadas de ubicación del sensor cuando el GPS automático no esté disponible o se requiera corrección.
+**Description:**  
+The system SHALL allow the sensor's location coordinates to be entered manually when automatic GPS is unavailable or a correction is required.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] Se pueden ingresar latitud y longitud manualmente vía configuración del sensor.
-2. [ ] Las coordenadas manuales se asocian a las mediciones realizadas.
-3. [ ] El sistema registra si la ubicación es GPS automática o manual.
+1. [ ] Latitude and longitude can be entered manually via the sensor configuration.
+2. [ ] Manual coordinates are associated with the measurements taken.
+3. [ ] The system records whether the location is automatic GPS or manual.
 
-**Notas:**  
+**Notes:**  
 —
 
 ---
 
-**`ANAL-PAR-006` — Conversión de unidades de medida**
+**`ANAL-PAR-006` — Conversion of measurement units**
 
-| Campo                  | Valor                                                     |
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `DEMOSTRACIÓN`                                            |
-| **Hardware nuevo**     | No                                                        |
-| **Estándar(es)**       | —                                                         |
-| **Dependencias**       | —                                                         |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `DEMONSTRATION`                                          |
+| **New hardware**       | No                                                       |
+| **Standard(s)**        | —                                                        |
+| **Dependencies**       | —                                                        |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE permitir la selección y conversión entre unidades de medida: Frecuencia (Hz, kHz, MHz, GHz), Potencia (dBm, dBmV, dBµV, V, W) y Campo eléctrico y densidad de potencia (V/m, W/m², dBµV/m).
+**Description:**  
+The system SHALL allow the selection and conversion of measurement units: frequency (Hz, kHz, MHz, GHz), power (dBm, dBmV, dBµV, V, W), and electric field and power density (V/m, W/m², dBµV/m).
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] Todas las unidades listadas están disponibles como parámetro de salida del sensor.
-2. [ ] La conversión entre unidades es matemáticamente correcta (error < 0.01 dB).
-3. [ ] El cambio de unidad se aplica a los datos de salida del pipeline DSP.
+1. [ ] All listed units are available as a sensor output parameter.
+2. [ ] Conversion between units is mathematically correct (error < 0.01 dB).
+3. [ ] A change of unit is applied to the DSP pipeline output data.
 
-**Notas:**  
+**Notes:**  
 —
 
 ---
 
-#### 3.2.3 Umbrales y Detección
+#### 3.2.3 Thresholds and Detection
 
 ---
 
-**`ANAL-PAR-007` — Umbrales de análisis y detección**
+**`ANAL-PAR-007` — Analysis and detection thresholds**
 
-| Campo                  | Valor                                                     |
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `PRUEBA`                                                  |
-| **Hardware nuevo**     | No                                                        |
-| **Estándar(es)**       | —                                                         |
-| **Dependencias**       | —                                                         |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `TEST`                                                   |
+| **New hardware**       | No                                                       |
+| **Standard(s)**        | —                                                        |
+| **Dependencies**       | —                                                        |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE permitir parametrizar umbrales de detección e integrar algoritmos con capacidad para distinguir entre piso de ruido y ocupación de señales, con el fin de definir la porción del espectro de interés.
+**Description:**  
+The system SHALL allow detection thresholds to be parameterized and SHALL integrate algorithms capable of distinguishing the noise floor from signal occupancy, in order to define the portion of the spectrum of interest.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] El usuario puede definir un umbral de potencia en dBm para detección de señales.
-2. [ ] El algoritmo distingue automáticamente piso de ruido de señales activas.
-3. [ ] Las señales por encima del umbral se marcan en la salida de datos del sensor.
+1. [ ] The user can define a power threshold in dBm for signal detection.
+2. [ ] The algorithm automatically distinguishes the noise floor from active signals.
+3. [ ] Signals above the threshold are flagged in the sensor's output data.
 
-**Notas:**  
-Parametrizar umbral y con base en él, definir porción del espectro de interés.
-
----
-
-### 3.3 Procesamiento de Señal (DSP)
-
-#### 3.3.1 Indicadores y Trazas
+**Notes:**  
+Parameterize the threshold and, based on it, define the portion of the spectrum of interest.
 
 ---
 
-**`ANAL-MED-001` — Indicadores espectrales (trazas)**
+### 3.3 Signal Processing (DSP)
 
-| Campo                  | Valor                                                     |
+#### 3.3.1 Indicators and Traces
+
+---
+
+**`ANAL-MED-001` — Spectral indicators (traces)**
+
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `DEMOSTRACIÓN`                                            |
-| **Hardware nuevo**     | No                                                        |
-| **Estándar(es)**       | ITU-R SM.1537; `REF-001`                                  |
-| **Dependencias**       | `ANAL-PAR-001`                                            |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `DEMONSTRATION`                                          |
+| **New hardware**       | No                                                       |
+| **Standard(s)**        | ITU-R SM.1537; `REF-001`                                 |
+| **Dependencies**       | `ANAL-PAR-001`                                           |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE calcular trazas espectrales: máxima (max hold), mínima (min hold), promedio (average), y modos de detección RMS, pico y promedio.
+**Description:**  
+The system SHALL compute spectral traces: maximum (max hold), minimum (min hold), average, and RMS, peak, and average detection modes.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] La traza máxima retiene el valor más alto por bin de frecuencia (FFT bin).
-2. [ ] La traza mínima retiene el valor más bajo por bin de frecuencia.
-3. [ ] La traza promedio calcula media aritmética sobre N barridos (N configurable).
-4. [ ] Los modos de detección RMS, pico y promedio son seleccionables.
+1. [ ] The maximum trace retains the highest value per frequency bin (FFT bin).
+2. [ ] The minimum trace retains the lowest value per frequency bin.
+3. [ ] The average trace computes the arithmetic mean over N sweeps (N configurable).
+4. [ ] The RMS, peak, and average detection modes are selectable.
 
-**Notas:**  
-Operaciones sobre FFT bins. Max hold y min hold se acumulan entre barridos sucesivos.
-
----
-
-#### 3.3.2 Mediciones de Señal
+**Notes:**  
+Operations over FFT bins. Max hold and min hold accumulate across successive sweeps.
 
 ---
 
-**`ANAL-MED-003` — Medición de ancho de banda ocupado**
+#### 3.3.2 Signal Measurements
 
-| Campo                  | Valor                                                     |
+---
+
+**`ANAL-MED-003` — Occupied-bandwidth measurement**
+
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `PRUEBA`                                                  |
-| **Hardware nuevo**     | No                                                        |
-| **Estándar(es)**       | ITU-R SM.1537; `REF-001`                                  |
-| **Dependencias**       | `ANAL-MED-001`                                            |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `TEST`                                                   |
+| **New hardware**       | No                                                       |
+| **Standard(s)**        | ITU-R SM.1537; `REF-001`                                 |
+| **Dependencies**       | `ANAL-MED-001`                                           |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE medir el ancho de banda ocupado (OBW) mediante los métodos de –X dB y 99%.
+**Description:**  
+The system SHALL measure the occupied bandwidth (OBW) using the –X dB and 99% methods.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] Método –X dB: mide el ancho donde la señal cae X dB por debajo del pico (X configurable).
-2. [ ] Método 99%: mide el espectro que contiene el 99% de la potencia de la señal.
-3. [ ] Los resultados se expresan en la unidad de frecuencia seleccionada.
+1. [ ] –X dB method: measures the width where the signal falls X dB below the peak (X configurable).
+2. [ ] 99% method: measures the spectrum that contains 99% of the signal power.
+3. [ ] Results are expressed in the selected frequency unit.
 
-**Notas:**  
-OBW se calcula sobre los FFT bins de la PSD. –X dB donde la señal cae un X por debajo del pico.
+**Notes:**  
+OBW is computed over the FFT bins of the PSD. –X dB is where the signal falls X below the peak.
 
 ---
 
-**`ANAL-MED-004` — Potencia de canal (hasta 20 MHz)**
+**`ANAL-MED-004` — Channel power (up to 20 MHz)**
 
-| Campo                  | Valor                                                     |
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `PRUEBA`                                                  |
-| **Hardware nuevo**     | No                                                        |
-| **Estándar(es)**       | —                                                         |
-| **Dependencias**       | `ANAL-RNG-002`                                            |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `TEST`                                                   |
+| **New hardware**       | No                                                       |
+| **Standard(s)**        | —                                                        |
+| **Dependencies**       | `ANAL-RNG-002`                                           |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE realizar mediciones de potencia de canal para emisiones de hasta 20 MHz de ancho de banda.
+**Description:**  
+The system SHALL perform channel-power measurements for emissions up to 20 MHz wide.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] La medición de potencia de canal es seleccionable por parámetro de configuración.
-2. [ ] El ancho del canal medido es configurable hasta 20 MHz.
-3. [ ] El resultado se expresa en las unidades de potencia seleccionadas.
+1. [ ] Channel-power measurement is selectable via a configuration parameter.
+2. [ ] The measured channel width is configurable up to 20 MHz.
+3. [ ] The result is expressed in the selected power units.
 
-**Notas:**  
-Integración de PSD sobre los bins del canal. Limitado a 20 MHz (ancho de banda instantáneo del HackRF).
-
----
-
-#### 3.3.3 Radiodifusión Sonora
+**Notes:**  
+Integration of the PSD over the channel bins. Limited to 20 MHz (the HackRF's instantaneous bandwidth).
 
 ---
 
-**`ANAL-MED-005` — Lectura de RDS en FM**
+#### 3.3.3 Sound Broadcasting
 
-| Campo                  | Valor                                                     |
+---
+
+**`ANAL-MED-005` — RDS reading in FM**
+
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `DEMOSTRACIÓN`                                            |
-| **Hardware nuevo**     | No                                                        |
-| **Estándar(es)**       | —                                                         |
-| **Dependencias**       | —                                                         |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `DEMONSTRATION`                                          |
+| **New hardware**       | No                                                       |
+| **Standard(s)**        | —                                                        |
+| **Dependencies**       | —                                                        |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE decodificar y extraer la información del Radio Data System (RDS) en señales FM.
+**Description:**  
+The system SHALL decode and extract Radio Data System (RDS) information from FM signals.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] El sistema decodifica campos RDS básicos (PI, PS, RT).
-2. [ ] La información RDS se incluye en los datos de salida del sensor junto a la medición FM.
+1. [ ] The system decodes basic RDS fields (PI, PS, RT).
+2. [ ] The RDS information is included in the sensor's output data alongside the FM measurement.
 
-**Notas:**  
-Decodificación RDS ejecutada en el pipeline DSP del sensor.
+**Notes:**  
+RDS decoding is performed in the sensor's DSP pipeline.
 
 ---
 
-**`ANAL-MED-006` — Demodulación FM y AM**
+**`ANAL-MED-006` — FM and AM demodulation**
 
-| Campo                  | Valor                                                     |
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `DEMOSTRACIÓN`                                            |
-| **Hardware nuevo**     | No                                                        |
-| **Estándar(es)**       | —                                                         |
-| **Dependencias**       | `ANAL-RNG-001`                                            |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `DEMONSTRATION`                                          |
+| **New hardware**       | No                                                       |
+| **Standard(s)**        | —                                                        |
+| **Dependencies**       | `ANAL-RNG-001`                                           |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE demodular señales FM y AM en tiempo real, produciendo audio digital como salida.
+**Description:**  
+The system SHALL demodulate FM and AM signals in real time, producing digital audio as output.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] El audio FM se demodula con calidad audible.
-2. [ ] El audio AM se demodula con calidad audible (desde 1 MHz con HackRF One).
-3. [ ] El audio demodulado se almacena localmente o se transmite como stream.
+1. [ ] FM audio is demodulated with audible quality.
+2. [ ] AM audio is demodulated with audible quality (from 1 MHz with the HackRF One).
+3. [ ] The demodulated audio is stored locally or transmitted as a stream.
 
-**Notas:**  
-AM solo se puede con HackRF One desde 1 MHz en adelante; requiere antena adicional.
+**Notes:**  
+AM is only possible with the HackRF One from 1 MHz upward; it requires an additional antenna.
 
 ---
 
-**`ANAL-MED-007` — Medición de modulación AM y FM**
+**`ANAL-MED-007` — AM and FM modulation measurement**
 
-| Campo                  | Valor                                                     |
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `PRUEBA`                                                  |
-| **Hardware nuevo**     | No                                                        |
-| **Estándar(es)**       | —                                                         |
-| **Dependencias**       | `ANAL-MED-006`                                            |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `TEST`                                                   |
+| **New hardware**       | No                                                       |
+| **Standard(s)**        | —                                                        |
+| **Dependencies**       | `ANAL-MED-006`                                           |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE medir directamente la profundidad de modulación AM y la excursión de frecuencia FM.
+**Description:**  
+The system SHALL directly measure the AM modulation depth and the FM frequency deviation.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] La profundidad de modulación AM se calcula como porcentaje.
-2. [ ] La excursión de frecuencia FM se calcula en kHz.
-3. [ ] Los valores se actualizan en tiempo real durante la demodulación.
+1. [ ] The AM modulation depth is computed as a percentage.
+2. [ ] The FM frequency deviation is computed in kHz.
+3. [ ] The values update in real time during demodulation.
 
-**Notas:**  
-AM solo desde 1 MHz en adelante con HackRF One; requiere antena adicional.
-
----
-
-### 3.4 Detección Local (Edge)
-
-#### 3.4.1 Verificación de Parámetros de Señal
+**Notes:**  
+AM only from 1 MHz upward with the HackRF One; it requires an additional antenna.
 
 ---
 
-**`NORM-VER-001` — Detección de intermodulaciones**
+### 3.4 Local (Edge) Detection
 
-| Campo                  | Valor                                                     |
+#### 3.4.1 Signal-Parameter Verification
+
+---
+
+**`NORM-VER-001` — Intermodulation detection**
+
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `PRUEBA`                                                  |
-| **Hardware nuevo**     | No                                                        |
-| **Estándar(es)**       | —                                                         |
-| **Dependencias**       | `ANAL-MED-001`                                            |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `TEST`                                                   |
+| **New hardware**       | No                                                       |
+| **Standard(s)**        | —                                                        |
+| **Dependencies**       | `ANAL-MED-001`                                           |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE detectar intermodulaciones, incluyendo identificación de presuntas intermodulaciones en AM, FM y banda de servicio móvil aeronáutico (108 MHz–137 MHz), y verificación de frecuencia intermedia (IF).
+**Description:**  
+The system SHALL detect intermodulation, including the identification of suspected intermodulation products in AM, FM, and the aeronautical mobile service band (108 MHz–137 MHz), as well as intermediate-frequency (IF) verification.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] El sistema calcula productos de intermodulación de orden 2 y 3 para emisiones detectadas.
-2. [ ] Las intermodulaciones presuntas se marcan en la salida de datos espectrales.
-3. [ ] La verificación IF se realiza automáticamente.
+1. [ ] The system computes 2nd- and 3rd-order intermodulation products for detected emissions.
+2. [ ] Suspected intermodulation products are flagged in the spectral output data.
+3. [ ] IF verification is performed automatically.
 
-**Notas:**  
-Cubre AM, FM y banda aeronáutica (108–137 MHz). Cálculo local sobre FFT bins.
+**Notes:**  
+Covers AM, FM, and the aeronautical band (108–137 MHz). Computed locally over FFT bins.
 
 ---
 
-**`NORM-VER-002` — Detección de interferencias**
+**`NORM-VER-002` — Interference detection**
 
-| Campo                  | Valor                                                     |
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `PRUEBA`                                                  |
-| **Hardware nuevo**     | No                                                        |
-| **Estándar(es)**       | —                                                         |
-| **Dependencias**       | `ANAL-PAR-007`                                            |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `TEST`                                                   |
+| **New hardware**       | No                                                       |
+| **Standard(s)**        | —                                                        |
+| **Dependencies**       | `ANAL-PAR-007`                                           |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE detectar interferencias definidas como señales que exceden en más de 3 dB el nivel promedio del canal o banda.
+**Description:**  
+The system SHALL detect interference, defined as signals that exceed the average level of the channel or band by more than 3 dB.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] Se detectan señales >3 dB sobre el nivel promedio como posibles interferencias.
-2. [ ] Se genera registro local con datos de frecuencia, potencia y duración.
-3. [ ] La detección opera de forma continua sin intervención externa.
+1. [ ] Signals more than 3 dB above the average level are detected as potential interference.
+2. [ ] A local record is generated with frequency, power, and duration data.
+3. [ ] Detection runs continuously without external intervention.
 
-**Notas:**  
-Umbral de detección: >3 dB del nivel promedio. Procesamiento local en el pipeline DSP.
-
----
-
-#### 3.4.2 Extracción de Audio
+**Notes:**  
+Detection threshold: > 3 dB above the average level. Processed locally in the DSP pipeline.
 
 ---
 
-**`NORM-SRV-002` — Extracción de audio para verificación**
+#### 3.4.2 Audio Extraction
 
-| Campo                  | Valor                                                     |
+---
+
+**`NORM-SRV-002` — Audio extraction for verification**
+
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `DEMOSTRACIÓN`                                            |
-| **Hardware nuevo**     | No                                                        |
-| **Estándar(es)**       | —                                                         |
-| **Dependencias**       | `ANAL-MED-006`                                            |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `DEMONSTRATION`                                          |
+| **New hardware**       | No                                                       |
+| **Standard(s)**        | —                                                        |
+| **Dependencies**       | `ANAL-MED-006`                                           |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE demodular y extraer audio de señales FM y AM, almacenándolo localmente para uso posterior en verificación y análisis forense.
+**Description:**  
+The system SHALL demodulate and extract audio from FM and AM signals, storing it locally for later use in verification and forensic analysis.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] El audio extraído se almacena localmente en formato estándar (WAV o MP3).
-2. [ ] El archivo de audio se asocia a metadatos de la medición (frecuencia, timestamp, ubicación).
+1. [ ] The extracted audio is stored locally in a standard format (WAV or MP3).
+2. [ ] The audio file is associated with the measurement metadata (frequency, timestamp, location).
 
-**Notas:**  
-AM solo desde 1 MHz con HackRF One; requiere antena adicional.
-
----
-
-### 3.5 Almacenamiento Local
+**Notes:**  
+AM only from 1 MHz with the HackRF One; it requires an additional antenna.
 
 ---
 
-**`FORN-ALM-001` — Almacenamiento histórico local para análisis forense**
+### 3.5 Local Storage
 
-| Campo                  | Valor                                                     |
+---
+
+**`FORN-ALM-001` — Local historical storage for forensic analysis**
+
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `DEMOSTRACIÓN`                                            |
-| **Hardware nuevo**     | No                                                        |
-| **Estándar(es)**       | ITU-R SM.1537; `REF-001`                                  |
-| **Dependencias**       | —                                                         |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `DEMONSTRATION`                                          |
+| **New hardware**       | No                                                       |
+| **Standard(s)**        | ITU-R SM.1537; `REF-001`                                 |
+| **Dependencies**       | —                                                        |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE proveer almacenamiento histórico local para análisis forense, incluyendo datos de espectro con timestamp y ubicación GPS.
+**Description:**  
+The system SHALL provide local historical storage for forensic analysis, including spectral data with a timestamp and GPS location.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] Los datos de monitoreo se almacenan localmente con timestamp y coordenadas GPS.
-2. [ ] Los datos históricos son consultables por rango de fecha, frecuencia y ubicación.
-3. [ ] La integridad de los datos almacenados es verificable (checksum o hash).
+1. [ ] Monitoring data is stored locally with a timestamp and GPS coordinates.
+2. [ ] Historical data is queryable by date range, frequency, and location.
+3. [ ] The integrity of the stored data is verifiable (checksum or hash).
 
-**Notas:**  
-Con hardware actual.
+**Notes:**  
+Using current hardware.
 
 ---
 
-**`FORN-ALM-003` — Almacenamiento expandido en sensor**
+**`FORN-ALM-003` — Expanded storage on the sensor**
 
-| Campo                  | Valor                                                     |
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `DEMOSTRACIÓN`                                            |
-| **Hardware nuevo**     | Sí                                                        |
-| **Estándar(es)**       | —                                                         |
-| **Dependencias**       | —                                                         |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `DEMONSTRATION`                                          |
+| **New hardware**       | Yes                                                     |
+| **Standard(s)**        | —                                                        |
+| **Dependencies**       | —                                                        |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE adicionar espacio de almacenamiento al sensor para permitir almacenar archivos CS8 (IQ raw) para posterior uso como evidencia forense.
+**Description:**  
+The system SHALL add storage space to the sensor so that CS8 files (raw IQ) can be stored for later use as forensic evidence.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] El sensor cuenta con almacenamiento adicional accesible.
-2. [ ] Los archivos CS8 se almacenan con metadatos (timestamp, frecuencia, coordenadas).
-3. [ ] El almacenamiento local es accesible remotamente para descarga.
+1. [ ] The sensor has accessible additional storage.
+2. [ ] CS8 files are stored with metadata (timestamp, frequency, coordinates).
+3. [ ] Local storage is remotely accessible for download.
 
-**Notas:**  
-Incluir valor de la solución de almacenamiento a usar (SSD/microSD de alta capacidad).
-
----
-
-### 3.6 Conectividad Edge
-
-#### 3.6.1 Interfaces de Red
+**Notes:**  
+Include the cost of the storage solution to be used (high-capacity SSD/microSD).
 
 ---
 
-**`CONN-RED-001` — Módulo 4G/5G**
+### 3.6 Edge Connectivity
 
-| Campo                  | Valor                                                     |
+#### 3.6.1 Network Interfaces
+
+---
+
+**`CONN-RED-001` — 4G/5G module**
+
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `DEMOSTRACIÓN`                                            |
-| **Hardware nuevo**     | Sí                                                        |
-| **Estándar(es)**       | —                                                         |
-| **Dependencias**       | —                                                         |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `DEMONSTRATION`                                          |
+| **New hardware**       | Yes                                                     |
+| **Standard(s)**        | —                                                        |
+| **Dependencies**       | —                                                        |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE agregar o cambiar el módulo de conexión móvil para soportar SIM Card de datos entregada por la ANE, con suministro de datos multioperador (no limitado a un solo operador).
+**Description:**  
+The system SHALL add or replace the mobile-connectivity module to support a data SIM card provided by the ANE, with multi-carrier data service (not restricted to a single carrier).
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] El módulo soporta redes 4G y 5G.
-2. [ ] Funciona con SIM Cards de al menos 2 operadores colombianos.
-3. [ ] La conexión se establece automáticamente al encender el sensor.
+1. [ ] The module supports 4G and 5G networks.
+2. [ ] It works with SIM cards from at least 2 Colombian carriers.
+3. [ ] The connection is established automatically when the sensor powers on.
 
-**Notas:**  
-Actualmente usa módulo 4.5G limitado a Movistar. Nuevo módulo debe ser multioperador.
-
----
-
-**`CONN-RED-002` — Conexión WiFi**
-
-| Campo                  | Valor                                                     |
-|------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `SHOULD`                                                  |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `DEMOSTRACIÓN`                                            |
-| **Hardware nuevo**     | No                                                        |
-| **Estándar(es)**       | —                                                         |
-| **Dependencias**       | —                                                         |
-| **Fase**               | 2025–2026                                                 |
-
-**Descripción:**  
-El sistema DEBE habilitar conexión WiFi en el sensor, configurable vía cable Ethernet.
-
-**Criterios de Aceptación:**
-
-1. [ ] El sensor se conecta a redes WiFi configuradas.
-2. [ ] La configuración WiFi se realiza inicialmente por cable Ethernet.
-3. [ ] La conexión WiFi se usa como canal alternativo de comunicación.
-
-**Notas:**  
-La configuración inicial debe ser vía cable Ethernet.
+**Notes:**  
+Currently uses a 4.5G module limited to Movistar. The new module must be multi-carrier.
 
 ---
 
-**`CONN-RED-003` — Puerto Ethernet accesible**
+**`CONN-RED-002` — WiFi connection**
 
-| Campo                  | Valor                                                     |
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `INSPECCIÓN`                                              |
-| **Hardware nuevo**     | Sí                                                        |
-| **Estándar(es)**       | —                                                         |
-| **Dependencias**       | —                                                         |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `SHOULD`                                                  |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `DEMONSTRATION`                                          |
+| **New hardware**       | No                                                       |
+| **Standard(s)**        | —                                                        |
+| **Dependencies**       | —                                                        |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE proveer acceso a un puerto Ethernet de fácil acceso, sin requerir apertura del equipo.
+**Description:**  
+The system SHALL enable a WiFi connection on the sensor, configurable via Ethernet cable.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] El puerto Ethernet es accesible externamente sin herramientas.
-2. [ ] El puerto soporta velocidad mínima de 100 Mbps.
+1. [ ] The sensor connects to configured WiFi networks.
+2. [ ] WiFi configuration is performed initially over an Ethernet cable.
+3. [ ] The WiFi connection is used as an alternative communication channel.
 
-**Notas:**  
-Actualmente requiere apertura del equipo para acceder al puerto.
+**Notes:**  
+Initial configuration must be done over an Ethernet cable.
 
 ---
 
-**`CONN-RED-004` — Auto-routing de red**
+**`CONN-RED-003` — Accessible Ethernet port**
 
-| Campo                  | Valor                                                     |
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `PRUEBA`                                                  |
-| **Hardware nuevo**     | No                                                        |
-| **Estándar(es)**       | —                                                         |
-| **Dependencias**       | `CONN-RED-001`, `CONN-RED-002`, `CONN-RED-003`            |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `INSPECTION`                                             |
+| **New hardware**       | Yes                                                     |
+| **Standard(s)**        | —                                                        |
+| **Dependencies**       | —                                                        |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE implementar un sistema de conexión y enrutamiento a red IP automático, usando los distintos canales disponibles (failover/prioridad entre 4G/5G, WiFi y Ethernet).
+**Description:**  
+The system SHALL provide access to an easily accessible Ethernet port without requiring the enclosure to be opened.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] El sistema selecciona automáticamente el canal de red disponible con mayor prioridad.
-2. [ ] El failover entre canales ocurre sin intervención manual.
-3. [ ] El orden de prioridad es configurable.
+1. [ ] The Ethernet port is externally accessible without tools.
+2. [ ] The port supports a minimum speed of 100 Mbps.
 
-**Notas:**  
+**Notes:**  
+It currently requires opening the enclosure to reach the port.
+
+---
+
+**`CONN-RED-004` — Network auto-routing**
+
+| Field                  | Value                                                     |
+|------------------------|-----------------------------------------------------------|
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `TEST`                                                   |
+| **New hardware**       | No                                                       |
+| **Standard(s)**        | —                                                        |
+| **Dependencies**       | `CONN-RED-001`, `CONN-RED-002`, `CONN-RED-003`           |
+| **Phase**              | 2025–2026                                                |
+
+**Description:**  
+The system SHALL implement automatic IP-network connection and routing, using the various available channels (a failover/priority scheme among 4G/5G, WiFi, and Ethernet).
+
+**Acceptance Criteria:**
+
+1. [ ] The system automatically selects the available network channel with the highest priority.
+2. [ ] Failover between channels occurs without manual intervention.
+3. [ ] The priority order is configurable.
+
+**Notes:**  
 —
 
 ---
 
-#### 3.6.2 Soporte y GPS
+#### 3.6.2 Support and GPS
 
 ---
 
-**`CONN-SOP-001` — Acceso remoto y actualización de software**
+**`CONN-SOP-001` — Remote access and software update**
 
-| Campo                  | Valor                                                     |
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `DEMOSTRACIÓN`                                            |
-| **Hardware nuevo**     | No                                                        |
-| **Estándar(es)**       | —                                                         |
-| **Dependencias**       | `CONN-RED-004`                                            |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `DEMONSTRATION`                                          |
+| **New hardware**       | No                                                       |
+| **Standard(s)**        | —                                                        |
+| **Dependencies**       | `CONN-RED-004`                                           |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE permitir acceso remoto IP al sensor y actualización de software OTA (Over The Air).
+**Description:**  
+The system SHALL allow remote IP access to the sensor and Over-The-Air (OTA) software updates.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] Se puede acceder remotamente al sensor vía SSH o equivalente seguro.
-2. [ ] La actualización de software se realiza sin acceso físico al sensor.
-3. [ ] El proceso de actualización incluye rollback automático en caso de fallo.
+1. [ ] The sensor can be accessed remotely via SSH or a secure equivalent.
+2. [ ] Software updates are performed without physical access to the sensor.
+3. [ ] The update process includes automatic rollback in case of failure.
 
-**Notas:**  
+**Notes:**  
 —
 
 ---
 
-**`CONN-GPS-001` — Redundancia de ubicación GPS**
+**`CONN-GPS-001` — GPS location redundancy**
 
-| Campo                  | Valor                                                     |
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `PRUEBA`                                                  |
-| **Hardware nuevo**     | No                                                        |
-| **Estándar(es)**       | —                                                         |
-| **Dependencias**       | `ANAL-PAR-005`                                            |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `TEST`                                                   |
+| **New hardware**       | No                                                       |
+| **Standard(s)**        | —                                                        |
+| **Dependencies**       | `ANAL-PAR-005`                                           |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE seguir enviando ubicación por GPS independientemente de la parametrización manual, proporcionando redundancia.
+**Description:**  
+The system SHALL continue to report location via GPS regardless of the manual parameterization, providing redundancy.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] El GPS continúa reportando ubicación automática incluso cuando hay coordenadas manuales configuradas.
-2. [ ] Ambas fuentes de ubicación se almacenan en los registros de medición.
+1. [ ] GPS continues to report an automatic location even when manual coordinates are configured.
+2. [ ] Both location sources are stored in the measurement records.
 
-**Notas:**  
+**Notes:**  
 —
 
 ---
 
-**`CONN-GPS-002` — Exactitud GPS**
+**`CONN-GPS-002` — GPS accuracy**
 
-| Campo                  | Valor                                                     |
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `NO_FUNCIONAL`                                            |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `PRUEBA`                                                  |
-| **Hardware nuevo**     | Sí                                                        |
-| **Estándar(es)**       | —                                                         |
-| **Dependencias**       | —                                                         |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `NON_FUNCTIONAL`                                         |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `TEST`                                                   |
+| **New hardware**       | Yes                                                     |
+| **Standard(s)**        | —                                                        |
+| **Dependencies**       | —                                                        |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE contar con precisión horizontal GPS aproximada de 3 metros a cielo abierto.
+**Description:**  
+The system SHALL have a horizontal GPS accuracy of approximately 3 meters under open sky.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] Precisión horizontal ≤ 3 m (CEP 50%) en condiciones de cielo abierto.
-2. [ ] La precisión se verifica contra receptor GPS de referencia.
+1. [ ] Horizontal accuracy ≤ 3 m (CEP 50%) under open-sky conditions.
+2. [ ] The accuracy is verified against a reference GPS receiver.
 
-**Notas:**  
-Puede requerir cambio de hardware GPS.
-
----
-
-### 3.7 Antenas y Medición de Radiación
-
-#### 3.7.1 Antenas
+**Notes:**  
+May require a change of GPS hardware.
 
 ---
 
-**`ANTE-ANT-001` — Nuevas antenas para bandas específicas**
+### 3.7 Antennas and Radiation Measurement
 
-| Campo                  | Valor                                                     |
+#### 3.7.1 Antennas
+
+---
+
+**`ANTE-ANT-001` — New antennas for specific bands**
+
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `INSPECCIÓN`                                              |
-| **Hardware nuevo**     | Sí                                                        |
-| **Estándar(es)**       | —                                                         |
-| **Dependencias**       | `ANAL-RNG-001`                                            |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `INSPECTION`                                             |
+| **New hardware**       | Yes                                                     |
+| **Standard(s)**        | —                                                        |
+| **Dependencies**       | `ANAL-RNG-001`                                           |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE incorporar antenas específicas para recepción de señales con el fin de optimizar la recepción en diferentes bandas.
+**Description:**  
+The system SHALL incorporate specific antennas for signal reception in order to optimize reception across different bands.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] Antena específica para TDT.
-2. [ ] Verificación de antena para frecuencias > 2 GHz (telefonía móvil downlink).
-3. [ ] Cada antena tiene factor de antena (AF) documentado y calibrado.
+1. [ ] A specific antenna for DTT.
+2. [ ] Verification of an antenna for frequencies > 2 GHz (mobile-telephony downlink).
+3. [ ] Each antenna has a documented and calibrated antenna factor (AF).
 
-**Notas:**  
-Bandas prioritarias: 1. TDT, 2. Verificar > 2 GHz telefonía móvil (downlink), 3. Evaluar antenas adicionales según necesidad.
+**Notes:**  
+Priority bands: 1. DTT, 2. Verify > 2 GHz mobile telephony (downlink), 3. Evaluate additional antennas as needed.
 
 ---
 
-**`ANTE-ANT-002` — Antena activa para radiación no ionizante**
+**`ANTE-ANT-002` — Active antenna for non-ionizing radiation**
 
-| Campo                  | Valor                                                     |
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `PRUEBA`                                                  |
-| **Hardware nuevo**     | Sí                                                        |
-| **Estándar(es)**       | ITU-T K.113, K.100; `REF-003`, `REF-004`                  |
-| **Dependencias**       | —                                                         |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `TEST`                                                   |
+| **New hardware**       | Yes                                                     |
+| **Standard(s)**        | ITU-T K.113, K.100; `REF-003`, `REF-004`                 |
+| **Dependencies**       | —                                                        |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE incorporar una antena activa con rango de frecuencia hasta 6 GHz, con filtro SAW, respuesta plana y factor de antena conocido, para medición de radiación no ionizante.
+**Description:**  
+The system SHALL incorporate an active antenna with a frequency range up to 6 GHz, with a SAW filter, a flat response, and a known antenna factor, for non-ionizing radiation measurement.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] Rango de frecuencia de la antena activa cubre hasta 6 GHz.
-2. [ ] Incluye filtro SAW.
-3. [ ] Respuesta en frecuencia plana (variación ≤ 2 dB en todo el rango).
-4. [ ] Factor de antena documentado por el fabricante.
+1. [ ] The active antenna's frequency range covers up to 6 GHz.
+2. [ ] It includes a SAW filter.
+3. [ ] A flat frequency response (variation ≤ 2 dB across the full range).
+4. [ ] An antenna factor documented by the manufacturer.
 
-**Notas:**  
-Requiere hardware nuevo.
-
----
-
-#### 3.7.2 Medición de Radiación No Ionizante
+**Notes:**  
+Requires new hardware.
 
 ---
 
-**`ANTE-RNI-001` — Unidades de medida para radiación**
+#### 3.7.2 Non-Ionizing Radiation Measurement
 
-| Campo                  | Valor                                                     |
+---
+
+**`ANTE-RNI-001` — Measurement units for radiation**
+
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `DEMOSTRACIÓN`                                            |
-| **Hardware nuevo**     | No                                                        |
-| **Estándar(es)**       | ITU-T K.113, K.100; `REF-003`, `REF-004`                  |
-| **Dependencias**       | `ANTE-ANT-002`                                            |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `DEMONSTRATION`                                          |
+| **New hardware**       | No                                                       |
+| **Standard(s)**        | ITU-T K.113, K.100; `REF-003`, `REF-004`                 |
+| **Dependencies**       | `ANTE-ANT-002`                                           |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE adoptar las siguientes unidades de medida para radiación no ionizante: densidad de potencia (S = W/m²), intensidad de campo magnético (A/m), intensidad de campo eléctrico (V/m), dBµV/m, y dBA/m.
+**Description:**  
+The system SHALL adopt the following measurement units for non-ionizing radiation: power density (S = W/m²), magnetic field strength (A/m), electric field strength (V/m), dBµV/m, and dBA/m.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] Todas las unidades listadas están disponibles como salida del sensor.
-2. [ ] Las conversiones entre unidades son correctas.
+1. [ ] All listed units are available as a display option in the sensor output.
+2. [ ] Conversions between units are correct.
 
-**Notas:**  
+**Notes:**  
 —
 
 ---
 
-**`ANTE-RNI-002` — Medición de intensidad de campo**
+**`ANTE-RNI-002` — Field-strength measurement**
 
-| Campo                  | Valor                                                     |
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `PRUEBA`                                                  |
-| **Hardware nuevo**     | No                                                        |
-| **Estándar(es)**       | ITU-T K.113, K.100; `REF-003`, `REF-004`                  |
-| **Dependencias**       | `ANTE-ANT-002`, `ANTE-RNI-001`                            |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `TEST`                                                   |
+| **New hardware**       | No                                                       |
+| **Standard(s)**        | ITU-T K.113, K.100; `REF-003`, `REF-004`                 |
+| **Dependencies**       | `ANTE-ANT-002`, `ANTE-RNI-001`                           |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE medir nivel e intensidad de campo eléctrico, incluyendo los datos de antena caracterizada (factor de antena AF) para su cálculo.
+**Description:**  
+The system SHALL measure the level and strength of the electric field, including the characterized antenna's data (antenna factor, AF) for its computation.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] La medición de campo usa el factor de antena (AF) de la antena conectada.
-2. [ ] La fórmula aplicada es: E [V/m] = V_medido [V] × AF.
-3. [ ] Los resultados se presentan en V/m y dBµV/m.
+1. [ ] The field measurement uses the antenna factor (AF) of the connected antenna.
+2. [ ] The applied formula is: E [V/m] = V_measured [V] × AF.
+3. [ ] Results are presented in V/m and dBµV/m.
 
-**Notas:**  
-Factor de antena AF = V_medido / E.
-
----
-
-### 3.8 Potencia y Autonomía
+**Notes:**  
+Antenna factor AF = V_measured / E.
 
 ---
 
-**`POWR-AUT-001` — Módulos de alimentación autónoma**
+### 3.8 Power and Autonomy
 
-| Campo                  | Valor                                                     |
+---
+
+**`POWR-AUT-001` — Autonomous power modules**
+
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `DEMOSTRACIÓN`                                            |
-| **Hardware nuevo**     | Sí                                                        |
-| **Estándar(es)**       | —                                                         |
-| **Dependencias**       | —                                                         |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `DEMONSTRATION`                                          |
+| **New hardware**       | Yes                                                     |
+| **Standard(s)**        | —                                                        |
+| **Dependencies**       | —                                                        |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE integrar módulos de alimentación autónoma mediante soluciones sostenibles, como sistemas híbridos de energía solar y batería, con administrador de batería.
+**Description:**  
+The system SHALL integrate autonomous power modules through sustainable solutions, such as hybrid solar-and-battery systems, with a battery manager.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] El sensor opera con alimentación solar + batería sin fuente externa.
-2. [ ] Incluye administrador de batería con indicador de carga.
-3. [ ] El diseño del panel solar es discreto (no llamativo).
+1. [ ] The sensor operates on solar + battery power without an external source.
+2. [ ] It includes a battery manager with a charge indicator.
+3. [ ] The solar-panel design is discreet (not conspicuous).
 
-**Notas:**  
-Administrador de batería, carga solar pequeña no llamativa. Responsable: Bernardo.
-
----
-
-### 3.9 Health Monitoring del Sensor
+**Notes:**  
+Battery manager, small unobtrusive solar charging. Owner: Bernardo.
 
 ---
 
-**`GEST-MON-001` — Monitoreo de salud del sensor**
+### 3.9 Sensor Health Monitoring
 
-| Campo                  | Valor                                                     |
+---
+
+**`GEST-MON-001` — Sensor health monitoring**
+
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `DEMOSTRACIÓN`                                            |
-| **Hardware nuevo**     | No                                                        |
-| **Estándar(es)**       | —                                                         |
-| **Dependencias**       | —                                                         |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `DEMONSTRATION`                                          |
+| **New hardware**       | No                                                       |
+| **Standard(s)**        | —                                                        |
+| **Dependencies**       | —                                                        |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE medir y registrar variables de salud del sensor (disco, RAM, CPU, temperatura) usando las variables disponibles en el sistema operativo.
+**Description:**  
+The system SHALL measure and record sensor health variables (disk, RAM, CPU, temperature) using the variables available in the operating system.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] Se monitorean al menos: uso de disco, RAM, CPU y temperatura.
-2. [ ] Se generan alertas locales cuando las variables superan umbrales configurables.
-3. [ ] Los datos de health se almacenan localmente con timestamp.
+1. [ ] At least the following are monitored: disk usage, RAM, CPU, and temperature.
+2. [ ] Local alerts are generated when variables exceed configurable thresholds.
+3. [ ] Health data is stored locally with a timestamp.
 
-**Notas:**  
+**Notes:**  
 —
 
 ---
 
-**`GEST-MON-002` — Monitoreo de red y conectividad**
+**`GEST-MON-002` — Network and connectivity monitoring**
 
-| Campo                  | Valor                                                     |
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `PRUEBA`                                                  |
-| **Hardware nuevo**     | No                                                        |
-| **Estándar(es)**       | —                                                         |
-| **Dependencias**       | —                                                         |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `TEST`                                                   |
+| **New hardware**       | No                                                       |
+| **Standard(s)**        | —                                                        |
+| **Dependencies**       | —                                                        |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE medir y registrar la calidad de conexión IP, incluyendo RTT, estado de canal (Alive/Not Alive), ancho de banda disponible y pérdida de paquetes.
+**Description:**  
+The system SHALL measure and record IP-connection quality, including RTT, channel status (Alive/Not Alive), available bandwidth, and packet loss.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] Se mide RTT periódicamente (intervalo configurable).
-2. [ ] Se detecta estado Alive/Not Alive de cada interfaz de red.
-3. [ ] Se genera registro local cuando RTT o pérdida de paquetes exceden umbrales.
+1. [ ] RTT is measured periodically (configurable interval).
+2. [ ] The Alive/Not Alive status of each network interface is detected.
+3. [ ] A local record is generated when RTT or packet loss exceeds thresholds.
 
-**Notas:**  
+**Notes:**  
 —
 
 ---
 
-**`GEST-PRG-001` — Escaneo programado de espectro**
+**`GEST-PRG-001` — Scheduled spectrum scan**
 
-| Campo                  | Valor                                                     |
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `FUNCIONAL`                                               |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `DEMOSTRACIÓN`                                            |
-| **Hardware nuevo**     | No                                                        |
-| **Estándar(es)**       | ITU-R SM.1537; `REF-001`                                  |
-| **Dependencias**       | `ANAL-PAR-001`                                            |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `FUNCTIONAL`                                             |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `DEMONSTRATION`                                          |
+| **New hardware**       | No                                                       |
+| **Standard(s)**        | ITU-R SM.1537; `REF-001`                                 |
+| **Dependencies**       | `ANAL-PAR-001`                                           |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE permitir programar escaneos parametrizados de espectro (frecuencia, RBW, VBW, duración) que se ejecuten localmente en el sensor y almacenen resultados para posterior recuperación.
+**Description:**  
+The system SHALL allow parameterized spectrum scans (frequency, RBW, VBW, duration) to be scheduled, run locally on the sensor, and store their results for later retrieval.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] Se pueden programar escaneos con parámetros definidos (frecuencia, RBW, VBW, duración, repetición).
-2. [ ] Los resultados de escaneos programados se almacenan localmente.
-3. [ ] Los escaneos se ejecutan en la hora programada con tolerancia ≤ 1 minuto.
+1. [ ] Scans can be scheduled with defined parameters (frequency, RBW, VBW, duration, repetition).
+2. [ ] The results of scheduled scans are stored locally.
+3. [ ] Scans run at the scheduled time with a tolerance ≤ 1 minute.
 
-**Notas:**  
-Scheduler local en el sensor (cron o equivalente).
+**Notes:**  
+Local scheduler on the sensor (cron or equivalent).
 
 ---
 
-### 3.10 Exactitud y Calibración
+### 3.10 Accuracy and Calibration
 
-#### 3.10.1 Sincronización y Calibración
+#### 3.10.1 Synchronization and Calibration
 
 ---
 
-**`CONF-SIN-001` — Sincronización NTP**
+**`CONF-SIN-001` — NTP synchronization**
 
-| Campo                  | Valor                                                     |
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `NO_FUNCIONAL`                                            |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `PRUEBA`                                                  |
-| **Hardware nuevo**     | No                                                        |
-| **Estándar(es)**       | —                                                         |
-| **Dependencias**       | `CONN-RED-004`                                            |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `NON_FUNCTIONAL`                                         |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `TEST`                                                   |
+| **New hardware**       | No                                                       |
+| **Standard(s)**        | —                                                        |
+| **Dependencies**       | `CONN-RED-004`                                           |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE sincronizarse a reloj de red NTP para etiquetado temporal de muestreos.
+**Description:**  
+The system SHALL synchronize to an NTP network clock for the time-stamping of samples.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] El sensor sincroniza con servidor NTP al establecer conexión de red.
-2. [ ] La desviación temporal es ≤ 100 ms respecto al servidor NTP.
-3. [ ] El estado de sincronización es consultable localmente.
+1. [ ] The sensor synchronizes with an NTP server when a network connection is established.
+2. [ ] The time offset is ≤ 100 ms relative to the NTP server.
+3. [ ] The synchronization status is queryable locally.
 
-**Notas:**  
+**Notes:**  
 —
 
 ---
 
-**`CONF-CAL-001` — Procedimientos de calibración**
+**`CONF-CAL-001` — Calibration procedures**
 
-| Campo                  | Valor                                                     |
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `NO_FUNCIONAL`                                            |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `ANÁLISIS`                                                |
-| **Hardware nuevo**     | No                                                        |
-| **Estándar(es)**       | —                                                         |
-| **Dependencias**       | —                                                         |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `NON_FUNCTIONAL`                                         |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `ANALYSIS`                                               |
+| **New hardware**       | No                                                       |
+| **Standard(s)**        | —                                                        |
+| **Dependencies**       | —                                                        |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE incluir procesos de calibración de frecuencias, ganancia de recepción, IQ balance y corrección de offset DC.
+**Description:**  
+The system SHALL include calibration procedures for frequency, receive gain, IQ balance, and DC-offset correction.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] Procedimiento documentado de calibración de frecuencia.
-2. [ ] Procedimiento documentado de calibración de ganancia.
-3. [ ] Procedimiento documentado de corrección de IQ balance y offset DC.
-4. [ ] Cada calibración genera un certificado o registro con fecha y resultado.
+1. [ ] A documented frequency-calibration procedure.
+2. [ ] A documented gain-calibration procedure.
+3. [ ] A documented procedure for IQ-balance and DC-offset correction.
+4. [ ] Each calibration produces a certificate or record with a date and result.
 
-**Notas:**  
+**Notes:**  
 —
 
 ---
 
-#### 3.10.2 Caracterización del Sistema
+#### 3.10.2 System Characterization
 
 ---
 
 **`CONF-CAR-001` — DANL (Displayed Average Noise Level)**
 
-| Campo                  | Valor                                                     |
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `NO_FUNCIONAL`                                            |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `PRUEBA`                                                  |
-| **Hardware nuevo**     | No                                                        |
-| **Estándar(es)**       | ITU-R SM.1138; `REF-002`                                  |
-| **Dependencias**       | —                                                         |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `NON_FUNCTIONAL`                                         |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `TEST`                                                   |
+| **New hardware**       | No                                                       |
+| **Standard(s)**        | ITU-R SM.1138; `REF-002`                                 |
+| **Dependencies**       | —                                                        |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE tener un DANL mínimo de –100 dBm en el rango de operación.
+**Description:**  
+The system SHALL have a minimum DANL of –100 dBm across the operating range.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] El DANL medido es ≤ –100 dBm en al menos el 90% del rango de frecuencia.
-2. [ ] La medición se realiza con carga de 50Ω y se documenta por banda.
+1. [ ] The measured DANL is ≤ –100 dBm over at least 90% of the frequency range.
+2. [ ] The measurement is performed with a 50 Ω load and documented per band.
 
-**Notas:**  
-Limitaciones conocidas del HackRF: no tiene atenuador calibrado ni ruido de referencia conocido.
+**Notes:**  
+Known HackRF limitations: it has neither a calibrated attenuator nor a known reference noise source.
 
 ---
 
-**`CONF-CAR-002` — Rango dinámico**
+**`CONF-CAR-002` — Dynamic range**
 
-| Campo                  | Valor                                                     |
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `NO_FUNCIONAL`                                            |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `PRUEBA`                                                  |
-| **Hardware nuevo**     | No                                                        |
-| **Estándar(es)**       | ITU-R SM.1138; `REF-002`                                  |
-| **Dependencias**       | `CONF-CAR-001`                                            |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `NON_FUNCTIONAL`                                         |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `TEST`                                                   |
+| **New hardware**       | No                                                       |
+| **Standard(s)**        | ITU-R SM.1138; `REF-002`                                 |
+| **Dependencies**       | `CONF-CAR-001`                                           |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE tener un rango dinámico mínimo de ≥ 80 dB.
+**Description:**  
+The system SHALL have a minimum dynamic range of ≥ 80 dB.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] Rango dinámico medido ≥ 80 dB en prueba de dos tonos.
-2. [ ] La medición se documenta con setup de prueba y resultados.
+1. [ ] Measured dynamic range ≥ 80 dB in a two-tone test.
+2. [ ] The measurement is documented with the test setup and results.
 
-**Notas:**  
+**Notes:**  
 —
 
 ---
 
-**`CONF-CAR-003` — Exactitud de frecuencia**
+**`CONF-CAR-003` — Frequency accuracy**
 
-| Campo                  | Valor                                                     |
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `NO_FUNCIONAL`                                            |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `PRUEBA`                                                  |
-| **Hardware nuevo**     | No                                                        |
-| **Estándar(es)**       | —                                                         |
-| **Dependencias**       | —                                                         |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `NON_FUNCTIONAL`                                         |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `TEST`                                                   |
+| **New hardware**       | No                                                       |
+| **Standard(s)**        | —                                                        |
+| **Dependencies**       | —                                                        |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE tener exactitud de frecuencia máxima de ± 2 ppm.
+**Description:**  
+The system SHALL have a maximum frequency accuracy of ± 2 ppm.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] Error de frecuencia medido ≤ ± 2 ppm contra referencia calibrada.
-2. [ ] La medición se realiza a temperatura ambiente (20–25 °C).
+1. [ ] Measured frequency error ≤ ± 2 ppm against a calibrated reference.
+2. [ ] The measurement is performed at room temperature (20–25 °C).
 
-**Notas:**  
+**Notes:**  
 —
 
 ---
 
-**`CONF-CAR-004` — Delta aging (envejecimiento del oscilador)**
+**`CONF-CAR-004` — Delta aging (oscillator aging)**
 
-| Campo                  | Valor                                                     |
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `NO_FUNCIONAL`                                            |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `ANÁLISIS`                                                |
-| **Hardware nuevo**     | Sí (cambio de oscilador posible)                          |
-| **Estándar(es)**       | —                                                         |
-| **Dependencias**       | `CONF-CAR-003`                                            |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `NON_FUNCTIONAL`                                         |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `ANALYSIS`                                               |
+| **New hardware**       | Yes (oscillator change possible)                        |
+| **Standard(s)**        | —                                                        |
+| **Dependencies**       | `CONF-CAR-003`                                           |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE especificar y cumplir un drift de frecuencia por envejecimiento ≤ 1 ppm por año.
+**Description:**  
+The system SHALL specify and meet a frequency drift due to aging of ≤ 1 ppm per year.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] El oscilador seleccionado tiene especificación de aging ≤ 1 ppm/año.
-2. [ ] Se documenta el tipo de oscilador y su especificación de aging.
+1. [ ] The selected oscillator has an aging specification of ≤ 1 ppm/year.
+2. [ ] The oscillator type and its aging specification are documented.
 
-**Notas:**  
-HackRF arranca con 20–50 ppm de error, no compensado. Posible cambio de oscilador.
+**Notes:**  
+The HackRF starts with 20–50 ppm of error, uncompensated. An oscillator change is possible. Depends on the type of oscillator used.
 
 ---
 
-**`CONF-CAR-005` — Precisión de amplitud**
+**`CONF-CAR-005` — Amplitude accuracy**
 
-| Campo                  | Valor                                                     |
+| Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
-| **Tipo**               | `NO_FUNCIONAL`                                            |
-| **Prioridad**          | `MUST`                                                    |
-| **Estado**             | `APROBADO`                                                |
-| **Verificación**       | `PRUEBA`                                                  |
-| **Hardware nuevo**     | No                                                        |
-| **Estándar(es)**       | —                                                         |
-| **Dependencias**       | —                                                         |
-| **Fase**               | 2025–2026                                                 |
+| **Type**               | `NON_FUNCTIONAL`                                         |
+| **Priority**           | `MUST`                                                    |
+| **Status**             | `APPROVED`                                                |
+| **Verification**       | `TEST`                                                   |
+| **New hardware**       | No                                                       |
+| **Standard(s)**        | —                                                        |
+| **Dependencies**       | —                                                        |
+| **Phase**              | 2025–2026                                                |
 
-**Descripción:**  
-El sistema DEBE tener una precisión de amplitud típica de ± 1 dB, considerando estabilidad, linealidad y respuesta plana.
+**Description:**  
+The system SHALL have a typical amplitude accuracy of ± 1 dB, taking into account stability, linearity, and flat response.
 
-**Criterios de Aceptación:**
+**Acceptance Criteria:**
 
-1. [ ] Error de amplitud ≤ ± 1 dB en al menos el 90% del rango de frecuencia.
-2. [ ] La linealidad de amplitud se verifica en pasos de 10 dB.
+1. [ ] Amplitude error ≤ ± 1 dB over at least 90% of the frequency range.
+2. [ ] Amplitude linearity is verified in 10 dB steps.
 
-**Notas:**  
-Limitaciones del HackRF: no AGC ni atenuadores calibrados, no prefiltros, ruido imagen presente.
+**Notes:**  
+HackRF limitations: no AGC or calibrated attenuators, no pre-filters, image noise present.
 
 ---
 
-## 4. Requisitos de Interfaces Externas
+## 4. External Interface Requirements
 
-### 4.1 Interfaces de Hardware
+### 4.1 Hardware Interfaces
 
-- SDR: HackRF One (USB, interfaz SPI interna)
-- Plataforma embebida: Raspberry Pi
-- GPS: módulo GPS con precisión ≤ 3 m (UART/USB)
-- Antenas: conectores SMA para antenas específicas por banda y antena activa
-- Módulo 4G/5G: conexión USB con SIM slot
-- WiFi: integrado en RPi o módulo USB externo
-- Ethernet: RJ45 accesible externamente
-- GPIO: multiplexación para switch de antenas y control de periféricos
-- Alimentación: panel solar + batería + administrador de carga
-- Almacenamiento: SSD/microSD adicional para CS8
+- SDR: HackRF One (USB, internal SPI interface)
+- Embedded platform: Raspberry Pi
+- GPS: GPS module with ≤ 3 m accuracy (UART/USB)
+- Antennas: SMA connectors for band-specific antennas and the active antenna
+- 4G/5G module: USB connection with SIM slot
+- WiFi: integrated into the RPi or an external USB module
+- Ethernet: externally accessible RJ45
+- GPIO: multiplexing for antenna switching and peripheral control
+- Power: solar panel + battery + charge manager
+- Storage: additional SSD/microSD for CS8
 
-### 4.2 Interfaces de Software
+### 4.2 Software Interfaces
 
-- Driver SDR: libhackrf / SoapySDR
-- Pipeline DSP: procesamiento FFT, PSD, filtrado RBW/VBW
-- Scheduler: cron o equivalente para escaneos programados
-- Network manager: failover automático entre interfaces de red
-- NTP client: sincronización temporal
+- SDR driver: libhackrf / SoapySDR
+- DSP pipeline: FFT, PSD, and RBW/VBW filtering
+- Scheduler: cron or equivalent for scheduled scans
+- Network manager: automatic failover between network interfaces
+- NTP client: time synchronization
 
-### 4.3 Interfaces de Comunicación
+### 4.3 Communication Interfaces
 
-- HackRF ↔ RPi: USB 2.0 (480 Mbps, IQ raw a 20 MS/s × 8 bit = 40 MB/s)
+- HackRF ↔ RPi: USB 2.0 (480 Mbps; IQ raw at 20 MS/s × 8 bit = 40 MB/s)
 - GPS ↔ RPi: UART/USB (NMEA sentences)
 - 4G/5G ↔ RPi: USB (AT commands + data)
-- GPIO: control de mux de antenas, LEDs de estado, sensores de batería
+- GPIO: control of the antenna mux, status LEDs, and battery sensors
 
 ---
 
-## 5. Requisitos No Funcionales
+## 5. Non-Functional Requirements
 
-### 5.1 Rendimiento
+### 5.1 Performance
 
-- Pipeline DSP con latencia ≤ 1 segundo para 20 MHz de ancho de banda.
-- Resolución de frecuencia mínima: 10 Hz.
-- Escaneos programados ejecutados con tolerancia ≤ 1 minuto.
+- DSP pipeline with latency ≤ 1 second for 20 MHz of bandwidth.
+- Minimum frequency resolution: 10 Hz.
+- Scheduled scans run with a tolerance ≤ 1 minute.
 
-### 5.2 Fiabilidad
+### 5.2 Reliability
 
-- Auto-routing de red para alta disponibilidad de conectividad (`CONN-RED-004`).
-- Almacenamiento local ante pérdida de conectividad (`FORN-ALM-003`).
-- NTP sync con ≤ 100 ms de desviación (`CONF-SIN-001`).
+- Network auto-routing for high connectivity availability (`CONN-RED-004`).
+- Local storage in case of connectivity loss (`FORN-ALM-003`).
+- NTP sync with ≤ 100 ms offset (`CONF-SIN-001`).
 
-### 5.3 Mantenibilidad
+### 5.3 Maintainability
 
-- Actualización de software OTA (`CONN-SOP-001`) con rollback.
-- Acceso remoto SSH para diagnóstico.
-- Procedimientos de calibración documentados (`CONF-CAL-001`).
+- OTA software updates (`CONN-SOP-001`) with rollback.
+- Remote SSH access for diagnostics.
+- Documented calibration procedures (`CONF-CAL-001`).
 
-### 5.4 Exactitud
+### 5.4 Accuracy
 
 - DANL ≤ –100 dBm (`CONF-CAR-001`).
-- Rango dinámico ≥ 80 dB (`CONF-CAR-002`).
-- Exactitud de frecuencia ± 2 ppm (`CONF-CAR-003`).
-- Precisión de amplitud ± 1 dB (`CONF-CAR-005`).
+- Dynamic range ≥ 80 dB (`CONF-CAR-002`).
+- Frequency accuracy ± 2 ppm (`CONF-CAR-003`).
+- Amplitude accuracy ± 1 dB (`CONF-CAR-005`).
 
 ---
 
-## 6. Trazabilidad
+## 6. Traceability
 
-| ID Requisito     | Subsistema Edge          | Estándar Ref              | Hardware Nuevo |
+| Requirement ID   | Edge Subsystem           | Standard Ref              | New Hardware   |
 |------------------|--------------------------|---------------------------|----------------|
-| `ANAL-EMC-001`   | Arquitectura RF          | —                         | Sí             |
-| `ANAL-RNG-001`   | Rango Espectral          | ITU-R SM.1537             | No             |
-| `ANAL-RNG-002`   | Ancho de Banda           | —                         | No             |
-| `ANAL-PAR-001`   | Parametrización DSP      | —                         | No             |
-| `ANAL-PAR-002`   | Parametrización DSP      | —                         | No             |
-| `ANAL-PAR-003`   | Parametrización DSP      | —                         | No             |
-| `ANAL-PAR-004`   | Parametrización DSP      | —                         | Sí             |
+| `ANAL-EMC-001`   | RF architecture          | —                         | Yes            |
+| `ANAL-RNG-001`   | Spectral range           | ITU-R SM.1537             | No             |
+| `ANAL-RNG-002`   | Bandwidth                | —                         | No             |
+| `ANAL-PAR-001`   | DSP parameterization     | —                         | No             |
+| `ANAL-PAR-002`   | DSP parameterization     | —                         | No             |
+| `ANAL-PAR-003`   | DSP parameterization     | —                         | No             |
+| `ANAL-PAR-004`   | DSP parameterization     | —                         | Yes            |
 | `ANAL-PAR-005`   | GPS                      | —                         | No             |
-| `ANAL-PAR-006`   | Unidades                 | —                         | No             |
-| `ANAL-PAR-007`   | Detección                | —                         | No             |
-| `ANAL-MED-001`   | DSP / Trazas             | ITU-R SM.1537             | No             |
+| `ANAL-PAR-006`   | Units                    | —                         | No             |
+| `ANAL-PAR-007`   | Detection                | —                         | No             |
+| `ANAL-MED-001`   | DSP / traces             | ITU-R SM.1537             | No             |
 | `ANAL-MED-003`   | DSP / OBW                | ITU-R SM.1537             | No             |
-| `ANAL-MED-004`   | DSP / Potencia canal     | —                         | No             |
+| `ANAL-MED-004`   | DSP / channel power      | —                         | No             |
 | `ANAL-MED-005`   | DSP / RDS                | —                         | No             |
-| `ANAL-MED-006`   | DSP / Demodulación       | —                         | No             |
-| `ANAL-MED-007`   | DSP / Modulación         | —                         | No             |
-| `NORM-VER-001`   | Detección local          | —                         | No             |
-| `NORM-VER-002`   | Detección local          | —                         | No             |
-| `NORM-SRV-002`   | Audio forense            | —                         | No             |
-| `FORN-ALM-001`   | Almacenamiento local     | ITU-R SM.1537             | No             |
-| `FORN-ALM-003`   | Almacenamiento local     | —                         | Sí             |
-| `CONN-RED-001`   | Conectividad             | —                         | Sí             |
-| `CONN-RED-002`   | Conectividad             | —                         | No             |
-| `CONN-RED-003`   | Conectividad             | —                         | Sí             |
-| `CONN-RED-004`   | Conectividad             | —                         | No             |
-| `CONN-SOP-001`   | Mantenimiento            | —                         | No             |
+| `ANAL-MED-006`   | DSP / demodulation       | —                         | No             |
+| `ANAL-MED-007`   | DSP / modulation         | —                         | No             |
+| `NORM-VER-001`   | Local detection          | —                         | No             |
+| `NORM-VER-002`   | Local detection          | —                         | No             |
+| `NORM-SRV-002`   | Forensic audio           | —                         | No             |
+| `FORN-ALM-001`   | Local storage            | ITU-R SM.1537             | No             |
+| `FORN-ALM-003`   | Local storage            | —                         | Yes            |
+| `CONN-RED-001`   | Connectivity             | —                         | Yes            |
+| `CONN-RED-002`   | Connectivity             | —                         | No             |
+| `CONN-RED-003`   | Connectivity             | —                         | Yes            |
+| `CONN-RED-004`   | Connectivity             | —                         | No             |
+| `CONN-SOP-001`   | Maintenance              | —                         | No             |
 | `CONN-GPS-001`   | GPS                      | —                         | No             |
-| `CONN-GPS-002`   | GPS                      | —                         | Sí             |
-| `ANTE-ANT-001`   | Antenas                  | —                         | Sí             |
-| `ANTE-ANT-002`   | Antenas                  | ITU-T K.113, K.100        | Sí             |
-| `ANTE-RNI-001`   | Radiación NI             | ITU-T K.113, K.100        | No             |
-| `ANTE-RNI-002`   | Radiación NI             | ITU-T K.113, K.100        | No             |
-| `POWR-AUT-001`   | Potencia                 | —                         | Sí             |
+| `CONN-GPS-002`   | GPS                      | —                         | Yes            |
+| `ANTE-ANT-001`   | Antennas                 | —                         | Yes            |
+| `ANTE-ANT-002`   | Antennas                 | ITU-T K.113, K.100        | Yes            |
+| `ANTE-RNI-001`   | Non-ionizing radiation   | ITU-T K.113, K.100        | No             |
+| `ANTE-RNI-002`   | Non-ionizing radiation   | ITU-T K.113, K.100        | No             |
+| `POWR-AUT-001`   | Power                    | —                         | Yes            |
 | `GEST-MON-001`   | Health monitoring        | —                         | No             |
 | `GEST-MON-002`   | Health monitoring        | —                         | No             |
-| `GEST-PRG-001`   | Scheduler local          | ITU-R SM.1537             | No             |
-| `CONF-SIN-001`   | Sincronización           | —                         | No             |
-| `CONF-CAL-001`   | Calibración              | —                         | No             |
-| `CONF-CAR-001`   | Caracterización          | ITU-R SM.1138             | No             |
-| `CONF-CAR-002`   | Caracterización          | ITU-R SM.1138             | No             |
-| `CONF-CAR-003`   | Caracterización          | —                         | No             |
-| `CONF-CAR-004`   | Caracterización          | —                         | Sí             |
-| `CONF-CAR-005`   | Caracterización          | —                         | No             |
+| `GEST-PRG-001`   | Local scheduler          | ITU-R SM.1537             | No             |
+| `CONF-SIN-001`   | Synchronization          | —                         | No             |
+| `CONF-CAL-001`   | Calibration              | —                         | No             |
+| `CONF-CAR-001`   | Characterization         | ITU-R SM.1138             | No             |
+| `CONF-CAR-002`   | Characterization         | ITU-R SM.1138             | No             |
+| `CONF-CAR-003`   | Characterization         | —                         | No             |
+| `CONF-CAR-004`   | Characterization         | —                         | Yes            |
+| `CONF-CAR-005`   | Characterization         | —                         | No             |
 
----
-
-## 7. Validación Estructural (para IA)
-
-> Esta sección define las reglas que un validador automatizado DEBE verificar contra este documento.
-
-### 7.1 Reglas de Formato
-
-| Regla ID | Regla                                                                 | Severidad |
-|----------|-----------------------------------------------------------------------|-----------|
-| `V-001`  | Cada requisito DEBE tener un `id` único con formato `[A-Z]{3,5}-[A-Z]{2,4}-\d{3}` | `ERROR`   |
-| `V-002`  | Cada requisito DEBE tener todos los campos obligatorios: Tipo, Prioridad, Estado, Verificación, Descripción, Criterios de Aceptación | `ERROR`   |
-| `V-003`  | El campo Descripción DEBE iniciar con "El sistema DEBE" o "El sistema DEBERÍA" | `WARNING` |
-| `V-004`  | Los Criterios de Aceptación DEBEN tener al menos 1 elemento verificable | `ERROR`   |
-| `V-005`  | Los valores de Tipo DEBEN ser uno de: `FUNCIONAL`, `NO_FUNCIONAL`, `INTERFAZ`, `RESTRICCIÓN` | `ERROR`   |
-| `V-006`  | Los valores de Prioridad DEBEN seguir MoSCoW: `MUST`, `SHOULD`, `COULD`, `WONT` | `ERROR`   |
-| `V-007`  | Los valores de Verificación DEBEN ser: `INSPECCIÓN`, `DEMOSTRACIÓN`, `PRUEBA`, `ANÁLISIS` | `ERROR`   |
-| `V-008`  | Los valores de Estado DEBEN ser: `PROPUESTO`, `APROBADO`, `IMPLEMENTADO`, `VERIFICADO`, `RECHAZADO` | `ERROR`   |
-| `V-009`  | Las Dependencias referenciadas DEBEN existir como IDs en el documento | `ERROR`   |
-| `V-010`  | No DEBEN existir IDs duplicados en todo el documento                   | `ERROR`   |
-| `V-011`  | Cada sección 3.x DEBE contener al menos un requisito                   | `WARNING` |
-
-### 7.2 Reglas Semánticas
-
-| Regla ID | Regla                                                                 | Severidad |
-|----------|-----------------------------------------------------------------------|-----------|
-| `S-001`  | Requisitos con Prioridad `MUST` DEBEN tener Criterios de Aceptación con valores cuantitativos cuando aplique | `WARNING` |
-| `S-002`  | Requisitos con Hardware nuevo `Sí` DEBEN especificar el componente en Notas | `WARNING` |
-| `S-003`  | Requisitos con Estándar(es) no vacío DEBEN citar documentos listados en §1.4 | `WARNING` |
-| `S-004`  | No DEBE haber dependencias circulares entre requisitos                 | `ERROR`   |
-
-### 7.3 Estadísticas del Documento
-
-| Métrica                          | Valor |
-|----------------------------------|-------|
-| Total de requisitos              | 42    |
-| Requisitos FUNCIONAL             | 33    |
-| Requisitos NO_FUNCIONAL          | 9     |
-| Requisitos RESTRICCIÓN           | 0     |
-| Prioridad MUST                   | 41    |
-| Prioridad SHOULD                 | 1     |
-| Requieren hardware nuevo         | 10    |
-| Con referencia a estándares      | 10    |
-
----
-
-## Anexo A — Requisitos Excluidos (pertenecen al sistema completo)
-
-Los siguientes requisitos del SRS completo (`REF-FULL`) fueron excluidos por depender del backend cloud, frontend web, BD centralizada de la ANE, API REST, o generación de reportes:
-
-| ID Excluido      | Razón de exclusión                                            |
-|------------------|---------------------------------------------------------------|
-| `ANAL-SEG-001`   | TLS/SSL entre sensor y backend (protocolo servidor)           |
-| `ANAL-MED-002`   | Marcadores espectrales (interacción UI frontend)              |
-| `NORM-DET-001`   | Detección emisiones no autorizadas (requiere BD ANE)          |
-| `NORM-DET-002`   | Incumplimiento ancho de banda (requiere BD ANE)               |
-| `NORM-DET-003`   | Incumplimiento potencia (requiere BD ANE)                     |
-| `NORM-SRV-001`   | Cuantificación modulación cumplimiento (compara vs BD ANE)    |
-| `NORM-VER-001`   | _(incluido — detección local)_                                |
-| `NORM-VER-002`   | _(incluido — detección local)_                                |
-| `GEST-REP-001`   | Generación automática de informes (backend)                   |
-| `FORN-ALM-002`   | Almacenamiento en servidores ANE (infraestructura servidor)   |
-| `CONN-SOP-001`   | _(incluido — OTA y SSH son edge)_                             |
-| `INTG-EXP-001`   | Exportación CSV/JSON/XML (integración backend)                |
-| `INTG-API-001`   | API estándar REST (backend)                                   |
-| `ESTD-ITU-001`   | Cumplimiento ITU-R (meta-requisito documental)                |
-| `ESTD-ITU-002`   | Cumplimiento CEPT/ERC (meta-requisito documental)             |
-| `ESTD-RNI-001`   | Cumplimiento K.113/K.100 (meta-requisito documental)          |
-
----
-
-> **Nota de uso:** Este documento es un subconjunto del SRS completo (SRS-ANE-001) filtrado para incluir únicamente los requisitos que se ejecutan o residen en el nodo sensor edge (HackRF One + Raspberry Pi). Las dependencias internas se mantienen consistentes — ningún requisito incluido depende de uno excluido. Para el sistema completo, consultar `REF-FULL`.
