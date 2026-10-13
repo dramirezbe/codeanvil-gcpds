@@ -14,3 +14,13 @@ codeanvil = "codeanvil.CLI.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/codeanvil"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"templates/skills" = "codeanvil/templates/skills"
+"templates/GT/G0_SRS.md" = "codeanvil/templates/GT/G0_SRS.md"
+"templates/GT/G0_HCS.md" = "codeanvil/templates/GT/G0_HCS.md"
+
+[tool.hatch.build.targets.sdist.force-include]
+"templates/skills" = "codeanvil/templates/skills"
+"templates/GT/G0_SRS.md" = "codeanvil/templates/GT/G0_SRS.md"
+"templates/GT/G0_HCS.md" = "codeanvil/templates/GT/G0_HCS.md"
