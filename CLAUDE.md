@@ -13,9 +13,9 @@ The repo has two sides with very different roles:
 The V-SIL pipeline encoded as executable artifacts:
 
 - **`templates/GT/`** — Ground Truth document templates. GT is the methodology's input: 3 pre-processed `.md` files (not raw PDFs), human-authored, that define the contract a project must satisfy:
-  1. **Requirements** (`placeholder_requirements.md`) — functional and non-functional requirements
-  2. **HW Restrictions** (`placeholder_hw_restrictions.md`) — COTS hardware constraints (embedded specs, server deploy, DAQ/SDR datasheets)
-  3. **Normativity** (`placeholder_normativity.md`) — applicable standards (ITU, ICNIRP, IEEE, etc.)
+  1. **Requirements** (`G0_SRS.md`) — System Requirements Specification (IEEE 29148)
+  2. **HW Restrictions** (`G0_HCS.md`) — Hardware Constraints Specification (§2.4 Design Constraints)
+  3. **Normativity** — applicable standards (ITU, ICNIRP, IEEE, etc.) — template not yet implemented
 - **`templates/skills/`** — Skills executed at each gate:
   - `G0_valid_req_and_GT/` — **Deterministic structural validation** of the GT files (SRS + HCS). No AI — pure script (`scripts/g0_validate.py`). `SKILL.md` is the agent contract, `references/RULES.md` the full rule tables. Hard pass/fail.
   - `G1_start_design/` — Agent-driven: initiate design once G0 passes.
@@ -34,7 +34,7 @@ CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks stat
 - **`db/sessions.py`** — session CRUD: `create_session`, `get_session`, `list_sessions`, `update_gate`, `record_gate_result`
 - **`db/utils.py`** — `connect_db()` (WAL mode, row factory, foreign keys) + `health_db()`
 - **`init/check.py`** — `preflight()` (workdir + DB checks) + `check_project_path()`
-- **`init/create.py`** — `scaffold_project()` (copies skills to `.agents/skills/`, embeds GT reference templates inside skills, rewrites repo-root paths, creates agent symlinks, writes user `GT/` dir) + `register_project()` in DB (idempotent)
+- **`init/create.py`** — `scaffold_project()` (copies skills to `.agents/skills/`, embeds GT reference templates inside skills, rewrites repo-root paths, creates agent symlinks, writes user `GT/` dir) + `register_project()` in DB (idempotent). Templates located via `_find_templates_dir()` (editable install: source tree; wheel install: `importlib.resources`)
 
 ## Key concepts
 
@@ -43,7 +43,7 @@ CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks stat
   - **T1_FM-monitoring** — SDR-based FM broadcast compliance monitoring system. LaTeX specification (no executable code). RAG-informed from regulatory docs (FCC Part 73, ANE Res. 105, ITU-R BS.412/450/SM.2152, ISO/IEC 17025). Covers DSP pipeline, compliance measurands, uncertainty budgets, and decision frameworks.
   - **T2_IoT-Indoor** — Indoor IoT radio environment mapping at 2.4 GHz ISM (Proyecto Hermes / GCPDS). Contains the Hermes proposal, radio environment mapping literature, and a variable adaptation design doc.
 - **Gate (Gn)**: verification checkpoint. Sequential — G0 must pass before G1 runs. G0 is deterministic (script-only). G1+ use AI coding agents (any runtime).
-- **Skill**: `SKILL.md` + optional scripts that define what happens at a gate. Agent-agnostic — any coding agent that reads markdown can execute them. Live in `templates/skills/`.
+- **Skill**: `SKILL.md` + optional scripts that define what happens at a gate. Agent-agnostic — any coding agent that reads markdown can execute them. Live in `templates/skills/` (repo) and `.agents/skills/` (scaffolded projects).
 - **Session**: persistent record of a project's progress through gates, stored in SQLite.
 
 ## Active plans
@@ -53,10 +53,19 @@ CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks stat
 | G0 validation script | `plans/g0_skill.md`        | DONE      | Deterministic Python script to structurally validate SRS/HCS against IEEE 29148 templates |
 | Scaffold CLI         | `plans/scaffold_cli.md`    | DONE      | pyproject.toml, skill dir convention (.agents/skills/ + symlinks), path rewriting, GT inside skills |
 
+## Installation
+
+Two install paths:
+
+- **End users**: `curl -fsSL https://raw.githubusercontent.com/dramirezbe/codeanvil-gcpds/main/install.sh | bash` — installs `uv` if needed, then `uv tool install` from GitHub. Shell detection (bash/zsh/fish) + PATH injection with sentinel comments.
+- **Developers**: `uv pip install -e .` from a local clone. Templates resolved from the source tree via `_find_templates_dir()`.
+
+Templates are bundled into the wheel via hatch `force-include` (`pyproject.toml`), so non-editable installs work.
+
 ## Development rules
 
 - Do not conflate the two sides: `src/` changes are tooling changes, `templates/` changes are methodology changes.
 - Skills must be self-contained — an agent reading only `SKILL.md` and the GT should execute the gate.
-- GT templates are placeholders; real content is filled per-project at scaffold time.
+- GT templates are locked reference artifacts inside skills, not user-editable project files.
 - The DB schema must support resuming a session at any gate.
 - Use `get_logger(__name__)` for all logging.

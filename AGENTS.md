@@ -7,6 +7,7 @@ CodeAnvil implements the V-SIL pipeline as a chain of gates — G0 is determinis
 **Scope**: software development, testing, and validation on COTS hardware (not necessarily OOTB). Does not design hardware — assumes commercial off-the-shelf devices, validates software against GT constraints.
 
 ```
+curl | bash ───────► install.sh (uv + codeanvil from GitHub, shell PATH injection)
 codeanvil init ────► ~/.codeanvil/ (config + SQLite DB only)
 codeanvil create ──► scaffold project anywhere
                        ├─ .agents/skills/  (canonical skill store)
@@ -125,6 +126,12 @@ myproj/
 ```
 
 Agent runtimes discover skills via their own symlinked directory. All point to the same `.agents/skills/`.
+
+## Packaging and distribution
+
+- **`pyproject.toml`** — PEP 621, hatch backend. Console script: `codeanvil = codeanvil.CLI.cli:main`. Templates bundled in wheel via `force-include`.
+- **`install.sh`** — curl one-liner installer. Checks Python 3.10+, installs `uv` if missing, runs `uv tool install` from GitHub. Detects shell (bash/zsh/fish via `$SHELL`), injects `~/.local/bin` PATH with sentinel comments (`# >>> codeanvil >>>` / `# <<< codeanvil <<<`). Supports `bash install.sh uninstall`.
+- **Template resolution** — `_find_templates_dir()` in `init/create.py`: editable installs use the source tree (`templates/`), wheel installs use `importlib.resources` (`codeanvil/templates/`).
 
 ## Principles
 

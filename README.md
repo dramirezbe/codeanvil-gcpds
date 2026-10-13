@@ -138,15 +138,19 @@ codeanvil-gcpds/
 │           └── SKILL.md
 │
 ├── plans/                   # Implementation plans
-│   └── g0_skill.md          # G0 deterministic validation script plan
+│   ├── g0_skill.md          # G0 deterministic validation script plan
+│   └── scaffold_cli.md      # Scaffold CLI plan
 │
+├── install.sh               # curl one-liner installer (uv tool install from GitHub)
+├── pyproject.toml            # PEP 621 packaging (hatch, templates bundled in wheel)
 ├── CLAUDE.md                # Development context for AI coding agents
 └── AGENTS.md                # Agent architecture documentation
 ```
 
 ## Tech stack
 
-- **Python packaging** — `uv`
-- **UI** — PySide6
+- **Python packaging** — `uv` + hatch (templates bundled via `force-include`)
+- **Installer** — `install.sh` (curl one-liner, installs `uv` if needed, shell detection for PATH injection)
+- **UI** — PySide6 (planned)
 - **Database** — SQLite (local, `~/.codeanvil/db/codeanvil.db`)
 - **Agent runtime** — agent-agnostic (Claude, Codex, OpenCode, Pi, etc.)
