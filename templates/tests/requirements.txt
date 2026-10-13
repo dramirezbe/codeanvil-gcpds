@@ -1,0 +1,14 @@
+# Test-only dependencies for the CodeAnvil template skill scripts.
+#
+# SCOPE: these are for running the test suite in templates/tests/ only.
+# The G0 validator (templates/skills/G0_valid_req_and_GT/scripts/g0_validate.py)
+# is deliberately stdlib-only and needs NO virtualenv, NO install, and NO
+# network access. Run it directly with bare `python3`:
+#
+#     python3 templates/skills/G0_valid_req_and_GT/scripts/g0_validate.py SRS.md HCS.md
+#
+# Install these only to run the tests:
+#
+#     python3 -m pip install -r templates/tests/requirements.txt
+#
+pytest>=8.0

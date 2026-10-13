@@ -17,7 +17,7 @@ The V-SIL pipeline encoded as executable artifacts:
   2. **HW Restrictions** (`placeholder_hw_restrictions.md`) — COTS hardware constraints (embedded specs, server deploy, DAQ/SDR datasheets)
   3. **Normativity** (`placeholder_normativity.md`) — applicable standards (ITU, ICNIRP, IEEE, etc.)
 - **`templates/skills/`** — Skills executed at each gate:
-  - `G0_valid_req_and_GT/` — **Deterministic structural validation** of the 3 GT files. No AI — pure script (`scripts/valid_structure.py`). `SKILL.md` documents the expected structure. Hard pass/fail.
+  - `G0_valid_req_and_GT/` — **Deterministic structural validation** of the GT files (SRS + HCS). No AI — pure script (`scripts/g0_validate.py`). `SKILL.md` is the agent contract, `references/RULES.md` the full rule tables. Hard pass/fail.
   - `G1_start_design/` — Agent-driven: initiate design once G0 passes.
   - Future gates (G2, G3, ...) follow the same pattern.
 

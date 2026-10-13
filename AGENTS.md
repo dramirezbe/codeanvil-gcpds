@@ -13,7 +13,7 @@ codeanvil run ─────► orchestrator
                        │
                        ├─ G0 (deterministic — no agent)
                        │    ├─ reads: 3 GT .md files
-                       │    ├─ script: valid_structure.py
+                       │    ├─ script: g0_validate.py
                        │    ├─ checks: required sections, format, fields
                        │    └─ output: pass/fail (hard gate)
                        │
@@ -39,11 +39,11 @@ codeanvil run ─────► orchestrator
 
 ### G0 — Validate GT Structure (deterministic, no agent)
 
-Pure Python script. No LLM, no AI agent — just `valid_structure.py`.
+Pure Python script. No LLM, no AI agent — just `g0_validate.py`.
 
 - **Purpose**: hard gate ensuring each GT `.md` file has the required structure before any agent gate runs.
-- **Script**: `templates/skills/G0_valid_req_and_GT/scripts/valid_structure.py`
-- **Spec**: `SKILL.md` documents the expected structure for each GT file.
+- **Script**: `templates/skills/G0_valid_req_and_GT/scripts/g0_validate.py`
+- **Spec**: `SKILL.md` documents the expected structure; `references/RULES.md` holds the full rule tables.
 - **Inputs** (3 pre-processed `.md` files, human-authored):
   1. **Requirements** — functional and non-functional requirements
   2. **HW Restrictions** — COTS hardware constraints (embedded, server, DAQ/SDR)
@@ -62,7 +62,7 @@ Pure Python script. No LLM, no AI agent — just `valid_structure.py`.
 
 - Loads session from DB (`db/sessions.py`)
 - Determines next gate from `sessions.current_gate`
-- G0: runs `valid_structure.py` directly
+- G0: runs `g0_validate.py` directly
 - G1+: spawns AI coding agent with `SKILL.md` + GT context (any supported runtime)
 - Records result via `record_gate_result()`
 - Advances gate via `update_gate()` on pass

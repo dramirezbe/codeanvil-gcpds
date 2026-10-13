@@ -96,8 +96,9 @@ codeanvil-gcpds/
 │   │   └── legacy/         # Old template versions (v1, v2)
 │   └── skills/              # Gate skills (deterministic + agent-driven)
 │       ├── G0_valid_req_and_GT/
-│       │   ├── SKILL.md
-│       │   └── scripts/g0_validate.py  ← PLANNED (see plans/g0_skill.md)
+│       │   ├── SKILL.md            # Agent contract (agentskills.io format)
+│       │   ├── references/RULES.md # Full Phase 1-4 rule tables
+│       │   └── scripts/g0_validate.py  # Deterministic validator (stdlib only)
 │       └── G1_start_design/
 │           └── SKILL.md
 │
