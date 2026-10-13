@@ -4,7 +4,9 @@
 
 > **Template based on:** IEEE/ISO/IEC 29148:2018 — *Systems and software engineering — Life cycle processes — Requirements engineering*, adapted with elements of ETSI EN 303 645 (Cyber Security for IoT) and a deterministic structure for automated AI-based validation.
 >
-> **Template version:** 1.0.0  
+> **Methodology:** COTS-Reconciled Requirements Engineering. This SRS assumes that hardware has been selected and its constraints formally documented in the companion Hardware Constraints Specification (HCS-ANE-EDGE-001). Requirements in this document have been reconciled against the HCS — every requirement is feasible within the COTS envelope, and conflicts have been resolved prior to approval.
+>
+> **Template version:** 2.0.0  
 > **Creation date:** 2026-10-13  
 > **Last modified:** 2026-10-13  
 > **Document status:** `IN_REVIEW`
@@ -18,17 +20,25 @@
 | **Document ID**        | `SRS-ANE-EDGE-001`                                        |
 | **Project**            | Edge Sensor — Spectrum Monitoring Subsystem (Phase 2)      |
 | **Organization**       | National Spectrum Agency (ANE) — Colombia                  |
-| **Version**            | 0.1.0                                                     |
+| **Version**            | 0.2.0                                                     |
 | **Classification**     | `INTERNAL`                                                |
 | **Author(s)**          | _To be defined_                                           |
 | **Reviewer(s)**        | _To be defined_                                           |
 | **Approver(s)**        | _To be defined_                                           |
 
+### Companion Documents
+
+| Document ID            | Title                                                   | Relationship              |
+|------------------------|---------------------------------------------------------|---------------------------|
+| `HCS-ANE-EDGE-001`    | Edge Sensor HW Constraints Specification                | COTS envelope for this SRS |
+| `SRS-ANE-001`         | Full-System SRS (Phase 2)                               | Parent system requirements |
+
 ### Change Log
 
-| Version | Date       | Author             | Change Description                                      |
-|---------|------------|--------------------|---------------------------------------------------------|
-| 0.1.0   | 2026-10-13 | AI-assisted generation | Extraction of edge requirements from SRS-ANE-001 (full system) |
+| Version | Date       | Author                 | Change Description                                      |
+|---------|------------|------------------------|---------------------------------------------------------|
+| 0.1.0   | 2026-10-13 | AI-assisted generation | Extraction of edge requirements from SRS-ANE-001        |
+| 0.2.0   | 2026-10-13 | AI-assisted generation | COTS reconciliation: added hw_constraints and reconciliation fields; companion HCS-ANE-EDGE-001 created |
 
 ---
 
@@ -46,7 +56,31 @@ The edge sensor is an autonomous spectrum-monitoring node based on an SDR (HackR
 
 **The edge sensor does NOT include:** a web graphical interface, a centralized dashboard, comparison against the authorized-emissions database, formal report generation, or a REST API for external consumption.
 
-### 1.3 Definitions, Acronyms, and Abbreviations
+### 1.3 COTS-Reconciled Methodology
+
+This SRS follows a COTS-Reconciled methodology:
+
+1. Requirements originate from two streams: **ANE client needs** and **normative standards** (ITU-R, ITU-T, IEEE, ETSI).
+2. Hardware was selected (COTS: HackRF One + Raspberry Pi 4B + peripherals) and its parametric constraints formally documented in **HCS-ANE-EDGE-001**.
+3. Each requirement was reconciled against the HCS before approval — conflicts were resolved, mitigations documented, and no infeasible requirements remain.
+4. The reconciliation status is recorded per requirement via the `hw_constraints` and `reconciliation` fields.
+
+```
+[ ANE (Client) ]       [ Norms (ITU-R, ITU-T, ETSI) ]
+        │                        │
+        └──────────┬─────────────┘
+                   │  (Domain Requirements)
+                   ▼
+      ┌──────────────────────┐
+      │    Reconciliation    │ ◄─── [ HCS-ANE-EDGE-001 ]
+      │    (conflict check)  │      (HackRF, RPi, GPS, Power, Storage)
+      └──────────┬───────────┘
+                 │
+                 ▼
+    [ SRS-ANE-EDGE-001 — Reconciled ]
+```
+
+### 1.4 Definitions, Acronyms, and Abbreviations
 
 | Term       | Definition                                                                           |
 |------------|--------------------------------------------------------------------------------------|
@@ -67,8 +101,10 @@ The edge sensor is an autonomous spectrum-monitoring node based on an SDR (HackR
 | OTA        | Over The Air — remote software update                                               |
 | CS8        | Complex Signed 8-bit — the HackRF IQ sample format                                  |
 | AF         | Antenna Factor                                                                       |
+| HCS        | Hardware Constraints Specification — companion document                              |
+| COTS       | Commercial Off-The-Shelf                                                             |
 
-### 1.4 References
+### 1.5 References
 
 | Ref ID     | Document                                                               | Version / Date      |
 |------------|------------------------------------------------------------------------|---------------------|
@@ -77,11 +113,12 @@ The edge sensor is an autonomous spectrum-monitoring node based on an SDR (HackR
 | `REF-003`  | ITU-T K.113 — Electric field measurement in urban environments         | In force            |
 | `REF-004`  | ITU-T K.100 — Assessment of human exposure to electromagnetic fields   | In force            |
 | `REF-007`  | IEEE/ISO/IEC 29148:2018 — Requirements engineering                     | 2018                |
+| `REF-HCS`  | HCS-ANE-EDGE-001 — Companion HW Constraints Specification             | 0.1.0 / 2026-10-13  |
 | `REF-FULL` | SRS-ANE-001 — Full-System SRS, Phase 2                                 | 0.1.0 / 2026-10-13  |
 
-### 1.5 Document Overview
+### 1.6 Document Overview
 
-Section 3 contains the specific requirements of the edge sensor, organized by subsystem: RF architecture, DSP parameterization, signal processing, local detection, on-device storage, network connectivity, antennas, power, health monitoring, and calibration. Section 6 presents traceability. Section 7 defines the structural validation rules.
+Section 3 contains the specific requirements of the edge sensor, organized by subsystem. Each requirement includes `hw_constraints` (referencing HCS-ANE-EDGE-001) and a `reconciliation` status. Section 4 covers external interfaces (summaries; details in HCS). Section 5 covers non-functional requirements. Section 6 presents traceability including HCS cross-references. Section 7 defines G0 structural validation (future work).
 
 ---
 
@@ -89,7 +126,7 @@ Section 3 contains the specific requirements of the edge sensor, organized by su
 
 ### 2.1 Product Perspective
 
-This document describes the edge sensor as a subsystem of the full system (see `REF-FULL`). The sensor operates as an autonomous node for spectral acquisition and preprocessing. The requirements here are a filtered subset of the full SRS, including only those that run on or reside in the embedded node.
+This document describes the edge sensor as a subsystem of the full system (see `REF-FULL`). The sensor operates as an autonomous node for spectral acquisition and preprocessing. The COTS hardware envelope is formally documented in `REF-HCS`.
 
 #### 2.1.1 Context Diagram
 
@@ -135,16 +172,20 @@ The edge sensor provides: real-time spectrum capture (1 MHz–6 GHz), DSP proces
 
 ### 2.4 Constraints
 
-- Base hardware: HackRF One as the primary SDR (inherent DANL and dynamic-range limitations).
-- Embedded platform: Raspberry Pi (low power, processing limitations).
-- Connectivity: dependent on 4G/5G coverage from Colombian carriers.
-- Power: solar + battery with a charge manager.
+Detailed parametric constraints are in **HCS-ANE-EDGE-001**. Summary:
+
+- **RF front-end:** HackRF One — 1 MHz to 6 GHz, 20 MHz instantaneous BW, 8-bit IQ (CS8), no AGC, no pre-selection filters, stock oscillator ± 20 ppm.
+- **Processing:** Raspberry Pi 4B — 4× Cortex-A72 @ 1.8 GHz, 4/8 GB RAM.
+- **Data bus:** USB 2.0 bottleneck (~32 MB/s sustained vs. 40 MB/s IQ rate).
+- **Power:** Solar + battery, ~15 W total system consumption.
+- **Connectivity:** Dependent on 4G/5G coverage from Colombian carriers.
 
 ### 2.5 Assumptions and Dependencies
 
 - The ANE provides data SIM cards for mobile connectivity.
 - Sensors are deployed at sites with mains power or where a solar solution is viable.
 - Antennas are correctly connected and calibrated for the operating band.
+- The COTS hardware documented in HCS-ANE-EDGE-001 is the selected platform.
 
 ---
 
@@ -169,10 +210,12 @@ The edge sensor provides: real-time spectrum capture (1 MHz–6 GHz), DSP proces
 | **New hardware**       | Yes (RF gasket)                                          |
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
+| **HW constraints**     | `HWC-SDR-007`                                             |
+| **Reconciliation**     | `MITIGATED`                                               |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
-The system SHALL incorporate adjustments and filtering in the sensor's receive path to prevent spurious signals generated by its own electronics from appearing in the measurement results. The EMC adjustments SHALL be feasible on the current platform.
+The system SHALL incorporate adjustments and filtering in the sensor's receive path to prevent spurious signals generated by its own electronics from appearing in the measurement results.
 
 **Acceptance Criteria:**
 
@@ -181,7 +224,7 @@ The system SHALL incorporate adjustments and filtering in the sensor's receive p
 3. [ ] A before/after comparative measurement demonstrates a reduction in EMC artifacts.
 
 **Notes:**  
-Includes the implementation of an RF gasket. Analysis owner: Bernardo.
+Mitigation for HWC-SDR-007 (no pre-selection filters): the HackRF's broadband front-end picks up internal EMI. An RF gasket + board-level shielding provides physical mitigation. Software-side, the DSP pipeline should characterize known internal spurious frequencies and flag them.
 
 ---
 
@@ -197,13 +240,15 @@ Includes the implementation of an RF gasket. Analysis owner: Bernardo.
 | **Priority**           | `MUST`                                                    |
 | **Status**             | `APPROVED`                                                |
 | **Verification**       | `DEMONSTRATION`                                          |
-| **New hardware**       | No (the HackRF One supports the range)                  |
+| **New hardware**       | No                                                       |
 | **Standard(s)**        | ITU-R SM.1537; `REF-001`                                 |
 | **Dependencies**       | —                                                        |
+| **HW constraints**     | `HWC-SDR-001`                                             |
+| **Reconciliation**     | `AT_LIMIT`                                                |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
-The system SHALL extend the sensor's frequency range to capture emissions from 1 MHz up to 6 GHz (or up to the limit of the SDR hardware).
+The system SHALL extend the sensor's frequency range to capture emissions from 1 MHz up to 6 GHz.
 
 **Acceptance Criteria:**
 
@@ -212,7 +257,7 @@ The system SHALL extend the sensor's frequency range to capture emissions from 1
 3. [ ] Sensitivity at 6 GHz is verifiable with a calibrated signal generator.
 
 **Notes:**  
-The upper limit may depend on the model of the connected antenna. A specific antenna is required for the low bands (AM from 1 MHz).
+Operates at the exact boundary of HWC-SDR-001 (1 MHz–6 GHz). Sensitivity degrades at band edges; characterization per REF-MEAS-001 is required. The upper limit depends on the connected antenna.
 
 ---
 
@@ -227,6 +272,8 @@ The upper limit may depend on the model of the connected antenna. A specific ant
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
+| **HW constraints**     | `HWC-SDR-002`, `HWC-BUS-001`, `HWC-CPU-001`, `HWC-DRV-001` |
+| **Reconciliation**     | `AT_LIMIT`                                                |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -239,7 +286,7 @@ The system SHALL provide real-time monitoring with a minimum bandwidth of 20 MHz
 3. [ ] The DSP pipeline processes the full bandwidth with a latency ≤ 1 second.
 
 **Notes:**  
-Manual between 6 and 20 MHz; automatic at 20 MHz.
+Multiple constraints converge: HWC-SDR-002 (20 MHz max BW), HWC-BUS-001 (USB 2.0 ~32 MB/s vs. 40 MB/s IQ), HWC-CPU-001 (processing budget), HWC-DRV-001 (end-to-end throughput). Operating at the hardware limit. Sample drops at sustained 20 MS/s are possible; the DSP pipeline must tolerate or detect them.
 
 ---
 
@@ -260,19 +307,21 @@ Manual between 6 and 20 MHz; automatic at 20 MHz.
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | `ANAL-RNG-001`                                           |
+| **HW constraints**     | `HWC-SDR-001`                                             |
+| **Reconciliation**     | `BOUNDED`                                                 |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
-The system SHALL allow the user to enter frequency ranges to analyze within the available spectral range (IF span).
+The system SHALL allow the user to enter frequency ranges to analyze within the available spectral range.
 
 **Acceptance Criteria:**
 
 1. [ ] The user can define a center frequency and span, or a start and stop frequency.
-2. [ ] The system validates that the requested range is within the hardware limits.
+2. [ ] The system validates that the requested range is within the hardware limits (1 MHz–6 GHz per HWC-SDR-001).
 3. [ ] Range changes are applied in real time without restarting the system.
 
 **Notes:**  
-IF span = the frequency range on screen.
+Bounded by HWC-SDR-001 but not at the limit — user selects sub-ranges within the 1–6 GHz envelope.
 
 ---
 
@@ -287,10 +336,12 @@ IF span = the frequency range on screen.
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | `ANAL-PAR-001`                                           |
+| **HW constraints**     | —                                                         |
+| **Reconciliation**     | `UNCONSTRAINED`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
-The system SHALL allow the resolution bandwidth (RBW) to be configured over a defined range (IF span = RBW).
+The system SHALL allow the resolution bandwidth (RBW) to be configured over a defined range.
 
 **Acceptance Criteria:**
 
@@ -299,7 +350,7 @@ The system SHALL allow the resolution bandwidth (RBW) to be configured over a de
 3. [ ] Changing the RBW updates the DSP pipeline in real time.
 
 **Notes:**  
-Define ≥ 6 RBW options. RBW is implemented via the FFT window size.
+RBW is purely a software/DSP parameter (FFT window size). No COTS constraint applies.
 
 ---
 
@@ -314,6 +365,8 @@ Define ≥ 6 RBW options. RBW is implemented via the FFT window size.
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | `ANAL-PAR-002`                                           |
+| **HW constraints**     | `HWC-CPU-001`                                             |
+| **Reconciliation**     | `BOUNDED`                                                 |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -326,7 +379,7 @@ The system SHALL offer resolution-change steps of 500 Hz, with a minimum resolut
 3. [ ] The step accuracy is verified against a signal generator.
 
 **Notes:**  
-Expand the range of resolutions in later phases as demand requires.
+10 Hz resolution at 20 MS/s requires a 2,000,000-point FFT — computationally intensive on the RPi (HWC-CPU-001). May require reduced sample rates or offline processing for the finest resolutions.
 
 ---
 
@@ -341,10 +394,12 @@ Expand the range of resolutions in later phases as demand requires.
 | **New hardware**       | Yes (filters)                                           |
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | `ANAL-PAR-002`                                           |
+| **HW constraints**     | —                                                         |
+| **Reconciliation**     | `UNCONSTRAINED`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
-The system SHALL implement Video Bandwidth (VBW) filters suited to the type of analysis (fine or average) in order to smooth the processed signal after the RBW computation.
+The system SHALL implement Video Bandwidth (VBW) filters suited to the type of analysis (fine or average).
 
 **Acceptance Criteria:**
 
@@ -353,7 +408,7 @@ The system SHALL implement Video Bandwidth (VBW) filters suited to the type of a
 3. [ ] The DSP output shows a perceptible difference between filtering modes.
 
 **Notes:**  
-Filtering applied after RBW to smooth the signal. Implemented digitally in the DSP pipeline.
+VBW is implemented digitally in the DSP pipeline. No COTS hardware constraint applies. "New hardware: Yes" refers to potential analog filter stages, not a COTS limitation.
 
 ---
 
@@ -372,10 +427,12 @@ Filtering applied after RBW to smooth the signal. Implemented digitally in the D
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
+| **HW constraints**     | `HWC-GPS-002`                                             |
+| **Reconciliation**     | `UNCONSTRAINED`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
-The system SHALL allow the sensor's location coordinates to be entered manually when automatic GPS is unavailable or a correction is required.
+The system SHALL allow the sensor's location coordinates to be entered manually when automatic GPS is unavailable.
 
 **Acceptance Criteria:**
 
@@ -384,7 +441,7 @@ The system SHALL allow the sensor's location coordinates to be entered manually 
 3. [ ] The system records whether the location is automatic GPS or manual.
 
 **Notes:**  
-—
+Manual entry is a software feature independent of GPS hardware constraints.
 
 ---
 
@@ -399,6 +456,8 @@ The system SHALL allow the sensor's location coordinates to be entered manually 
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
+| **HW constraints**     | —                                                         |
+| **Reconciliation**     | `UNCONSTRAINED`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -411,7 +470,7 @@ The system SHALL allow the selection and conversion of measurement units: freque
 3. [ ] A change of unit is applied to the DSP pipeline output data.
 
 **Notes:**  
-—
+Pure software computation. No COTS constraint applies.
 
 ---
 
@@ -430,10 +489,12 @@ The system SHALL allow the selection and conversion of measurement units: freque
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
+| **HW constraints**     | `HWC-SDR-004`                                             |
+| **Reconciliation**     | `BOUNDED`                                                 |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
-The system SHALL allow detection thresholds to be parameterized and SHALL integrate algorithms capable of distinguishing the noise floor from signal occupancy, in order to define the portion of the spectrum of interest.
+The system SHALL allow detection thresholds to be parameterized and SHALL integrate algorithms to distinguish the noise floor from signal occupancy.
 
 **Acceptance Criteria:**
 
@@ -442,7 +503,7 @@ The system SHALL allow detection thresholds to be parameterized and SHALL integr
 3. [ ] Signals above the threshold are flagged in the sensor's output data.
 
 **Notes:**  
-Parameterize the threshold and, based on it, define the portion of the spectrum of interest.
+Detection sensitivity is bounded by DANL (HWC-SDR-004). Signals below the noise floor cannot be detected regardless of threshold setting.
 
 ---
 
@@ -463,6 +524,8 @@ Parameterize the threshold and, based on it, define the portion of the spectrum 
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | ITU-R SM.1537; `REF-001`                                 |
 | **Dependencies**       | `ANAL-PAR-001`                                           |
+| **HW constraints**     | `HWC-CPU-001`                                             |
+| **Reconciliation**     | `BOUNDED`                                                 |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -470,13 +533,13 @@ The system SHALL compute spectral traces: maximum (max hold), minimum (min hold)
 
 **Acceptance Criteria:**
 
-1. [ ] The maximum trace retains the highest value per frequency bin (FFT bin).
+1. [ ] The maximum trace retains the highest value per frequency bin.
 2. [ ] The minimum trace retains the lowest value per frequency bin.
 3. [ ] The average trace computes the arithmetic mean over N sweeps (N configurable).
 4. [ ] The RMS, peak, and average detection modes are selectable.
 
 **Notes:**  
-Operations over FFT bins. Max hold and min hold accumulate across successive sweeps.
+Trace accumulation is CPU-bound (HWC-CPU-001). Multiple simultaneous traces at 20 MHz BW must fit within the processing budget.
 
 ---
 
@@ -495,6 +558,8 @@ Operations over FFT bins. Max hold and min hold accumulate across successive swe
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | ITU-R SM.1537; `REF-001`                                 |
 | **Dependencies**       | `ANAL-MED-001`                                           |
+| **HW constraints**     | `HWC-SDR-002`                                             |
+| **Reconciliation**     | `BOUNDED`                                                 |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -502,12 +567,12 @@ The system SHALL measure the occupied bandwidth (OBW) using the –X dB and 99% 
 
 **Acceptance Criteria:**
 
-1. [ ] –X dB method: measures the width where the signal falls X dB below the peak (X configurable).
+1. [ ] –X dB method: measures the width where the signal falls X dB below the peak.
 2. [ ] 99% method: measures the spectrum that contains 99% of the signal power.
 3. [ ] Results are expressed in the selected frequency unit.
 
 **Notes:**  
-OBW is computed over the FFT bins of the PSD. –X dB is where the signal falls X below the peak.
+OBW measurement is limited to signals within the 20 MHz instantaneous BW (HWC-SDR-002). Wider signals require sweep mode with stitching.
 
 ---
 
@@ -522,6 +587,8 @@ OBW is computed over the FFT bins of the PSD. –X dB is where the signal falls 
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | `ANAL-RNG-002`                                           |
+| **HW constraints**     | `HWC-SDR-002`                                             |
+| **Reconciliation**     | `AT_LIMIT`                                                |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -534,7 +601,7 @@ The system SHALL perform channel-power measurements for emissions up to 20 MHz w
 3. [ ] The result is expressed in the selected power units.
 
 **Notes:**  
-Integration of the PSD over the channel bins. Limited to 20 MHz (the HackRF's instantaneous bandwidth).
+20 MHz channel power = full instantaneous BW of HWC-SDR-002. At the exact hardware limit.
 
 ---
 
@@ -553,10 +620,12 @@ Integration of the PSD over the channel bins. Limited to 20 MHz (the HackRF's in
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
+| **HW constraints**     | —                                                         |
+| **Reconciliation**     | `UNCONSTRAINED`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
-The system SHALL decode and extract Radio Data System (RDS) information from FM signals.
+The system SHALL decode and extract RDS information from FM signals.
 
 **Acceptance Criteria:**
 
@@ -564,7 +633,7 @@ The system SHALL decode and extract Radio Data System (RDS) information from FM 
 2. [ ] The RDS information is included in the sensor's output data alongside the FM measurement.
 
 **Notes:**  
-RDS decoding is performed in the sensor's DSP pipeline.
+Pure DSP software function. No COTS constraint applies.
 
 ---
 
@@ -579,6 +648,8 @@ RDS decoding is performed in the sensor's DSP pipeline.
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | `ANAL-RNG-001`                                           |
+| **HW constraints**     | `HWC-SDR-001`                                             |
+| **Reconciliation**     | `BOUNDED`                                                 |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -587,11 +658,11 @@ The system SHALL demodulate FM and AM signals in real time, producing digital au
 **Acceptance Criteria:**
 
 1. [ ] FM audio is demodulated with audible quality.
-2. [ ] AM audio is demodulated with audible quality (from 1 MHz with the HackRF One).
+2. [ ] AM audio is demodulated with audible quality (from 1 MHz).
 3. [ ] The demodulated audio is stored locally or transmitted as a stream.
 
 **Notes:**  
-AM is only possible with the HackRF One from 1 MHz upward; it requires an additional antenna.
+AM from 1 MHz is at the lower edge of HWC-SDR-001. Sensitivity degradation below 10 MHz may affect AM demodulation quality. Requires an additional antenna for AM band.
 
 ---
 
@@ -606,6 +677,8 @@ AM is only possible with the HackRF One from 1 MHz upward; it requires an additi
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | `ANAL-MED-006`                                           |
+| **HW constraints**     | —                                                         |
+| **Reconciliation**     | `UNCONSTRAINED`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -618,7 +691,7 @@ The system SHALL directly measure the AM modulation depth and the FM frequency d
 3. [ ] The values update in real time during demodulation.
 
 **Notes:**  
-AM only from 1 MHz upward with the HackRF One; it requires an additional antenna.
+Computed in DSP from demodulated IQ. No additional COTS constraint beyond what applies to demodulation itself.
 
 ---
 
@@ -639,10 +712,12 @@ AM only from 1 MHz upward with the HackRF One; it requires an additional antenna
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | `ANAL-MED-001`                                           |
+| **HW constraints**     | `HWC-SDR-007`                                             |
+| **Reconciliation**     | `MITIGATED`                                               |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
-The system SHALL detect intermodulation, including the identification of suspected intermodulation products in AM, FM, and the aeronautical mobile service band (108 MHz–137 MHz), as well as intermediate-frequency (IF) verification.
+The system SHALL detect intermodulation, including suspected products in AM, FM, and the aeronautical band (108–137 MHz), as well as IF verification.
 
 **Acceptance Criteria:**
 
@@ -651,7 +726,7 @@ The system SHALL detect intermodulation, including the identification of suspect
 3. [ ] IF verification is performed automatically.
 
 **Notes:**  
-Covers AM, FM, and the aeronautical band (108–137 MHz). Computed locally over FFT bins.
+Mitigation for HWC-SDR-007 (no pre-selection filters): the detection algorithm must distinguish receiver-generated intermodulation from real over-the-air products. This requires characterizing the HackRF's own IM products at known signal levels and frequencies.
 
 ---
 
@@ -666,10 +741,12 @@ Covers AM, FM, and the aeronautical band (108–137 MHz). Computed locally over 
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | `ANAL-PAR-007`                                           |
+| **HW constraints**     | `HWC-SDR-004`                                             |
+| **Reconciliation**     | `BOUNDED`                                                 |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
-The system SHALL detect interference, defined as signals that exceed the average level of the channel or band by more than 3 dB.
+The system SHALL detect interference, defined as signals exceeding the average level of the channel or band by more than 3 dB.
 
 **Acceptance Criteria:**
 
@@ -678,7 +755,7 @@ The system SHALL detect interference, defined as signals that exceed the average
 3. [ ] Detection runs continuously without external intervention.
 
 **Notes:**  
-Detection threshold: > 3 dB above the average level. Processed locally in the DSP pipeline.
+Detection floor bounded by DANL (HWC-SDR-004). Interference below the noise floor is undetectable.
 
 ---
 
@@ -697,10 +774,12 @@ Detection threshold: > 3 dB above the average level. Processed locally in the DS
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | `ANAL-MED-006`                                           |
+| **HW constraints**     | `HWC-STR-001`                                             |
+| **Reconciliation**     | `BOUNDED`                                                 |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
-The system SHALL demodulate and extract audio from FM and AM signals, storing it locally for later use in verification and forensic analysis.
+The system SHALL demodulate and extract audio from FM and AM signals, storing it locally for later forensic analysis.
 
 **Acceptance Criteria:**
 
@@ -708,7 +787,7 @@ The system SHALL demodulate and extract audio from FM and AM signals, storing it
 2. [ ] The audio file is associated with the measurement metadata (frequency, timestamp, location).
 
 **Notes:**  
-AM only from 1 MHz with the HackRF One; it requires an additional antenna.
+Audio files are small compared to CS8 IQ captures; storage write speed (HWC-STR-001) is not a bottleneck here.
 
 ---
 
@@ -727,6 +806,8 @@ AM only from 1 MHz with the HackRF One; it requires an additional antenna.
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | ITU-R SM.1537; `REF-001`                                 |
 | **Dependencies**       | —                                                        |
+| **HW constraints**     | `HWC-STR-001`, `HWC-DRV-001`                             |
+| **Reconciliation**     | `BOUNDED`                                                 |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -739,7 +820,7 @@ The system SHALL provide local historical storage for forensic analysis, includi
 3. [ ] The integrity of the stored data is verifiable (checksum or hash).
 
 **Notes:**  
-Using current hardware.
+Processed spectral data (PSD, traces) is much smaller than raw IQ and does not stress storage bandwidth. Raw CS8 storage at full rate is constrained by HWC-DRV-001 (end-to-end throughput).
 
 ---
 
@@ -754,6 +835,8 @@ Using current hardware.
 | **New hardware**       | Yes                                                     |
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
+| **HW constraints**     | `HWC-STR-001`                                             |
+| **Reconciliation**     | `AT_LIMIT`                                                |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -766,7 +849,7 @@ The system SHALL add storage space to the sensor so that CS8 files (raw IQ) can 
 3. [ ] Local storage is remotely accessible for download.
 
 **Notes:**  
-Include the cost of the storage solution to be used (high-capacity SSD/microSD).
+Raw CS8 at 20 MS/s = 40 MB/s. Storage must sustain ≥ 40 MB/s writes (HWC-STR-001). USB 3.0 SSD recommended; microSD may not meet sustained write requirements.
 
 ---
 
@@ -787,10 +870,12 @@ Include the cost of the storage solution to be used (high-capacity SSD/microSD).
 | **New hardware**       | Yes                                                     |
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
+| **HW constraints**     | —                                                         |
+| **Reconciliation**     | `UNCONSTRAINED`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
-The system SHALL add or replace the mobile-connectivity module to support a data SIM card provided by the ANE, with multi-carrier data service (not restricted to a single carrier).
+The system SHALL add or replace the mobile-connectivity module to support a data SIM card provided by the ANE, with multi-carrier data service.
 
 **Acceptance Criteria:**
 
@@ -799,7 +884,7 @@ The system SHALL add or replace the mobile-connectivity module to support a data
 3. [ ] The connection is established automatically when the sensor powers on.
 
 **Notes:**  
-Currently uses a 4.5G module limited to Movistar. The new module must be multi-carrier.
+The 4G/5G modem is new hardware selected to meet the requirement. No pre-existing COTS constraint applies — the modem is chosen to fit.
 
 ---
 
@@ -814,6 +899,8 @@ Currently uses a 4.5G module limited to Movistar. The new module must be multi-c
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
+| **HW constraints**     | —                                                         |
+| **Reconciliation**     | `UNCONSTRAINED`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -826,7 +913,7 @@ The system SHALL enable a WiFi connection on the sensor, configurable via Ethern
 3. [ ] The WiFi connection is used as an alternative communication channel.
 
 **Notes:**  
-Initial configuration must be done over an Ethernet cable.
+RPi 4B has built-in WiFi. No COTS constraint.
 
 ---
 
@@ -841,6 +928,8 @@ Initial configuration must be done over an Ethernet cable.
 | **New hardware**       | Yes                                                     |
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
+| **HW constraints**     | —                                                         |
+| **Reconciliation**     | `UNCONSTRAINED`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -852,7 +941,7 @@ The system SHALL provide access to an easily accessible Ethernet port without re
 2. [ ] The port supports a minimum speed of 100 Mbps.
 
 **Notes:**  
-It currently requires opening the enclosure to reach the port.
+Enclosure design requirement. The RPi Ethernet hardware is not the constraint — the physical access is.
 
 ---
 
@@ -867,10 +956,12 @@ It currently requires opening the enclosure to reach the port.
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | `CONN-RED-001`, `CONN-RED-002`, `CONN-RED-003`           |
+| **HW constraints**     | —                                                         |
+| **Reconciliation**     | `UNCONSTRAINED`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
-The system SHALL implement automatic IP-network connection and routing, using the various available channels (a failover/priority scheme among 4G/5G, WiFi, and Ethernet).
+The system SHALL implement automatic IP-network connection and routing with failover/priority among 4G/5G, WiFi, and Ethernet.
 
 **Acceptance Criteria:**
 
@@ -879,7 +970,7 @@ The system SHALL implement automatic IP-network connection and routing, using th
 3. [ ] The priority order is configurable.
 
 **Notes:**  
-—
+Software networking stack. No COTS constraint.
 
 ---
 
@@ -898,19 +989,21 @@ The system SHALL implement automatic IP-network connection and routing, using th
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | `CONN-RED-004`                                           |
+| **HW constraints**     | —                                                         |
+| **Reconciliation**     | `UNCONSTRAINED`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
-The system SHALL allow remote IP access to the sensor and Over-The-Air (OTA) software updates.
+The system SHALL allow remote IP access and OTA software updates.
 
 **Acceptance Criteria:**
 
 1. [ ] The sensor can be accessed remotely via SSH or a secure equivalent.
-2. [ ] Software updates are performed without physical access to the sensor.
+2. [ ] Software updates are performed without physical access.
 3. [ ] The update process includes automatic rollback in case of failure.
 
 **Notes:**  
-—
+Pure software. No COTS constraint.
 
 ---
 
@@ -925,10 +1018,12 @@ The system SHALL allow remote IP access to the sensor and Over-The-Air (OTA) sof
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | `ANAL-PAR-005`                                           |
+| **HW constraints**     | `HWC-GPS-002`                                             |
+| **Reconciliation**     | `UNCONSTRAINED`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
-The system SHALL continue to report location via GPS regardless of the manual parameterization, providing redundancy.
+The system SHALL continue to report location via GPS regardless of manual parameterization.
 
 **Acceptance Criteria:**
 
@@ -936,7 +1031,7 @@ The system SHALL continue to report location via GPS regardless of the manual pa
 2. [ ] Both location sources are stored in the measurement records.
 
 **Notes:**  
-—
+GPS NMEA output (HWC-GPS-002) is always available. Software stores both sources.
 
 ---
 
@@ -951,6 +1046,8 @@ The system SHALL continue to report location via GPS regardless of the manual pa
 | **New hardware**       | Yes                                                     |
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
+| **HW constraints**     | `HWC-GPS-001`                                             |
+| **Reconciliation**     | `BOUNDED`                                                 |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -962,7 +1059,7 @@ The system SHALL have a horizontal GPS accuracy of approximately 3 meters under 
 2. [ ] The accuracy is verified against a reference GPS receiver.
 
 **Notes:**  
-May require a change of GPS hardware.
+Drives GPS module selection (HWC-GPS-001). Module TBD — must meet ≤ 3 m spec.
 
 ---
 
@@ -983,10 +1080,12 @@ May require a change of GPS hardware.
 | **New hardware**       | Yes                                                     |
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | `ANAL-RNG-001`                                           |
+| **HW constraints**     | `HWC-SDR-001`                                             |
+| **Reconciliation**     | `BOUNDED`                                                 |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
-The system SHALL incorporate specific antennas for signal reception in order to optimize reception across different bands.
+The system SHALL incorporate specific antennas for signal reception to optimize reception across different bands.
 
 **Acceptance Criteria:**
 
@@ -995,7 +1094,7 @@ The system SHALL incorporate specific antennas for signal reception in order to 
 3. [ ] Each antenna has a documented and calibrated antenna factor (AF).
 
 **Notes:**  
-Priority bands: 1. DTT, 2. Verify > 2 GHz mobile telephony (downlink), 3. Evaluate additional antennas as needed.
+Antennas selected to match the HackRF's 1–6 GHz range (HWC-SDR-001). Antenna switching via HW-MUX and GPIO.
 
 ---
 
@@ -1010,10 +1109,12 @@ Priority bands: 1. DTT, 2. Verify > 2 GHz mobile telephony (downlink), 3. Evalua
 | **New hardware**       | Yes                                                     |
 | **Standard(s)**        | ITU-T K.113, K.100; `REF-003`, `REF-004`                 |
 | **Dependencies**       | —                                                        |
+| **HW constraints**     | `HWC-SDR-001`                                             |
+| **Reconciliation**     | `BOUNDED`                                                 |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
-The system SHALL incorporate an active antenna with a frequency range up to 6 GHz, with a SAW filter, a flat response, and a known antenna factor, for non-ionizing radiation measurement.
+The system SHALL incorporate an active antenna with a frequency range up to 6 GHz, with a SAW filter, a flat response, and a known antenna factor.
 
 **Acceptance Criteria:**
 
@@ -1023,7 +1124,7 @@ The system SHALL incorporate an active antenna with a frequency range up to 6 GH
 4. [ ] An antenna factor documented by the manufacturer.
 
 **Notes:**  
-Requires new hardware.
+Antenna range must match or exceed HWC-SDR-001 (6 GHz). The antenna factor is essential for field-strength computation (ANTE-RNI-002).
 
 ---
 
@@ -1042,18 +1143,20 @@ Requires new hardware.
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | ITU-T K.113, K.100; `REF-003`, `REF-004`                 |
 | **Dependencies**       | `ANTE-ANT-002`                                           |
+| **HW constraints**     | —                                                         |
+| **Reconciliation**     | `UNCONSTRAINED`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
-The system SHALL adopt the following measurement units for non-ionizing radiation: power density (S = W/m²), magnetic field strength (A/m), electric field strength (V/m), dBµV/m, and dBA/m.
+The system SHALL adopt measurement units for non-ionizing radiation: S (W/m²), A/m, V/m, dBµV/m, dBA/m.
 
 **Acceptance Criteria:**
 
-1. [ ] All listed units are available as a display option in the sensor output.
+1. [ ] All listed units are available as a display option.
 2. [ ] Conversions between units are correct.
 
 **Notes:**  
-—
+Pure computation. No COTS constraint.
 
 ---
 
@@ -1068,19 +1171,21 @@ The system SHALL adopt the following measurement units for non-ionizing radiatio
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | ITU-T K.113, K.100; `REF-003`, `REF-004`                 |
 | **Dependencies**       | `ANTE-ANT-002`, `ANTE-RNI-001`                           |
+| **HW constraints**     | `HWC-SDR-006`                                             |
+| **Reconciliation**     | `MITIGATED`                                               |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
-The system SHALL measure the level and strength of the electric field, including the characterized antenna's data (antenna factor, AF) for its computation.
+The system SHALL measure field strength using the antenna factor (AF).
 
 **Acceptance Criteria:**
 
-1. [ ] The field measurement uses the antenna factor (AF) of the connected antenna.
-2. [ ] The applied formula is: E [V/m] = V_measured [V] × AF.
+1. [ ] The field measurement uses the AF of the connected antenna.
+2. [ ] E [V/m] = V_measured [V] × AF.
 3. [ ] Results are presented in V/m and dBµV/m.
 
 **Notes:**  
-Antenna factor AF = V_measured / E.
+Mitigation for HWC-SDR-006 (no AGC): amplitude accuracy for field-strength computation requires a software calibration table mapping gain settings to correction factors. The AF must be applied on top of this correction.
 
 ---
 
@@ -1099,19 +1204,21 @@ Antenna factor AF = V_measured / E.
 | **New hardware**       | Yes                                                     |
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
+| **HW constraints**     | `HWC-PWR-001`                                             |
+| **Reconciliation**     | `BOUNDED`                                                 |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
-The system SHALL integrate autonomous power modules through sustainable solutions, such as hybrid solar-and-battery systems, with a battery manager.
+The system SHALL integrate autonomous power modules through sustainable solutions (solar + battery + charge manager).
 
 **Acceptance Criteria:**
 
 1. [ ] The sensor operates on solar + battery power without an external source.
 2. [ ] It includes a battery manager with a charge indicator.
-3. [ ] The solar-panel design is discreet (not conspicuous).
+3. [ ] The solar-panel design is discreet.
 
 **Notes:**  
-Battery manager, small unobtrusive solar charging. Owner: Bernardo.
+Solar panel + battery must supply ≥ 15 W continuous (HWC-PWR-001) for 24/7 operation. Sizing must account for worst-case solar irradiance in Colombia.
 
 ---
 
@@ -1130,19 +1237,21 @@ Battery manager, small unobtrusive solar charging. Owner: Bernardo.
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
+| **HW constraints**     | `HWC-CPU-002`, `HWC-CPU-003`                              |
+| **Reconciliation**     | `BOUNDED`                                                 |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
-The system SHALL measure and record sensor health variables (disk, RAM, CPU, temperature) using the variables available in the operating system.
+The system SHALL measure and record sensor health variables (disk, RAM, CPU, temperature).
 
 **Acceptance Criteria:**
 
-1. [ ] At least the following are monitored: disk usage, RAM, CPU, and temperature.
+1. [ ] At least: disk usage, RAM, CPU, and temperature are monitored.
 2. [ ] Local alerts are generated when variables exceed configurable thresholds.
 3. [ ] Health data is stored locally with a timestamp.
 
 **Notes:**  
-—
+Temperature monitoring especially important: RPi throttles above 80 °C (HWC-CPU-003). Alert thresholds should warn before throttle onset.
 
 ---
 
@@ -1157,10 +1266,12 @@ The system SHALL measure and record sensor health variables (disk, RAM, CPU, tem
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
+| **HW constraints**     | —                                                         |
+| **Reconciliation**     | `UNCONSTRAINED`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
-The system SHALL measure and record IP-connection quality, including RTT, channel status (Alive/Not Alive), available bandwidth, and packet loss.
+The system SHALL measure and record IP-connection quality: RTT, channel status, available bandwidth, and packet loss.
 
 **Acceptance Criteria:**
 
@@ -1169,7 +1280,7 @@ The system SHALL measure and record IP-connection quality, including RTT, channe
 3. [ ] A local record is generated when RTT or packet loss exceeds thresholds.
 
 **Notes:**  
-—
+Software network diagnostics. No COTS constraint.
 
 ---
 
@@ -1184,19 +1295,21 @@ The system SHALL measure and record IP-connection quality, including RTT, channe
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | ITU-R SM.1537; `REF-001`                                 |
 | **Dependencies**       | `ANAL-PAR-001`                                           |
+| **HW constraints**     | —                                                         |
+| **Reconciliation**     | `UNCONSTRAINED`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
-The system SHALL allow parameterized spectrum scans (frequency, RBW, VBW, duration) to be scheduled, run locally on the sensor, and store their results for later retrieval.
+The system SHALL allow parameterized spectrum scans to be scheduled, run locally, and stored.
 
 **Acceptance Criteria:**
 
 1. [ ] Scans can be scheduled with defined parameters (frequency, RBW, VBW, duration, repetition).
-2. [ ] The results of scheduled scans are stored locally.
+2. [ ] Results are stored locally.
 3. [ ] Scans run at the scheduled time with a tolerance ≤ 1 minute.
 
 **Notes:**  
-Local scheduler on the sensor (cron or equivalent).
+Local scheduler (cron or equivalent). No COTS constraint.
 
 ---
 
@@ -1217,10 +1330,12 @@ Local scheduler on the sensor (cron or equivalent).
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | `CONN-RED-004`                                           |
+| **HW constraints**     | —                                                         |
+| **Reconciliation**     | `UNCONSTRAINED`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
-The system SHALL synchronize to an NTP network clock for the time-stamping of samples.
+The system SHALL synchronize to an NTP network clock for time-stamping.
 
 **Acceptance Criteria:**
 
@@ -1229,7 +1344,7 @@ The system SHALL synchronize to an NTP network clock for the time-stamping of sa
 3. [ ] The synchronization status is queryable locally.
 
 **Notes:**  
-—
+NTP client is software. No COTS constraint.
 
 ---
 
@@ -1244,6 +1359,8 @@ The system SHALL synchronize to an NTP network clock for the time-stamping of sa
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
+| **HW constraints**     | `HWC-SDR-006`                                             |
+| **Reconciliation**     | `MITIGATED`                                               |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -1257,7 +1374,7 @@ The system SHALL include calibration procedures for frequency, receive gain, IQ 
 4. [ ] Each calibration produces a certificate or record with a date and result.
 
 **Notes:**  
-—
+Mitigation for HWC-SDR-006 (no AGC/calibrated attenuator): calibration must use external reference sources (signal generator, known-level source) to build correction tables that compensate for the HackRF's gain uncertainty.
 
 ---
 
@@ -1276,6 +1393,8 @@ The system SHALL include calibration procedures for frequency, receive gain, IQ 
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | ITU-R SM.1138; `REF-002`                                 |
 | **Dependencies**       | —                                                        |
+| **HW constraints**     | `HWC-SDR-004`                                             |
+| **Reconciliation**     | `AT_LIMIT`                                                |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -1287,7 +1406,7 @@ The system SHALL have a minimum DANL of –100 dBm across the operating range.
 2. [ ] The measurement is performed with a 50 Ω load and documented per band.
 
 **Notes:**  
-Known HackRF limitations: it has neither a calibrated attenuator nor a known reference noise source.
+At the exact limit of HWC-SDR-004 (estimated −100 dBm/Hz). Formal per-band characterization is required (REF-MEAS-001). Software averaging can improve effective DANL at the cost of temporal resolution.
 
 ---
 
@@ -1302,6 +1421,8 @@ Known HackRF limitations: it has neither a calibrated attenuator nor a known ref
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | ITU-R SM.1138; `REF-002`                                 |
 | **Dependencies**       | `CONF-CAR-001`                                           |
+| **HW constraints**     | `HWC-SDR-003`, `HWC-DRV-002`                             |
+| **Reconciliation**     | `MITIGATED`                                               |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -1313,7 +1434,7 @@ The system SHALL have a minimum dynamic range of ≥ 80 dB.
 2. [ ] The measurement is documented with the test setup and results.
 
 **Notes:**  
-—
+Mitigation for HWC-SDR-003 (8-bit ADC, ~48 dB single-capture SFDR) and HWC-DRV-002 (achievable ~90 dB with software techniques). Requires gain-stepped captures at multiple LNA/VGA settings + spectral averaging. Must be validated experimentally.
 
 ---
 
@@ -1328,6 +1449,8 @@ The system SHALL have a minimum dynamic range of ≥ 80 dB.
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
+| **HW constraints**     | `HWC-SDR-005`                                             |
+| **Reconciliation**     | `MITIGATED`                                               |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -1339,7 +1462,7 @@ The system SHALL have a maximum frequency accuracy of ± 2 ppm.
 2. [ ] The measurement is performed at room temperature (20–25 °C).
 
 **Notes:**  
-—
+Mitigation for HWC-SDR-005 (stock oscillator ± 20 ppm): replace with TCXO (± 0.5–2 ppm) or use GPS-disciplined frequency correction. One of these mitigations is required to meet the ± 2 ppm target.
 
 ---
 
@@ -1354,10 +1477,12 @@ The system SHALL have a maximum frequency accuracy of ± 2 ppm.
 | **New hardware**       | Yes (oscillator change possible)                        |
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | `CONF-CAR-003`                                           |
+| **HW constraints**     | `HWC-SDR-005`                                             |
+| **Reconciliation**     | `MITIGATED`                                               |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
-The system SHALL specify and meet a frequency drift due to aging of ≤ 1 ppm per year.
+The system SHALL meet a frequency drift due to aging of ≤ 1 ppm per year.
 
 **Acceptance Criteria:**
 
@@ -1365,7 +1490,7 @@ The system SHALL specify and meet a frequency drift due to aging of ≤ 1 ppm pe
 2. [ ] The oscillator type and its aging specification are documented.
 
 **Notes:**  
-The HackRF starts with 20–50 ppm of error, uncompensated. An oscillator change is possible. Depends on the type of oscillator used.
+Mitigation: the TCXO or OCXO selected for CONF-CAR-003 must also meet ≤ 1 ppm/year aging. GPS-disciplined correction provides continuous compensation regardless of aging.
 
 ---
 
@@ -1380,10 +1505,12 @@ The HackRF starts with 20–50 ppm of error, uncompensated. An oscillator change
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
+| **HW constraints**     | `HWC-SDR-003`, `HWC-SDR-006`                              |
+| **Reconciliation**     | `MITIGATED`                                               |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
-The system SHALL have a typical amplitude accuracy of ± 1 dB, taking into account stability, linearity, and flat response.
+The system SHALL have a typical amplitude accuracy of ± 1 dB.
 
 **Acceptance Criteria:**
 
@@ -1391,7 +1518,7 @@ The system SHALL have a typical amplitude accuracy of ± 1 dB, taking into accou
 2. [ ] Amplitude linearity is verified in 10 dB steps.
 
 **Notes:**  
-HackRF limitations: no AGC or calibrated attenuators, no pre-filters, image noise present.
+Mitigation for HWC-SDR-003 (8-bit) + HWC-SDR-006 (no AGC/calibrated attenuators): requires per-frequency, per-gain-setting calibration tables built using external reference sources. Image noise artifacts must be characterized and compensated.
 
 ---
 
@@ -1399,31 +1526,33 @@ HackRF limitations: no AGC or calibrated attenuators, no pre-filters, image nois
 
 ### 4.1 Hardware Interfaces
 
-- SDR: HackRF One (USB, internal SPI interface)
-- Embedded platform: Raspberry Pi
-- GPS: GPS module with ≤ 3 m accuracy (UART/USB)
-- Antennas: SMA connectors for band-specific antennas and the active antenna
-- 4G/5G module: USB connection with SIM slot
-- WiFi: integrated into the RPi or an external USB module
+_Detailed specifications are in HCS-ANE-EDGE-001. Summary:_
+
+- SDR: HackRF One (USB 2.0, internal SPI)
+- Embedded platform: Raspberry Pi 4B
+- GPS: Module TBD (UART/USB, ≤ 3 m accuracy)
+- Antennas: SMA connectors for band-specific and active antennas
+- 4G/5G module: USB with SIM slot
+- WiFi: RPi integrated or external USB
 - Ethernet: externally accessible RJ45
-- GPIO: multiplexing for antenna switching and peripheral control
+- GPIO: antenna mux switching and peripheral control
 - Power: solar panel + battery + charge manager
-- Storage: additional SSD/microSD for CS8
+- Storage: USB 3.0 SSD or high-capacity microSD
 
 ### 4.2 Software Interfaces
 
-- SDR driver: libhackrf / SoapySDR
-- DSP pipeline: FFT, PSD, and RBW/VBW filtering
-- Scheduler: cron or equivalent for scheduled scans
-- Network manager: automatic failover between network interfaces
+- SDR driver: libhackrf / SoapySDR (see HCS REF-DRV-001, REF-DRV-002)
+- DSP pipeline: FFT, PSD, RBW/VBW filtering
+- Scheduler: cron or equivalent
+- Network manager: automatic failover
 - NTP client: time synchronization
 
 ### 4.3 Communication Interfaces
 
-- HackRF ↔ RPi: USB 2.0 (480 Mbps; IQ raw at 20 MS/s × 8 bit = 40 MB/s)
-- GPS ↔ RPi: UART/USB (NMEA sentences)
+- HackRF ↔ RPi: USB 2.0 (see HWC-BUS-001, HWC-DRV-001)
+- GPS ↔ RPi: UART/USB, NMEA (see HWC-GPS-002)
 - 4G/5G ↔ RPi: USB (AT commands + data)
-- GPIO: control of the antenna mux, status LEDs, and battery sensors
+- GPIO: antenna mux, status LEDs, battery sensors
 
 ---
 
@@ -1431,76 +1560,115 @@ HackRF limitations: no AGC or calibrated attenuators, no pre-filters, image nois
 
 ### 5.1 Performance
 
-- DSP pipeline with latency ≤ 1 second for 20 MHz of bandwidth.
-- Minimum frequency resolution: 10 Hz.
-- Scheduled scans run with a tolerance ≤ 1 minute.
+- DSP pipeline latency ≤ 1 second for 20 MHz bandwidth (bounded by HWC-CPU-001, HWC-BUS-001).
+- Minimum frequency resolution: 10 Hz (bounded by HWC-CPU-001).
+- Scheduled scans: tolerance ≤ 1 minute.
 
 ### 5.2 Reliability
 
-- Network auto-routing for high connectivity availability (`CONN-RED-004`).
+- Network auto-routing for connectivity availability (`CONN-RED-004`).
 - Local storage in case of connectivity loss (`FORN-ALM-003`).
-- NTP sync with ≤ 100 ms offset (`CONF-SIN-001`).
+- NTP sync ≤ 100 ms offset (`CONF-SIN-001`).
 
 ### 5.3 Maintainability
 
-- OTA software updates (`CONN-SOP-001`) with rollback.
+- OTA software updates with rollback (`CONN-SOP-001`).
 - Remote SSH access for diagnostics.
 - Documented calibration procedures (`CONF-CAL-001`).
 
 ### 5.4 Accuracy
 
-- DANL ≤ –100 dBm (`CONF-CAR-001`).
-- Dynamic range ≥ 80 dB (`CONF-CAR-002`).
-- Frequency accuracy ± 2 ppm (`CONF-CAR-003`).
-- Amplitude accuracy ± 1 dB (`CONF-CAR-005`).
+- DANL ≤ –100 dBm — at HWC-SDR-004 limit (`CONF-CAR-001`).
+- Dynamic range ≥ 80 dB — mitigated via software (`CONF-CAR-002`).
+- Frequency accuracy ± 2 ppm — mitigated via TCXO/GPS (`CONF-CAR-003`).
+- Amplitude accuracy ± 1 dB — mitigated via calibration tables (`CONF-CAR-005`).
 
 ---
 
 ## 6. Traceability
 
-| Requirement ID   | Edge Subsystem           | Standard Ref              | New Hardware   |
-|------------------|--------------------------|---------------------------|----------------|
-| `ANAL-EMC-001`   | RF architecture          | —                         | Yes            |
-| `ANAL-RNG-001`   | Spectral range           | ITU-R SM.1537             | No             |
-| `ANAL-RNG-002`   | Bandwidth                | —                         | No             |
-| `ANAL-PAR-001`   | DSP parameterization     | —                         | No             |
-| `ANAL-PAR-002`   | DSP parameterization     | —                         | No             |
-| `ANAL-PAR-003`   | DSP parameterization     | —                         | No             |
-| `ANAL-PAR-004`   | DSP parameterization     | —                         | Yes            |
-| `ANAL-PAR-005`   | GPS                      | —                         | No             |
-| `ANAL-PAR-006`   | Units                    | —                         | No             |
-| `ANAL-PAR-007`   | Detection                | —                         | No             |
-| `ANAL-MED-001`   | DSP / traces             | ITU-R SM.1537             | No             |
-| `ANAL-MED-003`   | DSP / OBW                | ITU-R SM.1537             | No             |
-| `ANAL-MED-004`   | DSP / channel power      | —                         | No             |
-| `ANAL-MED-005`   | DSP / RDS                | —                         | No             |
-| `ANAL-MED-006`   | DSP / demodulation       | —                         | No             |
-| `ANAL-MED-007`   | DSP / modulation         | —                         | No             |
-| `NORM-VER-001`   | Local detection          | —                         | No             |
-| `NORM-VER-002`   | Local detection          | —                         | No             |
-| `NORM-SRV-002`   | Forensic audio           | —                         | No             |
-| `FORN-ALM-001`   | Local storage            | ITU-R SM.1537             | No             |
-| `FORN-ALM-003`   | Local storage            | —                         | Yes            |
-| `CONN-RED-001`   | Connectivity             | —                         | Yes            |
-| `CONN-RED-002`   | Connectivity             | —                         | No             |
-| `CONN-RED-003`   | Connectivity             | —                         | Yes            |
-| `CONN-RED-004`   | Connectivity             | —                         | No             |
-| `CONN-SOP-001`   | Maintenance              | —                         | No             |
-| `CONN-GPS-001`   | GPS                      | —                         | No             |
-| `CONN-GPS-002`   | GPS                      | —                         | Yes            |
-| `ANTE-ANT-001`   | Antennas                 | —                         | Yes            |
-| `ANTE-ANT-002`   | Antennas                 | ITU-T K.113, K.100        | Yes            |
-| `ANTE-RNI-001`   | Non-ionizing radiation   | ITU-T K.113, K.100        | No             |
-| `ANTE-RNI-002`   | Non-ionizing radiation   | ITU-T K.113, K.100        | No             |
-| `POWR-AUT-001`   | Power                    | —                         | Yes            |
-| `GEST-MON-001`   | Health monitoring        | —                         | No             |
-| `GEST-MON-002`   | Health monitoring        | —                         | No             |
-| `GEST-PRG-001`   | Local scheduler          | ITU-R SM.1537             | No             |
-| `CONF-SIN-001`   | Synchronization          | —                         | No             |
-| `CONF-CAL-001`   | Calibration              | —                         | No             |
-| `CONF-CAR-001`   | Characterization         | ITU-R SM.1138             | No             |
-| `CONF-CAR-002`   | Characterization         | ITU-R SM.1138             | No             |
-| `CONF-CAR-003`   | Characterization         | —                         | No             |
-| `CONF-CAR-004`   | Characterization         | —                         | Yes            |
-| `CONF-CAR-005`   | Characterization         | —                         | No             |
+| Requirement ID   | Subsystem              | Standard Ref        | HW Constraint(s)                        | Reconciliation  | New HW |
+|------------------|------------------------|---------------------|-----------------------------------------|-----------------|--------|
+| `ANAL-EMC-001`   | RF architecture        | —                   | `HWC-SDR-007`                           | `MITIGATED`     | Yes    |
+| `ANAL-RNG-001`   | Spectral range         | ITU-R SM.1537       | `HWC-SDR-001`                           | `AT_LIMIT`      | No     |
+| `ANAL-RNG-002`   | Bandwidth              | —                   | `HWC-SDR-002`, `HWC-BUS-001`, `HWC-CPU-001`, `HWC-DRV-001` | `AT_LIMIT` | No |
+| `ANAL-PAR-001`   | DSP parameterization   | —                   | `HWC-SDR-001`                           | `BOUNDED`       | No     |
+| `ANAL-PAR-002`   | DSP parameterization   | —                   | —                                       | `UNCONSTRAINED` | No     |
+| `ANAL-PAR-003`   | DSP parameterization   | —                   | `HWC-CPU-001`                           | `BOUNDED`       | No     |
+| `ANAL-PAR-004`   | DSP parameterization   | —                   | —                                       | `UNCONSTRAINED` | Yes    |
+| `ANAL-PAR-005`   | GPS                    | —                   | `HWC-GPS-002`                           | `UNCONSTRAINED` | No     |
+| `ANAL-PAR-006`   | Units                  | —                   | —                                       | `UNCONSTRAINED` | No     |
+| `ANAL-PAR-007`   | Detection              | —                   | `HWC-SDR-004`                           | `BOUNDED`       | No     |
+| `ANAL-MED-001`   | DSP / traces           | ITU-R SM.1537       | `HWC-CPU-001`                           | `BOUNDED`       | No     |
+| `ANAL-MED-003`   | DSP / OBW              | ITU-R SM.1537       | `HWC-SDR-002`                           | `BOUNDED`       | No     |
+| `ANAL-MED-004`   | DSP / channel power    | —                   | `HWC-SDR-002`                           | `AT_LIMIT`      | No     |
+| `ANAL-MED-005`   | DSP / RDS              | —                   | —                                       | `UNCONSTRAINED` | No     |
+| `ANAL-MED-006`   | DSP / demodulation     | —                   | `HWC-SDR-001`                           | `BOUNDED`       | No     |
+| `ANAL-MED-007`   | DSP / modulation       | —                   | —                                       | `UNCONSTRAINED` | No     |
+| `NORM-VER-001`   | Local detection        | —                   | `HWC-SDR-007`                           | `MITIGATED`     | No     |
+| `NORM-VER-002`   | Local detection        | —                   | `HWC-SDR-004`                           | `BOUNDED`       | No     |
+| `NORM-SRV-002`   | Forensic audio         | —                   | `HWC-STR-001`                           | `BOUNDED`       | No     |
+| `FORN-ALM-001`   | Local storage          | ITU-R SM.1537       | `HWC-STR-001`, `HWC-DRV-001`           | `BOUNDED`       | No     |
+| `FORN-ALM-003`   | Local storage          | —                   | `HWC-STR-001`                           | `AT_LIMIT`      | Yes    |
+| `CONN-RED-001`   | Connectivity           | —                   | —                                       | `UNCONSTRAINED` | Yes    |
+| `CONN-RED-002`   | Connectivity           | —                   | —                                       | `UNCONSTRAINED` | No     |
+| `CONN-RED-003`   | Connectivity           | —                   | —                                       | `UNCONSTRAINED` | Yes    |
+| `CONN-RED-004`   | Connectivity           | —                   | —                                       | `UNCONSTRAINED` | No     |
+| `CONN-SOP-001`   | Maintenance            | —                   | —                                       | `UNCONSTRAINED` | No     |
+| `CONN-GPS-001`   | GPS                    | —                   | `HWC-GPS-002`                           | `UNCONSTRAINED` | No     |
+| `CONN-GPS-002`   | GPS                    | —                   | `HWC-GPS-001`                           | `BOUNDED`       | Yes    |
+| `ANTE-ANT-001`   | Antennas               | —                   | `HWC-SDR-001`                           | `BOUNDED`       | Yes    |
+| `ANTE-ANT-002`   | Antennas               | ITU-T K.113, K.100  | `HWC-SDR-001`                           | `BOUNDED`       | Yes    |
+| `ANTE-RNI-001`   | Non-ionizing radiation | ITU-T K.113, K.100  | —                                       | `UNCONSTRAINED` | No     |
+| `ANTE-RNI-002`   | Non-ionizing radiation | ITU-T K.113, K.100  | `HWC-SDR-006`                           | `MITIGATED`     | No     |
+| `POWR-AUT-001`   | Power                  | —                   | `HWC-PWR-001`                           | `BOUNDED`       | Yes    |
+| `GEST-MON-001`   | Health monitoring      | —                   | `HWC-CPU-002`, `HWC-CPU-003`           | `BOUNDED`       | No     |
+| `GEST-MON-002`   | Health monitoring      | —                   | —                                       | `UNCONSTRAINED` | No     |
+| `GEST-PRG-001`   | Local scheduler        | ITU-R SM.1537       | —                                       | `UNCONSTRAINED` | No     |
+| `CONF-SIN-001`   | Synchronization        | —                   | —                                       | `UNCONSTRAINED` | No     |
+| `CONF-CAL-001`   | Calibration            | —                   | `HWC-SDR-006`                           | `MITIGATED`     | No     |
+| `CONF-CAR-001`   | Characterization       | ITU-R SM.1138       | `HWC-SDR-004`                           | `AT_LIMIT`      | No     |
+| `CONF-CAR-002`   | Characterization       | ITU-R SM.1138       | `HWC-SDR-003`, `HWC-DRV-002`           | `MITIGATED`     | No     |
+| `CONF-CAR-003`   | Characterization       | —                   | `HWC-SDR-005`                           | `MITIGATED`     | No     |
+| `CONF-CAR-004`   | Characterization       | —                   | `HWC-SDR-005`                           | `MITIGATED`     | Yes    |
+| `CONF-CAR-005`   | Characterization       | —                   | `HWC-SDR-003`, `HWC-SDR-006`           | `MITIGATED`     | No     |
 
+---
+
+## 7. G0 Structural Validation (Future Work)
+
+> **Status:** `PLANNED` — This section defines the objective for automated AI-based structural validation of the SRS–HCS document pair. Implementation is deferred to a future phase.
+
+### 7.1 Objective
+
+G0 is an AI agent whose purpose is to structurally validate the consistency and completeness of the SRS–HCS document pair. G0 does NOT generate requirements; it reviews them.
+
+### 7.2 G0 Input Contract
+
+| Input                | Source Document      | Format                                    |
+|----------------------|----------------------|-------------------------------------------|
+| Requirements         | SRS-ANE-EDGE-001     | Requirement blocks per Section 3 schema   |
+| COTS Constraints     | HCS-ANE-EDGE-001     | Constraint blocks per HCS Section 3 schema |
+| Reconciliation status| SRS-ANE-EDGE-001     | `reconciliation` field per requirement    |
+
+### 7.3 G0 Validation Rules (Planned)
+
+1. **Structural completeness:** Every mandatory field is present and uses a valid enum value.
+2. **ID uniqueness:** No duplicate IDs across the SRS–HCS pair.
+3. **Cross-reference integrity:** Every `hw_constraints` ID in the SRS exists in the HCS, and vice versa.
+4. **Reconciliation consistency:** If `hw_constraints` is non-empty, `reconciliation` cannot be `UNCONSTRAINED` (exception: when the constraint is `INFORMATIONAL` impact).
+5. **Conflict detection:** If a requirement's quantitative parameter matches a constraint's limit, `reconciliation` must be `AT_LIMIT` or `MITIGATED`.
+6. **Mitigation documentation:** If `reconciliation` is `MITIGATED`, `notes` must describe the mitigation.
+7. **Dependency graph:** No circular dependencies. All referenced IDs exist.
+8. **Traceability coverage:** Every requirement in Section 3 appears in the Section 6 matrix.
+
+### 7.4 G0 Output
+
+A **Conflict Analysis Matrix**:
+
+| Conflict ID | Requirement      | Constraint      | Severity                         | Resolution           |
+|-------------|-----------------|-----------------|----------------------------------|----------------------|
+| `CON-001`   | `ANAL-RNG-001`  | `HWC-SDR-001`  | `OK` — boundary match           | None needed          |
+| `CON-002`   | `CONF-CAR-002`  | `HWC-SDR-003`  | `WARNING` — 80 dB vs 48 dB ADC  | Gain stepping + averaging |
+| `CON-003`   | `CONF-CAR-003`  | `HWC-SDR-005`  | `CONFLICT` — ±2 ppm vs ±20 ppm  | TCXO replacement or GPS discipline |
+| `CON-004`   | `ANAL-RNG-002`  | `HWC-BUS-001`  | `WARNING` — 40 MB/s vs 32 MB/s  | Accept sample drops or reduce rate |

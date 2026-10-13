@@ -84,20 +84,25 @@ codeanvil-gcpds/
 │       └── create.py        # Scaffold projects from templates
 │
 ├── methodology/test/        # Test GT cases (V-SIL system inputs)
+│   ├── T0_ANE-Lap2/        # ANE edge sensor (SRS + HCS examples, Phase 2)
 │   ├── T1_FM-monitoring/    # SDR-based FM compliance monitoring (LaTeX spec)
 │   └── T2_IoT-Indoor/      # Indoor IoT radio environment (Hermes/GCPDS)
 │
 ├── templates/               # The methodology (the real product)
-│   ├── GT/                  # Ground Truth document templates
-│   │   ├── placeholder_requirements.md
-│   │   ├── placeholder_hw_restrictions.md
-│   │   └── placeholder_normativity.md
+│   ├── GT/                  # Ground Truth document templates (IEEE 29148)
+│   │   ├── G0_SRS.md       # SRS template
+│   │   ├── G0_HCS.md       # HCS template (§2.4 Design Constraints)
+│   │   ├── README.md
+│   │   └── legacy/         # Old template versions (v1, v2)
 │   └── skills/              # Gate skills (deterministic + agent-driven)
 │       ├── G0_valid_req_and_GT/
 │       │   ├── SKILL.md
-│       │   └── scripts/valid_structure.py
+│       │   └── scripts/g0_validate.py  ← PLANNED (see plans/g0_skill.md)
 │       └── G1_start_design/
 │           └── SKILL.md
+│
+├── plans/                   # Implementation plans
+│   └── g0_skill.md          # G0 deterministic validation script plan
 │
 ├── CLAUDE.md                # Development context for AI coding agents
 └── AGENTS.md                # Agent architecture documentation

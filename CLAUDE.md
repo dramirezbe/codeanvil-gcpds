@@ -46,6 +46,12 @@ CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks stat
 - **Skill**: `SKILL.md` + optional scripts that define what happens at a gate. Agent-agnostic — any coding agent that reads markdown can execute them. Live in `templates/skills/`.
 - **Session**: persistent record of a project's progress through gates, stored in SQLite.
 
+## Active plans
+
+| Plan                | Path                  | Status  | Description                                                        |
+|---------------------|-----------------------|---------|--------------------------------------------------------------------|
+| G0 validation script | `plans/g0_skill.md`  | PLANNED | Deterministic Python script to structurally validate SRS/HCS against IEEE 29148 templates |
+
 ## Development rules
 
 - Do not conflate the two sides: `src/` changes are tooling changes, `templates/` changes are methodology changes.
