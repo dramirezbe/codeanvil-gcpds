@@ -7,7 +7,8 @@ from codeanvil.config.paths import DB_PATH, ensure_dirs
 from codeanvil.db.schema import db_exists, create_schema
 from codeanvil.db.utils import connect_db
 from codeanvil.init.check import preflight, check_project_path
-from codeanvil.init.create import scaffold_project, register_project
+from codeanvil.db.projects import get_project_by_name, list_projects, register_project
+from codeanvil.init.create import scaffold_project
 
 log = get_logger(__name__)
 
@@ -115,7 +116,7 @@ def cmd_list() -> None:
         sys.exit(1)
 
     conn = connect_db(DB_PATH)
-    rows = conn.execute("SELECT id, name, path, created_at FROM projects ORDER BY created_at DESC").fetchall()
+    rows = list_projects(conn)
     conn.close()
 
     if not rows:
@@ -131,7 +132,7 @@ def cmd_status(name: str) -> None:
         sys.exit(1)
 
     conn = connect_db(DB_PATH)
-    project = conn.execute("SELECT id FROM projects WHERE name = ?", (name,)).fetchone()
+    project = get_project_by_name(conn, name)
     if not project:
         log.error("project '%s' not found", name)
         sys.exit(1)

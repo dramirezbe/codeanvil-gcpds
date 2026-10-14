@@ -20,6 +20,7 @@ packages = ["src/codeanvil"]
 "templates/skills" = "codeanvil/templates/skills"
 "templates/GT/G0_SRS.md" = "codeanvil/templates/GT/G0_SRS.md"
 "templates/GT/G0_HCS.md" = "codeanvil/templates/GT/G0_HCS.md"
+"templates/GT/README.md.template" = "codeanvil/templates/GT/README.md.template"
 "templates/config.yaml" = "codeanvil/templates/config.yaml"
 "templates/AGENTS" = "codeanvil/templates/AGENTS"
 
@@ -27,5 +28,6 @@ packages = ["src/codeanvil"]
 "templates/skills" = "codeanvil/templates/skills"
 "templates/GT/G0_SRS.md" = "codeanvil/templates/GT/G0_SRS.md"
 "templates/GT/G0_HCS.md" = "codeanvil/templates/GT/G0_HCS.md"
+"templates/GT/README.md.template" = "codeanvil/templates/GT/README.md.template"
 "templates/config.yaml" = "codeanvil/templates/config.yaml"
 "templates/AGENTS" = "codeanvil/templates/AGENTS"

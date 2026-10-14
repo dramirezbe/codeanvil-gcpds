@@ -1,81 +1,13 @@
 import re
 import shutil
-from importlib import resources
 from pathlib import Path
 
 import yaml
 
 from codeanvil.config.logger import get_logger
+from codeanvil.config.paths import CONFIG, SKILLS_DIRNAME, TEMPLATES_DIR
 
 log = get_logger(__name__)
-
-
-def _find_templates_dir() -> Path:
-    """Locate the templates directory.
-    Works for both editable installs (source tree) and wheel installs
-    (templates bundled inside the package via force-include)."""
-    # Editable install: templates/ lives 3 levels above this file
-    dev_path = Path(__file__).resolve().parents[3] / "templates"
-    if dev_path.is_dir():
-        return dev_path
-    # Wheel install: hatch force-includes templates into codeanvil/templates/
-    pkg_path = Path(str(resources.files("codeanvil") / "templates"))
-    if pkg_path.is_dir():
-        return pkg_path
-    raise FileNotFoundError("Cannot locate templates directory")
-
-
-TEMPLATES_DIR = _find_templates_dir()
-
-
-def _load_config() -> dict:
-    """Load templates/config.yaml — the single source of truth for the
-    scaffold (skills, agent symlinks, pointer files, template paths)."""
-    config_path = TEMPLATES_DIR / "config.yaml"
-    with config_path.open(encoding="utf-8") as fh:
-        config = yaml.safe_load(fh)
-    if not isinstance(config, dict):
-        raise ValueError(f"invalid scaffold config: {config_path} is empty or not a mapping")
-    return config
-
-
-# Loaded once at import time; every scaffold run re-reads it per process.
-CONFIG = _load_config()
-
-# Canonical skill store in the scaffolded project. All agent runtimes
-# discover skills through symlinks pointing here.
-SKILLS_DIRNAME = Path(".agents") / "skills"
-
-# Never copy build artifacts or legacy empty scripts into a project.
-COPY_IGNORE = shutil.ignore_patterns("__pycache__", "*.pyc", "valid_structure_SRS.py")
-
-# Repo-root paths inside SKILL.md / RULES.md become project-relative after copy.
-# Order matters: apply in dict insertion order.
-PATH_REPLACEMENTS = {
-    "templates/skills/": ".agents/skills/",
-    "templates/GT/G0_SRS.md": ".agents/skills/G0_valid_req_and_GT/templates/G0_SRS.md",
-    "templates/GT/G0_HCS.md": ".agents/skills/G0_valid_req_and_GT/templates/G0_HCS.md",
-    "(repository-root relative)": "(project-root relative)",
-}
-
-GT_README = """# Ground Truth (GT)
-
-Write your project's GT files here:
-
-- `SRS.md` — System Requirements Specification
-- `HCS.md` — Hardware Constraints Specification
-
-These are **your** files: edit them freely. The expected structure is defined by the
-locked reference templates in `.agents/skills/{skill}/templates/` — do not edit those.
-
-Validate your GT files (deterministic, no AI):
-
-```bash
-python .agents/skills/{skill}/scripts/g0_validate.py GT/SRS.md GT/HCS.md
-```
-
-Exit code `0` means G0 passes; `1` means structural errors block the gate.
-"""
 
 
 def scaffold_project(name: str, target: Path) -> Path:
@@ -101,7 +33,7 @@ def _copy_skills(project_dir: Path) -> None:
         return
 
     skills_dest = project_dir / SKILLS_DIRNAME
-    shutil.copytree(skills_src, skills_dest, dirs_exist_ok=True, ignore=COPY_IGNORE)
+    shutil.copytree(skills_src, skills_dest, dirs_exist_ok=True, ignore=shutil.ignore_patterns(*CONFIG["copy_ignore"]))
     log.debug("copied skills to %s", skills_dest)
 
 
@@ -127,7 +59,7 @@ def _rewrite_skill_paths(skills_root: Path) -> None:
     for md_file in skills_root.rglob("*.md"):
         original = md_file.read_text(encoding="utf-8")
         rewritten = original
-        for old, new in PATH_REPLACEMENTS.items():
+        for old, new in CONFIG["path_replacements"].items():
             rewritten = rewritten.replace(old, new)
         if rewritten != original:
             md_file.write_text(rewritten, encoding="utf-8")
@@ -140,7 +72,8 @@ def _create_gt_dir(project_dir: Path) -> None:
     gt_dir.mkdir(exist_ok=True)
     readme = gt_dir / "README.md"
     if not readme.exists():
-        readme.write_text(GT_README.format(skill=CONFIG["g0_skill"]), encoding="utf-8")
+        template = (TEMPLATES_DIR / "GT" / "README.md.template").read_text(encoding="utf-8")
+        readme.write_text(template.format(skill=CONFIG["g0_skill"]), encoding="utf-8")
 
 
 def _link_agent_skill_dirs(project_dir: Path) -> None:
@@ -295,18 +228,3 @@ def _link_agent_configs(project_dir: Path) -> None:
             pointer.unlink()  # replace symlinks: pointer files must be regular files
         pointer.write_text(str(pointer_text).rstrip("\n") + "\n", encoding="utf-8")
         log.debug("wrote pointer file %s", pointer)
-
-
-def register_project(conn, name: str, path: Path) -> int:
-    existing = conn.execute("SELECT id FROM projects WHERE name = ?", (name,)).fetchone()
-    if existing:
-        log.info("project '%s' already registered (id=%d) — skipping insert", name, existing["id"])
-        return existing["id"]
-
-    cur = conn.execute(
-        "INSERT INTO projects (name, path) VALUES (?, ?)",
-        (name, str(path)),
-    )
-    conn.commit()
-    log.info("registered project '%s' (id=%d)", name, cur.lastrowid)
-    return cur.lastrowid
