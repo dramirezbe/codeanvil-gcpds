@@ -1,0 +1,57 @@
+# Single source of truth for the project scaffold.
+# Consumed by src/codeanvil/init/create.py — keep paths repo-root-relative.
+
+skills:
+  G0_valid_req_and_GT:
+    project_dir: ".agents/skills/G0_valid_req_and_GT"
+    template_dir: "templates/skills/G0_valid_req_and_GT"
+  G1_start_design:
+    project_dir: ".agents/skills/G1_start_design"
+    template_dir: "templates/skills/G1_start_design"
+
+# Skill directory symlinks — agent runtimes that discover skills
+# via a directory convention.
+agent_skill_links:
+  # Claude Code — native skill discovery
+  ".claude/skills": "../.agents/skills"
+  # GitHub Copilot — native skill discovery at .github/skills/
+  ".github/skills": "../.agents/skills"
+  # Antigravity — reads .agents/skills/ directly (no symlink needed,
+  # it's the canonical path), but kept for completeness
+  # OpenCode / Codex — no documented skill discovery, harmless symlinks
+  ".opencode/skills": "../.agents/skills"
+  ".codex/skills": "../.agents/skills"
+
+# Instruction file symlinks — point agent-specific config files
+# to the canonical AGENTS.md.
+# Only include conventions that real tools actually read.
+agent_config_links:
+  # Claude Code — symlink, safest for all versions (pre/post v2.1.277)
+  "CLAUDE.md": "AGENTS.md"
+
+# Instruction pointer files — written as one-line references to AGENTS.md
+# instead of symlinks, to avoid duplicate context loading in agents
+# that read multiple instruction files additively.
+agent_pointer_files:
+  # Copilot reads AGENTS.md + CLAUDE.md + copilot-instructions.md
+  # additively. A symlink would triple-load the same content.
+  ".github/copilot-instructions.md": "See [AGENTS.md](../AGENTS.md) for project instructions."
+
+  # REMOVED — no tool reads these:
+  #   "COPILOT.md"          — fictional convention, nothing reads it
+  #   ".gemini/AGENTS.md"   — Gemini CLI is dead; Antigravity reads
+  #                           root AGENTS.md natively; Gemini read
+  #                           GEMINI.md at root, not .gemini/AGENTS.md
+
+  # OPTIONAL legacy fallback (uncomment if needed):
+  #   "GEMINI.md": "See AGENTS.md for project instructions."
+
+agents_template: "templates/AGENTS/TEMPLATE_AGENT.md"
+
+# Skill that owns the locked GT reference templates and is referenced by
+# the GT README (deterministic key, not derived from frontmatter).
+g0_skill: "G0_valid_req_and_GT"
+
+gt_reference_templates:
+  - "G0_SRS.md"
+  - "G0_HCS.md"

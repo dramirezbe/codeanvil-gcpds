@@ -1,6 +1,6 @@
 # Plan: AGENTS.md Template + Config-Driven Scaffold
 
-**Status:** PLANNED
+**Status:** DONE (2026-10-14, branch `feat/agents-md-template`)
 
 ## Context
 

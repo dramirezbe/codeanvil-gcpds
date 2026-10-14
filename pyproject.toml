@@ -8,6 +8,7 @@ version = "0.1.0"
 requires-python = ">=3.10"
 description = "V-SIL methodology harness — agent-agnostic project scaffolding and gate validation"
 license = "Apache-2.0"
+dependencies = ["pyyaml"]
 
 [project.scripts]
 codeanvil = "codeanvil.CLI.cli:main"
@@ -19,8 +20,12 @@ packages = ["src/codeanvil"]
 "templates/skills" = "codeanvil/templates/skills"
 "templates/GT/G0_SRS.md" = "codeanvil/templates/GT/G0_SRS.md"
 "templates/GT/G0_HCS.md" = "codeanvil/templates/GT/G0_HCS.md"
+"templates/config.yaml" = "codeanvil/templates/config.yaml"
+"templates/AGENTS" = "codeanvil/templates/AGENTS"
 
 [tool.hatch.build.targets.sdist.force-include]
 "templates/skills" = "codeanvil/templates/skills"
 "templates/GT/G0_SRS.md" = "codeanvil/templates/GT/G0_SRS.md"
 "templates/GT/G0_HCS.md" = "codeanvil/templates/GT/G0_HCS.md"
+"templates/config.yaml" = "codeanvil/templates/config.yaml"
+"templates/AGENTS" = "codeanvil/templates/AGENTS"
