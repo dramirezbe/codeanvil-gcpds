@@ -12,26 +12,34 @@
 \usepackage{enumitem}
 \usepackage{xcolor}
 \usepackage{tikz}
-\usetikzlibrary{positioning, shapes.geometric, arrows.meta, calc, fit, backgrounds}
+\usetikzlibrary{positioning, shapes.geometric, arrows.meta, calc, fit, backgrounds,
+                decorations.pathreplacing}
 \usepackage{hyperref}
 \usepackage[noabbrev,capitalise]{cleveref}
 
 % ---------------------------------------------------------------------------
-% Color definitions (per PLAN)
+% Color definitions
 % ---------------------------------------------------------------------------
-\definecolor{coral}{HTML}{f87171}
-\definecolor{vblue}{HTML}{3b82f6}
-\definecolor{vteal}{HTML}{14b8a6}
-\definecolor{vred}{HTML}{ef4444}
-\definecolor{amber}{HTML}{f59e0b}
-\definecolor{violet}{HTML}{8b5cf6}
-\definecolor{vgrey}{HTML}{6b7280}
+% --- zz_Workflow origin (conceptual methodology) ---
+\definecolor{zzblue}{HTML}{3b82f6}     % Ctx stages, design arm
+\definecolor{coral}{HTML}{f87171}      % Human gates H (zz_Workflow)
+% --- V-SIL implementation (what CodeAnvil builds) ---
+\definecolor{vsgreen}{HTML}{16a34a}    % G0, GT, implemented gates
+\definecolor{vteal}{HTML}{14b8a6}      % CI+SIL tests (right arm)
+\definecolor{amber}{HTML}{f59e0b}      % Mock HAL, synthetic I/Q
+% --- Shared / other ---
+\definecolor{vred}{HTML}{ef4444}       % HIL acceptance (gap)
+\definecolor{violet}{HTML}{8b5cf6}     % PCG post-development
+\definecolor{vgrey}{HTML}{6b7280}      % neutral, valley
+% --- Region backgrounds ---
+\definecolor{zzbg}{HTML}{EBF0FA}       % zz_Workflow region tint
+\definecolor{vsbg}{HTML}{E8F5EE}       % V-SIL region tint
 
 \hypersetup{
   colorlinks=true,
-  linkcolor=vblue!70!black,
+  linkcolor=zzblue!70!black,
   citecolor=vteal!70!black,
-  urlcolor=vblue!70!black
+  urlcolor=zzblue!70!black
 }
 
 \setlist[itemize]{leftmargin=1.4em, topsep=0.35em, itemsep=0.15em}
@@ -61,8 +69,9 @@ presents \textbf{V-SIL}, a three-layer governed lifecycle that integrates concep
 (the zz\_Workflow prototype-development engine), continuous software development
 (CI with Software-in-the-Loop), and post-development operations (the Production Pipeline, PCG)
 into a single, auditable pipeline for SDR FM broadcast compliance monitoring. Layer~1 defines and
-validates the concept through context-bounded stages, human readiness gates, and six governing
-artefacts. Layer~2 makes the V-model's right arm continuous: the same test levels run on every
+validates the concept through context-bounded stages, human readiness gates, a deterministic
+structural gate (G0) that validates Ground Truth documents against IEEE 29148 templates before
+any AI-driven gate runs, and six governing artefacts. Layer~2 makes the V-model's right arm continuous: the same test levels run on every
 commit, merge, and nightly build against a Mock HAL fed by synthetic I/Q, with deterministic
 acceptance gates. Layer~3 governs the deployed array through a circular five-stage production
 pipeline, a versioned promotion and rollback gate, capability-class maturation, GUM uncertainty
@@ -116,8 +125,9 @@ governed lifecycle for the SDR FM sensor:
 \begin{itemize}
   \item \textbf{Layer 1 --- Conceptual Validation} (source: the zz\_Workflow
     prototype-development engine): four context-bounded stages (Ctx 00--03) that define and
-    validate \emph{what to build}, protected by human readiness gates and closed by a
-    \emph{Verified Prototype + Evidence}.
+    validate \emph{what to build}, starting from Ground Truth documents (SRS and HCS,
+    structured per IEEE 29148 \cite{ieee29148}), protected by a deterministic structural gate
+    (G0), human readiness gates, and closed by a \emph{Verified Prototype + Evidence}.
   \item \textbf{Layer 2 --- Software Development} (source: CI+SIL): continuous integration with
     software-in-the-loop, which keeps the V-model's four test levels but makes the right arm
     continuous, triggering on every code, prompt, model, or context change.
@@ -139,7 +149,11 @@ regulatory governance. Detail is deferred to \cref{sec:layer1,sec:layer2,sec:lay
 \cref{fig:vsil} shows the V-SIL lifecycle as a whole. The upper part is the classical V shape:
 a descending left arm that defines the system, an ascending right arm that tests it, and a
 valley where implementation happens. Each left-hand level \emph{defines the tests} for the
-right-hand level that mirrors it (dashed links). V-SIL re-reads the right arm as continuous
+right-hand level that mirrors it (dashed links). Before the first human readiness gate, Gate~G0
+(green) performs a deterministic structural validation of the Ground Truth documents (SRS and
+HCS) against IEEE 29148 templates---no AI, pure script, binary pass/fail. Only after G0 passes
+does the human gate H decide whether requirements are complete, bounded, and verifiable.
+V-SIL re-reads the right arm as continuous
 software-in-the-loop: the unit, integration, and system levels run on every commit, merge, and
 nightly build respectively, against a Mock HAL fed by synthetic I/Q---no live RF is required.
 Only the apex, acceptance testing, remains at hardware-in-the-loop with the real device: it is
@@ -149,56 +163,108 @@ stages, from the development sandbox to metrological guardrails and back.
 
 \begin{figure}[htbp]
 \centering
+\resizebox{\textwidth}{!}{%
 \begin{tikzpicture}[
   font=\footnotesize,
   >={Stealth[length=2.4mm]},
-  armL/.style={draw=vblue!70!black, fill=vblue!6, rounded corners=3pt,
-               align=center, minimum width=3.2cm, minimum height=0.82cm, inner sep=3pt},
-  armR/.style={draw=vteal!70!black, fill=vteal!6, rounded corners=3pt,
-               align=center, minimum width=3.2cm, minimum height=0.82cm, inner sep=3pt},
-  hil/.style={armR, draw=vred!80!black, fill=vred!8},
-  gate/.style={draw=coral!80!black, fill=coral!20, diamond, aspect=2,
-               inner sep=0.5pt, font=\footnotesize\bfseries},
-  fL/.style={draw=vblue!70!black, thick, -{Stealth}},
-  fR/.style={draw=vteal!70!black, thick, -{Stealth}},
-  def/.style={draw=vgrey!55, dashed, thin}
+  % --- zz_Workflow styles (blue family) ---
+  zzbox/.style={draw=zzblue!70!black, fill=zzblue!6, rounded corners=3pt,
+                align=center, minimum width=30mm, minimum height=8.5mm, inner sep=3pt},
+  zzgate/.style={draw=coral!80!black, fill=coral!20, diamond, aspect=2,
+                 inner sep=0.5pt, font=\footnotesize\bfseries},
+  zzflow/.style={draw=zzblue!70!black, thick, -{Stealth}},
+  % --- V-SIL implementation styles (green family) ---
+  vsbox/.style={draw=vsgreen!70!black, fill=vsgreen!6, rounded corners=3pt,
+                align=center, minimum width=30mm, minimum height=8.5mm, inner sep=3pt},
+  vsgate/.style={draw=vsgreen!80!black, fill=vsgreen!20, diamond, aspect=2,
+                 inner sep=0.5pt, font=\footnotesize\bfseries},
+  vsflow/.style={draw=vsgreen!70!black, thick, -{Stealth}},
+  % --- CI+SIL styles (teal, V-SIL right arm) ---
+  cibox/.style={draw=vteal!70!black, fill=vteal!6, rounded corners=3pt,
+                align=center, minimum width=30mm, minimum height=8.5mm, inner sep=3pt},
+  ciflow/.style={draw=vteal!70!black, thick, -{Stealth}},
+  % --- Shared ---
+  hil/.style={cibox, draw=vred!80!black, fill=vred!8},
+  def/.style={draw=vgrey!55, dashed, thin},
+  % --- Side bracket ---
+  brace/.style={decorate, decoration={brace, amplitude=4pt, raise=2pt}}
 ]
 
-% ---- Left arm (design, descending) ----
+% ============================================================
+% LEFT ARM — design, descending
+% ============================================================
 \node[draw=coral!80!black, fill=coral!15, rounded corners=3pt, align=center,
-      minimum width=3.2cm, inner sep=3pt] (ctx00) at (-4.5,7.4)
+      minimum width=30mm, inner sep=3pt] (ctx00) at (-4.2,8.0)
       {\textbf{Ctx 00}\\[-1pt]{\scriptsize Problem Baseline}};
 
-\node[armL] (l1L) at (-4.5,6.05) {\textbf{System Req.}\\[-1pt]{\scriptsize Ctx 01}};
-\node[gate] (g1)  at (-4.5,5.15) {H};
-\node[armL] (l2L) at (-4.5,4.25) {\textbf{System Design}\\[-1pt]{\scriptsize Ctx 02}};
-\node[armL] (l3L) at (-4.5,3.05) {\textbf{Arch.\ Design}\\[-1pt]{\scriptsize Ctx 02}};
-\node[gate] (g2)  at (-4.5,2.15) {H};
-\node[armL] (l4L) at (-4.5,1.25) {\textbf{Module Design}\\[-1pt]{\scriptsize Ctx 03}};
+\node[zzbox] (l1L) at (-4.2,6.9) {\textbf{Ctx 01}\\[-1pt]{\scriptsize Requirements}};
 
-\draw[fL] (ctx00.south) -- (l1L.north);
-\draw[fL] (l1L.south)   -- (g1.north);
-\draw[fL] (g1.south)    -- (l2L.north);
-\draw[fL] (l2L.south)   -- (l3L.north);
-\draw[fL] (l3L.south)   -- (g2.north);
-\draw[fL] (g2.south)    -- (l4L.north);
+% --- GT + G0 (V-SIL implementation) ---
+\node[vsbox] (gt) at (-4.2,5.9)
+      {\textbf{GT Documents}\\[-1pt]{\scriptsize SRS + HCS (IEEE 29148)}};
+\node[vsgate] (g0) at (-4.2,5.05) {G0};
 
-% ---- Right arm (test, ascending) ----
-\node[hil]  (l1R) at (4.5,6.05) {\textbf{Acceptance}\\[-1pt]
+\node[zzgate] (g1)  at (-4.2,4.25) {H};
+\node[zzbox] (l2L) at (-4.2,3.35) {\textbf{System Design}\\[-1pt]{\scriptsize Ctx 02}};
+\node[zzbox] (l3L) at (-4.2,2.25) {\textbf{Arch.\ Design}\\[-1pt]{\scriptsize Ctx 02}};
+\node[zzgate] (g2)  at (-4.2,1.45) {H};
+\node[zzbox] (l4L) at (-4.2,0.55) {\textbf{Module Design}\\[-1pt]{\scriptsize Ctx 03}};
+
+% Left arm flow
+\draw[zzflow] (ctx00.south) -- (l1L.north);
+\draw[zzflow] (l1L.south)   -- (gt.north);
+\draw[vsflow] (gt.south)    -- (g0.north);
+\draw[vsflow] (g0.south)    -- (g1.north);
+\draw[zzflow] (g1.south)    -- (l2L.north);
+\draw[zzflow] (l2L.south)   -- (l3L.north);
+\draw[zzflow] (l3L.south)   -- (g2.north);
+\draw[zzflow] (g2.south)    -- (l4L.north);
+
+% ============================================================
+% SIDE BRACKETS — zz_Workflow vs V-SIL origin
+% ============================================================
+% zz_Workflow bracket (left side of left arm)
+\draw[brace, zzblue!60!black] ([xshift=-3mm]ctx00.north west)
+  -- ([xshift=-3mm]l1L.south west)
+  node[midway, left=5pt, font=\scriptsize\itshape, text=zzblue!70!black,
+       align=right, rotate=90, anchor=south] {zz\_Workflow};
+\draw[brace, zzblue!60!black] ([xshift=-3mm]l2L.north west)
+  -- ([xshift=-3mm]l4L.south west)
+  node[midway, left=5pt, font=\scriptsize\itshape, text=zzblue!70!black,
+       align=right, rotate=90, anchor=south] {zz\_Workflow};
+
+% V-SIL bracket (right side of GT+G0)
+\draw[brace, vsgreen!60!black] ([xshift=3mm]gt.north east)
+  -- ([xshift=3mm]g0.south east)
+  node[midway, right=5pt, font=\scriptsize\itshape, text=vsgreen!70!black,
+       align=left] {V-SIL\\[-1pt]{\scriptsize deterministic}};
+
+% ============================================================
+% RIGHT ARM — test, ascending (CI+SIL)
+% ============================================================
+\node[hil]  (l1R) at (4.2,6.9) {\textbf{Acceptance}\\[-1pt]
   {\scriptsize\color{vred}HIL + real HW}};
-\node[armR] (l2R) at (4.5,4.25) {\textbf{System Tests}\\[-1pt]
+\node[cibox] (l2R) at (4.2,3.35) {\textbf{System Tests}\\[-1pt]
   {\scriptsize SIL $\cdot$ nightly}};
-\node[armR] (l3R) at (4.5,3.05) {\textbf{Integration}\\[-1pt]
+\node[cibox] (l3R) at (4.2,2.25) {\textbf{Integration}\\[-1pt]
   {\scriptsize SIL $\cdot$ merge}};
-\node[armR] (l4R) at (4.5,1.25) {\textbf{Unit Tests}\\[-1pt]
+\node[cibox] (l4R) at (4.2,0.55) {\textbf{Unit Tests}\\[-1pt]
   {\scriptsize SIL $\cdot$ commit}};
 
-% Ascending arrows: bottom-up, .north to .south
-\draw[fR] (l4R.north) -- (l3R.south);
-\draw[fR] (l3R.north) -- (l2R.south);
-\draw[fR] (l2R.north) -- (l1R.south);
+% Ascending arrows
+\draw[ciflow] (l4R.north) -- (l3R.south);
+\draw[ciflow] (l3R.north) -- (l2R.south);
+\draw[ciflow] (l2R.north) -- (l1R.south);
 
-% ---- Dashed "defines" links (node edge to node edge) ----
+% CI+SIL bracket (right side of right arm)
+\draw[brace, vteal!60!black] ([xshift=3mm]l4R.south east)
+  -- ([xshift=3mm]l2R.north east)
+  node[midway, right=5pt, font=\scriptsize\itshape, text=vteal!70!black,
+       align=left] {CI+SIL\\[-1pt]{\scriptsize continuous}};
+
+% ============================================================
+% DASHED "defines" links
+% ============================================================
 \draw[def] (l1L.east) -- (l1R.west)
   node[midway, above, font=\scriptsize, text=vgrey] {defines};
 \draw[def] (l2L.east) -- (l2R.west);
@@ -206,25 +272,30 @@ stages, from the development sandbox to metrological guardrails and back.
 \draw[def] (l4L.east) -- (l4R.west)
   node[midway, above, font=\scriptsize, text=vgrey] {defines};
 
-% ---- Valley ----
+% ============================================================
+% VALLEY
+% ============================================================
 \node[draw=vgrey!80, fill=vgrey!8, rounded corners=4pt, align=center,
-      minimum width=3.4cm] (valley) at (0,-0.1)
+      minimum width=32mm] (valley) at (0,-0.8)
       {\textbf{Coding / Implementation}};
 
-% Smooth V curves into the valley
-\draw[fL] (l4L.south) .. controls ++(0,-0.65) and ++(-1.6,0.25) .. (valley.north west);
-\draw[fR] (valley.north east) .. controls ++(1.6,0.25) and ++(0,-0.65) .. (l4R.south);
+\draw[zzflow] (l4L.south) .. controls ++(0,-0.6) and ++(-1.5,0.25) .. (valley.north west);
+\draw[ciflow] (valley.north east) .. controls ++(1.5,0.25) and ++(0,-0.6) .. (l4R.south);
 
-% ---- Mock HAL ----
+% ============================================================
+% MOCK HAL
+% ============================================================
 \node[draw=amber!80!black, fill=amber!12, rounded corners=4pt, align=center,
-      minimum width=3.4cm] (mock) at (0,-1.45)
+      minimum width=32mm] (mock) at (0,-2.1)
       {\textbf{Mock HAL + Synthetic I/Q}\\[-1pt]
        {\scriptsize golden vectors, error injection}};
 \draw[draw=amber!80!black, thick, -{Stealth}] (valley.south) -- (mock.north);
 
-% ---- PCG band (Layer 3) ----
+% ============================================================
+% PCG BAND (Layer 3)
+% ============================================================
 \node[draw=violet!70!black, fill=violet!8, rounded corners=5pt, align=center,
-      minimum width=11.5cm, inner sep=7pt] (pcg) at (0,-3.5)
+      minimum width=11cm, inner sep=7pt] (pcg) at (0,-4.0)
       {\textbf{\color{violet}Layer 3: Post-Development Operations (PCG)}\\[3pt]
        {\small S1: Sandbox $\;\to\;$ S2: Engine $\;\to\;$ S3: Knowledge Base
        $\;\to\;$ S4: Playbook $\;\to\;$ S5: Guardrails}\\[2pt]
@@ -233,22 +304,27 @@ stages, from the development sandbox to metrological guardrails and back.
 \draw[draw=violet!70!black, thick, -{Stealth}] (mock.south) -- (pcg.north)
   node[midway, right=2pt, font=\scriptsize, text=vgrey] {promotion gate};
 
-% ---- Legend ----
-\node[anchor=north, font=\scriptsize, align=center] at (0,-4.85) {%
-  \textcolor{coral}{\rule{0.45em}{0.45em}}\;Ctx 00 / gates H \quad
-  \textcolor{vblue}{\rule{0.45em}{0.45em}}\;Design arm \quad
-  \textcolor{vteal}{\rule{0.45em}{0.45em}}\;CI+SIL tests \quad
-  \textcolor{vred}{\rule{0.45em}{0.45em}}\;HIL acceptance \quad
-  \textcolor{amber}{\rule{0.45em}{0.45em}}\;Mock HAL \quad
-  \textcolor{violet}{\rule{0.45em}{0.45em}}\;PCG};
+% ============================================================
+% LEGEND — single row, compact
+% ============================================================
+\node[anchor=north, font=\scriptsize, align=center, text=vgrey!80!black] at (0,-5.3) {%
+  \textcolor{zzblue}{\rule{0.5em}{0.5em}}\;zz\_Workflow \quad
+  \textcolor{vsgreen}{\rule{0.5em}{0.5em}}\;V-SIL (G0, GT) \quad
+  \textcolor{coral}{\rule{0.5em}{0.5em}}\;Human gate \quad
+  \textcolor{vteal}{\rule{0.5em}{0.5em}}\;CI+SIL \quad
+  \textcolor{vred}{\rule{0.5em}{0.5em}}\;HIL \quad
+  \textcolor{amber}{\rule{0.5em}{0.5em}}\;Mock HAL \quad
+  \textcolor{violet}{\rule{0.5em}{0.5em}}\;PCG};
 
-\end{tikzpicture}
-\caption{\textbf{V-SIL lifecycle.} A descending left arm (blue) defines the system; an ascending
-right arm (teal) tests it continuously as software-in-the-loop (SIL) on commit, merge, and
-nightly cadence, against a Mock HAL fed by synthetic I/Q (amber). Gates~H (coral) are human
-readiness gates; acceptance (red) stays at hardware-in-the-loop with real hardware---the apex of
-the V and the boundary of verification. Below the V, the PCG pipeline (violet) governs the
-deployed array as a closed five-stage loop from sandbox to guardrails and back.}
+\end{tikzpicture}}% end resizebox
+\caption{\textbf{V-SIL lifecycle.} Side brackets distinguish the conceptual methodology
+(zz\_Workflow, blue) from the concrete implementation (V-SIL, green) and the continuous test
+arm (CI+SIL, teal). After Ctx 01 produces the requirements, the Ground Truth documents (SRS
+and HCS, structured per IEEE 29148) pass through Gate~G0---a deterministic structural
+validator (green diamond)---before the first human readiness gate~H (coral diamond) admits
+the project to design. The ascending right arm runs SIL tests on every commit, merge, and
+nightly build. Only acceptance (red) stays at HIL with real hardware. Below the V, the PCG
+pipeline (violet) governs the deployed array.}
 \label{fig:vsil}
 \end{figure}
 
@@ -304,13 +380,15 @@ Four principles govern every layer. They are stated once here and enforced every
 \textbf{Source: the zz\_Workflow prototype-development engine.} Layer~1 is an LLM-assisted
 workflow for building the SDR-based FM spectrum-sensing sensor. Development proceeds through
 four stages, Ctx 00 through Ctx 03. Each stage is bounded by a context package---the content and
-rules the model works from at that stage---and ends in a named output. Two of the four stage
-transitions (Ctx 01$\rightarrow$02 and Ctx 02$\rightarrow$03) are protected by an explicit
-readiness gate; the Ctx 00 output freezes the project scope, and the Ctx 03 output is checked
-against acceptance criteria in the build and verification phase. At every transition, whether or
-not a gate diamond is drawn, the human reviewer decides whether to proceed: the model drafts
-within a stage but never approves its own output. Acceptance is decided by pre-declared criteria
-applied to recorded measurements, never by model judgement.
+rules the model works from at that stage---and ends in a named output. The requirements stage
+(Ctx 01) produces Ground Truth documents structured per IEEE 29148 \cite{ieee29148}, which must
+pass a deterministic structural gate (G0) before any human or AI-driven gate runs. Two of the
+four stage transitions (Ctx 01$\rightarrow$02 and Ctx 02$\rightarrow$03) are additionally
+protected by an explicit human readiness gate. The Ctx 00 output freezes the project scope, and
+the Ctx 03 output is checked against acceptance criteria in the build and verification phase.
+At every transition, whether or not a gate diamond is drawn, the human reviewer decides whether
+to proceed: the model drafts within a stage but never approves its own output. Acceptance is
+decided by pre-declared criteria applied to recorded measurements, never by model judgement.
 
 \textbf{This layer validates the concept and the design, not the software.} Its terminal output,
 \emph{Verified Prototype + Evidence}, is verification of a build against a frozen contract; it is
@@ -341,12 +419,201 @@ unmeasurable criterion is not a criterion. Second, requirement identifiers exist
 on, so any downstream failure can be routed to the requirement that failed rather than to a
 vague notion of ``the spec''.
 
+\subsection{Ground Truth documents}
+\label{sec:gt}
+
+The output of Ctx 01 takes a concrete form: the \textbf{Ground Truth (GT)}, a set of
+pre-processed Markdown documents that define what ``correct'' means for the project. Two GT
+documents are currently specified:
+
+\begin{enumerate}
+  \item \textbf{G0\_SRS.md} --- System Requirements Specification, structured per
+    IEEE/ISO/IEC 29148:2018 \cite{ieee29148}. Contains document metadata (ID, version,
+    classification), introduction (purpose, scope, definitions, references), overall system
+    description (product perspective, functions, user characteristics, constraints, assumptions),
+    specific requirements with typed and prioritized blocks (each carrying a unique ID, type,
+    priority, status, verification method, description with SHALL/SHOULD keywords, and numbered
+    acceptance criteria), external interface requirements, non-functional requirements, and a
+    traceability matrix.
+  \item \textbf{G0\_HCS.md} --- Hardware Constraints Specification, formalizing IEEE 29148
+    \S2.4 (Design Constraints) as a standalone companion to the SRS. Documents the parametric
+    limits of the selected COTS hardware platform: hardware inventory, block diagram, bus and
+    interface topology, and typed constraint blocks (each with a unique ID, component reference,
+    parameter, limit type, source traceability to datasheet or measurement, and impact
+    classification).
+\end{enumerate}
+
+A third GT document (normativity: applicable standards) is planned but not yet templated.
+The GT documents are human-authored, not LLM-generated: they are the methodology's input
+contract, and every downstream gate, test, and acceptance criterion traces back to them.
+
+\subsection{Gate G0 --- Structural Validation of Ground Truth}
+\label{sec:g0}
+
+Gate G0 is the first gate in V-SIL and the only one that is fully implemented. It is
+\textbf{deterministic}: a Python script (\texttt{g0\_validate.py}, stdlib-only, no network
+access, no filesystem writes) validates each GT document against the IEEE 29148 templates.
+No AI is involved. The gate answers one question: \emph{does the document follow the
+structure defined in the templates?} It does not evaluate requirement quality, constraint
+accuracy, or SRS$\leftrightarrow$HCS consistency---those are later gates.
+
+The validation runs in four phases:
+
+\begin{enumerate}
+  \item \textbf{Phase 1 --- Document-level structure.} Checks that all required headings
+    exist (e.g.\ \texttt{\#\#\# 1.1 Purpose}, \texttt{\#\# 3. Specific Requirements} for
+    SRS; \texttt{\#\#\# 1.5 Hardware Inventory}, \texttt{\#\# 3. Hardware Constraints} for
+    HCS). Matching is by substring on normalized heading text.
+  \item \textbf{Phase 2 --- Metadata table.} The \texttt{\#\# Document Metadata} section
+    must contain a table with Document ID, Project, Organization, Version (SemVer), and
+    Classification (\texttt{PUBLIC}~|~\texttt{INTERNAL}~|~\texttt{CONFIDENTIAL}), none of
+    which may be a placeholder.
+  \item \textbf{Phase 3 --- Block parsing and field validation.} Requirement blocks (SRS)
+    and constraint blocks (HCS) are parsed by their heading pattern. Each block is checked
+    for ID format and uniqueness, required fields, enumerated-value correctness (e.g.\
+    Type $\in$ \{\texttt{FUNCTIONAL}, \texttt{NON\_FUNCTIONAL}, \texttt{INTERFACE},
+    \texttt{CONSTRAINT}\}), presence of a description, and at least one numbered acceptance
+    criterion.
+  \item \textbf{Phase 4 --- Cross-checks within the document.} For SRS: traceability
+    coverage (every requirement ID appears in the \S6 table) and acyclic dependency graph.
+    For HCS: no orphan components (every referenced component exists in the hardware
+    inventory).
+\end{enumerate}
+
+The verdict is binary: exit code 0 (pass, no errors) or exit code 1 (fail, at least one
+structural error). Errors block; warnings (e.g.\ missing SHALL/SHOULD keyword, unresolved
+source references) do not. A G0 failure routes back to the GT author---the requirements must
+be structurally valid before a human reviewer even considers them for completeness.
+
+\cref{fig:g0flow} shows the G0 validation flow, with colors distinguishing the zz\_Workflow
+concepts (blue) from the V-SIL implementation additions (green).
+
+\begin{figure}[htbp]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+  font=\footnotesize,
+  >={Stealth[length=2.4mm]},
+  % zz_Workflow origin (blue)
+  zzn/.style={draw=zzblue!70!black, fill=zzblue!6, rounded corners=3pt,
+              align=center, minimum width=26mm, minimum height=9mm, inner sep=3pt},
+  zzarr/.style={draw=zzblue!70!black, thick, -{Stealth}},
+  % V-SIL implementation (green)
+  vsn/.style={draw=vsgreen!70!black, fill=vsgreen!6, rounded corners=3pt,
+              align=center, minimum width=26mm, minimum height=9mm, inner sep=3pt},
+  vsarr/.style={draw=vsgreen!70!black, thick, -{Stealth}},
+  % phase boxes
+  ph/.style={draw=vsgreen!50!black, fill=vsgreen!4, rounded corners=2pt,
+             align=center, minimum width=22mm, minimum height=7mm,
+             font=\scriptsize, inner sep=2pt},
+  % gates
+  zzgate/.style={draw=coral!80!black, fill=coral!20, diamond, aspect=2,
+                 inner sep=0.5pt, font=\footnotesize\bfseries},
+  vsgate/.style={draw=vsgreen!80!black, fill=vsgreen!20, diamond, aspect=2,
+                 inner sep=0.5pt, font=\footnotesize\bfseries},
+  % result
+  pass/.style={draw=vsgreen!70!black, fill=vsgreen!10, rounded corners=3pt,
+               align=center, minimum width=18mm, font=\footnotesize},
+  fail/.style={draw=coral!70!black, fill=coral!10, rounded corners=3pt,
+               align=center, minimum width=18mm, font=\footnotesize},
+  % feedback
+  fb/.style={draw=vgrey!60, dashed, -{Stealth}, thin},
+  % brace
+  brace/.style={decorate, decoration={brace, amplitude=4pt, raise=2pt}}
+]
+
+% ---- Top: zz_Workflow context ----
+\node[zzn] (ctx01) at (0,0) {\textbf{Ctx 01}\\[-1pt]{\scriptsize Requirements}};
+
+% ---- GT documents (V-SIL) ----
+\node[vsn, minimum width=28mm] (srs) at (-2,-1.5)
+      {\textbf{G0\_SRS.md}\\[-1pt]{\scriptsize IEEE 29148}};
+\node[vsn, minimum width=28mm] (hcs) at ( 2,-1.5)
+      {\textbf{G0\_HCS.md}\\[-1pt]{\scriptsize IEEE 29148 \S2.4}};
+\draw[zzarr] (ctx01.south -| srs.north) -- (srs.north);
+\draw[zzarr] (ctx01.south -| hcs.north) -- (hcs.north);
+
+% ---- G0 validator (V-SIL) ----
+\node[vsn, minimum width=60mm] (g0v) at (0,-3)
+      {\textbf{g0\_validate.py}\\[-1pt]{\scriptsize deterministic, stdlib-only, no AI}};
+\draw[vsarr] (srs.south) -- ([xshift=-10mm]g0v.north);
+\draw[vsarr] (hcs.south) -- ([xshift= 10mm]g0v.north);
+
+% ---- 4 phases ----
+\node[ph] (p1) at (-4.2,-4.4) {\textbf{Phase 1}\\[-1pt]Headings};
+\node[ph] (p2) at (-1.4,-4.4) {\textbf{Phase 2}\\[-1pt]Metadata};
+\node[ph] (p3) at ( 1.4,-4.4) {\textbf{Phase 3}\\[-1pt]Blocks};
+\node[ph] (p4) at ( 4.2,-4.4) {\textbf{Phase 4}\\[-1pt]Cross-checks};
+\foreach \p in {p1,p2,p3,p4}{
+  \draw[vsarr, thin] (g0v.south) -- (\p.north);
+}
+
+% ---- Verdict ----
+\node[vsgate] (verdict) at (0,-5.8) {G0};
+\draw[vsarr, thin] (p1.south) |- ([yshift=3mm]verdict.north -| p1) -- (verdict.north);
+\draw[vsarr, thin] (p2.south) -- (verdict.north -| p2) -- (verdict.north);
+\draw[vsarr, thin] (p3.south) -- (verdict.north -| p3) -- (verdict.north);
+\draw[vsarr, thin] (p4.south) |- ([yshift=3mm]verdict.north -| p4) -- (verdict.north);
+
+% ---- Pass / Fail ----
+\node[pass] (ok) at (-2,-7) {\textbf{PASS}\\[-1pt]{\scriptsize exit 0}};
+\node[fail] (ko) at ( 2,-7) {\textbf{FAIL}\\[-1pt]{\scriptsize exit 1}};
+\draw[vsarr] (verdict.south -| ok) -- (ok.north);
+\draw[draw=coral!70!black, thick, -{Stealth}] (verdict.south -| ko) -- (ko.north);
+
+% ---- Downstream: Gate H → Ctx 02 (zz_Workflow) ----
+\node[zzgate] (gateH) at (-2,-8.2) {H};
+\draw[vsarr] (ok.south) -- (gateH.north);
+
+\node[zzn, minimum width=26mm] (ctx02) at (-2,-9.2)
+      {\textbf{Ctx 02}\\[-1pt]{\scriptsize Design}};
+\draw[zzarr] (gateH.south) -- (ctx02.north);
+
+% ---- Fail feedback ----
+\node[fail, minimum width=20mm] (fix) at (4.5,-8.2)
+      {\textbf{Fix GT}\\[-1pt]{\scriptsize R1 routing}};
+\draw[draw=coral!70!black, thick, -{Stealth}] (ko.south) |- (fix.west);
+\draw[fb] (fix.north) |- ([yshift=3mm]hcs.east) -- (hcs.east);
+
+% ---- Side brackets for origin ----
+% V-SIL bracket (right side, GT through verdict)
+\draw[brace, vsgreen!60!black] ([xshift=10mm]p4.north east)
+  -- ([xshift=10mm]p4.north east |- ko.south)
+  node[midway, right=5pt, font=\scriptsize\itshape, text=vsgreen!70!black,
+       align=left] {V-SIL\\[-1pt]{\scriptsize implementation}};
+
+% zz_Workflow bracket (left side, ctx01 + ctx02)
+\draw[brace, zzblue!60!black] ([xshift=-6mm]ctx01.north west)
+  -- ([xshift=-6mm]ctx01.south west)
+  node[midway, left=5pt, font=\scriptsize\itshape, text=zzblue!70!black,
+       rotate=90, anchor=south] {zz\_Workflow};
+\draw[brace, zzblue!60!black] ([xshift=-6mm]gateH.north west)
+  -- ([xshift=-6mm]ctx02.south west)
+  node[midway, left=5pt, font=\scriptsize\itshape, text=zzblue!70!black,
+       rotate=90, anchor=south] {zz\_Workflow};
+
+% ---- Legend ----
+\node[anchor=north, font=\scriptsize, align=center, text=vgrey!80!black] at (0,-10.2) {%
+  \textcolor{zzblue}{\rule{0.5em}{0.5em}}\;zz\_Workflow \quad
+  \textcolor{vsgreen}{\rule{0.5em}{0.5em}}\;V-SIL (G0, GT) \quad
+  \textcolor{coral}{\rule{0.5em}{0.5em}}\;Human gate / fail};
+
+\end{tikzpicture}}% end resizebox
+\caption{\textbf{G0 validation flow.} Ctx 01 (blue, zz\_Workflow) produces Ground Truth
+documents; the V-SIL implementation (green) validates them deterministically through four
+phases. A pass admits the documents to human Gate~H and then Ctx 02; a fail routes back to
+fix the GT structure (R1 routing). No AI is involved in G0.}
+\label{fig:g0flow}
+\end{figure}
+
 \subsection{Gate H (Ctx 01 $\rightarrow$ 02)}
 \label{sec:gate-h1}
 
-The first readiness gate asks: \emph{Requirements complete, bounded, and verifiable?} A
-\textbf{YES} admits the stage to Ctx 02; a \textbf{NO} returns the work to Ctx 01 for revision.
-The gate is decided by the human reviewer, on the recorded artefacts of Ctx 01.
+The first human readiness gate fires only after G0 has passed. It asks: \emph{Requirements
+complete, bounded, and verifiable?} A \textbf{YES} admits the stage to Ctx 02; a \textbf{NO}
+returns the work to Ctx 01 for revision. The gate is decided by the human reviewer, on the
+recorded artefacts of Ctx 01. G0 is a precondition, not a substitute: a document can be
+structurally valid but contain wrong or incomplete requirements, which is what Gate H catches.
 
 \subsection{Ctx 02 --- Architecture and Design Resolution}
 \label{sec:ctx02}
@@ -419,9 +686,10 @@ R3 & Ctx 03 & Implementation defect \\
 \end{table}
 
 The routing discipline is what makes defect data actionable: a recurring R1 pattern is evidence
-that the requirements process is weak, not that the code is unlucky. Layer~2 reuses the same
-routing for CI failures (\cref{sec:layer2}), and Layer~3's Stage~5 feedback loop is its
-operational counterpart (\cref{sec:layer3}).
+that the requirements process is weak, not that the code is unlucky. G0 failures are a special
+case of R1: the GT document is structurally defective and must be fixed before any further gate
+runs. Layer~2 reuses the same routing for CI failures (\cref{sec:layer2}), and Layer~3's
+Stage~5 feedback loop is its operational counterpart (\cref{sec:layer3}).
 
 \subsection{The six governing artefacts}
 \label{sec:artefacts}
@@ -877,10 +1145,13 @@ section states both couplings and the artefact-to-stage mapping that implements 
 
 The \textbf{Ctx 03 Build Package} becomes the executable specification for CI+SIL: component
 contracts, schemas, error behaviour, and the declared unit/integration/acceptance tests are
-exactly what the pipeline executes. \textbf{Artefact~3} (eval and benchmarking suites) seeds the
-CI regression baseline---the suites zz\_Workflow already requires \emph{are} the CI harness, so
-the coupling adds automation and not concepts. Three artefacts complete the interface: the Ctx 01
-measurable acceptance criteria become the deterministic gate's thresholds; Artefact~4's guardrail
+exactly what the pipeline executes. The Ground Truth documents (SRS and HCS) that passed G0's
+structural validation carry forward as the authoritative reference: the acceptance criteria in
+the SRS become the deterministic gate's thresholds, and any change to a GT document triggers
+G0 re-validation and a full CI re-run. \textbf{Artefact~3} (eval and benchmarking suites) seeds
+the CI regression baseline---the suites zz\_Workflow already requires \emph{are} the CI harness,
+so the coupling adds automation and not concepts. Three artefacts complete the interface: the
+Ctx 01 measurable acceptance criteria become the deterministic gate's thresholds; Artefact~4's guardrail
 rules become expected behaviours in the suite (e.g.\ the ``Uncertain''-below-threshold rule must
 be tested); and Artefact~5's telemetry continues uninterrupted into CI, where failure classes
 route via R0--R3 to the Ctx stage that must revise. The name of the handoff output stays honest:
@@ -992,8 +1263,11 @@ reliability decays roughly geometrically with sequential steps, with a practical
 \section{Gaps and Maturity Assessment}
 \label{sec:gaps}
 
-Honesty about maturity is part of the method. \cref{tab:gaps} lists the components V-SIL depends
-on that are not yet implemented or instantiated, with the gap each one leaves.
+Honesty about maturity is part of the method. Gate G0 (structural validation of GT documents
+against IEEE 29148 templates) is the first fully implemented gate: deterministic, reproducible,
+and exercised on every GT change. All subsequent gates (G1+) remain unimplemented.
+\cref{tab:gaps} lists the components V-SIL depends on that are not yet implemented or
+instantiated, with the gap each one leaves.
 
 \begin{table}[htbp]
 \centering
@@ -1004,6 +1278,7 @@ on that are not yet implemented or instantiated, with the gap each one leaves.
 \toprule
 \textbf{Component} & \textbf{Status} & \textbf{Gap} \\
 \midrule
+Gates G1+ & Not implemented & Only G0 (deterministic structural validation) is implemented; AI-driven design, architecture, and implementation gates remain unspecified \\
 HIL bench & Not implemented & No live-RF validation infrastructure; the apex of the V cannot yet be exercised, so all claims remain at the SIL level of verification \\
 MCDA \cite{mcda2026} & Not implemented & Multi-hypothesis selection (Ctx 02 trade study) is not formalized into a repeatable decision procedure \\
 Controlled Source Specification Baseline & Not instantiated & Stage~2 formal compliance execution remains disabled until the Stage~4 baseline record is populated and approved \\
@@ -1013,12 +1288,15 @@ LLM governance in production & Not specified & Use constraints for LLMs inside S
 \end{tabular}
 \end{table}
 
-None of these gaps is structural. The HIL bench is an infrastructure project that the Mock HAL
-already anticipates through its same-interface swap; MCDA formalizes a trade study that Ctx 02
-already performs informally; the Controlled Source Specification Baseline is a document-binding
-task with a defined record schema; single-to-array scaling is a research programme rather than a
-methodology gap; and production LLM governance can be written as an extension of the four rules
-in \cref{sec:governance}, constrained by the same gates.
+None of these gaps is structural. Gates G1+ follow the pattern G0 established---each gate is
+a skill with a contract, a script or agent, and a binary verdict---but the AI-driven gates
+require the agent-agnostic skill interface that the harness is building. The HIL bench is an
+infrastructure project that the Mock HAL already anticipates through its same-interface swap;
+MCDA formalizes a trade study that Ctx 02 already performs informally; the Controlled Source
+Specification Baseline is a document-binding task with a defined record schema; single-to-array
+scaling is a research programme rather than a methodology gap; and production LLM governance
+can be written as an extension of the four rules in \cref{sec:governance}, constrained by the
+same gates.
 
 % ===========================================================================
 \section{Conclusion}
@@ -1031,17 +1309,20 @@ Layer~1 \emph{defines} what to build and validates the concept and design; Layer
 \emph{implements} it and verifies it continuously; Layer~3 \emph{operates} the deployed system
 under metrological and regulatory governance.
 
-The coupling is clean because each layer's terminal output is the next layer's input: the Ctx 03
-Build Package is Layer~2's executable specification; Artefact~3 is already the CI regression
-harness; and the Promotion Gate binds the regression-passing build to the production pipeline as
-a versioned, revocable contract. Nothing is invented at the boundaries, which is why the
+The coupling is clean because each layer's terminal output is the next layer's input: the Ctx 01
+Ground Truth documents, structured per IEEE 29148 and validated by the deterministic G0 gate,
+feed the design stages; the Ctx 03 Build Package is Layer~2's executable specification;
+Artefact~3 is already the CI regression harness; and the Promotion Gate binds the
+regression-passing build to the production pipeline as a versioned, revocable contract. Gate G0
+is the first fully implemented gate---deterministic, reproducible, and exercised before any
+human or AI-driven gate runs. Nothing is invented at the boundaries, which is why the
 methodology can be adopted incrementally.
 
 The claims stay honest by construction. The system is \verified{} at software-in-the-loop and
 \validated{} only at hardware-in-the-loop and in the field; every claim names the environment in
 which its evidence was produced. The model drafts but never approves: mechanical rejection beats
 LLM approval, never the reverse, and acceptance is decided by pre-declared criteria applied to
-recorded measurements. Five gaps remain---a HIL bench, formalized MCDA, an instantiated Controlled
+recorded measurements. Six gaps remain---gates G1+, a HIL bench, formalized MCDA, an instantiated Controlled
 Source Specification Baseline, a single-to-array scaling methodology, and production LLM
 governance---and each is explicit, bounded, and tractable.
 
@@ -1069,6 +1350,7 @@ governance---and each is explicit, bounded, and tractable.
 \bibitem{mcda2026} \emph{Sustainable Futures}, ``MCDA reliability,'' Jun.\ 2026.
 \bibitem{sheridan2026b} Sheridan Tech, ``Design Validation vs Verification,'' Mar.\ 2026.
 \bibitem{pith2026} Pith, ``Introducing Background Temperature,'' arXiv:2604.22411, 2026.
+\bibitem{ieee29148} IEEE/ISO/IEC 29148:2018, ``Systems and software engineering --- Life cycle processes --- Requirements engineering,'' 2018.
 \end{thebibliography}
 
 \end{document}

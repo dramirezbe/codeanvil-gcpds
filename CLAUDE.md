@@ -52,6 +52,7 @@ CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks stat
 |----------------------|----------------------------|-----------|--------------------------------------------------------------------|
 | G0 validation script | `plans/g0_skill.md`        | DONE      | Deterministic Python script to structurally validate SRS/HCS against IEEE 29148 templates |
 | Scaffold CLI         | `plans/scaffold_cli.md`    | DONE      | pyproject.toml, skill dir convention (.agents/skills/ + symlinks), path rewriting, GT inside skills |
+| AGENTS.md template   | `plans/agents_md_template.md` | PLANNED | Config-driven scaffold: YAML config, AGENTS.md template with dynamic skills, multi-agent symlinks |
 
 ## Installation
 
