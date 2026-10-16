@@ -18,6 +18,7 @@ The V-SIL pipeline encoded as executable artifacts:
   3. **Normativity** — applicable standards (ITU, ICNIRP, IEEE, etc.) — template not yet implemented
 - **`templates/skills/`** — Skills executed at each gate:
   - `G0_valid_req_and_GT/` — **Deterministic structural validation** of the GT files (SRS + HCS). No AI — pure script (`scripts/g0_validate.py`). `SKILL.md` is the agent contract, `references/RULES.md` the full rule tables. Hard pass/fail.
+  - `custody-chain/` — **Cross-cutting provenance skill** (gate `*`). Seals GT files after G0 pass (`source_snapshot.py`), tracks chain of custody for audit documents (`custody_ledger.py`, HMAC-signed hash-chain), validates audit controls (`control_registry.py`), and verifies port bindings (`port_check.py`). All stdlib-only.
   - `G1_start_design/` — Agent-driven: initiate design once G0 passes.
   - Future gates (G2, G3, ...) follow the same pattern.
 
@@ -39,9 +40,10 @@ CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks stat
 ## Key concepts
 
 - **GT (Ground Truth)**: 3 pre-processed `.md` files (requirements, HW restrictions, normativity) that define what "correct" means. Human-authored, not raw PDFs.
-- **T# (Test GT)**: numbered test cases (`methodology/test/T<n>_<name>/`) that serve as V-SIL system inputs — real-world GT instances used to validate and stress-test the methodology pipeline end-to-end. Each T# folder contains raw project materials (proposals, papers, design docs) from which the 3 GT files would be derived. They are the methodology's integration tests.
-  - **T1_FM-monitoring** — SDR-based FM broadcast compliance monitoring system. LaTeX specification (no executable code). RAG-informed from regulatory docs (FCC Part 73, ANE Res. 105, ITU-R BS.412/450/SM.2152, ISO/IEC 17025). Covers DSP pipeline, compliance measurands, uncertainty budgets, and decision frameworks.
-  - **T2_IoT-Indoor** — Indoor IoT radio environment mapping at 2.4 GHz ISM (Proyecto Hermes / GCPDS). Contains the Hermes proposal, radio environment mapping literature, and a variable adaptation design doc.
+- **T# (Test GT)**: numbered test cases (`methodology/test/T<n>_<name>/`) that serve as V-SIL system inputs — real-world GT instances used to validate and stress-test the methodology pipeline end-to-end. See [`methodology/test/README.md`](methodology/test/README.md) for the full test catalog and end-to-end manual test procedure.
+  - **T0_ANE-Lap2** — SDR spectrum monitoring edge sensor (ANE). **GT-ready**: `just-edge/SRS.md` + `just-edge/HCS.md` are valid GT files that can be copied directly into a project as `G0_SRS.md` / `G0_HCS.md`.
+  - **T1_FM-monitoring** — SDR-based FM broadcast compliance monitoring system. Raw LaTeX spec (GT must be derived). RAG-informed from regulatory docs (FCC Part 73, ANE Res. 105, ITU-R BS.412/450/SM.2152, ISO/IEC 17025).
+  - **T2_IoT-Indoor** — Indoor IoT radio environment mapping at 2.4 GHz ISM (Proyecto Hermes / GCPDS). Raw proposal + literature (GT must be derived).
 - **Gate (Gn)**: verification checkpoint. Sequential — G0 must pass before G1 runs. G0 is deterministic (script-only). G1+ use AI coding agents (any runtime).
 - **Skill**: `SKILL.md` + optional scripts that define what happens at a gate. Agent-agnostic — any coding agent that reads markdown can execute them. Live in `templates/skills/` (repo) and `.agents/skills/` (scaffolded projects).
 - **Session**: persistent record of a project's progress through gates, stored in SQLite.
