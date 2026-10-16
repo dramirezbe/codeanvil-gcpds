@@ -8,6 +8,9 @@ skills:
   G1_start_design:
     project_dir: ".agents/skills/G1_start_design"
     template_dir: "templates/skills/G1_start_design"
+  custody-chain:
+    project_dir: ".agents/skills/custody-chain"
+    template_dir: "templates/skills/custody-chain"
 
 # Skill directory symlinks — agent runtimes that discover skills
 # via a directory convention.

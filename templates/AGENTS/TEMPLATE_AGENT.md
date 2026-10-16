@@ -3,6 +3,18 @@
 This project follows the **V-SIL methodology** (V-model at the SIL tier).
 Gates execute sequentially. All instructions below are binding.
 
+## Context — You are in a user project, not the CodeAnvil repo
+
+This is a **scaffolded project** created by `codeanvil create`. You are running the
+V-SIL methodology against the user's Ground Truth documents — you are NOT developing
+the CodeAnvil tool itself.
+
+- There is no `src/`, no `templates/`, no `pyproject.toml` here.
+- Skills live at `.agents/skills/<name>/` — run scripts from the **project root**.
+- GT files in `GT/` are **user-authored inputs**. Never treat them as tool templates.
+- Provenance artifacts (snapshots, ledgers) go in `.provenance/`.
+- Do not try to install, build, or modify CodeAnvil from this directory.
+
 ## Rules
 
 - You **MUST** run gates in sequential order. Gate N+1 **SHALL NOT** execute until Gate N passes.

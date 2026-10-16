@@ -1,0 +1,7 @@
+{"controls":[
+ {"id":"SRC-001","title":"Source files unchanged","description":"Sealed source digests match the snapshot.",
+  "params":{"algorithm":{"type":"enum","enum":["sha256"],"value":"sha256"},"snapshot":{"type":"path","value":".provenance/snapshot.json"}},
+  "check":{"operator":"sha256_equals","param":"snapshot"}},
+ {"id":"SRC-002","title":"Max file count","description":"Sealed set size is bounded.",
+  "params":{"max_files":{"type":"integer","value":500}},"check":{"operator":"lte","param":"max_files"}}
+]}

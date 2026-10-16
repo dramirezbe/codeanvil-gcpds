@@ -63,6 +63,85 @@ Two install paths:
 
 Templates are bundled into the wheel via hatch `force-include` (`pyproject.toml`), so non-editable installs work.
 
+## Two contexts — never confuse them
+
+There are two completely different environments where an agent reads these files:
+
+### 1. This repo (CodeAnvil source — you are here)
+
+The agent is a **developer** of the tool. The working directory is the CodeAnvil repo.
+
+```
+codeanvil-gcpds/                  ← repo root
+├── src/codeanvil/                ← CLI + scaffold logic (Python package)
+├── templates/
+│   ├── skills/                   ← skill SOURCE templates (repo-root paths)
+│   │   ├── G0_valid_req_and_GT/
+│   │   └── custody-chain/
+│   ├── GT/                       ← GT reference templates (IEEE 29148)
+│   ├── AGENTS/TEMPLATE_AGENT.md  ← AGENTS.md Jinja template
+│   └── config.yaml               ← single source of truth for scaffold
+├── install.sh                    ← curl installer
+├── CLAUDE.md                     ← THIS FILE (dev instructions)
+└── AGENTS.md                     ← repo-level agent instructions
+```
+
+- Skill paths use **repo-root** form: `templates/skills/custody-chain/scripts/...`
+- `path_replacements` in `config.yaml` rewrites them during scaffold.
+- Changes here affect the **tool and methodology**, not any user project.
+
+### 2. A scaffolded user project (what `codeanvil create` produces)
+
+The agent is a **user** running the V-SIL methodology. The working directory is the
+project folder — it has no `src/`, no `templates/`, no `pyproject.toml`.
+
+```
+/path/to/project/                 ← project root (anywhere on disk)
+├── AGENTS.md                     ← generated from TEMPLATE_AGENT.md (canonical)
+├── CLAUDE.md -> AGENTS.md        ← symlink
+├── GT/                           ← user-authored ground truth (SRS, HCS)
+│   ├── G0_SRS.md
+│   └── G0_HCS.md
+├── .provenance/                  ← custody-chain artifacts (snapshot, ledger)
+├── .agents/skills/               ← copied skills (project-root paths)
+│   ├── G0_valid_req_and_GT/
+│   │   ├── SKILL.md
+│   │   ├── scripts/
+│   │   └── templates/            ← locked GT reference copies
+│   └── custody-chain/
+│       ├── SKILL.md
+│       └── scripts/
+├── .claude/skills -> ../.agents/skills
+├── .github/skills -> ../.agents/skills
+└── .github/copilot-instructions.md  ← pointer to AGENTS.md
+```
+
+- Skill paths use **project-root** form: `.agents/skills/custody-chain/scripts/...`
+- GT files are **user-authored inputs**, not tool templates.
+- The agent reads `AGENTS.md` (or `CLAUDE.md` symlink) and follows the methodology.
+
+### How they connect
+
+```
+codeanvil init                              → ~/.codeanvil/ + DB
+codeanvil create myproj -p /path/to/        → /path/to/myproj/ (scaffolded)
+```
+
+The scaffold copies `templates/skills/` → `.agents/skills/`, runs `path_replacements`
+on `.md` files, generates `AGENTS.md` from the template, creates symlinks, and registers
+the project in the DB. After that the project is self-contained — it does not depend on
+the repo at runtime.
+
+### Installation paths
+
+- **End users**: `curl -fsSL https://raw.githubusercontent.com/dramirezbe/codeanvil-gcpds/main/install.sh | bash`
+  - Installs `uv` if needed, then `uv tool install` from GitHub (Python 3.12)
+  - Injects `~/.local/bin` into PATH (bash/zsh/fish), idempotent
+  - Templates bundled in the wheel via hatch `force-include`
+- **Developers**: `uv pip install -e .` from a local clone
+  - Templates resolved from source tree via `_find_templates_dir()`
+- **Uninstall**: `bash install.sh uninstall` (removes tool + PATH entry)
+
 ## Development rules
 
 - Do not conflate the two sides: `src/` changes are tooling changes, `templates/` changes are methodology changes.

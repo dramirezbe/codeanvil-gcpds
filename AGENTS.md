@@ -1,5 +1,21 @@
 # CodeAnvil — Agent Architecture
 
+## Context — This is the CodeAnvil source repo, not a user project
+
+You are working on the **tool itself** — the CLI, scaffold logic, methodology templates,
+and skill definitions. You are a **developer** of CodeAnvil, not a user running the
+V-SIL methodology.
+
+- `src/codeanvil/` = the delivery tool (Python package, CLI, DB, scaffold)
+- `templates/` = the methodology (skills, GT templates, config)
+- Skill paths here use **repo-root** form: `templates/skills/<name>/scripts/...`
+- Changes here affect the tool and methodology — they do NOT run against any user's GT.
+
+A **scaffolded user project** (produced by `codeanvil create`) is a different thing:
+it has `.agents/skills/`, `GT/`, `.provenance/`, and no `src/` or `templates/`.
+The user's AGENTS.md (generated from `templates/AGENTS/TEMPLATE_AGENT.md`) tells
+agents they are in a user project. Do not confuse the two environments.
+
 ## Overview
 
 CodeAnvil implements the V-SIL pipeline as a chain of gates — G0 is deterministic, G1+ are AI coding agents. The harness is **agent-agnostic**: it works with any coding agent runtime (Claude, Codex, OpenCode, Pi, etc.). `src/` scaffolds and tracks state.
@@ -10,11 +26,14 @@ CodeAnvil implements the V-SIL pipeline as a chain of gates — G0 is determinis
 curl | bash ───────► install.sh (uv + codeanvil from GitHub, shell PATH injection)
 codeanvil init ────► ~/.codeanvil/ (config + SQLite DB only)
 codeanvil create ──► scaffold project anywhere
-                       ├─ .agents/skills/  (canonical skill store)
+                       ├─ AGENTS.md            (generated, canonical instructions)
+                       ├─ CLAUDE.md → AGENTS.md (symlink)
+                       ├─ .agents/skills/      (canonical skill store)
                        ├─ .claude/skills → ../.agents/skills  (symlink)
                        ├─ .opencode/skills → ../.agents/skills
                        ├─ .codex/skills → ../.agents/skills
-                       ├─ GT/README.md  (user writes SRS.md, HCS.md here)
+                       ├─ GT/README.md         (user writes G0_SRS.md, G0_HCS.md here)
+                       ├─ .provenance/         (custody-chain snapshots + ledger)
                        └─ DB registration (idempotent)
 codeanvil run ─────► orchestrator (planned)
                        │
@@ -23,6 +42,11 @@ codeanvil run ─────► orchestrator (planned)
                        │    ├─ script: g0_validate.py
                        │    ├─ checks: required sections, format, fields
                        │    └─ output: pass/fail (hard gate)
+                       │
+                       ├─ custody-chain (cross-cutting — after G0 pass)
+                       │    ├─ seals GT: source_snapshot.py (SHA-256 + manifest)
+                       │    ├─ records: custody_ledger.py (HMAC-signed, hash-chained)
+                       │    └─ output: PASS/FAIL (tamper detection from here on)
                        │
                        ├─ G1 Agent (start design)
                        │    ├─ reads: validated GT + G0 report
@@ -58,6 +82,21 @@ Pure Python script. No LLM, no AI agent — just `g0_validate.py`.
   3. **Normativity** — applicable standards (ITU, ICNIRP, IEEE, etc.)
 - **Output**: pass/fail with exact listing of missing/malformed sections.
 - **Property**: deterministic — same input, same result. No interpretation.
+
+### Custody Chain — Data Provenance & Integrity (cross-cutting, after G0)
+
+Not a numbered gate — runs alongside any gate to prove GT immutability and track audit document custody.
+
+- **Purpose**: seal GT files after G0 passes so any later modification is detected; record chain of custody for every generated audit document.
+- **Skill**: `templates/skills/custody-chain/SKILL.md`
+- **Scripts** (all stdlib-only, no network):
+  - `source_snapshot.py` — seal and verify file integrity (SHA-256 + manifest digest)
+  - `custody_ledger.py` — hash-chained, HMAC-signed append-only custody log
+  - `control_registry.py` — validate audit controls are declarative and typed
+  - `port_check.py` — verify runtime ports have bound implementations
+- **Typical flow**: G0 PASS → seal GT (`snapshot --include 'GT/**'`) → record custody → before each later gate, verify GT unchanged
+- **Output**: PASS/FAIL/INCOMPLETE provenance report with findings and evidence
+- **Requires**: `PROVENANCE_HMAC_KEY` env var for signing ledger entries
 
 ### G1 — Start Design (agent-driven)
 
@@ -107,8 +146,15 @@ After `codeanvil create myproj`, the project has this layout:
 
 ```
 myproj/
+├── AGENTS.md                        ← generated (canonical agent instructions)
+├── CLAUDE.md → AGENTS.md            ← symlink
 ├── GT/
-│   └── README.md                    ← write SRS.md, HCS.md here
+│   ├── README.md                    ← write G0_SRS.md, G0_HCS.md here
+│   ├── G0_SRS.md                    ← user-authored SRS (IEEE 29148)
+│   └── G0_HCS.md                    ← user-authored HCS (design constraints)
+├── .provenance/                     ← custody-chain artifacts
+│   ├── snapshot.json                ← sealed GT digests (after G0 pass)
+│   └── custody.jsonl                ← append-only chain-of-custody ledger
 ├── .agents/
 │   └── skills/                      ← canonical skill store
 │       ├── G0_valid_req_and_GT/
@@ -118,9 +164,16 @@ myproj/
 │       │   │   └── G0_HCS.md
 │       │   ├── references/RULES.md  ← paths rewritten
 │       │   └── scripts/g0_validate.py
+│       ├── custody-chain/
+│       │   ├── SKILL.md             ← cross-cutting provenance skill
+│       │   ├── references/schemas.md
+│       │   ├── assets/controls.example.json
+│       │   └── scripts/             ← source_snapshot, custody_ledger, etc.
 │       └── G1_start_design/
 │           └── SKILL.md
 ├── .claude/skills  → ../.agents/skills
+├── .github/skills  → ../.agents/skills
+├── .github/copilot-instructions.md  ← pointer to AGENTS.md
 ├── .opencode/skills → ../.agents/skills
 └── .codex/skills   → ../.agents/skills
 ```
