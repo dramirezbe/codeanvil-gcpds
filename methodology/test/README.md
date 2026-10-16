@@ -1,4 +1,4 @@
-# V-SIL Test Cases (T#) and End-to-End Manual Test
+# V-SIL Test Cases (T#) and End-to-End Smoke Test
 
 ## Test cases
 
@@ -166,6 +166,123 @@ displays the timeline of actions (seq, timestamp, action, actor, hash prefix).
 ```bash
 rm -rf /tmp/smoke-test
 # Optionally: bash install.sh uninstall
+```
+
+---
+
+## Automated Smoke Test
+
+The script below runs the same GT → G0 → custody-chain flow non-interactively
+using `claude -p` (print mode). Each step is a separate `claude -p` call with
+`--setting-sources ""` (sandboxed — only reads the project's AGENTS.md) and
+`--dangerously-skip-permissions` (no interactive prompts).
+
+### Prerequisites
+
+- `codeanvil` installed and initialized (`codeanvil init`)
+- `claude` CLI available
+- Run from the **CodeAnvil repo root** (needs access to T0 GT files)
+
+### Run
+
+```bash
+bash methodology/test/smoke_test.sh
+```
+
+Or step by step — copy and paste each block:
+
+### Step 1 — Scaffold and populate
+
+```bash
+# Clean previous test
+rm -rf /tmp/smoke-test
+codeanvil init 2>/dev/null
+
+# Scaffold project
+codeanvil create smoke-test -p /tmp
+
+# Copy T0 GT files
+cp methodology/test/T0_ANE-Lap2/just-edge/SRS.md /tmp/smoke-test/GT/G0_SRS.md
+cp methodology/test/T0_ANE-Lap2/just-edge/HCS.md /tmp/smoke-test/GT/G0_HCS.md
+
+# Set HMAC key for custody-chain
+export PROVENANCE_HMAC_KEY="smoke-test-key-2026"
+```
+
+### Step 2 — Context check
+
+```bash
+cd /tmp/smoke-test && claude -p \
+  --setting-sources "" \
+  --dangerously-skip-permissions \
+  "What project is this? What skills are available? What gate should run first?"
+```
+
+**Check:** mentions V-SIL scaffolded project, lists G0 + custody-chain + G1, says G0 first.
+
+### Step 3 — Run G0
+
+```bash
+cd /tmp/smoke-test && claude -p \
+  --setting-sources "" \
+  --dangerously-skip-permissions \
+  "Run G0 validation on GT/G0_SRS.md and GT/G0_HCS.md. Use the g0_validate.py script from the G0 skill. Report the exit code and full validation output."
+```
+
+**Check:** runs `.agents/skills/G0_valid_req_and_GT/scripts/g0_validate.py`, reports PASS or FAIL with line-level findings.
+
+### Step 4 — Seal GT (custody-chain)
+
+```bash
+cd /tmp/smoke-test && claude -p \
+  --setting-sources "" \
+  --dangerously-skip-permissions \
+  "Load the custody-chain skill. Seal the GT files using source_snapshot.py (include 'GT/**', output to .provenance/snapshot.json). Then record custody for both GT/G0_SRS.md and GT/G0_HCS.md as action 'created' by actor 'smoke-test' role 'tester'. Then verify the custody ledger. PROVENANCE_HMAC_KEY is already set in the environment."
+```
+
+**Check:** snapshot SEALED (2 files), ledger entries RECORDED, verify PASS.
+
+### Step 5 — Verify GT unchanged
+
+```bash
+cd /tmp/smoke-test && claude -p \
+  --setting-sources "" \
+  --dangerously-skip-permissions \
+  "Verify the GT files are still intact using source_snapshot.py verify with --strict."
+```
+
+**Check:** PASS, 2 files checked, no findings.
+
+### Step 6 — Tamper detection
+
+```bash
+# Tamper a file, then ask Claude to detect it
+echo "# TAMPERED" >> /tmp/smoke-test/GT/G0_SRS.md
+
+cd /tmp/smoke-test && claude -p \
+  --setting-sources "" \
+  --dangerously-skip-permissions \
+  "Verify the GT files using source_snapshot.py verify --strict. Report any integrity violations."
+```
+
+**Check:** FAIL with `DIGEST_CHANGED` and `LENGTH_CHANGED` for `GT/G0_SRS.md`. Claude does NOT fix the file.
+
+### Step 7 — Custody history
+
+```bash
+cd /tmp/smoke-test && claude -p \
+  --setting-sources "" \
+  --dangerously-skip-permissions \
+  "Show the custody history for GT/G0_SRS.md using custody_ledger.py history."
+```
+
+**Check:** shows timeline (seq, timestamp, action=created, actor=smoke-test).
+
+### Step 8 — Cleanup
+
+```bash
+rm -rf /tmp/smoke-test
+unset PROVENANCE_HMAC_KEY
 ```
 
 ---
