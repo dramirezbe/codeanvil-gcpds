@@ -88,12 +88,15 @@ head -1 /tmp/smoke-test/GT/G0_HCS.md  # "# PROJECT: Edge Sensor ..."
 
 ```bash
 cd /tmp/smoke-test
-claude --setting-sources ""
+claude --setting-sources "project"
 ```
 
-The `--setting-sources ""` flag disables all external settings — Claude reads
-only the project's `CLAUDE.md` (→ `AGENTS.md`), ensuring a clean test of the
-scaffolded instructions without interference from global config.
+The `--setting-sources "project"` flag loads only project-level settings
+(CLAUDE.md → AGENTS.md) and ignores user/local settings, ensuring a clean test
+of the scaffolded instructions without interference from global config.
+
+*(Note: `--setting-sources ""` disables ALL settings including CLAUDE.md
+autodiscovery — don't use it for methodology testing.)*
 
 ### 6. Test prompts (inside sandboxed Claude)
 
@@ -174,8 +177,9 @@ rm -rf /tmp/smoke-test
 
 The script below runs the same GT → G0 → custody-chain flow non-interactively
 using `claude -p` (print mode). Each step is a separate `claude -p` call with
-`--setting-sources ""` (sandboxed — only reads the project's AGENTS.md) and
-`--dangerously-skip-permissions` (no interactive prompts).
+`--setting-sources "project"` (sandboxed — loads the project's CLAUDE.md/AGENTS.md
+but not user or local settings) and `--dangerously-skip-permissions` (no
+interactive prompts).
 
 ### Prerequisites
 
@@ -213,7 +217,7 @@ export PROVENANCE_HMAC_KEY="smoke-test-key-2026"
 
 ```bash
 cd /tmp/smoke-test && claude -p \
-  --setting-sources "" \
+  --setting-sources "project" \
   --dangerously-skip-permissions \
   "What project is this? What skills are available? What gate should run first?"
 ```
@@ -224,7 +228,7 @@ cd /tmp/smoke-test && claude -p \
 
 ```bash
 cd /tmp/smoke-test && claude -p \
-  --setting-sources "" \
+  --setting-sources "project" \
   --dangerously-skip-permissions \
   "Run G0 validation on GT/G0_SRS.md and GT/G0_HCS.md. Use the g0_validate.py script from the G0 skill. Report the exit code and full validation output."
 ```
@@ -235,7 +239,7 @@ cd /tmp/smoke-test && claude -p \
 
 ```bash
 cd /tmp/smoke-test && claude -p \
-  --setting-sources "" \
+  --setting-sources "project" \
   --dangerously-skip-permissions \
   "Load the custody-chain skill. Seal the GT files using source_snapshot.py (include 'GT/**', output to .provenance/snapshot.json). Then record custody for both GT/G0_SRS.md and GT/G0_HCS.md as action 'created' by actor 'smoke-test' role 'tester'. Then verify the custody ledger. PROVENANCE_HMAC_KEY is already set in the environment."
 ```
@@ -246,7 +250,7 @@ cd /tmp/smoke-test && claude -p \
 
 ```bash
 cd /tmp/smoke-test && claude -p \
-  --setting-sources "" \
+  --setting-sources "project" \
   --dangerously-skip-permissions \
   "Verify the GT files are still intact using source_snapshot.py verify with --strict."
 ```
@@ -260,7 +264,7 @@ cd /tmp/smoke-test && claude -p \
 echo "# TAMPERED" >> /tmp/smoke-test/GT/G0_SRS.md
 
 cd /tmp/smoke-test && claude -p \
-  --setting-sources "" \
+  --setting-sources "project" \
   --dangerously-skip-permissions \
   "Verify the GT files using source_snapshot.py verify --strict. Report any integrity violations."
 ```
@@ -271,7 +275,7 @@ cd /tmp/smoke-test && claude -p \
 
 ```bash
 cd /tmp/smoke-test && claude -p \
-  --setting-sources "" \
+  --setting-sources "project" \
   --dangerously-skip-permissions \
   "Show the custody history for GT/G0_SRS.md using custody_ledger.py history."
 ```

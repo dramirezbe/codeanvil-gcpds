@@ -14,7 +14,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 PROJECT_DIR="/tmp/smoke-test"
-CLAUDE_FLAGS=(--setting-sources "" --dangerously-skip-permissions -p)
+CLAUDE_FLAGS=(--setting-sources "project" --dangerously-skip-permissions -p)
 
 pass() { echo -e "\033[32m  PASS\033[0m $1"; }
 fail() { echo -e "\033[31m  FAIL\033[0m $1"; FAILURES=$((FAILURES + 1)); }
@@ -63,9 +63,9 @@ G0_OUT=$(cd "$PROJECT_DIR" && claude "${CLAUDE_FLAGS[@]}" \
   "Run G0 validation on GT/G0_SRS.md and GT/G0_HCS.md. Use the g0_validate.py script from the G0 skill. Report the exit code and verdict.")
 
 echo "$G0_OUT" | tail -30
-echo "$G0_OUT" | grep -qi "g0_validate\|\.agents/skills/G0" \
-  && pass "G0 script invoked with correct path" \
-  || fail "G0 script path not found in output"
+echo "$G0_OUT" | grep -qi "G0.*PASS\|PASS.*G0\|exit.*code.*0\|0 error" \
+  && pass "G0 validation passed" \
+  || fail "G0 validation did not pass"
 
 # ── Step 4: Seal GT ──────────────────────────────────────────────────
 step 4 "Seal GT files with custody-chain"
