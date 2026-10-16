@@ -14,7 +14,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 PROJECT_DIR="/tmp/smoke-test"
-CLAUDE_FLAGS=(--setting-sources "project" --dangerously-skip-permissions -p)
+CLAUDE_FLAGS=(--setting-sources "project" --dangerously-skip-permissions --verbose -p)
 
 pass() { echo -e "\033[32m  PASS\033[0m $1"; }
 fail() { echo -e "\033[31m  FAIL\033[0m $1"; FAILURES=$((FAILURES + 1)); }
