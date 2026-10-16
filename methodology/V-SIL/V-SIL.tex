@@ -15,7 +15,7 @@
 \usetikzlibrary{positioning, shapes.geometric, arrows.meta, calc, fit, backgrounds,
                 decorations.pathreplacing}
 \usepackage{hyperref}
-\usepackage[noabbrev,capitalise]{cleveref}
+% cleveref 0.21.4 is incompatible with hyperref 7.x socket API (TeX Live 2026).
 
 % ---------------------------------------------------------------------------
 % Color definitions
@@ -139,14 +139,14 @@ governed lifecycle for the SDR FM sensor:
 The layers are not alternatives; they are complementary stages of one lifecycle. Layer~1
 validates the concept and the design---not the software. Layer~2 implements and continuously
 verifies the software. Layer~3 operates the system in production under metrological and
-regulatory governance. Detail is deferred to \cref{sec:layer1,sec:layer2,sec:layer3};
-\cref{sec:overview} gives the integrated picture.
+regulatory governance. Detail is deferred to Sections~\ref{sec:layer1}, \ref{sec:layer2}, and~\ref{sec:layer3};
+Section~\ref{sec:overview} gives the integrated picture.
 
 % ===========================================================================
 \section{V-SIL Overview}
 \label{sec:overview}
 
-\cref{fig:vsil} shows the V-SIL lifecycle as a whole. The upper part is the classical V shape:
+Figure~\ref{fig:vsil} shows the V-SIL lifecycle as a whole. The upper part is the classical V shape:
 a descending left arm that defines the system, an ascending right arm that tests it, and a
 valley where implementation happens. Each left-hand level \emph{defines the tests} for the
 right-hand level that mirrors it (dashed links). Before the first human readiness gate, Gate~G0
@@ -328,7 +328,7 @@ pipeline (violet) governs the deployed array.}
 \label{fig:vsil}
 \end{figure}
 
-\cref{tab:layers} summarises the three layers and the contract between them: each layer's
+Table~\ref{tab:layers} summarises the three layers and the contract between them: each layer's
 terminal output is the next layer's input, and each layer names the environment in which its
 claims were produced.
 
@@ -366,7 +366,7 @@ Four principles govern every layer. They are stated once here and enforced every
   \item \textbf{Mechanical rejection beats LLM approval, never the reverse.}
     A schema violation, a failed test, or a threshold exceedance rejects work mechanically.
     Human judgment is a fallback and an escalation path, not a default approval mechanism.
-  \item \textbf{\Verified{} $\neq$ \validated{} --- claims name the environment.}
+  \item \textbf{\emph{Verified} $\neq$ \emph{validated} --- claims name the environment.}
     ``Verified'' means conformance to pre-declared criteria on recorded measurements in a given
     environment; ``validated'' means fitness for the monitoring objective in the field, on real
     hardware \cite{sheridan2026b}. A system verified in simulation is not thereby validated;
@@ -485,7 +485,7 @@ structural error). Errors block; warnings (e.g.\ missing SHALL/SHOULD keyword, u
 source references) do not. A G0 failure routes back to the GT author---the requirements must
 be structurally valid before a human reviewer even considers them for completeness.
 
-\cref{fig:g0flow} shows the G0 validation flow, with colors distinguishing the zz\_Workflow
+Figure~\ref{fig:g0flow} shows the G0 validation flow, with colors distinguishing the zz\_Workflow
 concepts (blue) from the V-SIL implementation additions (green).
 
 \begin{figure}[htbp]
@@ -645,7 +645,7 @@ saturation, local-oscillator tuning delay); and the unit, integration, and accep
 output is the \textbf{Executable Prototype Build Package}. The SDR instantiation is concrete: a
 hardware sweep (for example via \texttt{hack\_rf\_sweep}), FFT and power spectral density
 estimation, and classification, with declared fallback behaviour for each non-ideality. Layer~2
-consumes this package as an executable specification (\cref{sec:l1-l2}).
+consumes this package as an executable specification (Section~\ref{sec:l1-l2}).
 
 \subsection{Build, verification, and defect routing}
 \label{sec:routing}
@@ -665,7 +665,7 @@ record. The final gate asks: \emph{All mandatory acceptance criteria satisfied?}
     objective, residual limitations, lessons learned, next-version requirements, and research
     questions.
   \item \textbf{NO} $\rightarrow$ \textbf{Failure Classification}: the defect is classified by
-    root cause and routed to the stage responsible for it (\cref{tab:routing}).
+    root cause and routed to the stage responsible for it (Table~\ref{tab:routing}).
 \end{itemize}
 
 \begin{table}[htbp]
@@ -688,14 +688,14 @@ R3 & Ctx 03 & Implementation defect \\
 The routing discipline is what makes defect data actionable: a recurring R1 pattern is evidence
 that the requirements process is weak, not that the code is unlucky. G0 failures are a special
 case of R1: the GT document is structurally defective and must be fixed before any further gate
-runs. Layer~2 reuses the same routing for CI failures (\cref{sec:layer2}), and Layer~3's
-Stage~5 feedback loop is its operational counterpart (\cref{sec:layer3}).
+runs. Layer~2 reuses the same routing for CI failures (Section~\ref{sec:layer2}), and Layer~3's
+Stage~5 feedback loop is its operational counterpart (Section~\ref{sec:layer3}).
 
 \subsection{The six governing artefacts}
 \label{sec:artefacts}
 
 Six artefacts govern how the model is used within the engine
-(\cref{tab:artefacts}). Each states why the artefact is needed, its role in the workflow, and how
+(Table~\ref{tab:artefacts}). Each states why the artefact is needed, its role in the workflow, and how
 it is instantiated for the SDR FM sensor.
 
 \begin{table}[htbp]
@@ -766,7 +766,7 @@ from validation, but in its classic form the entire right arm is a single, late 
 once, after the full descent and ascent, and the oracle arrives at the end.
 
 CI+SIL keeps the same four test levels and changes \emph{when} and \emph{against what} they run
-(\cref{fig:vsil}, right arm). Instead of one late pass, the levels execute automatically and
+(Figure~\ref{fig:vsil}, right arm). Instead of one late pass, the levels execute automatically and
 continuously against a software-modelled plant---the SIL rung of the MIL$\rightarrow$SIL
 $\rightarrow$PIL$\rightarrow$HIL ladder \cite{opalrt2026,sheridan2026a}:
 
@@ -775,13 +775,13 @@ $\rightarrow$PIL$\rightarrow$HIL ladder \cite{opalrt2026,sheridan2026a}:
   \item \textbf{Integration} (SIL) runs \emph{on every merge};
   \item \textbf{System} (extended SIL) runs \emph{nightly};
   \item \textbf{Acceptance} stays at the apex as \textbf{HIL + real hardware}---the one level
-    CI+SIL does not absorb, and the shared downstream gap (\cref{sec:gaps}).
+    CI+SIL does not absorb, and the shared downstream gap (Section~\ref{sec:gaps}).
 \end{itemize}
 
 \subsection{Mock HAL and synthetic I/Q}
 \label{sec:mockhal}
 
-To run the lower arm without RF, CI+SIL adds a thin substitution layer (\cref{fig:vsil},
+To run the lower arm without RF, CI+SIL adds a thin substitution layer (Figure~\ref{fig:vsil},
 amber). A \textbf{HAL} abstracts the device behind an interface; a \textbf{Mock HAL} of driver
 stubs implements that interface in software; and \textbf{synthetic data}---golden I/Q vectors at
 known SNR and injected error cases---feeds the mock. Purchased hardware sits behind the
@@ -837,7 +837,7 @@ $\kappa \geq 0.6$, with explicit controls for position, verbosity, and self-pref
 \subsection{V-model versus CI+SIL}
 \label{sec:contrast}
 
-\cref{tab:vsil} contrasts the two on the dimensions that matter for zz\_Workflow. The
+Table~\ref{tab:vsil} contrasts the two on the dimensions that matter for zz\_Workflow. The
 V-model's structure already resembles Layer~1---gated stages, each defining its own
 acceptance---which is why it scores as a high-to-medium alternative; but its single late test
 pass and heavy traceability apparatus are a poor match for a generator whose behaviour can drift
@@ -878,7 +878,7 @@ Layer~3 concerns running it: after promotion to production, the deployed sensor 
 disagree, and whose decisions must survive technical or legal review. The PCG pipeline
 transforms a static sensor array into a self-correcting, ever-improving monitoring system through
 five circular stages, each feeding the next and the final stage looping back to refine the whole
-system (\cref{fig:pcg}).
+system (Figure~\ref{fig:pcg}).
 
 \begin{figure}[htbp]
 \centering
@@ -938,7 +938,7 @@ regulatory decision execution.}
     synchronized observation epochs, and traceable chains from node-level results to array-level
     regulatory conclusions. Formal compliance decisions are produced only after the regulatory
     context and measurand-specific decision rule have been resolved and the applicable gate has
-    been passed (\cref{sec:authority}).
+    been passed (Section~\ref{sec:authority}).
   \item \textbf{Stage 3 --- Regulatory \& Spectral Knowledge Base (the Knowledge Base).}
     Authoritative regulatory context, licensed-station parameters, and historical spectral
     reference data grounding every measurement in validated information: regulatory and spectral
@@ -984,7 +984,7 @@ while also constraining or downgrading Stage~4 configurations and Stage~2 execut
 \subsection{Production Promotion and Rollback Gate}
 \label{sec:promotion}
 
-This gate is the Layer~2/Layer~3 contract (\cref{sec:l2-l3}). A Stage~1 deployment candidate
+This gate is the Layer~2/Layer~3 contract (Section~\ref{sec:l2-l3}). A Stage~1 deployment candidate
 shall not enter governed Stage~2 production execution until a versioned promotion record
 confirms:
 
@@ -1160,19 +1160,19 @@ Layer~2 terminates in a \emph{regression-passing build}, which is \verified, not
 \subsection{Layer 2 $\rightarrow$ Layer 3}
 \label{sec:l2-l3}
 
-The coupling is the \textbf{Production Promotion and Rollback Gate} (\cref{sec:promotion}), a
+The coupling is the \textbf{Production Promotion and Rollback Gate} (Section~\ref{sec:promotion}), a
 versioned contract with five prerequisites that bind the CI world to the operations world: the
 Stage~1 validation package (fed by Layer~2 evidence); the Stage~3 regulatory baseline; the Stage~4
 measurement template and calibration profile; the Stage~5 metrological-validity state; and human
 approval by the deployment authority. In the other direction, Stage~5 feedback re-enters Layer~2
 as ordinary CI triggers: a calibration-coefficient change is a code change, a regulatory-rule
 update is a context change, and a model or prompt change in any LLM-assisted component fires the
-full suite---the four trigger classes of \cref{sec:triggers} apply unchanged in production.
+full suite---the four trigger classes of Section~\ref{sec:triggers} apply unchanged in production.
 
 \subsection{Artefact-to-stage mapping}
 \label{sec:mapping}
 
-\cref{tab:mapping} maps each zz\_Workflow governing artefact to the PCG stage it feeds. The
+Table~\ref{tab:mapping} maps each zz\_Workflow governing artefact to the PCG stage it feeds. The
 mapping is one-to-many for the artefacts that carry governance (3 and 6), and it shows that no
 artefact dies at the layer boundary: everything Layer~1 defines, Layer~3 operationalizes.
 
@@ -1224,7 +1224,7 @@ Authorization is a decision about \emph{permission}; it is made by a person, on 
 artefacts, and it is itself archived.
 
 \textbf{HIL is a validation barrier.} The control software is exercised against real hardware:
-acceptance testing at the apex of the V (\cref{fig:vsil}), where the Mock HAL is swapped for the
+acceptance testing at the apex of the V (Figure~\ref{fig:vsil}), where the Mock HAL is swapped for the
 real device behind the same interface. HIL is the boundary of V-SIL's claims. Below the apex, the
 system is \verified{} against pre-declared criteria on synthetic or replayed I/Q; only at the
 apex---and ultimately in the field---does it become \validated{} \cite{sheridan2026b}. Simulation
@@ -1266,7 +1266,7 @@ reliability decays roughly geometrically with sequential steps, with a practical
 Honesty about maturity is part of the method. Gate G0 (structural validation of GT documents
 against IEEE 29148 templates) is the first fully implemented gate: deterministic, reproducible,
 and exercised on every GT change. All subsequent gates (G1+) remain unimplemented.
-\cref{tab:gaps} lists the components V-SIL depends on that are not yet implemented or
+Table~\ref{tab:gaps} lists the components V-SIL depends on that are not yet implemented or
 instantiated, with the gap each one leaves.
 
 \begin{table}[htbp]
@@ -1295,7 +1295,7 @@ infrastructure project that the Mock HAL already anticipates through its same-in
 MCDA formalizes a trade study that Ctx 02 already performs informally; the Controlled Source
 Specification Baseline is a document-binding task with a defined record schema; single-to-array
 scaling is a research programme rather than a methodology gap; and production LLM governance
-can be written as an extension of the four rules in \cref{sec:governance}, constrained by the
+can be written as an extension of the four rules in Section~\ref{sec:governance}, constrained by the
 same gates.
 
 % ===========================================================================
