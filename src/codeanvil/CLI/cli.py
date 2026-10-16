@@ -27,15 +27,14 @@ def argparser() -> argparse.Namespace:
             "  1. codeanvil init                  Set up ~/.codeanvil/ and database\n"
             "  2. codeanvil create myproj          Scaffold project in current directory\n"
             "     codeanvil create myproj -p /tmp  ...or in a specific path\n"
-            "  3. Fill in the 3 GT files            requirements, hw_restrictions, normativity\n"
+            "  3. Fill in the GT files              G0_SRS.md, G0_HCS.md\n"
             "  4. codeanvil status myproj           Check session and gate progress"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "GT files (Ground Truth):\n"
-            "  requirements.md      Functional and non-functional requirements\n"
-            "  hw_restrictions.md   COTS hardware constraints (embedded, server, DAQ/SDR)\n"
-            "  normativity.md       Applicable standards (ITU, ICNIRP, IEEE, ...)\n"
+            "  G0_SRS.md            System Requirements Specification (IEEE 29148)\n"
+            "  G0_HCS.md            Hardware Constraints Specification (design constraints)\n"
             "\n"
             "Gates:\n"
             "  G0  Deterministic structural validation of GT files (no AI)\n"

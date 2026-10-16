@@ -23,19 +23,23 @@ The `GT/` directory holds human-authored `.md` files:
 
 | File | Purpose |
 |------|---------|
-| `requirements.md` | System Requirements Specification (IEEE 29148) |
-| `hw_restrictions.md` | Hardware Constraints Specification (design constraints) |
-| `normativity.md` | Applicable standards (ITU, ICNIRP, IEEE, etc.) |
+| `G0_SRS.md` | System Requirements Specification (IEEE 29148) |
+| `G0_HCS.md` | Hardware Constraints Specification (design constraints) |
 
 These files are **inputs**. You **MUST NOT** modify them to make a gate pass.
 
-## Workflow
+## Startup
 
-1. Read the GT in `GT/` to understand the project contract.
-2. Execute the lowest-numbered incomplete gate.
+When the user says **"start"**, **"init"**, **"begin"**, or **"run methodology"**:
+
+1. Read `GT/` to confirm which GT files are present.
+2. Identify the lowest-numbered incomplete gate from the skill table above.
 3. Load its skill: `.agents/skills/<gate>/SKILL.md`.
-4. Follow the skill instructions. Report the verdict.
+4. Execute the skill instructions. Report the verdict.
 5. Proceed to the next gate only on a pass.
+
+Do **not** rewrite this file, create a new `CLAUDE.md`, or set up the project —
+the project is already scaffolded. Go straight to the first gate.
 
 ## Project Layout
 
