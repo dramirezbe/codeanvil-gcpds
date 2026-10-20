@@ -1,3 +1,4 @@
+import glob
 import json
 import shutil
 import subprocess
@@ -9,6 +10,39 @@ from codeanvil.config.logger import get_logger
 from codeanvil.config.paths import CONFIG, MCP_DIR, SKILLS_DIRNAME
 
 log = get_logger(__name__)
+
+
+def _detect_system_site_packages(package: str) -> str | None:
+    """Find the system site-packages directory containing a Python package.
+
+    GNU Radio and similar packages are installed by the system package manager
+    (pacman, apt, dnf) and aren't pip-installable. uv's isolated venvs can't
+    see them unless PYTHONPATH bridges the gap. This finds where they live."""
+    # Try gnuradio-config-info first (most reliable for GNU Radio)
+    if package == "gnuradio":
+        try:
+            prefix = subprocess.check_output(
+                ["gnuradio-config-info", "--prefix"],
+                text=True, stderr=subprocess.DEVNULL,
+            ).strip().rstrip("/")
+            hits = glob.glob(f"{prefix}/lib/python*/site-packages/{package}/__init__.py")
+            if hits:
+                return hits[0].rsplit(f"/{package}/", 1)[0]
+        except (FileNotFoundError, subprocess.CalledProcessError):
+            pass
+
+    # Fallback: scan common system locations (Arch, Debian/Ubuntu, Fedora, local builds)
+    for pattern in [
+        f"/usr/lib/python*/site-packages/{package}/__init__.py",
+        f"/usr/lib/python*/dist-packages/{package}/__init__.py",
+        f"/usr/local/lib/python*/site-packages/{package}/__init__.py",
+        f"/usr/local/lib/python*/dist-packages/{package}/__init__.py",
+    ]:
+        hits = sorted(glob.glob(pattern), reverse=True)  # newest python first
+        if hits:
+            return hits[0].rsplit(f"/{package}/", 1)[0]
+
+    return None
 
 
 def _server_cfg(name: str) -> dict:
@@ -45,6 +79,18 @@ def install_mcp_server(name: str) -> Path:
         ["uv", "--directory", str(dest), "sync", "--extra", "mcp"],
         check=False, capture_output=True,
     )
+
+    for pkg in cfg.get("system_packages", []):
+        sp = _detect_system_site_packages(pkg)
+        if sp:
+            log.info("detected system package '%s' at %s", pkg, sp)
+        else:
+            log.warning(
+                "system package '%s' not found — %s tools that need it will fail. "
+                "Install it via your package manager (e.g. pacman -S gnuradio, "
+                "apt install gnuradio-dev, dnf install gnuradio-devel).",
+                pkg, name,
+            )
 
     log.info("MCP server '%s' installed at %s", name, dest)
     return dest
@@ -121,13 +167,22 @@ def write_mcp_manifest(servers: list[str], project_dir: Path) -> None:
     for name in servers:
         cfg = _server_cfg(name)
         install_path = str(get_mcp_install_path(name))
+        env = {
+            k: v.replace("{project_dir}", str(project_dir.resolve()))
+            for k, v in cfg.get("env", {}).items()
+        }
+        sys_paths: list[str] = []
+        for pkg in cfg.get("system_packages", []):
+            sp = _detect_system_site_packages(pkg)
+            if sp and sp not in sys_paths:
+                sys_paths.append(sp)
+        if sys_paths:
+            env["PYTHONPATH"] = ":".join(sys_paths)
+
         manifest[name] = {
             "command": cfg["command"],
             "args": [a.replace("{install_path}", install_path) for a in cfg["args"]],
-            "env": {
-                k: v.replace("{project_dir}", str(project_dir.resolve()))
-                for k, v in cfg.get("env", {}).items()
-            },
+            "env": env,
             "description": cfg.get("description", ""),
         }
 
@@ -150,6 +205,16 @@ def generate_agent_mcp_configs(servers: list[str], project_dir: Path) -> None:
             k: v.replace("{project_dir}", str(project_dir.resolve()))
             for k, v in cfg.get("env", {}).items()
         }
+
+        # Bridge system-installed packages into uv's isolated venv via PYTHONPATH.
+        sys_paths: list[str] = []
+        for pkg in cfg.get("system_packages", []):
+            sp = _detect_system_site_packages(pkg)
+            if sp and sp not in sys_paths:
+                sys_paths.append(sp)
+        if sys_paths:
+            env["PYTHONPATH"] = ":".join(sys_paths)
+
         entries[name] = {"command": cfg["command"], "args": args, "env": env}
 
     _write_claude_mcp(entries, project_dir)

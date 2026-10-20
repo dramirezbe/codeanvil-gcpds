@@ -88,3 +88,4 @@ mcp_servers:
     skill_prefix: "marconi"
     description: "LLM-driven GNU Radio — spectrum survey, receiver building, simulation"
     requires: ["uv"]
+    system_packages: ["gnuradio"]
