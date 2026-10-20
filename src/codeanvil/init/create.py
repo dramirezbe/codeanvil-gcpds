@@ -10,7 +10,7 @@ from codeanvil.config.paths import CONFIG, SKILLS_DIRNAME, TEMPLATES_DIR
 log = get_logger(__name__)
 
 
-def scaffold_project(name: str, target: Path) -> Path:
+def scaffold_project(name: str, target: Path, mcp_servers: list[str] | None = None) -> Path:
     project_dir = target.resolve() / name
     project_dir.mkdir(parents=True, exist_ok=True)
 
@@ -18,7 +18,19 @@ def scaffold_project(name: str, target: Path) -> Path:
     _copy_gt_reference_templates(project_dir)
     _rewrite_skill_paths(project_dir / SKILLS_DIRNAME)
     _create_gt_dir(project_dir)
-    _generate_agents_md(project_dir)
+
+    if mcp_servers:
+        from codeanvil.init.mcp import (
+            copy_mcp_skills,
+            generate_agent_mcp_configs,
+            write_mcp_manifest,
+        )
+        for server in mcp_servers:
+            copy_mcp_skills(server, project_dir)
+        write_mcp_manifest(mcp_servers, project_dir)
+        generate_agent_mcp_configs(mcp_servers, project_dir)
+
+    _generate_agents_md(project_dir, mcp_servers=mcp_servers)
     _link_agent_skill_dirs(project_dir)
     _link_agent_configs(project_dir)
 
@@ -174,10 +186,25 @@ def _skill_table(summaries: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def _generate_agents_md(project_dir: Path) -> None:
+def _mcp_table(mcp_servers: list[str] | None) -> str:
+    if not mcp_servers:
+        return "_No MCP servers configured._"
+
+    mcp_cfg = CONFIG.get("mcp_servers", {})
+    lines = [
+        "| Server | Description |",
+        "|--------|-------------|",
+    ]
+    for name in mcp_servers:
+        desc = mcp_cfg.get(name, {}).get("description", "")
+        lines.append(f"| `{name}` | {desc} |")
+    return "\n".join(lines)
+
+
+def _generate_agents_md(project_dir: Path, mcp_servers: list[str] | None = None) -> None:
     """Generate the canonical AGENTS.md from the configured template,
-    with the dynamic skill table substituted in. Overwrites any existing
-    file — AGENTS.md is generated, not hand-edited."""
+    with the dynamic skill and MCP tables substituted in. Overwrites any
+    existing file — AGENTS.md is generated, not hand-edited."""
     template_path = TEMPLATES_DIR.parent / CONFIG["agents_template"]
     try:
         template = template_path.read_text(encoding="utf-8")
@@ -185,8 +212,16 @@ def _generate_agents_md(project_dir: Path) -> None:
         log.error("AGENTS template not found at %s: %s", template_path, exc)
         return
 
-    summaries = _collect_skill_summaries(TEMPLATES_DIR / "skills")
+    # Collect skills from both CodeAnvil templates and the scaffolded project
+    # (which may include MCP-provided skills copied earlier).
+    skills_root = project_dir / SKILLS_DIRNAME
+    if skills_root.is_dir():
+        summaries = _collect_skill_summaries(skills_root)
+    else:
+        summaries = _collect_skill_summaries(TEMPLATES_DIR / "skills")
+
     content = template.replace("{skill_table}", _skill_table(summaries))
+    content = content.replace("{mcp_table}", _mcp_table(mcp_servers))
 
     agents_md = project_dir / "AGENTS.md"
     agents_md.write_text(content, encoding="utf-8")

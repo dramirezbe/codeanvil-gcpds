@@ -29,6 +29,14 @@ the CodeAnvil tool itself.
 
 {skill_table}
 
+## MCP Servers
+
+{mcp_table}
+
+MCP servers provide tool-calling capabilities to agents. Each server is started
+automatically by your runtime when configured. Use the skills above to drive
+MCP-powered workflows — skills encode the methodology, MCP tools are the primitives.
+
 ## Ground Truth (GT)
 
 The `GT/` directory holds human-authored `.md` files:

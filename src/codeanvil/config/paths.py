@@ -6,10 +6,12 @@ import yaml
 WORKDIR = Path.home() / ".codeanvil"
 DB_DIR = WORKDIR / "db"
 DB_PATH = DB_DIR / "codeanvil.db"
+MCP_DIR = WORKDIR / "mcp"
 
 
 def ensure_dirs() -> None:
     DB_DIR.mkdir(parents=True, exist_ok=True)
+    MCP_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def _find_templates_dir() -> Path:

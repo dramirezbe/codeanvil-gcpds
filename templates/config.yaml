@@ -72,3 +72,19 @@ copy_ignore:
   - "__pycache__"
   - "*.pyc"
   - "valid_structure_SRS.py"
+
+# MCP servers — optional external tool integrations.
+# Installed globally during `codeanvil init --mcp <name>`,
+# wired into projects during `codeanvil create --mcp <name>`.
+mcp_servers:
+  marconi:
+    repo: "https://github.com/yoelbassin/gr-mcp.git"
+    install_dir: "mcp/marconi"
+    command: "uv"
+    args: ["--directory", "{install_path}", "run", "--extra", "mcp", "marconi-mcp"]
+    env:
+      MARCONI_WORKSPACE: "{project_dir}"
+    skills_subdir: "skills"
+    skill_prefix: "marconi"
+    description: "LLM-driven GNU Radio — spectrum survey, receiver building, simulation"
+    requires: ["uv"]

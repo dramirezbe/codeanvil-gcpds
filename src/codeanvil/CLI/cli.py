@@ -45,10 +45,18 @@ def argparser() -> argparse.Namespace:
     )
     sub = parser.add_subparsers(dest="command", required=True, title="commands")
 
-    sub.add_parser(
+    init_parser = sub.add_parser(
         "init",
         help="Initialize CodeAnvil workdir and database",
         description="Creates ~/.codeanvil/ directory structure and the SQLite database. Safe to re-run.",
+    )
+    init_parser.add_argument(
+        "--mcp",
+        action="append",
+        default=[],
+        dest="mcp_servers",
+        metavar="SERVER",
+        help="Install an MCP server (e.g. marconi). Repeatable.",
     )
 
     create = sub.add_parser(
@@ -70,6 +78,14 @@ def argparser() -> argparse.Namespace:
         default=Path.cwd(),
         help="Parent directory to scaffold the project in (default: current directory)",
     )
+    create.add_argument(
+        "--mcp",
+        action="append",
+        default=[],
+        dest="mcp_servers",
+        metavar="SERVER",
+        help="Include an MCP server (e.g. marconi). Repeatable.",
+    )
 
     sub.add_parser(
         "list",
@@ -87,7 +103,7 @@ def argparser() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def cmd_init() -> None:
+def cmd_init(mcp_servers: list[str] | None = None) -> None:
     ensure_dirs()
     if not db_exists(DB_PATH):
         conn = connect_db(DB_PATH)
@@ -97,14 +113,39 @@ def cmd_init() -> None:
     else:
         log.info("already initialized")
 
+    if mcp_servers:
+        from codeanvil.config.paths import CONFIG
+        from codeanvil.init.mcp import install_mcp_server
+        available = CONFIG.get("mcp_servers", {})
+        for name in mcp_servers:
+            if name not in available:
+                log.error("unknown MCP server '%s' — available: %s",
+                          name, ", ".join(available))
+                sys.exit(1)
+            install_mcp_server(name)
 
-def cmd_create(name: str, path: Path) -> None:
+
+def cmd_create(name: str, path: Path, mcp_servers: list[str] | None = None) -> None:
     if not preflight():
         log.error("preflight failed — run 'codeanvil init' first")
         sys.exit(1)
 
+    if mcp_servers:
+        from codeanvil.config.paths import CONFIG
+        from codeanvil.init.mcp import is_mcp_installed
+        available = CONFIG.get("mcp_servers", {})
+        for srv in mcp_servers:
+            if srv not in available:
+                log.error("unknown MCP server '%s' — available: %s",
+                          srv, ", ".join(available))
+                sys.exit(1)
+            if not is_mcp_installed(srv):
+                log.error("MCP server '%s' not installed — run 'codeanvil init --mcp %s' first",
+                          srv, srv)
+                sys.exit(1)
+
     conn = connect_db(DB_PATH)
-    project_dir = scaffold_project(name, path)
+    project_dir = scaffold_project(name, path, mcp_servers=mcp_servers or None)
     register_project(conn, name, project_dir)
     conn.close()
 
@@ -150,9 +191,9 @@ def cmd_status(name: str) -> None:
 def choose_option(args: argparse.Namespace) -> None:
     match args.command:
         case "init":
-            cmd_init()
+            cmd_init(mcp_servers=args.mcp_servers or None)
         case "create":
-            cmd_create(args.name, args.path)
+            cmd_create(args.name, args.path, mcp_servers=args.mcp_servers or None)
         case "list":
             cmd_list()
         case "status":
