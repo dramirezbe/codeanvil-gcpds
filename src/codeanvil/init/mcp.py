@@ -294,14 +294,24 @@ def _write_vscode_mcp(entries: dict, project_dir: Path) -> None:
 
 
 def _write_opencode_mcp(entries: dict, project_dir: Path) -> None:
-    servers = {}
+    # OpenCode reads opencode.json at project root. Servers live directly
+    # under "mcp" (flat), not "mcp.servers" (despite what `opencode mcp add` writes).
+    path = project_dir / "opencode.json"
+    existing = {}
+    if path.exists():
+        try:
+            existing = json.loads(path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            pass
+    mcp = existing.setdefault("mcp", {})
     for name, e in entries.items():
-        servers[name] = {
+        mcp[name] = {
             "type": "local",
             "command": [e["command"]] + e["args"],
             "environment": e["env"],
         }
-    _write_json(project_dir / ".opencode" / "mcp.json", {"mcp": {"servers": servers}})
+    existing.setdefault("$schema", "https://opencode.ai/config.json")
+    _write_json(path, existing)
 
 
 def _write_codex_mcp(entries: dict, project_dir: Path) -> None:
