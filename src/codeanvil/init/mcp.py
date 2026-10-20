@@ -172,7 +172,9 @@ def _write_claude_mcp(entries: dict, project_dir: Path) -> None:
             "args": e["args"],
             "env": e["env"],
         }
-    path = project_dir / ".claude" / "settings.json"
+    # .mcp.json at project root — the standard Claude Code project MCP manifest.
+    # Also read by VS Code and other MCP-aware tools.
+    path = project_dir / ".mcp.json"
     existing = {}
     if path.exists():
         try:
