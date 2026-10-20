@@ -53,26 +53,70 @@ python .agents/skills/G0_valid_req_and_GT/scripts/g0_validate.py GT/SRS.md GT/HC
 codeanvil status myproject
 ```
 
+## MCP server integration (optional)
+
+CodeAnvil can scaffold projects with MCP (Model Context Protocol) servers that give AI agents tool-calling capabilities beyond text. MCP servers are installed globally once, then wired into each project with per-agent configs.
+
+### Marconi — LLM-driven GNU Radio
+
+[Marconi](https://github.com/yoelbassin/gr-mcp) provides 19 MCP tools and 6 skills for RF/SDR work: spectrum survey, receiver building, simulation, transmit experiments, and GRC flowgraph export. Tested with Claude Code.
+
+```bash
+# Install Marconi (clones repo, prewarms uv dependencies)
+codeanvil init --mcp marconi
+
+# Scaffold a project with Marconi enabled
+codeanvil create sdr-lab --mcp marconi -p ~/projects
+
+# Verify MCP server connects
+cd ~/projects/sdr-lab && claude mcp list
+# marconi: ✔ Connected
+```
+
+**Requires**: GNU Radio 3.10+ installed via your system package manager (`pacman -S gnuradio`, `apt install gnuradio-dev`, `dnf install gnuradio-devel`). The scaffold auto-detects the system gnuradio path and injects `PYTHONPATH` so Marconi's isolated uv venv can access it.
+
+**What you get in the scaffolded project**:
+
+| What | Where |
+|------|-------|
+| 6 Marconi skills | `.agents/skills/marconi-*` (survey-spectrum, build-receiver, simulate-scene, debug-no-signal, tx-experiment, escape-hatch) |
+| MCP server definition | `.mcp.json` (Claude Code), `.vscode/mcp.json`, `.opencode/mcp.json`, `.codex/mcp.json` |
+| Agent-agnostic manifest | `.agents/mcp.yaml` |
+| Server pre-approved | `.claude/settings.json` + `.claude/settings.local.json` (`enabledMcpjsonServers`) |
+
+**Tested workflows** (Claude Code):
+
+- Simulate a VHF scene → capture → survey spectrum (PSD, find_signals, spectrogram)
+- Capture FM broadcast band from HackRF → convert int8→cf32 → analyze with Marconi
+- Build NBFM receiver → validate → run → export `.grc` for GNU Radio Companion
+- Real-time spectrum analyzer via escape-hatch (soapy_hackrf_source → qtgui sinks)
+- DC spike correction for direct-conversion receivers (dc_blocker_cc via escape-hatch)
+
+**Marconi v1.0 limitations**: simulation and file-based analysis only. No live hardware source blocks or real-time GUI sinks in the vocabulary — use the escape-hatch skill to write raw GRC flowgraphs or Python scripts for those. Hardware support (RTL-SDR, HackRF, USRP via gr-soapy/gr-uhd) is planned for Marconi v1.2.
+
 ## How it works
 
 ```
-codeanvil create <name> [-p <path>]
+codeanvil create <name> [-p <path>] [--mcp marconi]
        │
        ▼
   <path>/<name>/                    (default: ./<name>/)
        ├── GT/
        │    └── README.md           ← instructions: write SRS.md, HCS.md here
        ├── .agents/
-       │    └── skills/             ← canonical skill store
-       │         ├── G0_valid_req_and_GT/
-       │         │    ├── SKILL.md           ← agent contract (paths rewritten)
-       │         │    ├── templates/         ← locked IEEE 29148 reference templates
-       │         │    │    ├── G0_SRS.md
-       │         │    │    └── G0_HCS.md
-       │         │    ├── references/RULES.md
-       │         │    └── scripts/g0_validate.py
-       │         └── G1_start_design/
-       │              └── SKILL.md
+       │    ├── skills/             ← canonical skill store
+       │    │    ├── G0_valid_req_and_GT/
+       │    │    │    ├── SKILL.md           ← agent contract (paths rewritten)
+       │    │    │    ├── templates/         ← locked IEEE 29148 reference templates
+       │    │    │    │    ├── G0_SRS.md
+       │    │    │    │    └── G0_HCS.md
+       │    │    │    ├── references/RULES.md
+       │    │    │    └── scripts/g0_validate.py
+       │    │    ├── G1_start_design/
+       │    │    │    └── SKILL.md
+       │    │    └── marconi-*/SKILL.md     ← (if --mcp marconi) 6 RF/SDR skills
+       │    └── mcp.yaml            ← (if --mcp) agent-agnostic MCP manifest
+       ├── .mcp.json                ← (if --mcp) Claude Code MCP server config
        ├── .claude/skills  → ../.agents/skills
        ├── .opencode/skills → ../.agents/skills
        └── .codex/skills   → ../.agents/skills
@@ -116,7 +160,8 @@ codeanvil-gcpds/
 │   │   └── utils.py         # Connection management and health checks
 │   └── init/
 │       ├── check.py         # Pre-flight validation
-│       └── create.py        # Scaffold projects from templates
+│       ├── create.py        # Scaffold projects from templates
+│       └── mcp.py           # MCP server install, skill copy, per-agent config gen
 │
 ├── methodology/test/        # Test GT cases (V-SIL system inputs)
 │   ├── T0_ANE-Lap2/        # ANE edge sensor (SRS + HCS examples, Phase 2)

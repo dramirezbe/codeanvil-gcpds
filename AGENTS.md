@@ -126,7 +126,40 @@ Each gate agent (G1+), regardless of runtime:
 
 Agents are **stateless** and **runtime-agnostic** — all persistence is in the DB and GT files. Any coding agent that reads markdown and executes scripts can run a gate. Re-runnable without side effects.
 
-## MCP servers (planned)
+## MCP servers
+
+MCP (Model Context Protocol) servers give AI agents tool-calling capabilities. They are installed globally at `~/.codeanvil/mcp/<name>/` and wired into projects during scaffold. Config is generated per agent runtime.
+
+### Implemented: Marconi (GNU Radio)
+
+[Marconi/gr-mcp](https://github.com/yoelbassin/gr-mcp) — 19 MCP tools + 6 skills for LLM-driven RF/SDR work.
+
+**Install & scaffold flow**:
+```
+codeanvil init --mcp marconi       → clones to ~/.codeanvil/mcp/marconi/, prewarms uv deps
+codeanvil create proj --mcp marconi → copies 6 marconi-* skills, generates MCP configs
+```
+
+**Agent-agnostic config generation** (`src/codeanvil/init/mcp.py`):
+- `.mcp.json` — Claude Code (standard project MCP manifest)
+- `.claude/settings.json` + `.claude/settings.local.json` — `enabledMcpjsonServers` (pre-approves the server)
+- `.vscode/mcp.json` — VS Code / Copilot
+- `.opencode/mcp.json` — OpenCode
+- `.codex/mcp.json` — Codex
+- `.agents/mcp.yaml` — agent-agnostic canonical manifest
+
+**System package bridging**: GNU Radio is installed by the system package manager (not pip). `_detect_system_site_packages()` finds the system gnuradio and injects `PYTHONPATH` into all generated MCP configs so Marconi's uv venv can access it. Configured via `system_packages` in `templates/config.yaml`.
+
+**Marconi v1.0 vocabulary** (17 blocks): tone_source, audio_tone_source, noise_source, file_source, head, add, multiply_const, freq_shift, freq_xlating_lowpass, quadrature_demod, rational_resampler_c/f, fm_deemphasis, nbfm_rx, nbfm_tx, file_sink, wav_sink. No hardware sources or GUI sinks — those use escape-hatch.
+
+**Tested with Claude Code** (2026-10-20):
+- Simulated VHF scene → capture → spectrum survey (PSD, find_signals, spectrogram)
+- HackRF FM band capture → int8→cf32 conversion → Marconi analysis
+- NBFM receiver build → validate → run → export `.grc`
+- Real-time spectrum analyzer (soapy_hackrf_source → qtgui sinks) via escape-hatch
+- DC blocker insertion for direct-conversion receiver artifact removal
+
+### Planned
 
 - **Project DB** — query sessions, gate results, project metadata
 - **GT access** — read/write GT documents with schema validation
@@ -157,26 +190,38 @@ myproj/
 │   ├── snapshot.json                ← sealed GT digests (after G0 pass)
 │   └── custody.jsonl                ← append-only chain-of-custody ledger
 ├── .agents/
-│   └── skills/                      ← canonical skill store
-│       ├── G0_valid_req_and_GT/
-│       │   ├── SKILL.md             ← paths rewritten to project-relative
-│       │   ├── templates/           ← locked IEEE 29148 reference templates
-│       │   │   ├── G0_SRS.md
-│       │   │   └── G0_HCS.md
-│       │   ├── references/RULES.md  ← paths rewritten
-│       │   └── scripts/g0_validate.py
-│       ├── custody-chain/
-│       │   ├── SKILL.md             ← cross-cutting provenance skill
-│       │   ├── references/schemas.md
-│       │   ├── assets/controls.example.json
-│       │   └── scripts/             ← source_snapshot, custody_ledger, etc.
-│       └── G1_start_design/
-│           └── SKILL.md
-├── .claude/skills  → ../.agents/skills
+│   ├── skills/                      ← canonical skill store
+│   │   ├── G0_valid_req_and_GT/
+│   │   │   ├── SKILL.md             ← paths rewritten to project-relative
+│   │   │   ├── templates/           ← locked IEEE 29148 reference templates
+│   │   │   │   ├── G0_SRS.md
+│   │   │   │   └── G0_HCS.md
+│   │   │   ├── references/RULES.md  ← paths rewritten
+│   │   │   └── scripts/g0_validate.py
+│   │   ├── custody-chain/
+│   │   │   ├── SKILL.md             ← cross-cutting provenance skill
+│   │   │   ├── references/schemas.md
+│   │   │   ├── assets/controls.example.json
+│   │   │   └── scripts/             ← source_snapshot, custody_ledger, etc.
+│   │   ├── G1_start_design/
+│   │   │   └── SKILL.md
+│   │   └── marconi-*/               ← (if --mcp marconi) 6 RF/SDR skills
+│   │       └── SKILL.md
+│   └── mcp.yaml                     ← (if --mcp) agent-agnostic MCP manifest
+├── .mcp.json                        ← (if --mcp) Claude Code MCP server config
+├── .claude/
+│   ├── skills  → ../.agents/skills
+│   ├── settings.json                ← (if --mcp) enabledMcpjsonServers
+│   └── settings.local.json          ← (if --mcp) enabledMcpjsonServers
+├── .vscode/mcp.json                 ← (if --mcp) VS Code / Copilot MCP config
+├── .opencode/
+│   ├── skills → ../.agents/skills
+│   └── mcp.json                     ← (if --mcp) OpenCode MCP config
+├── .codex/
+│   ├── skills → ../.agents/skills
+│   └── mcp.json                     ← (if --mcp) Codex MCP config
 ├── .github/skills  → ../.agents/skills
-├── .github/copilot-instructions.md  ← pointer to AGENTS.md
-├── .opencode/skills → ../.agents/skills
-└── .codex/skills   → ../.agents/skills
+└── .github/copilot-instructions.md  ← pointer to AGENTS.md
 ```
 
 Agent runtimes discover skills via their own symlinked directory. All point to the same `.agents/skills/`.

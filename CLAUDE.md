@@ -36,6 +36,7 @@ CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks stat
 - **`db/utils.py`** — `connect_db()` (WAL mode, row factory, foreign keys) + `health_db()`
 - **`init/check.py`** — `preflight()` (workdir + DB checks) + `check_project_path()`
 - **`init/create.py`** — `scaffold_project()` (copies skills to `.agents/skills/`, embeds GT reference templates inside skills, rewrites repo-root paths, creates agent symlinks, writes user `GT/` dir) + `register_project()` in DB (idempotent). Templates located via `_find_templates_dir()` (editable install: source tree; wheel install: `importlib.resources`)
+- **`init/mcp.py`** — MCP server lifecycle: `install_mcp_server()` (clone + prewarm), `copy_mcp_skills()` (prefix + gate frontmatter), `generate_agent_mcp_configs()` (per-agent JSON: `.mcp.json`, `.vscode/`, `.opencode/`, `.codex/`), `_detect_system_site_packages()` (bridges system packages like gnuradio into uv venvs via `PYTHONPATH`)
 
 ## Key concepts
 
@@ -47,6 +48,7 @@ CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks stat
 - **Gate (Gn)**: verification checkpoint. Sequential — G0 must pass before G1 runs. G0 is deterministic (script-only). G1+ use AI coding agents (any runtime).
 - **Skill**: `SKILL.md` + optional scripts that define what happens at a gate. Agent-agnostic — any coding agent that reads markdown can execute them. Live in `templates/skills/` (repo) and `.agents/skills/` (scaffolded projects).
 - **Session**: persistent record of a project's progress through gates, stored in SQLite.
+- **MCP server**: external tool provider (Model Context Protocol) that gives agents callable tools beyond text. Installed globally to `~/.codeanvil/mcp/<name>/`, wired into projects via per-agent config files. First server: Marconi (GNU Radio — 19 tools, 6 skills for RF/SDR). Configured in `templates/config.yaml` under `mcp_servers`, logic in `src/codeanvil/init/mcp.py`.
 
 ## Active plans
 
@@ -55,6 +57,7 @@ CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks stat
 | G0 validation script | `plans/g0_skill.md`        | DONE      | Deterministic Python script to structurally validate SRS/HCS against IEEE 29148 templates |
 | Scaffold CLI         | `plans/scaffold_cli.md`    | DONE      | pyproject.toml, skill dir convention (.agents/skills/ + symlinks), path rewriting, GT inside skills |
 | AGENTS.md template   | `plans/agents_md_template.md` | PLANNED | Config-driven scaffold: YAML config, AGENTS.md template with dynamic skills, multi-agent symlinks |
+| MCP integration      | `plans/dazzling-percolating-cook.md` | DONE | Agent-agnostic MCP server integration: Marconi/gr-mcp as first server, system package bridging, per-agent configs |
 
 ## Installation
 
@@ -105,15 +108,22 @@ project folder — it has no `src/`, no `templates/`, no `pyproject.toml`.
 │   ├── G0_SRS.md
 │   └── G0_HCS.md
 ├── .provenance/                  ← custody-chain artifacts (snapshot, ledger)
-├── .agents/skills/               ← copied skills (project-root paths)
-│   ├── G0_valid_req_and_GT/
-│   │   ├── SKILL.md
-│   │   ├── scripts/
-│   │   └── templates/            ← locked GT reference copies
-│   └── custody-chain/
-│       ├── SKILL.md
-│       └── scripts/
-├── .claude/skills -> ../.agents/skills
+├── .agents/
+│   ├── skills/                   ← copied skills (project-root paths)
+│   │   ├── G0_valid_req_and_GT/
+│   │   │   ├── SKILL.md
+│   │   │   ├── scripts/
+│   │   │   └── templates/        ← locked GT reference copies
+│   │   ├── custody-chain/
+│   │   │   ├── SKILL.md
+│   │   │   └── scripts/
+│   │   └── marconi-*/SKILL.md    ← (if --mcp marconi) 6 RF/SDR skills
+│   └── mcp.yaml                  ← (if --mcp) agent-agnostic MCP manifest
+├── .mcp.json                     ← (if --mcp) Claude Code MCP server definition
+├── .claude/
+│   ├── skills -> ../.agents/skills
+│   ├── settings.json             ← (if --mcp) enabledMcpjsonServers
+│   └── settings.local.json       ← (if --mcp) enabledMcpjsonServers
 ├── .github/skills -> ../.agents/skills
 └── .github/copilot-instructions.md  ← pointer to AGENTS.md
 ```
@@ -126,13 +136,16 @@ project folder — it has no `src/`, no `templates/`, no `pyproject.toml`.
 
 ```
 codeanvil init                              → ~/.codeanvil/ + DB
+codeanvil init --mcp marconi               → + clone to ~/.codeanvil/mcp/marconi/
 codeanvil create myproj -p /path/to/        → /path/to/myproj/ (scaffolded)
+codeanvil create myproj --mcp marconi       → + marconi-* skills, MCP configs, PYTHONPATH
 ```
 
 The scaffold copies `templates/skills/` → `.agents/skills/`, runs `path_replacements`
 on `.md` files, generates `AGENTS.md` from the template, creates symlinks, and registers
-the project in the DB. After that the project is self-contained — it does not depend on
-the repo at runtime.
+the project in the DB. With `--mcp`, it also copies MCP skills (prefixed), generates
+per-agent MCP configs, and bridges system packages (like gnuradio) via `PYTHONPATH`.
+After that the project is self-contained — it does not depend on the repo at runtime.
 
 ### Installation paths
 
