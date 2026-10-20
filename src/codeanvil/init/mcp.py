@@ -172,7 +172,7 @@ def _write_claude_mcp(entries: dict, project_dir: Path) -> None:
             "args": e["args"],
             "env": e["env"],
         }
-    path = project_dir / ".claude" / "settings.local.json"
+    path = project_dir / ".claude" / "settings.json"
     existing = {}
     if path.exists():
         try:
