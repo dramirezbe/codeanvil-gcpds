@@ -174,15 +174,47 @@ def _write_claude_mcp(entries: dict, project_dir: Path) -> None:
         }
     # .mcp.json at project root — the standard Claude Code project MCP manifest.
     # Also read by VS Code and other MCP-aware tools.
-    path = project_dir / ".mcp.json"
-    existing = {}
-    if path.exists():
+    mcp_json_path = project_dir / ".mcp.json"
+    existing_mcp = {}
+    if mcp_json_path.exists():
         try:
-            existing = json.loads(path.read_text(encoding="utf-8"))
+            existing_mcp = json.loads(mcp_json_path.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
             pass
-    existing.setdefault("mcpServers", {}).update(mcp_servers)
-    _write_json(path, existing)
+    existing_mcp.setdefault("mcpServers", {}).update(mcp_servers)
+    _write_json(mcp_json_path, existing_mcp)
+
+    # .claude/settings.json — enable the .mcp.json servers so Claude Code
+    # connects them even under --setting-sources "project" (which excludes
+    # the "local" source where interactive enablement is normally stored).
+    settings_path = project_dir / ".claude" / "settings.json"
+    existing_settings = {}
+    if settings_path.exists():
+        try:
+            existing_settings = json.loads(settings_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            pass
+    enabled = existing_settings.get("enabledMcpjsonServers", [])
+    for name in mcp_servers:
+        if name not in enabled:
+            enabled.append(name)
+    existing_settings["enabledMcpjsonServers"] = enabled
+    _write_json(settings_path, existing_settings)
+
+    # Also write to settings.local.json for normal (non-sandboxed) sessions.
+    local_path = project_dir / ".claude" / "settings.local.json"
+    existing_local = {}
+    if local_path.exists():
+        try:
+            existing_local = json.loads(local_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            pass
+    local_enabled = existing_local.get("enabledMcpjsonServers", [])
+    for name in mcp_servers:
+        if name not in local_enabled:
+            local_enabled.append(name)
+    existing_local["enabledMcpjsonServers"] = local_enabled
+    _write_json(local_path, existing_local)
 
 
 def _write_vscode_mcp(entries: dict, project_dir: Path) -> None:
