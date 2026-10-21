@@ -123,8 +123,47 @@ def copy_mcp_skills(name: str, project_dir: Path) -> list[str]:
         copied.append(dest_name)
         log.debug("copied MCP skill %s -> %s", skill_dir.name, dest)
 
+    if copied:
+        _copy_license_notices(install_path, project_dir, prefix, cfg)
+
     log.info("copied %d skills from MCP server '%s'", len(copied), name)
     return copied
+
+
+def _copy_license_notices(install_path: Path, project_dir: Path, prefix: str, cfg: dict) -> None:
+    """Carry the upstream license and attribution into the scaffolded project.
+
+    Copied skills are licensed by their upstream project (e.g. Marconi is
+    GPL-3.0-or-later). The scaffolded project is not distributed by CodeAnvil —
+    its owner may publish or sell it — so at that point the owner redistributes
+    these files and the license text and copyright notices must travel with
+    them. The scaffold modifies the copies (adds gate frontmatter), which is a
+    permitted modification only as long as the notices survive."""
+    dest_dir = project_dir / SKILLS_DIRNAME
+
+    licenses = sorted(install_path.glob("LICENSE*"))
+    if not licenses:
+        log.warning("no LICENSE file at %s — copied skills carry no license text", install_path)
+    for lic in licenses:
+        shutil.copy2(lic, dest_dir / f"{prefix}-{lic.name}")
+
+    repo = cfg.get("repo", "")
+    license_names = ", ".join(lic.name for lic in licenses) or "unknown"
+    notice = (
+        f"# Notice — {prefix} skills\n\n"
+        f"The `{prefix}-*` skill directories in this project are derived from\n"
+        f"upstream project: {repo}\n\n"
+        f"They are licensed under the terms of the upstream LICENSE file(s)\n"
+        f"copied here as: {license_names}.\n\n"
+        "CodeAnvil's scaffold modified these copies by adding gate frontmatter\n"
+        "to their SKILL.md metadata. This is a permitted modification; the\n"
+        "upstream license terms and copyright notices continue to apply.\n\n"
+        "If you redistribute this project (public repository, sale, delivery\n"
+        "to a client), keep this notice and the upstream license file(s)\n"
+        "alongside the copied skills.\n"
+    )
+    (dest_dir / f"{prefix}-NOTICE.md").write_text(notice, encoding="utf-8")
+    log.debug("wrote %s license notice (%d file(s))", prefix, len(licenses))
 
 
 def _ensure_gate_frontmatter(skill_md: Path) -> None:
