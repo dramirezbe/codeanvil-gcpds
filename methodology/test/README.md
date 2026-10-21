@@ -98,7 +98,19 @@ of the scaffolded instructions without interference from global config.
 *(Note: `--setting-sources ""` disables ALL settings including CLAUDE.md
 autodiscovery — don't use it for methodology testing.)*
 
-### 6. Test prompts (inside sandboxed Claude)
+### 5b. Enter sandboxed Pi session in the project (alternative)
+
+```bash
+cd /tmp/smoke-test
+pi --no-extensions -e ~/.pi/agent/npm/node_modules/pi-claude-bridge/src/index.ts -e ~/.pi/agent/npm/node_modules/opencode-pi/src/index.ts --no-mcp --no-skills --no-prompt-templates
+```
+
+This launches Pi with all user extensions, MCP servers, skills, and prompt
+templates disabled, then re-enables only the Claude bridge and OpenCode
+extensions. The result is a clean session that reads only the project's
+`AGENTS.md` without interference from global config.
+
+### 6. Test prompts (inside sandboxed Claude or Pi)
 
 Run these prompts in sequence inside the sandboxed Claude session. After each,
 verify the expected outcome before proceeding.
