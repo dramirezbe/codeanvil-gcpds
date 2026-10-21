@@ -35,7 +35,8 @@ codeanvil create ──► scaffold project anywhere
                        ├─ GT/README.md         (user writes G0_SRS.md, G0_HCS.md here)
                        ├─ .provenance/         (custody-chain snapshots + ledger)
                        └─ DB registration (idempotent)
-codeanvil run ─────► orchestrator (planned)
+
+the harness (agent runtime) reads the scaffolded AGENTS.md and drives the gates:
                        │
                        ├─ G0 (deterministic — no agent)
                        │    ├─ reads: 3 GT .md files
@@ -56,6 +57,22 @@ codeanvil run ─────► orchestrator (planned)
                        ├─ G2 Agent (...)
                        └─ ...
 ```
+
+## The system — two sides
+
+"The system" has two sides, and they must never be confused:
+
+1. **Harness engineering (this repo — the wrapper).** CodeAnvil itself: `src/`
+   (CLI + scaffold) and `templates/` (the methodology). This is where you *build
+   the wrapper* — the gates, skills, GT templates, MCP wiring, and the generator
+   that produces a user project. Work here changes the tool and the methodology.
+
+2. **The user side (a ready harness).** What `codeanvil create` produces: a
+   scaffolded project that is itself a complete, runnable harness — MCP servers
+   wired in, skills under `.agents/skills/`, and **gate orchestration expressed
+   in the generated `AGENTS.md`**. The agent runtime reads that `AGENTS.md` and
+   drives the gates. Orchestration is harness engineering, not tool code — there
+   is no `codeanvil run`.
 
 ## Test GT cases (V-SIL system inputs)
 
@@ -106,14 +123,19 @@ Not a numbered gate — runs alongside any gate to prove GT immutability and tra
 - **Inputs**: validated GT + G0 pass report
 - **Output**: initial design artifacts (architecture, interfaces, GT-derived constraints)
 
-## Orchestrator (planned)
+## Gate orchestration (harness-driven)
 
-- Loads session from DB (`db/sessions.py`)
-- Determines next gate from `sessions.current_gate`
-- G0: runs `g0_validate.py` directly
-- G1+: spawns AI coding agent with `SKILL.md` + GT context (any supported runtime)
-- Records result via `record_gate_result()`
-- Advances gate via `update_gate()` on pass
+There is no `codeanvil run` command and no orchestrator in the tool. Gate
+sequencing is **harness engineering**: the agent runtime (Claude, Codex,
+OpenCode, Pi, ...) reads the scaffolded project's `AGENTS.md`, finds the lowest
+incomplete gate, loads that gate's `SKILL.md`, and executes it.
+
+- G0: the agent runs `g0_validate.py` directly (deterministic, no AI).
+- custody-chain: after G0 passes, the agent seals GT and records custody.
+- G1+: the agent follows the gate's `SKILL.md` against the validated GT.
+
+State lives in the GT files and `.provenance/`, not in the tool. The `codeanvil`
+CLI only scaffolds and registers projects; it never drives gates.
 
 ## Agent contract
 
@@ -124,7 +146,7 @@ Each gate agent (G1+), regardless of runtime:
 3. Executes validation, generation, or review per the skill
 4. Returns structured output (pass/fail, findings, artifacts)
 
-Agents are **stateless** and **runtime-agnostic** — all persistence is in the DB and GT files. Any coding agent that reads markdown and executes scripts can run a gate. Re-runnable without side effects.
+Agents are **stateless** and **runtime-agnostic** — all persistence is in the GT files and `.provenance/`. Any coding agent that reads markdown and executes scripts can run a gate. Re-runnable without side effects.
 
 ## MCP servers
 
@@ -170,8 +192,8 @@ codeanvil create proj --mcp marconi → copies 6 marconi-* skills, generates MCP
 1. Create `templates/skills/G<n>_<name>/SKILL.md`
 2. Add validation scripts under `scripts/` if needed
 3. Add GT reference templates under `templates/` if the gate validates document structure
-4. Register the gate in the orchestrator's sequence
-5. Update DB schema if the gate produces new artifact types
+4. Register the gate in the generated `AGENTS.md` gate sequence (the harness reads it)
+5. Define the gate's artifact outputs in its `SKILL.md` (artifacts are project files, not DB rows)
 6. Run `codeanvil create` — new skills are automatically copied and path-rewritten
 
 ## Scaffolded project structure

@@ -14,7 +14,7 @@ The full flow: author skills in `templates/` → `codeanvil create` scaffolds a 
 | `scaffold_project()` | `src/codeanvil/init/create.py` | Works but copies to wrong dirs, copies `__pycache__`, no path rewriting |
 | `register_project()` | `src/codeanvil/init/create.py` | Works |
 | DB schema (projects, sessions, gate_results) | `src/codeanvil/db/schema.py` | Works |
-| Session CRUD | `src/codeanvil/db/sessions.py` | Works, but nothing calls `create_session()` yet |
+| `list_sessions` | `src/codeanvil/db/sessions.py` | Read-only; gate orchestration is harness-driven (scaffolded `AGENTS.md`), not tool code |
 | Preflight checks | `src/codeanvil/init/check.py` | Works |
 | Logger | `src/codeanvil/config/logger.py` | Works |
 | Paths config | `src/codeanvil/config/paths.py` | Works (`~/.codeanvil/`) |
@@ -150,9 +150,12 @@ myproj/
     └── skills -> ../.agents/skills
 ```
 
-### 5. No `codeanvil run` in this phase
+### 5. No `codeanvil run` — ever
 
-The user asked for: skill authoring → CLI scaffold → DB persistence → skill copy logic. Gate execution (`codeanvil run`) is a separate phase — it needs the orchestrator described in AGENTS.md. Sessions CRUD already exists in `db/sessions.py` and is ready when that phase comes.
+Gate execution is **harness engineering**, not tool code. The agent runtime
+reads the scaffolded `AGENTS.md` and drives the gates; there is no `codeanvil run`
+command and no orchestrator in `src/`. The tool's DB holds project registration
+only — gate state lives in the GT files and `.provenance/`.
 
 ## Files to modify
 

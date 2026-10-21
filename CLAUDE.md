@@ -28,11 +28,11 @@ CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks stat
 
 - **`__main__.py`** — entry point (`python -m codeanvil`)
 - **`CLI/cli.py`** — argparse CLI with subcommands: `init`, `create`, `list`, `status`
-- **`UI/ui.py`** — PySide6 graphical interface (planned)
+- **`UI/ui.py`** — PySide6 graphical interface (planned; see `UI/README.md` for scope)
 - **`config/logger.py`** — cross-platform colored logger (`get_logger(__name__)`)
 - **`config/paths.py`** — canonical paths (`WORKDIR`, `DB_PATH`) + `ensure_dirs()`. Projects live wherever the user creates them, not under `~/.codeanvil/`.
 - **`db/schema.py`** — SQLite schema: `projects`, `sessions`, `gate_results` tables + `db_exists()`, `create_schema()`
-- **`db/sessions.py`** — session CRUD: `create_session`, `get_session`, `list_sessions`, `update_gate`, `record_gate_result`
+- **`db/sessions.py`** — `list_sessions` (read a project's session rows). Gate orchestration is harness-driven (in the scaffolded `AGENTS.md`), not tool code — there is no orchestrator writing sessions or gate results.
 - **`db/utils.py`** — `connect_db()` (WAL mode, row factory, foreign keys) + `health_db()`
 - **`init/check.py`** — `preflight()` (workdir + DB checks) + `check_project_path()`
 - **`init/create.py`** — `scaffold_project()` (copies skills to `.agents/skills/`, embeds GT reference templates inside skills, rewrites repo-root paths, creates agent symlinks, writes user `GT/` dir) + `register_project()` in DB (idempotent). Templates located via `_find_templates_dir()` (editable install: source tree; wheel install: `importlib.resources`)
@@ -47,7 +47,7 @@ CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks stat
   - **T2_IoT-Indoor** — Indoor IoT radio environment mapping at 2.4 GHz ISM (Proyecto Hermes / GCPDS). Raw proposal + literature (GT must be derived).
 - **Gate (Gn)**: verification checkpoint. Sequential — G0 must pass before G1 runs. G0 is deterministic (script-only). G1+ use AI coding agents (any runtime).
 - **Skill**: `SKILL.md` + optional scripts that define what happens at a gate. Agent-agnostic — any coding agent that reads markdown can execute them. Live in `templates/skills/` (repo) and `.agents/skills/` (scaffolded projects).
-- **Session**: persistent record of a project's progress through gates, stored in SQLite.
+- **Gate progress**: tracked by the harness via the GT files and `.provenance/` artifacts, not by the tool. There is no orchestrator advancing a stored session — the agent reads the scaffolded `AGENTS.md` to find the next gate.
 - **MCP server**: external tool provider (Model Context Protocol) that gives agents callable tools beyond text. Installed globally to `~/.codeanvil/mcp/<name>/`, wired into projects via per-agent config files. First server: Marconi (GNU Radio — 19 tools, 6 skills for RF/SDR). Configured in `templates/config.yaml` under `mcp_servers`, logic in `src/codeanvil/init/mcp.py`.
 
 ## Active plans
@@ -162,5 +162,5 @@ After that the project is self-contained — it does not depend on the repo at r
 - Do not conflate the two sides: `src/` changes are tooling changes, `templates/` changes are methodology changes.
 - Skills must be self-contained — an agent reading only `SKILL.md` and the GT should execute the gate.
 - GT templates are locked reference artifacts inside skills, not user-editable project files.
-- The DB schema must support resuming a session at any gate.
+- Gate state is harness-owned (GT files + `.provenance/`); the tool's DB holds project registration only, and does not drive or resume gates.
 - Use `get_logger(__name__)` for all logging.
