@@ -39,9 +39,14 @@ class ColoredFormatter(logging.Formatter):
     def __init__(self, use_color: bool = True):
         super().__init__(
             fmt="[%(asctime)s] %(levelname)s %(name)s.%(funcName)s %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S",
         )
         self.use_color = use_color
+
+    def formatTime(self, record: logging.LogRecord, datefmt: str | None = None) -> str:
+        from codeanvil.config.time import format_timestamp
+        from datetime import datetime, timezone
+        dt = datetime.fromtimestamp(record.created, tz=timezone.utc)
+        return format_timestamp(dt)
 
     def format(self, record: logging.LogRecord) -> str:
         if self.use_color:

@@ -100,6 +100,18 @@ def argparser() -> argparse.Namespace:
     )
     status.add_argument("name", help="Name of the project to inspect")
 
+    now_parser = sub.add_parser(
+        "now",
+        help="Print the current system timestamp",
+        description="Prints a human-readable timestamp with millisecond precision in the configured timezone.",
+    )
+    now_parser.add_argument(
+        "--tz",
+        default=None,
+        metavar="TIMEZONE",
+        help="Override timezone (e.g. UTC, US/Eastern). Default: config or UTC.",
+    )
+
     return parser.parse_args()
 
 
@@ -188,6 +200,11 @@ def cmd_status(name: str) -> None:
         print(f"  session {s['id']}  gate={s['current_gate']}  status={s['status']}  ({s['updated_at']})")
 
 
+def cmd_now(tz: str | None = None) -> None:
+    from codeanvil.config.time import format_timestamp
+    print(format_timestamp(tz_name=tz))
+
+
 def choose_option(args: argparse.Namespace) -> None:
     match args.command:
         case "init":
@@ -198,6 +215,8 @@ def choose_option(args: argparse.Namespace) -> None:
             cmd_list()
         case "status":
             cmd_status(args.name)
+        case "now":
+            cmd_now(tz=args.tz)
 
 
 def main() -> None:
