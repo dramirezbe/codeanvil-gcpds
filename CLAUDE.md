@@ -27,7 +27,7 @@ The V-SIL pipeline encoded as executable artifacts:
 CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks state:
 
 - **`__main__.py`** — entry point (`python -m codeanvil`)
-- **`CLI/cli.py`** — argparse CLI with subcommands: `init`, `create`, `list`, `status`
+- **`CLI/cli.py`** — argparse CLI with subcommands: `init`, `create`, `list`, `status`, `now`
 - **`UI/ui.py`** — PySide6 graphical interface (planned; see `UI/README.md` for scope)
 - **`config/logger.py`** — cross-platform colored logger (`get_logger(__name__)`)
 - **`config/paths.py`** — canonical paths (`WORKDIR`, `DB_PATH`) + `ensure_dirs()`. Projects live wherever the user creates them, not under `~/.codeanvil/`.
@@ -164,3 +164,4 @@ After that the project is self-contained — it does not depend on the repo at r
 - GT templates are locked reference artifacts inside skills, not user-editable project files.
 - Gate state is harness-owned (GT files + `.provenance/`); the tool's DB holds project registration only, and does not drive or resume gates.
 - Use `get_logger(__name__)` for all logging.
+- Use `codeanvil now` when a task needs human-readable timestamps. The function `codeanvil.config.time.format_timestamp()` is the single source for timestamps in CLI output, logger, and future gate artifacts. Do not use `datetime.now().strftime()` directly.

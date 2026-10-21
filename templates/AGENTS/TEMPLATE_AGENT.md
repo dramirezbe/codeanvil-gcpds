@@ -61,6 +61,11 @@ When the user says **"start"**, **"init"**, **"begin"**, or **"run methodology"*
 Do **not** rewrite this file, create a new `CLAUDE.md`, or set up the project —
 the project is already scaffolded. Go straight to the first gate.
 
+## Timestamps
+
+Use `codeanvil now` for human-readable timestamps (millisecond precision, configured timezone).
+Do not use raw `datetime.now().strftime()`.
+
 ## Project Layout
 
     AGENTS.md              <- you are here (canonical instructions)
