@@ -182,9 +182,7 @@ codeanvil-gcpds/
 │       └── G1_start_design/
 │           └── SKILL.md
 │
-├── plans/                   # Implementation plans
-│   ├── g0_skill.md          # G0 deterministic validation script plan
-│   └── scaffold_cli.md      # Scaffold CLI plan
+├── odd/tasks/               # Archived plans and task logs (date-prefixed)
 │
 ├── install.sh               # curl one-liner installer (uv tool install from GitHub)
 ├── pyproject.toml            # PEP 621 packaging (hatch, templates bundled in wheel)

@@ -50,14 +50,15 @@ CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks stat
 - **Gate progress**: tracked by the harness via the GT files and `.provenance/` artifacts, not by the tool. There is no orchestrator advancing a stored session — the agent reads the scaffolded `AGENTS.md` to find the next gate.
 - **MCP server**: external tool provider (Model Context Protocol) that gives agents callable tools beyond text. Installed globally to `~/.codeanvil/mcp/<name>/`, wired into projects via per-agent config files. First server: Marconi (GNU Radio — 19 tools, 6 skills for RF/SDR). Configured in `templates/config.yaml` under `mcp_servers`, logic in `src/codeanvil/init/mcp.py`.
 
-## Active plans
+## Archived plans
 
-| Plan                 | Path                       | Status    | Description                                                        |
-|----------------------|----------------------------|-----------|--------------------------------------------------------------------|
-| G0 validation script | `plans/g0_skill.md`        | DONE      | Deterministic Python script to structurally validate SRS/HCS against IEEE 29148 templates |
-| Scaffold CLI         | `plans/scaffold_cli.md`    | DONE      | pyproject.toml, skill dir convention (.agents/skills/ + symlinks), path rewriting, GT inside skills |
-| AGENTS.md template   | `plans/agents_md_template.md` | PLANNED | Config-driven scaffold: YAML config, AGENTS.md template with dynamic skills, multi-agent symlinks |
-| MCP integration      | `plans/dazzling-percolating-cook.md` | DONE | Agent-agnostic MCP server integration: Marconi/gr-mcp as first server, system package bridging, per-agent configs |
+Plans moved to `odd/tasks/` with commit-date prefixes. All are DONE.
+
+| Plan                 | Path                                              | Description                                                        |
+|----------------------|---------------------------------------------------|--------------------------------------------------------------------|
+| G0 validation script | `odd/tasks/2026-10-13_1227_g0_skill_plan.md`      | Deterministic Python script to structurally validate SRS/HCS against IEEE 29148 templates |
+| Scaffold CLI         | `odd/tasks/2026-10-21_1423_scaffold_cli_plan.md`   | pyproject.toml, skill dir convention (.agents/skills/ + symlinks), path rewriting, GT inside skills |
+| AGENTS.md template   | `odd/tasks/2026-10-14_1514_agents_md_template_plan.md` | Config-driven scaffold: YAML config, AGENTS.md template with dynamic skills, multi-agent symlinks |
 
 ## Installation
 
