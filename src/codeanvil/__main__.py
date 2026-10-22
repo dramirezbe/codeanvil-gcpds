@@ -1,4 +1,4 @@
-from codeanvil.CLI.cli import main
+from codeanvil.CLI.main import main
 
 if __name__ == "__main__":
     main()

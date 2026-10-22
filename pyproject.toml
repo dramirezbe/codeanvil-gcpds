@@ -8,13 +8,16 @@ version = "0.1.0"
 requires-python = ">=3.10"
 description = "V-SIL methodology harness — agent-agnostic project scaffolding and gate validation"
 license = "Apache-2.0"
-dependencies = ["pyyaml"]
+dependencies = [
+    "beaupy>=4.0.1",
+    "pyyaml",
+]
 
 [project.optional-dependencies]
 dev = ["pytest"]
 
 [project.scripts]
-codeanvil = "codeanvil.CLI.cli:main"
+codeanvil = "codeanvil.CLI.main:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/codeanvil"]

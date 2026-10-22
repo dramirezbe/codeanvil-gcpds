@@ -255,7 +255,7 @@ Agent runtimes discover skills via their own symlinked directory. All point to t
 
 ## Packaging and distribution
 
-- **`pyproject.toml`** — PEP 621, hatch backend. Console script: `codeanvil = codeanvil.CLI.cli:main`. Templates bundled in wheel via `force-include`.
+- **`pyproject.toml`** — PEP 621, hatch backend. Console script: `codeanvil = codeanvil.CLI.main:main`. Runtime deps: `pyyaml`, `beaupy` (interactive prompts). Templates bundled in wheel via `force-include`.
 - **`install.sh`** — curl one-liner installer. Checks Python 3.10+, installs `uv` if missing, runs `uv tool install` from GitHub. Detects shell (bash/zsh/fish via `$SHELL`), injects `~/.local/bin` PATH with sentinel comments (`# >>> codeanvil >>>` / `# <<< codeanvil <<<`). Supports `bash install.sh uninstall`.
 - **Template resolution** — `_find_templates_dir()` in `init/create.py`: editable installs use the source tree (`templates/`), wheel installs use `importlib.resources` (`codeanvil/templates/`).
 

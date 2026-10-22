@@ -27,7 +27,7 @@ The V-SIL pipeline encoded as executable artifacts:
 CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks state:
 
 - **`__main__.py`** — entry point (`python -m codeanvil`)
-- **`CLI/cli.py`** — argparse CLI with subcommands: `init`, `create`, `list`, `sync`, `status`, `now`
+- **`CLI/`** — argparse CLI: `main.py` (entry point + dispatch), `parser.py` (argument definitions), `prompts.py` (interactive `create` TUI via beaupy/Rich), `commands/` (one module per subcommand: `init`, `create`, `list`, `sync`, `status`, `now`)
 - **`UI/ui.py`** — PySide6 graphical interface (planned; see `UI/README.md` for scope)
 - **`config/logger.py`** — cross-platform colored logger (`get_logger(__name__)`)
 - **`config/paths.py`** — canonical paths (`WORKDIR`, `DB_PATH`) + `ensure_dirs()` (with one-time `~/.codeanvil/` → `~/.codeanvil-config/` migration) + `find_manifest()` + project-local `PROJECT_*` constants. Projects live wherever the user creates them, not under `~/.codeanvil-config/`.
@@ -144,7 +144,9 @@ project folder — it has no `src/`, no `templates/`, no `pyproject.toml`.
 ```
 codeanvil init                              → ~/.codeanvil-config/ + DB
 codeanvil init --mcp marconi               → + clone to ~/.codeanvil-config/mcp/marconi/
-codeanvil create myproj -p /path/to/        → /path/to/myproj/ (scaffolded)
+codeanvil create                            → interactive prompts: project + folder name
+codeanvil create --name "My SDR Lab"        → ./my_sdr_lab/ (folder derived from the label)
+codeanvil create myproj -p /path/to/        → /path/to/myproj/ (legacy: name == folder)
 codeanvil create myproj --mcp marconi       → + marconi-* skills, MCP configs, PYTHONPATH
 codeanvil sync (inside a clone)            → register the project in the local DB
 codeanvil list                             → registered projects (short UUID + local path)

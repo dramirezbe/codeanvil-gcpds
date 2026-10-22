@@ -36,7 +36,14 @@ curl -fsSL https://raw.githubusercontent.com/dramirezbe/codeanvil-gcpds/main/ins
 # Initialize workdir and database
 codeanvil init
 
-# Scaffold a new project (in the current directory)
+# Scaffold a new project interactively (project name, folder name, confirm)
+codeanvil create
+
+# ...or non-interactively, for agents/scripts/CI
+codeanvil create --name "My SDR Lab"              # → ./my_sdr_lab/
+codeanvil create --name "My SDR Lab" --folder sdr_lab
+
+# Legacy form: the project name is also the folder name
 codeanvil create myproject
 
 # ...or in a specific path
@@ -66,7 +73,9 @@ codeanvil now --machine
 | Command | Purpose |
 |---------|---------|
 | `codeanvil init [--mcp <name>]` | Create `~/.codeanvil-config/` (DB + optional MCP installs) |
-| `codeanvil create <name> [-p <path>] [--mcp <name>]` | Scaffold a project |
+| `codeanvil create` | Scaffold interactively: project name, folder name (default derived), confirm |
+| `codeanvil create --name <label> [--folder <dir>] [-p <path>] [--mcp <name>]` | Scaffold non-interactively (agents, scripts, CI); folder defaults to the derived snake_case name |
+| `codeanvil create <name> [-p <path>] [--mcp <name>]` | Legacy form: name is both project label and folder name (deprecated) |
 | `codeanvil sync` | Register or move a cloned project (reads `.codeanvil/project.yaml`) |
 | `codeanvil status [name]` | Latest gate report per gate (from cwd, or by project name) |
 | `codeanvil list` | Registered projects (short UUID + local path) |
@@ -116,10 +125,10 @@ cd ~/projects/sdr-lab && claude mcp list
 ## How it works
 
 ```
-codeanvil create <name> [-p <path>] [--mcp marconi]
+codeanvil create [<name> | --name <label> [--folder <dir>]] [-p <path>] [--mcp marconi]
        │
        ▼
-  <path>/<name>/                    (default: ./<name>/)
+  <path>/<folder>/                  (default: ./<name>/, folder derived from label)
        ├── AGENTS.md                 ← generated (canonical agent instructions)
        ├── CLAUDE.md → AGENTS.md     ← symlink
        ├── GT/
@@ -176,7 +185,12 @@ GT reference templates are **locked** inside each skill (e.g. `.agents/skills/G0
 codeanvil-gcpds/
 ├── src/codeanvil/           # Delivery tool (CLI + UI)
 │   ├── __main__.py          # Entry point: python -m codeanvil
-│   ├── CLI/cli.py           # argparse CLI with subcommands
+│   ├── CLI/
+│   │   ├── __init__.py      # re-exports main (console-script entry point)
+│   │   ├── main.py          # main() + subcommand dispatch
+│   │   ├── parser.py        # argparse definitions
+│   │   ├── prompts.py       # interactive create TUI (beaupy + Rich)
+│   │   └── commands/        # one module per subcommand (create, init, list, ...)
 │   ├── UI/ui.py             # PySide6 graphical interface (planned)
 │   ├── config/
 │   │   ├── paths.py         # Canonical paths (~/.codeanvil-config/)

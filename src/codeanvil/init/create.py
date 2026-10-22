@@ -15,8 +15,18 @@ from codeanvil.config.paths import (
 log = get_logger(__name__)
 
 
-def scaffold_project(name: str, target: Path, mcp_servers: list[str] | None = None) -> Path:
-    project_dir = target.resolve() / name
+def scaffold_project(
+    name: str,
+    folder_name: str,
+    target: Path,
+    mcp_servers: list[str] | None = None,
+) -> Path:
+    """Scaffold a project directory under `target`.
+
+    `name` is the human-readable label (manifest + DB); `folder_name` is the
+    directory actually created, so "My SDR Lab" may live in `my_sdr_lab/`.
+    """
+    project_dir = target.resolve() / folder_name
     project_dir.mkdir(parents=True, exist_ok=True)
 
     _copy_skills(project_dir)
