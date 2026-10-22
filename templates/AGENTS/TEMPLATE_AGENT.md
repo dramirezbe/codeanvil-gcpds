@@ -12,7 +12,7 @@ the CodeAnvil tool itself.
 - There is no `src/`, no `templates/`, no `pyproject.toml` here.
 - Skills live at `.agents/skills/<name>/` — run scripts from the **project root**.
 - GT files in `GT/` are **user-authored inputs**. Never treat them as tool templates.
-- Provenance artifacts (snapshots, ledgers) go in `.provenance/`.
+- Provenance artifacts (snapshots, ledgers) go in `.codeanvil/custody/`.
 - Do not try to install, build, or modify CodeAnvil from this directory.
 
 ## Rules
@@ -63,13 +63,31 @@ the project is already scaffolded. Go straight to the first gate.
 
 ## Timestamps
 
-Use `codeanvil now` for human-readable timestamps (millisecond precision, configured timezone).
-Do not use raw `datetime.now().strftime()`.
+- For report **content** (human-readable text): `codeanvil now`
+- For **filenames** and machine identifiers: `codeanvil now --machine`
+- Do NOT generate timestamps any other way. The tool owns the format.
+- Do not use raw `datetime.now().strftime()`.
+
+## Report creation
+
+After each gate run, write a report to `.codeanvil/report/`:
+
+    GATE=$(gate name, e.g. G0)
+    TIMESTAMP=$(codeanvil now --machine)
+    # Write to: .codeanvil/report/${GATE}_${TIMESTAMP}.md
+
+Report content must include a human-readable timestamp from `codeanvil now`
+at the top of the file. The latest report per gate in `.codeanvil/report/`
+determines the project stage shown by `codeanvil status`.
 
 ## Project Layout
 
     AGENTS.md              <- you are here (canonical instructions)
     GT/                    <- ground truth documents (human-authored)
+    .codeanvil/            <- machine-generated methodology artifacts
+    │   project.yaml       <- project identity (id, name, GT pointers)
+    │   custody/           <- custody-chain artifacts (snapshot, ledger)
+    │   report/            <- timestamped gate reports
     .agents/skills/        <- canonical skill store (all gate skills)
 
 Agent-specific directories (`.claude/`, `.github/`, `.opencode/`,

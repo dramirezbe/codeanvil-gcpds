@@ -69,6 +69,7 @@ path_replacements:
   "templates/GT/G0_SRS.md": ".agents/skills/G0_valid_req_and_GT/templates/G0_SRS.md"
   "templates/GT/G0_HCS.md": ".agents/skills/G0_valid_req_and_GT/templates/G0_HCS.md"
   "(repository-root relative)": "(project-root relative)"
+  ".provenance/": ".codeanvil/custody/"
 
 # Never copy build artifacts or legacy empty scripts into a project.
 copy_ignore:

@@ -27,15 +27,18 @@ The V-SIL pipeline encoded as executable artifacts:
 CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks state:
 
 - **`__main__.py`** — entry point (`python -m codeanvil`)
-- **`CLI/cli.py`** — argparse CLI with subcommands: `init`, `create`, `list`, `status`, `now`
+- **`CLI/cli.py`** — argparse CLI with subcommands: `init`, `create`, `list`, `sync`, `status`, `now`
 - **`UI/ui.py`** — PySide6 graphical interface (planned; see `UI/README.md` for scope)
 - **`config/logger.py`** — cross-platform colored logger (`get_logger(__name__)`)
-- **`config/paths.py`** — canonical paths (`WORKDIR`, `DB_PATH`) + `ensure_dirs()`. Projects live wherever the user creates them, not under `~/.codeanvil/`.
-- **`db/schema.py`** — SQLite schema: `projects`, `sessions`, `gate_results` tables + `db_exists()`, `create_schema()`
-- **`db/sessions.py`** — `list_sessions` (read a project's session rows). Gate orchestration is harness-driven (in the scaffolded `AGENTS.md`), not tool code — there is no orchestrator writing sessions or gate results.
+- **`config/paths.py`** — canonical paths (`WORKDIR`, `DB_PATH`) + `ensure_dirs()` (with one-time `~/.codeanvil/` → `~/.codeanvil-config/` migration) + `find_manifest()` + project-local `PROJECT_*` constants. Projects live wherever the user creates them, not under `~/.codeanvil-config/`.
+- **`config/identity.py`** — `generate_uuidv7()` (stdlib-only RFC 9562 UUIDv7; Python 3.10+ compatible)
+- **`config/time.py`** — `format_timestamp()` (human-readable) + `format_timestamp_machine()` (filename-safe, for `codeanvil now --machine`)
+- **`db/schema.py`** — SQLite schema: `projects` table only (TEXT UUIDv7 id, name, path, created_at) + `db_exists()`, `create_schema()`, `has_legacy_schema()`/`recreate_if_legacy()` (pre-release migration)
+- **`db/projects.py`** — registry CRUD: `register_project()` (idempotent by UUID), `sync_project()` (register/no-op/moved upsert), `get_project_by_id()`, `get_project_by_name()`, `list_projects()`. Gate orchestration is harness-driven (in the scaffolded `AGENTS.md`), not tool code — no orchestrator rows.
 - **`db/utils.py`** — `connect_db()` (WAL mode, row factory, foreign keys) + `health_db()`
 - **`init/check.py`** — `preflight()` (workdir + DB checks) + `check_project_path()`
-- **`init/create.py`** — `scaffold_project()` (copies skills to `.agents/skills/`, embeds GT reference templates inside skills, rewrites repo-root paths, creates agent symlinks, writes user `GT/` dir) + `register_project()` in DB (idempotent). Templates located via `_find_templates_dir()` (editable install: source tree; wheel install: `importlib.resources`)
+- **`init/create.py`** — `scaffold_project()` (copies skills to `.agents/skills/`, embeds GT reference templates inside skills, rewrites repo-root paths, creates agent symlinks, writes user `GT/` dir + `.codeanvil/` dirs) + `write_project_manifest()`. Templates located via `_find_templates_dir()` (editable install: source tree; wheel install: `importlib.resources`)
+- **`init/sync.py`** — `run_sync()` (clone/move flow: read manifest → migrate `.provenance/` → upsert DB) + `_migrate_provenance()`
 - **`init/mcp.py`** — MCP server lifecycle: `install_mcp_server()` (clone + prewarm), `copy_mcp_skills()` (prefix + gate frontmatter), `generate_agent_mcp_configs()` (per-agent JSON: `.mcp.json`, `.vscode/`, `.opencode/`, `.codex/`), `_detect_system_site_packages()` (bridges system packages like gnuradio into uv venvs via `PYTHONPATH`)
 
 ## Key concepts
@@ -47,8 +50,8 @@ CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks stat
   - **T2_IoT-Indoor** — Indoor IoT radio environment mapping at 2.4 GHz ISM (Proyecto Hermes / GCPDS). Raw proposal + literature (GT must be derived).
 - **Gate (Gn)**: verification checkpoint. Sequential — G0 must pass before G1 runs. G0 is deterministic (script-only). G1+ use AI coding agents (any runtime).
 - **Skill**: `SKILL.md` + optional scripts that define what happens at a gate. Agent-agnostic — any coding agent that reads markdown can execute them. Live in `templates/skills/` (repo) and `.agents/skills/` (scaffolded projects).
-- **Gate progress**: tracked by the harness via the GT files and `.provenance/` artifacts, not by the tool. There is no orchestrator advancing a stored session — the agent reads the scaffolded `AGENTS.md` to find the next gate.
-- **MCP server**: external tool provider (Model Context Protocol) that gives agents callable tools beyond text. Installed globally to `~/.codeanvil/mcp/<name>/`, wired into projects via per-agent config files. First server: Marconi (GNU Radio — 19 tools, 6 skills for RF/SDR). Configured in `templates/config.yaml` under `mcp_servers`, logic in `src/codeanvil/init/mcp.py`.
+- **Gate progress**: tracked by the harness via the GT files and `.codeanvil/` artifacts (timestamped reports in `.codeanvil/report/`), not by the tool. There is no orchestrator advancing a stored session — the agent reads the scaffolded `AGENTS.md` to find the next gate.
+- **MCP server**: external tool provider (Model Context Protocol) that gives agents callable tools beyond text. Installed globally to `~/.codeanvil-config/mcp/<name>/`, wired into projects via per-agent config files. First server: Marconi (GNU Radio — 19 tools, 6 skills for RF/SDR). Configured in `templates/config.yaml` under `mcp_servers`, logic in `src/codeanvil/init/mcp.py`.
 
 ## Archived plans
 
@@ -108,7 +111,10 @@ project folder — it has no `src/`, no `templates/`, no `pyproject.toml`.
 ├── GT/                           ← user-authored ground truth (SRS, HCS)
 │   ├── G0_SRS.md
 │   └── G0_HCS.md
-├── .provenance/                  ← custody-chain artifacts (snapshot, ledger)
+├── .codeanvil/                   ← machine-generated methodology artifacts
+│   ├── project.yaml              ← project identity (UUIDv7, name, GT pointers)
+│   ├── custody/                  ← custody-chain artifacts (snapshot, ledger)
+│   └── report/                   ← timestamped gate reports
 ├── .agents/
 │   ├── skills/                   ← copied skills (project-root paths)
 │   │   ├── G0_valid_req_and_GT/
@@ -136,10 +142,11 @@ project folder — it has no `src/`, no `templates/`, no `pyproject.toml`.
 ### How they connect
 
 ```
-codeanvil init                              → ~/.codeanvil/ + DB
-codeanvil init --mcp marconi               → + clone to ~/.codeanvil/mcp/marconi/
+codeanvil init                              → ~/.codeanvil-config/ + DB
+codeanvil init --mcp marconi               → + clone to ~/.codeanvil-config/mcp/marconi/
 codeanvil create myproj -p /path/to/        → /path/to/myproj/ (scaffolded)
 codeanvil create myproj --mcp marconi       → + marconi-* skills, MCP configs, PYTHONPATH
+codeanvil sync (inside a clone)            → register the project in the local DB
 ```
 
 The scaffold copies `templates/skills/` → `.agents/skills/`, runs `path_replacements`
@@ -163,6 +170,6 @@ After that the project is self-contained — it does not depend on the repo at r
 - Do not conflate the two sides: `src/` changes are tooling changes, `templates/` changes are methodology changes.
 - Skills must be self-contained — an agent reading only `SKILL.md` and the GT should execute the gate.
 - GT templates are locked reference artifacts inside skills, not user-editable project files.
-- Gate state is harness-owned (GT files + `.provenance/`); the tool's DB holds project registration only, and does not drive or resume gates.
+- Gate state is harness-owned (GT files + `.codeanvil/`); the tool's DB holds project registration only, and does not drive or resume gates.
 - Use `get_logger(__name__)` for all logging.
 - Use `codeanvil now` when a task needs human-readable timestamps. The function `codeanvil.config.time.format_timestamp()` is the single source for timestamps in CLI output, logger, and future gate artifacts. Do not use `datetime.now().strftime()` directly.

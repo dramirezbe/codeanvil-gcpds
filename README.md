@@ -152,15 +152,18 @@ codeanvil-gcpds/
 │   ├── CLI/cli.py           # argparse CLI with subcommands
 │   ├── UI/ui.py             # PySide6 graphical interface (planned)
 │   ├── config/
-│   │   ├── paths.py         # Canonical paths (~/.codeanvil/)
+│   │   ├── paths.py         # Canonical paths (~/.codeanvil-config/)
+│   │   ├── identity.py      # UUIDv7 project IDs (stdlib-only)
+│   │   ├── time.py          # Human + filename-safe timestamps
 │   │   └── logger.py        # Colored cross-platform logger
 │   ├── db/
-│   │   ├── schema.py        # SQLite schema (projects, sessions, gate_results)
-│   │   ├── sessions.py      # Session CRUD
+│   │   ├── projects.py      # Project registry (register, sync, lookup)
+│   │   ├── schema.py        # SQLite schema (projects only)
 │   │   └── utils.py         # Connection management and health checks
 │   └── init/
 │       ├── check.py         # Pre-flight validation
 │       ├── create.py        # Scaffold projects from templates
+│       ├── sync.py          # Clone/move registration (codeanvil sync)
 │       └── mcp.py           # MCP server install, skill copy, per-agent config gen
 │
 ├── methodology/test/        # Test GT cases (V-SIL system inputs)
@@ -195,5 +198,5 @@ codeanvil-gcpds/
 - **Python packaging** — `uv` + hatch (templates bundled via `force-include`)
 - **Installer** — `install.sh` (curl one-liner, installs `uv` if needed, shell detection for PATH injection)
 - **UI** — PySide6 (planned)
-- **Database** — SQLite (local, `~/.codeanvil/db/codeanvil.db`)
+- **Database** — SQLite (local, `~/.codeanvil-config/db/codeanvil.db`)
 - **Agent runtime** — agent-agnostic (Claude, Codex, OpenCode, Pi, etc.)

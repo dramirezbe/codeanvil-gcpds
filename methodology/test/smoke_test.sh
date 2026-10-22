@@ -71,13 +71,13 @@ echo "$G0_OUT" | grep -qi "G0.*PASS\|PASS.*G0\|exit.*code.*0\|0 error" \
 step 4 "Seal GT files with custody-chain"
 
 SEAL_OUT=$(cd "$PROJECT_DIR" && claude "${CLAUDE_FLAGS[@]}" \
-  "Load the custody-chain skill. Seal the GT files: run source_snapshot.py snapshot with --root . --include 'GT/**' --out .provenance/snapshot.json. Then record custody for GT/G0_SRS.md and GT/G0_HCS.md (action created, actor smoke-test, role tester). Then verify the ledger. PROVENANCE_HMAC_KEY is set.")
+  "Load the custody-chain skill. Seal the GT files: run source_snapshot.py snapshot with --root . --include 'GT/**' --out .codeanvil/custody/snapshot.json. Then record custody for GT/G0_SRS.md and GT/G0_HCS.md (action created, actor smoke-test, role tester). Then verify the ledger. PROVENANCE_HMAC_KEY is set.")
 
 echo "$SEAL_OUT" | tail -30
-[[ -f "$PROJECT_DIR/.provenance/snapshot.json" ]] \
+[[ -f "$PROJECT_DIR/.codeanvil/custody/snapshot.json" ]] \
   && pass "Snapshot created" \
   || fail "Snapshot not created"
-[[ -f "$PROJECT_DIR/.provenance/custody.jsonl" ]] \
+[[ -f "$PROJECT_DIR/.codeanvil/custody/custody.jsonl" ]] \
   && pass "Custody ledger created" \
   || fail "Custody ledger not created"
 
@@ -85,7 +85,7 @@ echo "$SEAL_OUT" | tail -30
 step 5 "Verify GT integrity (should PASS)"
 
 VERIFY_OUT=$(cd "$PROJECT_DIR" && claude "${CLAUDE_FLAGS[@]}" \
-  "Run source_snapshot.py verify with --root . --snapshot .provenance/snapshot.json --strict. Report the status.")
+  "Run source_snapshot.py verify with --root . --snapshot .codeanvil/custody/snapshot.json --strict. Report the status.")
 
 echo "$VERIFY_OUT" | tail -15
 echo "$VERIFY_OUT" | grep -qi "PASS\|intact\|no.*finding\|verified" \
@@ -98,7 +98,7 @@ step 6 "Tamper GT and detect"
 echo "# TAMPERED BY SMOKE TEST" >> "$PROJECT_DIR/GT/G0_SRS.md"
 
 TAMPER_OUT=$(cd "$PROJECT_DIR" && claude "${CLAUDE_FLAGS[@]}" \
-  "Run source_snapshot.py verify with --root . --snapshot .provenance/snapshot.json --strict. Report any integrity violations found.")
+  "Run source_snapshot.py verify with --root . --snapshot .codeanvil/custody/snapshot.json --strict. Report any integrity violations found.")
 
 echo "$TAMPER_OUT" | tail -20
 echo "$TAMPER_OUT" | grep -qi "FAIL\|DIGEST_CHANGED\|LENGTH_CHANGED\|tamper\|mismatch\|changed" \

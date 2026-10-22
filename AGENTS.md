@@ -12,7 +12,7 @@ V-SIL methodology.
 - Changes here affect the tool and methodology — they do NOT run against any user's GT.
 
 A **scaffolded user project** (produced by `codeanvil create`) is a different thing:
-it has `.agents/skills/`, `GT/`, `.provenance/`, and no `src/` or `templates/`.
+it has `.agents/skills/`, `GT/`, `.codeanvil/`, and no `src/` or `templates/`.
 The user's AGENTS.md (generated from `templates/AGENTS/TEMPLATE_AGENT.md`) tells
 agents they are in a user project. Do not confuse the two environments.
 
@@ -24,7 +24,7 @@ CodeAnvil implements the V-SIL pipeline as a chain of gates — G0 is determinis
 
 ```
 curl | bash ───────► install.sh (uv + codeanvil from GitHub, shell PATH injection)
-codeanvil init ────► ~/.codeanvil/ (config + SQLite DB only)
+codeanvil init ────► ~/.codeanvil-config/ (config + SQLite DB only)
 codeanvil create ──► scaffold project anywhere
                        ├─ AGENTS.md            (generated, canonical instructions)
                        ├─ CLAUDE.md → AGENTS.md (symlink)
@@ -33,7 +33,7 @@ codeanvil create ──► scaffold project anywhere
                        ├─ .opencode/skills → ../.agents/skills
                        ├─ .codex/skills → ../.agents/skills
                        ├─ GT/README.md         (user writes G0_SRS.md, G0_HCS.md here)
-                       ├─ .provenance/         (custody-chain snapshots + ledger)
+                       ├─ .codeanvil/          (project.yaml + custody/ + report/)
                        └─ DB registration (idempotent)
 
 the harness (agent runtime) reads the scaffolded AGENTS.md and drives the gates:
@@ -134,7 +134,7 @@ incomplete gate, loads that gate's `SKILL.md`, and executes it.
 - custody-chain: after G0 passes, the agent seals GT and records custody.
 - G1+: the agent follows the gate's `SKILL.md` against the validated GT.
 
-State lives in the GT files and `.provenance/`, not in the tool. The `codeanvil`
+State lives in the GT files and `.codeanvil/`, not in the tool. The `codeanvil`
 CLI only scaffolds and registers projects; it never drives gates.
 
 ## Agent contract
@@ -146,11 +146,11 @@ Each gate agent (G1+), regardless of runtime:
 3. Executes validation, generation, or review per the skill
 4. Returns structured output (pass/fail, findings, artifacts)
 
-Agents are **stateless** and **runtime-agnostic** — all persistence is in the GT files and `.provenance/`. Any coding agent that reads markdown and executes scripts can run a gate. Re-runnable without side effects.
+Agents are **stateless** and **runtime-agnostic** — all persistence is in the GT files and `.codeanvil/`. Any coding agent that reads markdown and executes scripts can run a gate. Re-runnable without side effects.
 
 ## MCP servers
 
-MCP (Model Context Protocol) servers give AI agents tool-calling capabilities. They are installed globally at `~/.codeanvil/mcp/<name>/` and wired into projects during scaffold. Config is generated per agent runtime.
+MCP (Model Context Protocol) servers give AI agents tool-calling capabilities. They are installed globally at `~/.codeanvil-config/mcp/<name>/` and wired into projects during scaffold. Config is generated per agent runtime.
 
 ### Implemented: Marconi (GNU Radio)
 
@@ -158,7 +158,7 @@ MCP (Model Context Protocol) servers give AI agents tool-calling capabilities. T
 
 **Install & scaffold flow**:
 ```
-codeanvil init --mcp marconi       → clones to ~/.codeanvil/mcp/marconi/, prewarms uv deps
+codeanvil init --mcp marconi       → clones to ~/.codeanvil-config/mcp/marconi/, prewarms uv deps
 codeanvil create proj --mcp marconi → copies 6 marconi-* skills, generates MCP configs
 ```
 
@@ -183,7 +183,7 @@ codeanvil create proj --mcp marconi → copies 6 marconi-* skills, generates MCP
 
 ### Planned
 
-- **Project DB** — query sessions, gate results, project metadata
+- **Project DB** — query project metadata (UUID registry)
 - **GT access** — read/write GT documents with schema validation
 - **CI bridge** — trigger and read SIL regression results
 
@@ -208,9 +208,12 @@ myproj/
 │   ├── README.md                    ← write G0_SRS.md, G0_HCS.md here
 │   ├── G0_SRS.md                    ← user-authored SRS (IEEE 29148)
 │   └── G0_HCS.md                    ← user-authored HCS (design constraints)
-├── .provenance/                     ← custody-chain artifacts
-│   ├── snapshot.json                ← sealed GT digests (after G0 pass)
-│   └── custody.jsonl                ← append-only chain-of-custody ledger
+├── .codeanvil/                      ← machine-generated methodology artifacts
+│   ├── project.yaml                 ← project identity (UUIDv7, name, GT pointers)
+│   ├── custody/                     ← custody-chain artifacts
+│   │   ├── snapshot.json            ← sealed GT digests (after G0 pass)
+│   │   └── custody.jsonl            ← append-only chain-of-custody ledger
+│   └── report/                      ← timestamped gate reports (<gate>_<ts>.md)
 ├── .agents/
 │   ├── skills/                      ← canonical skill store
 │   │   ├── G0_valid_req_and_GT/

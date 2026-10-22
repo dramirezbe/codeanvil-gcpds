@@ -5,7 +5,12 @@ from pathlib import Path
 import yaml
 
 from codeanvil.config.logger import get_logger
-from codeanvil.config.paths import CONFIG, SKILLS_DIRNAME, TEMPLATES_DIR
+from codeanvil.config.paths import (
+    CONFIG,
+    PROJECT_MANIFEST,
+    SKILLS_DIRNAME,
+    TEMPLATES_DIR,
+)
 
 log = get_logger(__name__)
 
@@ -18,6 +23,7 @@ def scaffold_project(name: str, target: Path, mcp_servers: list[str] | None = No
     _copy_gt_reference_templates(project_dir)
     _rewrite_skill_paths(project_dir / SKILLS_DIRNAME)
     _create_gt_dir(project_dir)
+    _create_codeanvil_dirs(project_dir)
 
     if mcp_servers:
         from codeanvil.init.mcp import (
@@ -86,6 +92,59 @@ def _create_gt_dir(project_dir: Path) -> None:
     if not readme.exists():
         template = (TEMPLATES_DIR / "GT" / "README.md.template").read_text(encoding="utf-8")
         readme.write_text(template.format(skill=CONFIG["g0_skill"]), encoding="utf-8")
+
+
+def _create_codeanvil_dirs(project_dir: Path) -> None:
+    """Machine-generated methodology artifacts: project.yaml, custody, reports.
+    GT stays at the project root — never created under .codeanvil/."""
+    from codeanvil.config.paths import PROJECT_CODEANVIL, PROJECT_CUSTODY, PROJECT_REPORT
+    (project_dir / PROJECT_CODEANVIL).mkdir(exist_ok=True)
+    (project_dir / PROJECT_CUSTODY).mkdir(exist_ok=True)
+    (project_dir / PROJECT_REPORT).mkdir(exist_ok=True)
+
+
+def read_manifest_id(project_dir: Path) -> str | None:
+    """Return the id from an existing .codeanvil/project.yaml, or None.
+
+    None when the manifest is missing, unparseable, or has no valid id —
+    callers fall back to minting a fresh UUID."""
+    dest = project_dir / PROJECT_MANIFEST
+    if not dest.is_file():
+        return None
+    try:
+        data = yaml.safe_load(dest.read_text(encoding="utf-8"))
+    except yaml.YAMLError:
+        return None
+    if not isinstance(data, dict):
+        return None
+    pid = data.get("id")
+    return pid if isinstance(pid, str) and pid else None
+
+
+def write_project_manifest(project_dir: Path, project_id: str, name: str) -> None:
+    """Write .codeanvil/project.yaml — collaboration-safe project identity.
+    Committed to git: UUID + label + relative GT pointers. No absolute path
+    (the DB holds that local machine state).
+
+    Skips the write when a manifest with the same id already exists, so
+    re-scaffolding never rewrites a committed identity."""
+    dest = project_dir / PROJECT_MANIFEST
+    if read_manifest_id(project_dir) == project_id:
+        log.debug("manifest %s already has id %s — skipping write", dest, project_id)
+        return
+    manifest = {
+        "id": project_id,
+        "name": name,
+        "gt": {
+            "srs": "GT/G0_SRS.md",
+            "hcs": "GT/G0_HCS.md",
+        },
+    }
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    content = "# Auto-generated — do not edit.\n\n"
+    content += yaml.dump(manifest, default_flow_style=False, sort_keys=False)
+    dest.write_text(content, encoding="utf-8")
+    log.debug("wrote %s", dest)
 
 
 def _link_agent_skill_dirs(project_dir: Path) -> None:

@@ -5,9 +5,14 @@ from datetime import datetime, timezone
 
 import pytest
 
-from codeanvil.config.time import format_timestamp, get_system_timezone
+from codeanvil.config.time import (
+    format_timestamp,
+    format_timestamp_machine,
+    get_system_timezone,
+)
 
 TIMESTAMP_RE = re.compile(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}$")
+MACHINE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}-\d{3}$")
 
 
 def test_format_timestamp_matches_regex():
@@ -28,8 +33,8 @@ def test_format_timestamp_bogota_offset():
 
 
 def test_get_system_timezone_explicit():
-    tz = get_system_timezone("US/Eastern")
-    assert str(tz) == "US/Eastern"
+    tz = get_system_timezone("America/New_York")
+    assert str(tz) == "America/New_York"
 
 
 def test_get_system_timezone_invalid():
@@ -40,3 +45,20 @@ def test_get_system_timezone_invalid():
 def test_default_timezone_from_config():
     tz = get_system_timezone()
     assert str(tz) == "America/Bogota"
+
+
+def test_format_timestamp_machine_matches_regex():
+    result = format_timestamp_machine()
+    assert MACHINE_RE.match(result), f"'{result}' does not match filename-safe format"
+
+
+def test_format_timestamp_machine_no_colons_or_spaces():
+    result = format_timestamp_machine()
+    assert ":" not in result
+    assert " " not in result
+
+
+def test_format_timestamp_machine_utc_override():
+    dt = datetime(2026, 1, 15, 12, 0, 0, 500_000, tzinfo=timezone.utc)
+    result = format_timestamp_machine(dt, tz_name="UTC")
+    assert result == "2026-01-15_12-00-00-500"

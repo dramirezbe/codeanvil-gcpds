@@ -2,7 +2,7 @@
 name: custody-chain
 description: "Trigger: provenance, custody, integrity, hash, seal, snapshot, tamper, audit trail, evidence, lineage. Verify source immutability and track chain of custody of generated audit documents across all V-SIL gates."
 license: Apache-2.0
-compatibility: "Requires Python 3.9+ (stdlib only). No network access. Writes only to .provenance/ directory."
+compatibility: "Requires Python 3.9+ (stdlib only). No network access. Writes only to .codeanvil/custody/ directory."
 metadata:
   author: "gcpds"
   version: "1.0"
@@ -94,7 +94,7 @@ to continue.
 
 ### 1. Preflight
 
-- Identify the project root and the provenance directory (default `.provenance/`).
+- Identify the project root and the provenance directory (default `.codeanvil/custody/`).
 - Confirm `PROVENANCE_HMAC_KEY` is set in the environment.
 
 ### 2. Validate controls (ControlRegistry)
@@ -115,12 +115,12 @@ Static by default. Use `--import` only with user consent (it runs project code).
 After G0 passes, seal the Ground Truth files so any later modification is detected:
 ```
 python templates/skills/custody-chain/scripts/source_snapshot.py snapshot \
-  --root . --include 'GT/**' --out .provenance/snapshot.json
+  --root . --include 'GT/**' --out .codeanvil/custody/snapshot.json
 ```
 Every later check (before any gate that reads GT):
 ```
 python templates/skills/custody-chain/scripts/source_snapshot.py verify \
-  --root . --snapshot .provenance/snapshot.json --strict
+  --root . --snapshot .codeanvil/custody/snapshot.json --strict
 ```
 For strong guarantees, ask the user to store `manifest_digest` outside the repo and pass
 `--expect-digest`; otherwise someone who edits both GT and snapshot goes undetected.
@@ -129,7 +129,7 @@ For strong guarantees, ask the user to store `manifest_digest` outside the repo 
 
 ```
 python templates/skills/custody-chain/scripts/custody_ledger.py record \
-  --ledger .provenance/custody.jsonl \
+  --ledger .codeanvil/custody/custody.jsonl \
   --doc <path> --action <action> --actor "<who>" --role "<role>" --detail "<why>"
 ```
 Actions: `created`, `accessed`, `modified`, `extracted`, `signed`, `verified`, `exported`.
@@ -138,7 +138,7 @@ Actions: `created`, `accessed`, `modified`, `extracted`, `signed`, `verified`, `
 
 ```
 python templates/skills/custody-chain/scripts/custody_ledger.py verify \
-  --ledger .provenance/custody.jsonl --root .
+  --ledger .codeanvil/custody/custody.jsonl --root .
 ```
 
 ## Output Contract

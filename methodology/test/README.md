@@ -33,14 +33,15 @@ GT → G0 → custody-chain, using T0 as the test input.
 ```bash
 # Remove existing installation and state
 bash install.sh uninstall 2>/dev/null || true
-rm -rf ~/.codeanvil
+rm -rf ~/.codeanvil-config
+rm -rf ~/.codeanvil  # legacy state — would be auto-migrated back on init
 hash -r  # refresh shell command cache
 ```
 
 Verify:
 ```bash
 command -v codeanvil && echo "FAIL: still installed" || echo "OK: clean"
-ls ~/.codeanvil 2>&1 | grep -q "No such" && echo "OK: no state" || echo "FAIL: state remains"
+ls ~/.codeanvil-config 2>&1 | grep -q "No such" && echo "OK: no state" || echo "FAIL: state remains"
 ```
 
 ### 2. Install from curl
@@ -146,9 +147,9 @@ G0 passed. Now seal the GT files using the custody-chain skill so any tampering 
 1. Checks `PROVENANCE_HMAC_KEY` — will report it's unset and ask for it.
    Respond with: `export PROVENANCE_HMAC_KEY="smoke-test-key-2026"` (or tell
    Claude to set it).
-2. Runs `source_snapshot.py snapshot --root . --include 'GT/**' --out .provenance/snapshot.json`
+2. Runs `source_snapshot.py snapshot --root . --include 'GT/**' --out .codeanvil/custody/snapshot.json`
    → SEALED, 2 files, manifest digest.
-3. Records custody: `custody_ledger.py record --ledger .provenance/custody.jsonl
+3. Records custody: `custody_ledger.py record --ledger .codeanvil/custody/custody.jsonl
    --doc GT/G0_SRS.md --action created --actor "tester" ...` (for both files).
 4. Runs `custody_ledger.py verify` → PASS.
 5. Reports the provenance report with all statuses.
@@ -253,7 +254,7 @@ cd /tmp/smoke-test && claude -p \
 cd /tmp/smoke-test && claude -p \
   --setting-sources "project" \
   --dangerously-skip-permissions \
-  "Load the custody-chain skill. Seal the GT files using source_snapshot.py (include 'GT/**', output to .provenance/snapshot.json). Then record custody for both GT/G0_SRS.md and GT/G0_HCS.md as action 'created' by actor 'smoke-test' role 'tester'. Then verify the custody ledger. PROVENANCE_HMAC_KEY is already set in the environment."
+  "Load the custody-chain skill. Seal the GT files using source_snapshot.py (include 'GT/**', output to .codeanvil/custody/snapshot.json). Then record custody for both GT/G0_SRS.md and GT/G0_HCS.md as action 'created' by actor 'smoke-test' role 'tester'. Then verify the custody ledger. PROVENANCE_HMAC_KEY is already set in the environment."
 ```
 
 **Check:** snapshot SEALED (2 files), ledger entries RECORDED, verify PASS.

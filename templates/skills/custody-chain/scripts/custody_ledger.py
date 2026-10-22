@@ -6,6 +6,8 @@
   verify  --ledger L [--root .]       # chain, signatures, timestamps, live document hashes
   history --ledger L --doc path       # who did what, when, for one document
 
+Conventional ledger location: .codeanvil/custody/custody.jsonl
+
 Signing: HMAC-SHA256 over each entry hash using the key in env PROVENANCE_HMAC_KEY
 (key id in PROVENANCE_KEY_ID, default 'k1'). HMAC proves integrity/authenticity to holders
 of the shared key; it is not third-party non-repudiation (use asymmetric signatures for that).

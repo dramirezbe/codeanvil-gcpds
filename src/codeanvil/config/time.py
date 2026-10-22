@@ -34,3 +34,9 @@ def format_timestamp(dt: datetime | None = None, tz_name: str | None = None) -> 
     base = localized.strftime(_FORMAT)
     millis = f"{localized.microsecond // 1000:03d}"
     return f"{base}.{millis}"
+
+
+def format_timestamp_machine(dt: datetime | None = None, tz_name: str | None = None) -> str:
+    """Filename-safe timestamp: spaces, colons, and the millisecond dot replaced."""
+    human = format_timestamp(dt, tz_name)
+    return human.replace(" ", "_").replace(":", "-").replace(".", "-")

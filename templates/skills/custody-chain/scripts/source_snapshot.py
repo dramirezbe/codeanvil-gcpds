@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """SourceSnapshot: seal and verify original data (paths, byte lengths, SHA-256).
 
-  snapshot --root . --include 'data/**' --out .provenance/snapshot.json
-  verify   --root . --snapshot .provenance/snapshot.json [--expect-digest HEX] [--strict]
+  snapshot --root . --include 'data/**' --out .codeanvil/custody/snapshot.json
+  verify   --root . --snapshot .codeanvil/custody/snapshot.json [--expect-digest HEX] [--strict]
 
 Exit codes: 0 PASS, 1 FAIL (immutability violated), 2 usage/IO error.
 """
@@ -10,7 +10,7 @@ import argparse, json, sys
 from pathlib import Path
 from _common import PathError, canonical, hash_file, now_utc, report, safe_rel, sha256_bytes
 
-DEFAULT_EXCLUDE = (".git/", "__pycache__/", ".provenance/")
+DEFAULT_EXCLUDE = (".git/", "__pycache__/", ".codeanvil/")
 
 
 def _excluded(rel, extra):
