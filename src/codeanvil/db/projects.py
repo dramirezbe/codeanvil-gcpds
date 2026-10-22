@@ -22,9 +22,14 @@ def register_project(conn, project_id: str, name: str, path: Path) -> str:
 
 
 def sync_project(conn, project_id: str, name: str, path: Path) -> str:
-    """Register or update a project from its manifest. Returns action taken."""
+    """Register or update a project from its manifest. Returns action taken:
+    registered | already registered | renamed | moved | updated.
+
+    The manifest is the source of truth: an id that already exists gets its
+    name and/or path reconciled, so a label rename published through git is
+    reflected locally after a sync."""
     existing = conn.execute(
-        "SELECT path FROM projects WHERE id = ?", (project_id,)
+        "SELECT name, path FROM projects WHERE id = ?", (project_id,)
     ).fetchone()
 
     if existing is None:
@@ -35,15 +40,28 @@ def sync_project(conn, project_id: str, name: str, path: Path) -> str:
         conn.commit()
         return "registered"
 
-    if existing["path"] == str(path):
+    new_path = str(path)
+    name_changed = existing["name"] != name
+    path_changed = existing["path"] != new_path
+
+    if not name_changed and not path_changed:
         return "already registered"
 
-    conn.execute(
-        "UPDATE projects SET path = ? WHERE id = ?",
-        (str(path), project_id),
-    )
+    if name_changed:
+        conn.execute(
+            "UPDATE projects SET name = ?, path = ? WHERE id = ?",
+            (name, new_path, project_id),
+        )
+    else:
+        conn.execute(
+            "UPDATE projects SET path = ? WHERE id = ?",
+            (new_path, project_id),
+        )
     conn.commit()
-    return "moved"
+
+    if name_changed and path_changed:
+        return "updated"
+    return "renamed" if name_changed else "moved"
 
 
 def list_projects(conn) -> list:

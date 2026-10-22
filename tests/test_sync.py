@@ -94,6 +94,31 @@ def test_sync_project_moved(conn):
     assert get_project_by_id(conn, "id-1")["path"] == "/tmp/new-location"
 
 
+def test_sync_project_renamed(conn):
+    """Manifest label changed, path unchanged -> renamed."""
+    sync_project(conn, "id-1", "old-label", "/tmp/clone")
+    action = sync_project(conn, "id-1", "new-label", "/tmp/clone")
+    assert action == "renamed"
+    row = get_project_by_id(conn, "id-1")
+    assert row["name"] == "new-label"
+    assert row["path"] == "/tmp/clone"
+
+
+def test_sync_project_updated(conn):
+    """Both label and path changed -> updated."""
+    sync_project(conn, "id-1", "old-label", "/tmp/clone")
+    action = sync_project(conn, "id-1", "new-label", "/tmp/new-location")
+    assert action == "updated"
+    row = get_project_by_id(conn, "id-1")
+    assert row["name"] == "new-label"
+    assert row["path"] == "/tmp/new-location"
+
+
+def test_sync_project_unchanged_name_and_path(conn):
+    sync_project(conn, "id-1", "clone", "/tmp/clone")
+    assert sync_project(conn, "id-1", "clone", "/tmp/clone") == "already registered"
+
+
 # --- write_project_manifest -------------------------------------------------
 
 def test_write_project_manifest_content(tmp_path):
@@ -252,6 +277,36 @@ def test_run_sync_migrates_provenance(tmp_path, monkeypatch):
 def test_run_sync_missing_manifest(tmp_path):
     with pytest.raises(FileNotFoundError):
         run_sync(tmp_path)
+
+
+def test_run_sync_reconciles_renamed_label(tmp_path, monkeypatch):
+    """A label rename pulled from git reaches the DB on sync (S13)."""
+    db_path = tmp_path / "db" / "codeanvil.db"
+    db_path.parent.mkdir()
+    conn = connect_db(db_path)
+    create_schema(conn)
+    conn.close()
+    monkeypatch.setattr("codeanvil.init.sync.DB_PATH", db_path)
+
+    project = tmp_path / "proj"
+    project.mkdir()
+    _write_manifest(project, pid="id-1", name="Old Label")
+    assert run_sync(project)[0] == "registered"
+
+    # Simulate an upstream rename: rewrite the committed manifest in place.
+    manifest = project / PROJECT_MANIFEST
+    data = yaml.safe_load(manifest.read_text(encoding="utf-8"))
+    data["name"] = "New Label"
+    manifest.write_text(yaml.dump(data), encoding="utf-8")
+
+    action, payload = run_sync(project)
+    assert action == "renamed"
+    assert payload["name"] == "New Label"
+
+    conn = connect_db(db_path)
+    assert get_project_by_name(conn, "New Label")["path"] == str(project.resolve())
+    assert get_project_by_name(conn, "Old Label") is None
+    conn.close()
 
 
 # --- legacy schema migration ------------------------------------------------

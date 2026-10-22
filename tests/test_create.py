@@ -320,3 +320,32 @@ def test_beaupy_is_a_runtime_dependency():
     deps_block = re.search(r"^dependencies = \[(.*?)\]", text, re.S | re.M)
     assert deps_block, "dependencies array not found in pyproject.toml"
     assert "beaupy" in deps_block.group(1)
+
+
+# --- sync reconciles the label with the manifest (S13) ----------------------
+
+def test_sync_reconciles_label_for_list_and_status(tmp_path, db_path, monkeypatch, capsys):
+    from codeanvil.init.sync import run_sync
+
+    cmd_create(None, tmp_path, project_name="Old Label", folder="proj_dir")
+    project = tmp_path / "proj_dir"
+
+    # Simulate an upstream label rename pulled from git.
+    manifest = project / PROJECT_MANIFEST
+    data = yaml.safe_load(manifest.read_text(encoding="utf-8"))
+    data["name"] = "New Label"
+    manifest.write_text(yaml.dump(data), encoding="utf-8")
+
+    monkeypatch.setattr("codeanvil.init.sync.DB_PATH", db_path)
+    assert run_sync(project)[0] == "renamed"
+
+    cmd_list()
+    out = capsys.readouterr().out
+    assert "New Label" in out
+    assert "Old Label" not in out
+
+    cmd_status("New Label")
+    assert "Project: New Label" in capsys.readouterr().out
+
+    with pytest.raises(SystemExit):
+        cmd_status("Old Label")
