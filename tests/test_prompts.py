@@ -123,3 +123,60 @@ def test_interactive_create_retries_unusable_project_name(monkeypatch):
     monkeypatch.setattr(prompts.beaupy, "confirm", lambda *a, **k: True)
 
     assert prompts.interactive_create(Path("/tmp")) == ("Real Name", "real_name")
+
+
+# --- prompt order, summary, and guard behaviour (S4, S11) -------------------
+
+def test_prompt_order_and_confirmation_summary(monkeypatch, capsys):
+    events = []
+
+    def fake_prompt(text, **kwargs):
+        events.append((text, kwargs.get("initial_value")))
+        return "My SDR Lab" if text == "Project name" else kwargs["initial_value"]
+
+    def fake_confirm(question, **kwargs):
+        events.append((question, None))
+        return True
+
+    monkeypatch.setattr(prompts.sys, "stdin", _FakeTTY())
+    monkeypatch.setattr(prompts.beaupy, "prompt", fake_prompt)
+    monkeypatch.setattr(prompts.beaupy, "confirm", fake_confirm)
+
+    assert prompts.interactive_create(Path("/tmp/ws")) == ("My SDR Lab", "my_sdr_lab")
+
+    assert [event[0] for event in events][:2] == ["Project name", "Folder name"]
+    assert events[1][1] == "my_sdr_lab"  # derived default shown in the folder prompt
+    assert "Create project" in events[2][0]
+
+    out = capsys.readouterr().out
+    assert "CodeAnvil — create project" in out
+    assert "Project: My SDR Lab" in out
+    assert "Folder:  my_sdr_lab" in out
+
+
+def test_ctrl_c_at_confirm_cancels(monkeypatch):
+    monkeypatch.setattr(prompts.sys, "stdin", _FakeTTY())
+    monkeypatch.setattr(
+        prompts.beaupy,
+        "prompt",
+        lambda text, **kwargs: "My SDR Lab" if text == "Project name" else kwargs["initial_value"],
+    )
+
+    def interrupt(*args, **kwargs):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(prompts.beaupy, "confirm", interrupt)
+
+    assert prompts.interactive_create(Path("/tmp")) is None
+
+
+def test_non_tty_does_not_attempt_prompts(monkeypatch):
+    def boom(*args, **kwargs):
+        raise AssertionError("prompt attempted without a TTY")
+
+    monkeypatch.setattr(prompts.sys, "stdin", _FakePipe())
+    monkeypatch.setattr(prompts.beaupy, "prompt", boom)
+    monkeypatch.setattr(prompts.beaupy, "confirm", boom)
+
+    with pytest.raises(prompts.NotATTYError, match="--name"):
+        prompts.interactive_create(Path("/tmp"))

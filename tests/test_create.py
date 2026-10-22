@@ -1,7 +1,9 @@
 """Tests for cmd_create — input resolution, scaffolding, and registration."""
 
+import re
 import subprocess
 import sys
+from pathlib import Path
 
 import pytest
 import yaml
@@ -243,3 +245,78 @@ def test_create_without_flags_errors_when_stdin_is_not_a_tty():
     )
     assert result.returncode != 0
     assert "--name" in (result.stdout + result.stderr)
+
+
+# --- ordering, path plumbing, and dependency declaration (S2, S9, S10, S12) --
+
+def test_legacy_positional_never_prompts(tmp_path, db_path, monkeypatch):
+    def boom(*args, **kwargs):
+        raise AssertionError("prompt used in legacy positional mode")
+
+    monkeypatch.setattr("codeanvil.CLI.commands.create._prompt_interactive", boom)
+
+    cmd_create("Legacy Proj", tmp_path)
+
+    assert (tmp_path / "Legacy Proj" / PROJECT_MANIFEST).is_file()
+    conn = connect_db(db_path)
+    row = conn.execute("SELECT name, path FROM projects").fetchone()
+    conn.close()
+    assert row["name"] == "Legacy Proj"
+    assert Path(row["path"]).name == "Legacy Proj"
+
+
+def test_tui_receives_path_flag_target(tmp_path, db_path, monkeypatch):
+    seen = {}
+
+    def fake(target):
+        seen["target"] = target
+        return None
+
+    monkeypatch.setattr("codeanvil.CLI.commands.create._prompt_interactive", fake)
+
+    cmd_create(None, tmp_path)  # cancel before any scaffolding
+
+    assert seen["target"] == tmp_path
+
+
+def test_mcp_validated_after_inputs_before_scaffold(tmp_path, db_path):
+    with pytest.raises(SystemExit) as exc:
+        cmd_create(None, tmp_path, mcp_servers=["bogus"], project_name="Proj")
+
+    assert exc.value.code == 1
+    assert not (tmp_path / "proj").exists()
+
+
+def test_tui_cancel_skips_mcp_validation(tmp_path, db_path, monkeypatch):
+    monkeypatch.setattr("codeanvil.CLI.commands.create._prompt_interactive", lambda target: None)
+
+    cmd_create(None, tmp_path, mcp_servers=["bogus"])  # must not raise or exit
+
+    assert [p.name for p in tmp_path.iterdir()] == ["db"]  # only the fixture's DB dir
+
+
+def test_status_rejects_folder_name_lookup(tmp_path, db_path):
+    cmd_create(None, tmp_path, project_name="My SDR Lab")
+
+    with pytest.raises(SystemExit) as exc:
+        cmd_status("my_sdr_lab")
+
+    assert exc.value.code == 1
+
+
+def test_db_row_stores_label_and_explicit_folder(tmp_path, db_path):
+    cmd_create(None, tmp_path, project_name="My SDR Lab", folder="sdr_lab_dir")
+
+    conn = connect_db(db_path)
+    row = conn.execute("SELECT name, path FROM projects").fetchone()
+    conn.close()
+    assert row["name"] == "My SDR Lab"
+    assert Path(row["path"]).name == "sdr_lab_dir"
+
+
+def test_beaupy_is_a_runtime_dependency():
+    pyproject = Path(__file__).resolve().parents[1] / "pyproject.toml"
+    text = pyproject.read_text(encoding="utf-8")
+    deps_block = re.search(r"^dependencies = \[(.*?)\]", text, re.S | re.M)
+    assert deps_block, "dependencies array not found in pyproject.toml"
+    assert "beaupy" in deps_block.group(1)
