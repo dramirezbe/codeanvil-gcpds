@@ -95,9 +95,15 @@ inject_path() {
 
 # ── 5. Install ─────────────────────────────────────────────────────────
 install() {
-    info "Installing ${TOOL_NAME}..."
-    uv tool install --python 3.12 "git+${REPO}"
-    info "Installed."
+    if uv tool list 2>/dev/null | grep -q "^${TOOL_NAME} "; then
+        info "Upgrading ${TOOL_NAME}..."
+        uv tool install --force-reinstall --python 3.12 "git+${REPO}"
+        info "Upgraded."
+    else
+        info "Installing ${TOOL_NAME}..."
+        uv tool install --python 3.12 "git+${REPO}"
+        info "Installed."
+    fi
 }
 
 # ── 6. Verify ──────────────────────────────────────────────────────────

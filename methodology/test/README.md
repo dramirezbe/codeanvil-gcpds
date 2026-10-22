@@ -1,4 +1,4 @@
-# V-SIL Test Cases (T#) and End-to-End Smoke Test
+# V-SIL Test Cases (T#) and End-to-End Manual Test
 
 ## Test cases
 
@@ -28,7 +28,25 @@ GT → G0 → custody-chain, using T0 as the test input.
 - `claude` CLI (for sandboxed agent test)
 - Internet access (for curl install from GitHub)
 
-### 1. Clean slate
+### 1. Install or upgrade (no clone needed)
+
+The same curl command installs fresh or upgrades an existing installation:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/dramirezbe/codeanvil-gcpds/main/install.sh | bash
+source ~/.zshrc  # or ~/.bashrc
+```
+
+If codeanvil is already installed, this auto-detects it and runs
+`--force-reinstall` to pull the latest commit from `main`.
+
+Verify:
+```bash
+codeanvil --help                      # should show: init, create, list, sync, status, now
+codeanvil now                         # timestamp works
+```
+
+### 1b. Clean slate (optional — only for full reset testing)
 
 ```bash
 # Remove existing installation and state
@@ -44,19 +62,9 @@ command -v codeanvil && echo "FAIL: still installed" || echo "OK: clean"
 ls ~/.codeanvil-config 2>&1 | grep -q "No such" && echo "OK: no state" || echo "FAIL: state remains"
 ```
 
-### 2. Install from curl
+Then install fresh with the curl command from step 1.
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/dramirezbe/codeanvil-gcpds/main/install.sh | bash
-source ~/.zshrc  # or ~/.bashrc
-```
-
-Verify:
-```bash
-codeanvil --help  # should show usage
-```
-
-### 3. Initialize and create project
+### 2. Initialize and create project
 
 ```bash
 codeanvil init
@@ -65,13 +73,57 @@ codeanvil create smoke-test -p /tmp
 
 Verify:
 ```bash
+# Project structure
 ls /tmp/smoke-test/AGENTS.md          # generated
 ls /tmp/smoke-test/CLAUDE.md          # symlink → AGENTS.md
 ls /tmp/smoke-test/.agents/skills/    # G0, G1, custody-chain
+
+# .codeanvil/ machine-generated dir
+ls /tmp/smoke-test/.codeanvil/project.yaml   # UUIDv7 identity manifest
+ls /tmp/smoke-test/.codeanvil/custody/       # empty — populated after G0
+ls /tmp/smoke-test/.codeanvil/report/        # empty — populated by gate reports
+
+# GT dir — user-authored, outside .codeanvil/
 ls /tmp/smoke-test/GT/README.md       # empty GT dir with instructions
 ```
 
-### 4. Copy T0 Ground Truth files into the project
+### 2b. Verify project identity and status
+
+```bash
+codeanvil list                        # shows [<short-uuid>] smoke-test — /tmp/smoke-test
+cd /tmp/smoke-test
+codeanvil status                      # project identity from manifest, no reports yet
+codeanvil now                         # human-readable timestamp (configured timezone)
+codeanvil now --machine               # filename-safe format (no colons or spaces)
+```
+
+Verify:
+- `codeanvil list` shows the project with a UUIDv7 short prefix.
+- `codeanvil status` prints project name, UUID, path, and "none yet" for reports.
+- `codeanvil now` prints a timestamp with millisecond precision.
+- `codeanvil now --machine` prints a filename-safe timestamp (e.g. `2026-10-22_09-15-30-123`).
+
+### 2c. Verify sync flow (simulates cloning on another machine)
+
+```bash
+# Simulate a clone: copy project to new location
+cp -r /tmp/smoke-test /tmp/smoke-test-clone
+
+# Sync the "clone" — registers it with the local DB at its new path
+cd /tmp/smoke-test-clone
+codeanvil sync
+
+# Verify
+codeanvil list                        # shows BOTH entries — same UUID, different paths
+codeanvil status                      # resolves from .codeanvil/project.yaml in cwd
+```
+
+Verify:
+- `codeanvil sync` prints `Synced: smoke-test (<short-uuid>) → /tmp/smoke-test-clone [registered]` (or `[moved]` if the UUID already existed with a different path).
+- `codeanvil list` shows the project registered at the new location.
+- Cleanup: `rm -rf /tmp/smoke-test-clone`
+
+### 3. Copy T0 Ground Truth files into the project
 
 ```bash
 # From the codeanvil repo:
@@ -85,7 +137,7 @@ head -1 /tmp/smoke-test/GT/G0_SRS.md  # "# PROJECT: Edge Sensor ..."
 head -1 /tmp/smoke-test/GT/G0_HCS.md  # "# PROJECT: Edge Sensor ..."
 ```
 
-### 5. Enter sandboxed Claude session in the project
+### 4. Enter sandboxed Claude session in the project
 
 ```bash
 cd /tmp/smoke-test
@@ -99,7 +151,7 @@ of the scaffolded instructions without interference from global config.
 *(Note: `--setting-sources ""` disables ALL settings including CLAUDE.md
 autodiscovery — don't use it for methodology testing.)*
 
-### 5b. Enter sandboxed Pi session in the project (alternative)
+### 4b. Enter sandboxed Pi session in the project (alternative)
 
 ```bash
 cd /tmp/smoke-test
@@ -111,9 +163,9 @@ templates disabled, then re-enables only the Claude bridge and OpenCode
 extensions. The result is a clean session that reads only the project's
 `AGENTS.md` without interference from global config.
 
-### 6. Test prompts (inside sandboxed Claude or Pi)
+### 5. Test prompts (inside sandboxed Claude or Pi)
 
-Run these prompts in sequence inside the sandboxed Claude session. After each,
+Run these prompts in sequence inside the sandboxed session. After each,
 verify the expected outcome before proceeding.
 
 #### Prompt 1 — Context check
@@ -177,129 +229,11 @@ Show the full custody history for GT/G0_SRS.md.
 **Expected:** Claude runs `custody_ledger.py history --doc GT/G0_SRS.md` and
 displays the timeline of actions (seq, timestamp, action, actor, hash prefix).
 
-### 7. Cleanup
+### 6. Cleanup
 
 ```bash
 rm -rf /tmp/smoke-test
 # Optionally: bash install.sh uninstall
-```
-
----
-
-## Automated Smoke Test
-
-The script below runs the same GT → G0 → custody-chain flow non-interactively
-using `claude -p` (print mode). Each step is a separate `claude -p` call with
-`--setting-sources "project"` (sandboxed — loads the project's CLAUDE.md/AGENTS.md
-but not user or local settings) and `--dangerously-skip-permissions` (no
-interactive prompts).
-
-### Prerequisites
-
-- `codeanvil` installed and initialized (`codeanvil init`)
-- `claude` CLI available
-- Run from the **CodeAnvil repo root** (needs access to T0 GT files)
-
-### Run
-
-```bash
-bash methodology/test/smoke_test.sh
-```
-
-Or step by step — copy and paste each block:
-
-### Step 1 — Scaffold and populate
-
-```bash
-# Clean previous test
-rm -rf /tmp/smoke-test
-codeanvil init 2>/dev/null
-
-# Scaffold project
-codeanvil create smoke-test -p /tmp
-
-# Copy T0 GT files
-cp methodology/test/T0_ANE-Lap2/just-edge/SRS.md /tmp/smoke-test/GT/G0_SRS.md
-cp methodology/test/T0_ANE-Lap2/just-edge/HCS.md /tmp/smoke-test/GT/G0_HCS.md
-
-# Set HMAC key for custody-chain
-export PROVENANCE_HMAC_KEY="smoke-test-key-2026"
-```
-
-### Step 2 — Context check
-
-```bash
-cd /tmp/smoke-test && claude -p \
-  --setting-sources "project" \
-  --dangerously-skip-permissions \
-  "What project is this? What skills are available? What gate should run first?"
-```
-
-**Check:** mentions V-SIL scaffolded project, lists G0 + custody-chain + G1, says G0 first.
-
-### Step 3 — Run G0
-
-```bash
-cd /tmp/smoke-test && claude -p \
-  --setting-sources "project" \
-  --dangerously-skip-permissions \
-  "Run G0 validation on GT/G0_SRS.md and GT/G0_HCS.md. Use the g0_validate.py script from the G0 skill. Report the exit code and full validation output."
-```
-
-**Check:** runs `.agents/skills/G0_valid_req_and_GT/scripts/g0_validate.py`, reports PASS or FAIL with line-level findings.
-
-### Step 4 — Seal GT (custody-chain)
-
-```bash
-cd /tmp/smoke-test && claude -p \
-  --setting-sources "project" \
-  --dangerously-skip-permissions \
-  "Load the custody-chain skill. Seal the GT files using source_snapshot.py (include 'GT/**', output to .codeanvil/custody/snapshot.json). Then record custody for both GT/G0_SRS.md and GT/G0_HCS.md as action 'created' by actor 'smoke-test' role 'tester'. Then verify the custody ledger. PROVENANCE_HMAC_KEY is already set in the environment."
-```
-
-**Check:** snapshot SEALED (2 files), ledger entries RECORDED, verify PASS.
-
-### Step 5 — Verify GT unchanged
-
-```bash
-cd /tmp/smoke-test && claude -p \
-  --setting-sources "project" \
-  --dangerously-skip-permissions \
-  "Verify the GT files are still intact using source_snapshot.py verify with --strict."
-```
-
-**Check:** PASS, 2 files checked, no findings.
-
-### Step 6 — Tamper detection
-
-```bash
-# Tamper a file, then ask Claude to detect it
-echo "# TAMPERED" >> /tmp/smoke-test/GT/G0_SRS.md
-
-cd /tmp/smoke-test && claude -p \
-  --setting-sources "project" \
-  --dangerously-skip-permissions \
-  "Verify the GT files using source_snapshot.py verify --strict. Report any integrity violations."
-```
-
-**Check:** FAIL with `DIGEST_CHANGED` and `LENGTH_CHANGED` for `GT/G0_SRS.md`. Claude does NOT fix the file.
-
-### Step 7 — Custody history
-
-```bash
-cd /tmp/smoke-test && claude -p \
-  --setting-sources "project" \
-  --dangerously-skip-permissions \
-  "Show the custody history for GT/G0_SRS.md using custody_ledger.py history."
-```
-
-**Check:** shows timeline (seq, timestamp, action=created, actor=smoke-test).
-
-### Step 8 — Cleanup
-
-```bash
-rm -rf /tmp/smoke-test
-unset PROVENANCE_HMAC_KEY
 ```
 
 ---
@@ -310,9 +244,12 @@ After running the full flow, note:
 
 - [ ] Did `codeanvil create` scaffold all skills including custody-chain?
 - [ ] Did the AGENTS.md skill table list all three skills (G0, custody-chain, G1)?
+- [ ] Did `.codeanvil/` contain `project.yaml`, `custody/`, and `report/` (no GT)?
+- [ ] Did `codeanvil status` correctly read identity from the manifest?
+- [ ] Did `codeanvil sync` register a cloned project without re-scaffolding?
 - [ ] Did Claude in the sandboxed session correctly identify it's in a user project?
 - [ ] Did G0 run with the correct project-relative path (`.agents/skills/...`)?
-- [ ] Did custody-chain scripts run from the project root without import errors?
+- [ ] Did custody-chain scripts write to `.codeanvil/custody/` (not `.provenance/`)?
 - [ ] Did the provenance report format match the output contract in SKILL.md?
 - [ ] Did Claude refuse to fix a tampered GT file (hard rule: originals are read-only)?
 - [ ] Any path errors, missing files, or confusing agent behavior?
