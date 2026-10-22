@@ -2,7 +2,7 @@
 
 import yaml
 
-from codeanvil.CLI.cli import cmd_create
+from codeanvil.CLI.commands.create import cmd_create
 from codeanvil.config.paths import PROJECT_MANIFEST
 from codeanvil.db.schema import create_schema
 from codeanvil.db.utils import connect_db
@@ -16,8 +16,8 @@ def test_cmd_create_twice_same_uuid_one_row(tmp_path, monkeypatch):
     conn = connect_db(db_path)
     create_schema(conn)
     conn.close()
-    monkeypatch.setattr("codeanvil.CLI.cli.DB_PATH", db_path)
-    monkeypatch.setattr("codeanvil.CLI.cli.preflight", lambda: True)
+    monkeypatch.setattr("codeanvil.CLI.commands.create.DB_PATH", db_path)
+    monkeypatch.setattr("codeanvil.CLI.commands.create.preflight", lambda: True)
 
     cmd_create("proj", tmp_path)
     first = yaml.safe_load(
