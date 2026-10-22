@@ -6,7 +6,6 @@ returns the parsed namespace so `main()` stays a thin dispatch.
 
 import argparse
 from collections.abc import Sequence
-
 from pathlib import Path
 
 
@@ -25,8 +24,9 @@ def build_parser() -> argparse.ArgumentParser:
             "\n"
             "Typical workflow:\n"
             "  1. codeanvil init                  Set up ~/.codeanvil-config/ and database\n"
-            "  2. codeanvil create myproj          Scaffold project in current directory\n"
-            "     codeanvil create myproj -p /tmp  ...or in a specific path\n"
+            "  2. codeanvil create                 Interactive prompts: project and folder name\n"
+            "     codeanvil create myproj          ...or non-interactive, legacy positional name\n"
+            "     codeanvil create --name 'My Lab' ...or flags for agents and scripts (no TUI)\n"
             "  3. Fill in the GT files              G0_SRS.md, G0_HCS.md\n"
             "  4. codeanvil status myproj           Check gate progress (or 'status' inside a project)"
         ),
@@ -68,11 +68,35 @@ def build_parser() -> argparse.ArgumentParser:
             "directory) with GT document templates and skill definitions copied\n"
             "from the methodology templates. Registers the project in the database.\n"
             "\n"
+            "With no name given, an interactive prompt asks for the project name\n"
+            "(human label) and the folder name (default: derived snake_case).\n"
+            "Use --name (and optionally --folder) to skip the prompts — required\n"
+            "when stdin is not a terminal (agents, scripts, CI).\n"
+            "\n"
             "Projects live wherever you want — only the DB stays in ~/.codeanvil-config/."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    create.add_argument("name", help="Project name (used as directory name and DB label)")
+    create.add_argument(
+        "name",
+        nargs="?",
+        default=None,
+        help="Project name, also used as folder name (deprecated: use --name)",
+    )
+    create.add_argument(
+        "--name",
+        dest="project_name",
+        default=None,
+        metavar="LABEL",
+        help="Human-readable project name (e.g. 'My SDR Lab'). Skips the interactive prompts.",
+    )
+    create.add_argument(
+        "--folder",
+        dest="folder",
+        default=None,
+        metavar="DIR",
+        help="Folder to create (default: derived from --name). Requires --name.",
+    )
     create.add_argument(
         "-p", "--path",
         type=Path,

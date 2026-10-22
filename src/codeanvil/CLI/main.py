@@ -18,7 +18,13 @@ def choose_option(args: argparse.Namespace) -> None:
         case "init":
             cmd_init(mcp_servers=args.mcp_servers or None)
         case "create":
-            cmd_create(args.name, args.path, mcp_servers=args.mcp_servers or None)
+            cmd_create(
+                args.name,
+                args.path,
+                mcp_servers=args.mcp_servers or None,
+                project_name=args.project_name,
+                folder=args.folder,
+            )
         case "list":
             cmd_list()
         case "sync":
