@@ -58,3 +58,15 @@ def test_init_has_mcp_flag():
     result = _run_cli("init", "--help")
     assert result.returncode == 0, result.stderr
     assert "--mcp" in result.stdout, "--mcp flag missing from 'init --help'"
+
+
+def test_version_flag():
+    result = _run_cli("--version")
+    assert result.returncode == 0, result.stderr
+    assert "codeanvil" in result.stdout
+
+
+def test_version_short_flag():
+    result = _run_cli("-v")
+    assert result.returncode == 0, result.stderr
+    assert "codeanvil" in result.stdout

@@ -26,6 +26,8 @@ _REPORT_RE = re.compile(r"^(?P<gate>.+)_(?P<ts>\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{
 
 
 def argparser() -> argparse.Namespace:
+    from codeanvil import __version__
+
     parser = argparse.ArgumentParser(
         prog="codeanvil",
         description=(
@@ -43,7 +45,9 @@ def argparser() -> argparse.Namespace:
             "  4. codeanvil status myproj           Check gate progress (or 'status' inside a project)"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=(
+    )
+    parser.add_argument("-v", "--version", action="version", version=f"%(prog)s {__version__}")
+    parser.epilog = (
             "GT files (Ground Truth):\n"
             "  G0_SRS.md            System Requirements Specification (IEEE 29148)\n"
             "  G0_HCS.md            Hardware Constraints Specification (design constraints)\n"
@@ -53,8 +57,7 @@ def argparser() -> argparse.Namespace:
             "  G1+ Agent-driven design, implementation, and verification gates\n"
             "\n"
             "Config and DB stored at ~/.codeanvil-config/ — projects live anywhere."
-        ),
-    )
+        )
     sub = parser.add_subparsers(dest="command", required=True, title="commands")
 
     init_parser = sub.add_parser(
