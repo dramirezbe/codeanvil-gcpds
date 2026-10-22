@@ -147,6 +147,9 @@ codeanvil init --mcp marconi               → + clone to ~/.codeanvil-config/mc
 codeanvil create myproj -p /path/to/        → /path/to/myproj/ (scaffolded)
 codeanvil create myproj --mcp marconi       → + marconi-* skills, MCP configs, PYTHONPATH
 codeanvil sync (inside a clone)            → register the project in the local DB
+codeanvil list                             → registered projects (short UUID + local path)
+codeanvil status [myproj]                  → latest gate report per gate (.codeanvil/report/)
+codeanvil now [--machine]                  → timestamp: human-readable / filename-safe
 ```
 
 The scaffold copies `templates/skills/` → `.agents/skills/`, runs `path_replacements`

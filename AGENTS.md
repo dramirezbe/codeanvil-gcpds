@@ -35,6 +35,8 @@ codeanvil create ──► scaffold project anywhere
                        ├─ GT/README.md         (user writes G0_SRS.md, G0_HCS.md here)
                        ├─ .codeanvil/          (project.yaml + custody/ + report/)
                        └─ DB registration (idempotent)
+codeanvil sync ─────► register/move a cloned project in the local DB
+                       (reads the project's .codeanvil/project.yaml — no re-scaffold)
 
 the harness (agent runtime) reads the scaffolded AGENTS.md and drives the gates:
                        │

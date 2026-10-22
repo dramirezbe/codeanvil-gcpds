@@ -41,17 +41,34 @@ codeanvil create myproject
 codeanvil create myproject -p ~/projects
 
 # Write your GT files in myproject/GT/
-#   SRS.md  — System Requirements Specification
-#   HCS.md  — Hardware Constraints Specification
+#   G0_SRS.md  — System Requirements Specification
+#   G0_HCS.md  — Hardware Constraints Specification
 # Reference templates: .agents/skills/G0_valid_req_and_GT/templates/
 
 # Validate GT structure (deterministic, no AI)
 cd myproject
-python .agents/skills/G0_valid_req_and_GT/scripts/g0_validate.py GT/SRS.md GT/HCS.md
+python .agents/skills/G0_valid_req_and_GT/scripts/g0_validate.py GT/G0_SRS.md GT/G0_HCS.md
 
-# Check project status
-codeanvil status myproject
+# Check project status (reads .codeanvil/report/ from the current directory)
+codeanvil status
+
+# Cloned the project elsewhere? Register/move it in your local DB
+codeanvil sync
+
+# Filename-safe timestamp (report filenames, machine identifiers)
+codeanvil now --machine
 ```
+
+### Commands
+
+| Command | Purpose |
+|---------|---------|
+| `codeanvil init [--mcp <name>]` | Create `~/.codeanvil-config/` (DB + optional MCP installs) |
+| `codeanvil create <name> [-p <path>] [--mcp <name>]` | Scaffold a project |
+| `codeanvil sync` | Register or move a cloned project (reads `.codeanvil/project.yaml`) |
+| `codeanvil status [name]` | Latest gate report per gate (from cwd, or by project name) |
+| `codeanvil list` | Registered projects (short UUID + local path) |
+| `codeanvil now [--machine]` | System timestamp: human-readable or filename-safe |
 
 ## MCP server integration (optional)
 
@@ -101,8 +118,16 @@ codeanvil create <name> [-p <path>] [--mcp marconi]
        │
        ▼
   <path>/<name>/                    (default: ./<name>/)
+       ├── AGENTS.md                 ← generated (canonical agent instructions)
+       ├── CLAUDE.md → AGENTS.md     ← symlink
        ├── GT/
-       │    └── README.md           ← instructions: write SRS.md, HCS.md here
+       │    ├── README.md            ← instructions: write G0_SRS.md, G0_HCS.md here
+       │    ├── G0_SRS.md            ← you author (IEEE 29148)
+       │    └── G0_HCS.md            ← you author (design constraints)
+       ├── .codeanvil/               ← machine-generated methodology artifacts
+       │    ├── project.yaml         ← project identity (UUIDv7, no machine paths)
+       │    ├── custody/             ← custody-chain snapshot + ledger
+       │    └── report/              ← timestamped gate reports (<gate>_<ts>.md)
        ├── .agents/
        │    ├── skills/             ← canonical skill store
        │    │    ├── G0_valid_req_and_GT/
@@ -126,7 +151,7 @@ Skills live in `.agents/skills/` — the single source of truth. Agent runtime d
 
 GT reference templates are **locked** inside each skill (e.g. `.agents/skills/G0_.../templates/`). Users write their own GT files in `GT/`.
 
-1. **Write your GT** — author `SRS.md` and `HCS.md` in `GT/`, following the locked reference templates
+1. **Write your GT** — author `G0_SRS.md` and `G0_HCS.md` in `GT/`, following the locked reference templates
 2. **G0 validates structure** — a deterministic script checks that each GT file follows the expected format. Hard pass/fail, no LLM.
 3. **G1+ gates run agents** — AI coding agents (any runtime) execute skills that drive design, implementation, and verification stages. Each gate reads the GT and prior gate outputs.
 
