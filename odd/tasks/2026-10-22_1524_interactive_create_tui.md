@@ -86,6 +86,8 @@ S11. **Terminal compatibility**: beaupy uses Rich for output and yakh for keyboa
 
 S12. **New dependency**: `beaupy` added to `pyproject.toml` `dependencies`. Pulls in `rich` and `yakh` transitively.
 
+S13. **sync reconciles name**: `sync_project()` updates the DB `name` column from the manifest when the id already exists, not just `path`. Returns `"renamed"` when only name changed, `"updated"` when both changed, `"moved"` when only path changed. `list` and `status <name>` reflect the manifest label after a sync. No schema change.
+
 ## Tasks
 
 | ID | Spec | Route | Status | Commit |
@@ -97,6 +99,7 @@ S12. **New dependency**: `beaupy` added to `pyproject.toml` `dependencies`. Pull
 | T4 | S2 | inline | done | 1dd036b |
 | T5 | S5, S7, S8 | inline | done | 1dd036b |
 | T6 | all | inline | done | 1dd036b |
+| T7 | S13 | inline | done | 1d51ff6 |
 
 **T0 — CLI modular refactor (pure structural, no behavior change)**
 Split `CLI/cli.py` into `CLI/main.py`, `CLI/parser.py`, and `CLI/commands/*.py`. Each `cmd_*` function moves to its own module under `commands/`. Shared imports (DB_PATH, connect_db, etc.) are imported locally in each command module. Update all import references:
@@ -131,6 +134,9 @@ When positional `name` is provided (no `--name`), `folder_name = name` (current 
 **T5 — Update `scaffold_project` signature**
 `scaffold_project(name, folder_name, target, ...)` — uses `folder_name` for the directory (`target / folder_name`), `name` for the manifest and DB. `write_project_manifest` already writes `name`. `register_project` already stores `name`. Just route the correct values.
 
+**T7 — sync reconciles project name from manifest (follow-up)**
+`sync_project()` in `src/codeanvil/db/projects.py` only reconciles `path`, never `name`. When the id exists, also SELECT `name` and compare it to the manifest value. Update both columns in a single UPDATE when either differs. Return values: `"already registered"` (neither changed), `"moved"` (path changed, name same), `"renamed"` (name changed, path same), `"updated"` (both changed). Tests: (1) name changed + path unchanged → `"renamed"`, DB name updated; (2) name + path both changed → `"updated"`, both updated; (3) existing tests still pass (name unchanged cases).
+
 **T6 — Tests**
 - Unit test `to_folder_name()`: "My SDR Lab" → "my_sdr_lab", "hello-world" → "hello_world", "  spaces  " → "spaces", "UPPER" → "upper", "foo__bar" → "foo_bar", "" → raises ValueError.
 - Flag-based: `codeanvil create --name "Test Proj"` scaffolds `test_proj/` with manifest name "Test Proj".
@@ -164,4 +170,8 @@ L10. Docs (2026-10-22): README (quick start, command table, how-it-works diagram
 
 L11. Independent verification (2026-10-22): verifier re-ran the suite at HEAD (94 passed) and at baseline 8645ce5 (54 passed), checked the entry point, wheel contents (`uv build`), `uv lock --check`, and drove the TUI through a real PTY (happy path + Ctrl+C at each prompt, Esc, `n`, Enter-on-default: all exit 0, no directory, DB hash unchanged). Verdict: no blockers; S0-S12 all PASS. Advisories: (A1) logger prefixes now name `codeanvil.CLI.commands.*` (unavoidable under S0); (A2) the folder default is a pre-filled buffer, not a placeholder (beaupy has no placeholder API), so typing appends until cleared; (A3) `preflight()` now runs after input collection by design (S10 orders input before MCP validation); (A4) stale local artifacts predate the change (`dist/` wheel, `CLI/__pycache__/cli.*.pyc`, the globally installed `~/.local/bin/codeanvil`); (A5) `questo` is an extra transitive dep beyond rich/yakh. Probes pinning previously untested spec items (S2 never-prompt, S4 order/summary, S9 TUI target, S10 ordering, S11 no-widget, S12 declaration) were added to the committed suite: **104 passed**.
 
+L13. Gap found (2026-10-22): subagent identified that `sync_project()` only reconciles `path`, never `name`. With name/folder decoupling, a label rename published via git is silently ignored by sync — `list` shows stale name, `status "New Name"` fails. Manifest is source of truth but DB drifts. Added S13/T7 as follow-up.
+
 L12. Status (2026-10-22): all tasks T0-T6 done on `feat/interactive-create`; 3 work-unit commits plus this record. Native assessment over the branch range (`--base-ref 8645ce5 --committed-only`): risk `medium` (`executable_change`), `review_due: false`, reason `under_budget` — no native review started. Push and PR remain the user's decision.
+
+L14. S13/T7 implemented on `main` (2026-10-22): `sync_project()` reconciles `name` alongside `path` and returns `registered | already registered | renamed | moved | updated`. Verified end-to-end in a sandbox HOME: clone into a differently named directory → `[moved]` with the committed label; edit the manifest label, `sync` → `[renamed]`; `list` shows the new label and `status "<new label>"` resolves while the old label is gone. Suite: **109 passed** (5 new tests: renamed, updated, unchanged, run_sync rename propagation, list/status integration).
