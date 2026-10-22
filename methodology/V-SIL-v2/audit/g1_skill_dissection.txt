@@ -1,0 +1,347 @@
+SKILL DISSECTION REPORT
+Artifact : G1_SKILL.md — skill "g1-design-synthesis-no-tools"
+Method   : Navaja_ (skill-dissect) — describe, trace, expose; diagnosis only, no fixes
+========================================================================
+
+SCOPE NOTE
+
+The target, G1_SKILL.md, references no bundled files, so the audit rests on the
+single artifact. Its pipeline siblings — the tool-executed G1, G2 (implementation
+planning), and the custody-chain — are referenced but not attached, which matters
+for the Unverifiable entries. The G0 skill (G0_SKILL.md) was dissected separately
+in this same engagement; where the two gates join, that dissection is
+cross-referenced, since G1 consumes exactly what G0 certifies.
+
+
+1. CONCEPT
+========================================================================
+
+The artifact is the second gate of the author's V-SIL pipeline. Where G0
+(dissected earlier from G0_SKILL.md) had a language model certify the structure
+of the Ground Truth, G1 has it consume that Ground Truth as a design contract:
+the model is cast as "a software architect" who receives the two G0-validated
+documents — an SRS (System Requirements Specification) and an HCS (Hardware
+Constraints Specification) — and produces a multi-hypothesis software
+architecture with a justified selection, entirely inside a toolless web chat.
+The boundary is drawn twice on the way in: the architect designs "software on
+COTS hardware," never the hardware — the HCS is read as an envelope, not a
+design space — and design stops at architecture ("Do not implement...
+Implementation is G2+").
+
+Stated purpose, in the author's words: "Web-chat G1: Multi-hypothesis software
+architecture design from G0-validated Ground Truth. No tools required." The
+Definitions table gives the yardstick for the audit: "G1 — Gate 1 —
+agent-driven design synthesis from validated GT. This gate," with an ASR
+defined as "a requirement that shapes the software architecture." Unlike the
+G0 file, no determinism is claimed for this gate's output — and none could be:
+this is judgement work, and the file knows it, routing final authority to a
+human review at the exit.
+
+The core trick is an authority chain wrapped around a forced multi-hypothesis
+method. Authority chain: the pipeline certifies the documents (G0), a human
+explicitly approves them through a y/N/x gate that LOCKS the GT ("The user
+saying 'go ahead', 'start', 'run G1', or pasting the documents is NOT
+approval"), the model designs inside the lock, and a second human gate
+(APPROVE / RETURN / REJECT) closes the job — the LLM is never the final
+authority at either end. Multi-hypothesis method: 3-4 "pathways" with a
+no-strawmen rule, a quality-attribute × architecture scoring matrix with
+anchored 0-5 scores, weights derived from ASR priorities (MUST=3, SHOULD=2,
+COULD=1), an ATAM-style trade study on the top 2 only, then selection, then
+Attribute-Driven Design decomposition in 3-5 iterations. The method aims
+squarely at the known LLM failure of anchoring on the first plausible design:
+"Never jump to a single architecture."
+
+A traceability scaffold holds it together: Job 1 compresses both documents
+into an ASR catalog — each row keyed to a source ID (REQ-ID or HWC-ID), tagged
+with one ISO 25010 quality attribute and a priority — and groups ASRs into
+named Condition Groups ("must be satisfied simultaneously"). Inputs: the two
+documents, the user's confirmation that G0 passed, and an explicit y. Outputs:
+six presented jobs — ASR catalog, candidate specs, scoring matrix, trade
+study, selection plus decomposition plus dependency graph, and a fixed-format
+"G1 DESIGN SYNTHESIS — REVIEW PACKAGE" ending in the human-review block.
+
+Assumptions baked in: a toolless chat (so G0 compliance is taken on the
+user's word — "If G0 status is unknown, ask the user to confirm or run G0
+first"); documents carry the metadata the exact approval prompt must quote;
+the model can execute ADD and ATAM competently in prose; ISO 25010's eight
+quality attributes are a fixed vocabulary; the chat supports Mermaid
+("whatever the chat supports"); ASR priorities can be read off the source
+documents unambiguously; and a G2 exists downstream to receive the approved
+package.
+
+
+2. THE TRIP
+========================================================================
+
+1. Activation contract. The host model loads the skill in a toolless chat when
+   the user provides a G0-validated SRS and HCS and asks for architecture
+   design, design synthesis, or G1 execution. Guards: not for implementation
+   or code ("that is G2+"), not for GT validation ("that is G0"), and not when
+   G0 has not passed. Preconditions: both documents must have passed G0; if
+   G0 status is unknown, ask the user to confirm or run G0 first — the gate
+   cannot verify this itself, so the premise rests on the user's assertion.
+   Why: keep the gates separate and ensure the design input is a validated
+   contract.
+
+2. Step 0 — GT Approval Gate. Present the exact twelve-line prompt, filled
+   from document metadata (Document ID, version, project name for each
+   document). Wait for y/N/x. Why: the GT is the design contract; the skill
+   claims no authority to design against an unapproved contract, and locking
+   it prevents mid-design goal drift. Branches:
+   - y → record "GT: APPROVED AND LOCKED", proceed to Job 1.
+   - N, no answer, or anything other than y/x → do not proceed; reply the
+     fixed line "GT not approved. Please revise your SRS and/or HCS and
+     resubmit. [y/N/x]:" and wait; repeat indefinitely (loop exit: user
+     answers y or x).
+   - x → "G1 aborted by user. No design work performed." Stop.
+     [Exit A — abort.]
+   Anti-implicit-approval clause: "go ahead", "start", "run G1", or pasting
+   the documents does not count — the prompt must still be presented and an
+   explicit y received before Job 1.
+
+3. Job-sequencing directive. Work the 6 jobs in order; complete each fully
+   before the next; "Present your work as you go — do not wait until the
+   end." Why: auditability — the human reviewer at Job 6 must be able to
+   trace how the selection was derived rather than receive only the
+   conclusion.
+
+4. Job 1 — ASR extraction. Read both documents; filter by the significance
+   test ("changing how you satisfy it would force a different architecture";
+   performance budgets, fault tolerance, concurrency constraints, hardware
+   limits, and interface mandates are typically significant; "A label color
+   or log format is not"). One row per ASR: ASR-ID / Source (REQ-ID or
+   HWC-ID) / one ISO 25010 quality attribute / one-sentence restatement /
+   Priority (MUST/SHOULD/COULD). Then group ASRs into named Condition Groups
+   — sets sharing the same quality-attribute profile that "must be satisfied
+   simultaneously" (e.g., CG-Realtime, CG-Resilience, CG-Modifiability).
+   Why: reduce a full requirement set to the handful that shape the
+   architecture, in a vocabulary the scoring step can consume.
+
+5. Job 2 — candidate generation. Propose 3 to 4 pathways; no strawmen; each
+   described by architectural style, one-paragraph summary, module map table,
+   concurrency model, deployment view (which hardware, which process — read
+   from the HCS), and one key tradeoff (the thing it does better and the
+   thing it does worse). Why: force genuine alternatives so the selection is
+   comparative, not confirmatory.
+
+6. Job 3 — scoring matrix. Rows = quality attributes from the ASRs; columns =
+   pathways; each cell scored 0-5 against the given anchors ("0 = actively
+   works against this QA" ... "5 = inherently optimizes for this"); weights
+   from ASR priorities (MUST=3, SHOULD=2, COULD=1); weighted total =
+   Σ(weight × score). State the top 2 candidates and why. Why: mechanical,
+   comparable aggregation — the arithmetic backbone of the selection.
+
+7. Job 4 — trade study (ATAM-style), top 2 only. For each: sensitivity points
+   (small parameter change, large QA change — "If IPC latency exceeds 5ms,
+   the real-time guarantee breaks"), tradeoff points (improving one QA
+   degrades another), risks, and a one-paragraph verdict. Why: weighted
+   totals are not reasons; the ATAM vocabulary turns scores into design
+   knowledge a human reviewer can check.
+
+8. Job 5 — select and decompose. State the selection and justify it in one
+   paragraph referencing the weighted scores and trade findings — "This is
+   the architecture you are committing to." Then decompose with iterative
+   Attribute-Driven Design, 3-5 iterations, each on one element: quality
+   driver, pattern selected, why this pattern, modules produced
+   (Module/Interface/Dependencies/Responsibility table). Then the complete
+   component dependency graph as a textual diagram (indentation, arrows, or
+   Mermaid — "whatever the chat supports"); every module must appear, with
+   data-flow direction. Why: turn the committed architecture into a module
+   structure a reviewer can follow and a later gate could implement.
+
+9. Job 6 — review package. Emit the fixed template: project, date, GT basis;
+   ASR count and condition-group names; candidates with weighted scores;
+   selection with 2-3 sentence rationale; key tradeoffs accepted; risks
+   carried forward; module count and names; and the human-review block —
+   APPROVE → proceed to G2 (implementation planning); RETURN with defects →
+   rework specific jobs above; REJECT → restart G1 with revised GT or
+   constraints. Why: the gate's real verifier is a human architect; the
+   package is the artifact they audit.
+
+10. Ground rules (operative throughout): multi-hypothesis mandatory; written
+    justification required ("'It seemed best' is not a reason"); stay within
+    the HCS envelope — a candidate requiring unlisted hardware or exceeding a
+    HARD limit "is invalid. Disqualify it explicitly"; do not implement; do
+    not invent requirements — gaps become flagged risks; software scope
+    only. Why: anti-drift rails, each forbidding a known LLM failure mode —
+    single-favorite anchoring, unexplained picks, hardware fantasy, scope
+    creep into code, requirement invention.
+
+Loops: the Step 0 approval loop (exit: y or x); the Job 5 ADD iteration loop
+(exit: 3-5 iterations completed). No other loops. The Job 6 RETURN outcome
+re-enters through the user supplying defects — the re-entry protocol is not
+defined (flagged in the issues).
+
+
+3. ISSUES — ALIGNMENT WITH STATED PURPOSE
+========================================================================
+
+Issue 1. Step 0 — EXECUTION ERROR.
+The gate routes "anything other than y/x" to one fixed reply: "N or no answer
+or anything other than y/x → Do NOT proceed. Reply: 'GT not approved. Please
+revise your SRS and/or HCS and resubmit. [y/N/x]:'". A user asking a
+legitimate clarification question before approving — "which HCS version did
+you receive?", "what does LOCKED prevent?" — receives the non-sequitur
+rejection line, because a question is neither y nor x. The literal reading
+makes the model a three-key terminal that cannot discuss the very contract it
+is presenting; the charitable reading (answer the question, then re-present
+the prompt) is equally plausible, and the trip assumed the literal one. This
+undercuts the gate's own purpose: an approval gate exists to obtain *informed*
+human consent, and this text forbids informing. The fixed reply even tells a
+questioning user to "revise your SRS and/or HCS," which they may have no
+reason to do.
+
+Issue 2. Job-sequencing directive — EXECUTION ERROR.
+"Work through the 6 jobs below in order. Complete each job fully before moving
+to the next. Present your work as you go — do not wait until the end."
+supports two readings: (a) one continuous output presenting all six jobs in
+order, withholding nothing until the final package; (b) an interactive
+protocol pausing after each job. Nothing tells the model to stop and wait
+between jobs — the only explicit "wait" in the file belongs to the Step 0
+loop — so a literal model attempts reading (a): one message carrying the ASR
+catalog, 3-4 full candidate specifications, a scoring matrix, two trade
+studies, 3-5 decomposition iterations, a dependency graph, and the review
+package. Per-job depth degrades exactly where the skill demands rigor
+("Complete each job fully"), and chat length limits can truncate the output
+mid-package. Under reading (b), the model must invent when to pause. Different
+models will pace differently, and the pacing materially changes the work's
+quality.
+
+Issue 3. Job 1 — EXECUTION ERROR.
+The ASR table demands a Priority of "MUST/SHOULD/COULD" and a Source of
+"REQ-ID or HWC-ID", and the text says hardware limits are "typically
+significant" — so HCS-sourced ASRs are expected as a routine case. But the
+pipeline's own HCS block schema (per G0_SKILL.md) carries Impact
+(HARD/SOFT/INFORMATIONAL), not Priority. No mapping HARD→MUST, SOFT→SHOULD is
+stated anywhere. Every HCS-sourced ASR therefore lands in a column with no
+defined valid value, and — since Job 3 derives matrix weights from "the ASR
+priorities" — the hardware constraints, often the sharpest architecture
+drivers on a COTS project, either drop out of the weighting or receive a
+priority the model improvises differently on each run. Two adjacent gates of
+the same pipeline, and their vocabularies do not join at exactly the join
+point the design depends on.
+
+Issue 4. Job 1 — EXECUTION ERROR.
+Condition Groups are introduced with a purpose ("must be satisfied
+simultaneously"), naming conventions, and examples — and then never consumed
+by any later job. Job 2's candidates must "satisfy the ASRs" (not the groups);
+Job 3 scores per quality attribute; Job 5 decomposes per quality driver; Job 6
+merely counts the groups. The one failure mode Condition Groups exist to
+catch — a candidate that satisfies each ASR individually but not
+simultaneously — has no enforcement point anywhere on the path. The artifact
+spends extraction effort on a construct whose only downstream use is being
+listed by name in the review package.
+
+Issue 5. Job 3 — EXECUTION ERROR.
+"Weights come from the ASR priorities: MUST QAs get weight 3, SHOULD gets 2,
+COULD gets 1." The sentence slides between granularities: priorities belong to
+ASRs, but weights attach to quality-attribute rows in the matrix. One QA row
+aggregates ASRs of mixed priorities (a MUST and a COULD both mapping to
+Reliability), and no aggregation rule is defined — max? sum? any-MUST
+promotes? The weighted totals — the numbers Job 5's selection is "committed"
+on and Job 6 reports — depend on that choice. Two models using two reasonable
+aggregations can produce different top-2 (Job 4 runs on the top 2 only), and
+therefore different committed architectures. Tie-breaking between candidates
+with equal totals is likewise undefined. This compounds issue 3: HCS-sourced
+ASRs may have no priority at all to aggregate. The arithmetic spine of the
+gate is under-specified at its load-bearing joint.
+
+Issue 6. Ground rules — EXECUTION ERROR.
+"If a candidate requires hardware the HCS doesn't list, or exceeds a HARD
+limit, it is invalid. Disqualify it explicitly." The disqualification
+lifecycle is undefined end to end: when it happens (at Job 2 proposal? during
+Job 3 scoring? — which matters, since the top-2 selection is made from the
+matrix), whether a disqualified pathway keeps its matrix column (scoring an
+architecture already declared invalid), and how the pool is refilled to honor
+"Propose 3 to 4 candidate architectures" and "Multi-hypothesis is mandatory"
+— no replacement instruction exists, so the literal path can end at 2
+candidates, violating the mandate. Job 6's template deepens the gap: its
+"CANDIDATES EVALUATED" rows are shaped "Pathway A: [name] — Weighted score:
+X", with no DISQUALIFIED slot, so the model must either invent a score for an
+invalid design or drop it silently. On hardware-bounded projects — the
+pipeline's own premise — disqualification is likely, not exceptional.
+
+Issue 7. Job 6 — EXECUTION ERROR.
+Of the three review outcomes, APPROVE has a destination (G2) and REJECT has a
+destination (restart with revised GT — consistent with the LOCK being
+released), but "RETURN with defects → rework specific jobs above" has no
+procedure: who supplies the defect list and in what form, whether reworking an
+early job obligates re-running the downstream jobs that consumed it (rework
+Job 1's ASRs and Jobs 2-5 are all stale), whether the reworked package is
+marked as superseding the first, and how the still-locked GT interacts with
+rework-driven changes to condition groups or candidates. The review gate's
+non-happy paths are named but not designed.
+
+Issue 8. UNVERIFIABLE.
+Whether this variant's artifact shape matches what the pipeline expects:
+"APPROVE → proceed to G2 (implementation planning)" assumes a G2 that consumes
+exactly this review package, and the canonical (tool-executed) G1 may define
+the procedures this variant leaves open — weight aggregation, disqualification
+handling, RETURN re-entry. G2 and the canonical G1 are not attached. What
+would settle it: those pipeline files.
+
+Issue 9. UNVERIFIABLE.
+Step 0 requires the exact approval prompt to be filled with "[Document ID]
+v[version] — [project name]" from both documents. Within a compliant pipeline,
+G0 certifies those metadata fields exist; whether real GT pairs always carry
+them, and what the model should present when they do not ("present this
+prompt exactly" has no degraded form), cannot be confirmed from this file.
+What would settle it: one real SRS/HCS pair from the V-SIL pipeline — the
+same settle-condition flagged in the G0 dissection's template question.
+
+Issue 10. UNVERIFIABLE.
+The activation premise — "Both SRS and HCS must have passed G0" — is verified
+by asking the user; whether the pipeline's custody chain accepts an
+uncorroborated G0 confirmation, or requires the G0 report artifact, is
+unknowable from this file. Related: this file's Definitions table repeats the
+pipeline's "G0 — deterministic" definition; per the prior dissection, the
+no-tools G0 seal is run-dependent, so the seal G1 accepts on trust is itself
+approximate. What would settle it: the custody-chain skill.
+
+
+PROBABLY INTRODUCED — WHY THESE MISTAKES EXIST
+========================================================================
+
+The issues share four visible root causes. First, the weighting pipeline was
+built from the SRS side of the house — SRS blocks carry Priority
+(MUST/SHOULD/COULD/WONT in the author's own G0 schema), so "priority →
+weight" felt mechanical — and the HCS side was joined late ("Source: REQ-ID
+or HWC-ID") without mapping Impact into Priority, and without deciding how
+per-ASR priorities collapse into per-QA weights; the join was never tested
+with a hardware-sourced ASR, the classic happy-path test gap (issues 3 and
+5). Second, Condition Groups were imported from ADD practice for completeness
+of the extraction phase and never wired into Jobs 2-5 — pedagogy added
+without mechanism (issue 4). Third, the approval gate was written in a CLI
+mental model — "[y/N/x]:", "(default)", and "repeat indefinitely" are shell
+idioms — and the surrounding conversation protocol (clarification questions,
+multi-turn pacing, "present your work as you go") was left to intuition; a
+pattern was reused from a context where the input space is three keys
+(issues 1 and 2). Fourth, the ground rules were authored as a late
+prohibition list and never walked against the job templates they constrain,
+so disqualification has no slot in the matrix or the package (issue 6), and
+the review outcomes mirror design-review sign-off conventions where only the
+happy path ever got a procedure (issue 7).
+
+People read up on: contract negotiation and schema joins at component
+boundaries (issues 3 and 5); multi-criteria decision analysis — weighted-sum
+methods, weight elicitation, rank reversal, and tie sensitivity (issue 5);
+conversation protocol and state-machine design for out-of-band input
+(issue 1); ATAM and attribute-driven design — the SEI literature — for where
+condition groups actually earn their keep (issue 4); designing the unhappy
+path in workflows — exception and compensation handling (issues 6 and 7);
+and human-in-the-loop review protocols (issue 7).
+
+
+CLOSING
+========================================================================
+
+Diagnosis ends here — per the Navaja_ contract, no fixes are proposed. The
+overall shape, compared with the G0 dissection from this same engagement: no
+concept errors this time. The gate's design ideas — the authority chain,
+forced multi-hypothesis, priority-weighted scoring, human sign-off at both
+ends — are sound, and the no-tools variant fits this gate better than it fit
+G0, because G1's checks are judgement work audited by a human rather than a
+determinism claim. All seven confirmed defects are execution-level: unwired
+scaffolding, unmapped cross-gate vocabularies, and missing procedures for the
+non-happy paths — precisely the gaps a deterministic implementation would
+have forced someone to fill.

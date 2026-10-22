@@ -1,17 +1,14 @@
 ---
-name: g1-design-synthesis-no-tools
-description: "Web-chat G1: Multi-hypothesis software architecture design from G0-validated Ground Truth. No tools required."
-license: Apache-2.0
-compatibility: "Any LLM web chat (ChatGPT, Claude, Gemini, etc.). No tools, no file access, no code execution."
+name: g1-design-synthesis
+description: "G1: Multi-hypothesis software architecture design from G0-validated Ground Truth"
 metadata:
   author: "gcpds"
   version: "1.0"
   gate: "G1"
   pipeline: "V-SIL"
-  variant: "no-tools"
 ---
 
-# G1 — Design Synthesis from Ground Truth (Web-Chat)
+# G1 — Design Synthesis from Ground Truth
 
 **V-SIL | Gate G1 | No-Tools Variant**
 
@@ -30,7 +27,7 @@ software architecture that satisfies the SRS within the HCS envelope.
 | **GT** | Ground Truth — the pair of `.md` documents (SRS + HCS) that define the project contract |
 | **SRS** | System Requirements Specification — functional and non-functional requirements (IEEE 29148) |
 | **HCS** | Hardware Constraints Specification — COTS hardware limits and design constraints (§2.4) |
-| **G0** | Gate 0 — deterministic structural validation of GT documents. Must pass before any design work |
+| **G0** | Gate 0 — structural validation of GT documents. Must pass before any design work |
 | **G1** | Gate 1 — agent-driven design synthesis from validated GT. This gate |
 | **COTS** | Commercial Off-The-Shelf — hardware not custom-designed for the project |
 | **ASR** | Architecturally Significant Requirement — a requirement that shapes the software architecture |
@@ -38,8 +35,7 @@ software architecture that satisfies the SRS within the HCS envelope.
 ## Activation Contract
 
 **Load when:**
-- You are in a web chat without tool execution.
-- The user provides a G0-validated SRS and HCS (both must have passed G0).
+- The user provides a G0-validated SRS and HCS (both must have passed G0), as pasted text or markdown, or attached.
 - The user asks for architecture design, design synthesis, or G1 execution.
 
 **Do NOT load when:**
@@ -84,10 +80,14 @@ Do you approve these documents as the design basis?
 **Behavior:**
 
 - **`y`** → Record `GT: APPROVED AND LOCKED`. Proceed to Job 1.
-- **`N`** or no answer or anything other than `y`/`x` → Do NOT proceed. Reply:
-  `"GT not approved. Please revise your SRS and/or HCS and resubmit. [y/N/x]:"` and
-  wait. Repeat indefinitely until the user answers `y` or `x`.
+- **`N`** → Do NOT proceed. Reply:
+  `"GT not approved. Please revise your SRS and/or HCS and resubmit. [y/N/x]:"` and wait.
 - **`x`** → Reply: `"G1 aborted by user. No design work performed."` and stop.
+- **A question** (e.g., "which HCS version did you receive?", "what does LOCKED mean?") →
+  Answer the question directly, then re-present the `[y/N/x]:` prompt and wait. Informed
+  consent requires the user to be able to ask about the contract before approving it.
+- **Anything else** (no answer, ambiguous input) → Reply:
+  `"Please answer y, N, or x. [y/N/x]:"` and wait.
 
 **You must not start Job 1 without a `y`.** There is no implicit approval. The user
 saying "go ahead", "start", "run G1", or pasting the documents is NOT approval — you
@@ -96,7 +96,9 @@ still present the prompt and wait for an explicit `y`.
 ---
 
 Work through the 6 jobs below **in order**. Complete each job fully before moving to the
-next. Present your work as you go — do not wait until the end.
+next. **After completing each job, pause and wait for the user to say "continue"** (or ask
+questions about the job's output). Do not attempt all 6 jobs in a single message —
+output limits will truncate the work. Present each job's output in full, then stop.
 
 ---
 
@@ -116,6 +118,15 @@ For each ASR, produce one row:
 |---|---|---|---|---|
 | ASR-001 | REQ-ID or HWC-ID | ISO 25010 QA | One-sentence restatement | MUST/SHOULD/COULD |
 
+**Priority mapping for HCS-sourced ASRs:** SRS requirements carry Priority directly
+(MUST/SHOULD/COULD). HCS constraints carry Impact instead — map as follows:
+
+| HCS Impact | ASR Priority | Weight (Job 3) |
+|------------|-------------|----------------|
+| HARD | MUST | 3 |
+| SOFT | SHOULD | 2 |
+| INFORMATIONAL | COULD | 1 |
+
 **Quality Attributes** (ISO 25010): Performance Efficiency, Reliability, Security,
 Maintainability, Portability, Compatibility, Usability, Functional Suitability.
 
@@ -130,6 +141,9 @@ attribute profile and must be satisfied simultaneously. Name each group
 Propose **3 to 4 candidate architectures** (pathways). Each must be a plausible way to
 satisfy the ASRs. Do not propose strawmen — every candidate should have a genuine
 argument in its favor.
+
+Each candidate must address **every Condition Group** from Job 1. For each pathway, state
+which Condition Groups it satisfies naturally and which require mitigation.
 
 For each candidate, describe:
 
@@ -172,8 +186,14 @@ pathways. Score each cell **0 to 5**:
 | ... | | | | | |
 | **Weighted Total** | | **T** | **T** | **T** | **T** |
 
-**Weights** come from the ASR priorities: MUST QAs get weight 3, SHOULD gets 2, COULD
-gets 1. Weighted total = Σ(weight × score).
+**Weights** come from the ASR priorities: MUST = 3, SHOULD = 2, COULD = 1.
+
+**Aggregation rule:** When a QA row has ASRs of mixed priorities, use the **highest
+priority** among them. For example, if Reliability has one MUST ASR and two COULD ASRs,
+the row weight is 3 (the MUST promotes the entire row). Ties between candidates with
+equal weighted totals are broken by the trade study in Job 4, not by the matrix alone.
+
+Weighted total = Σ(weight × score).
 
 After the matrix, state the **top 2 candidates** and why.
 
@@ -192,6 +212,11 @@ Where does a small change in a parameter cause a large change in a quality attri
 
 Where does improving one QA degrade another? (e.g., "Adding crash isolation improves
 reliability but adds IPC overhead that reduces performance.")
+
+### Condition Group satisfaction
+
+For each Condition Group from Job 1, can this candidate satisfy all its ASRs
+simultaneously? If not, which group breaks and why?
 
 ### Risks
 
@@ -251,6 +276,8 @@ GT basis: [SRS Document ID] v[version] + [HCS Document ID] v[version]
    - Pathway B: [name] — Weighted score: X
    - Pathway C: [name] — Weighted score: X
    - (Pathway D if applicable)
+   Disqualified (if any):
+   - Pathway Y: [name] — DISQUALIFIED ([reason])
 
 3. SELECTION
    - Selected: Pathway [X] — [name]
@@ -270,9 +297,21 @@ GT basis: [SRS Document ID] v[version] + [HCS Document ID] v[version]
 7. HUMAN REVIEW REQUIRED
    G1 output requires human architect approval before proceeding:
    - APPROVE → proceed to G2 (implementation planning)
-   - RETURN with defects → rework specific jobs above
+   - RETURN [Job N, Job M, ...] with defects → see rework procedure below
    - REJECT → restart G1 with revised GT or constraints
 ```
+
+### Rework procedure (RETURN path)
+
+When the reviewer returns defects referencing specific jobs:
+
+1. The reviewer supplies a defect list naming the jobs to rework (e.g., "RETURN Job 1, Job 3").
+2. Rework each named job using the reviewer's feedback.
+3. **Re-run every downstream job** that consumed the reworked output. If Job 1 is reworked,
+   Jobs 2–6 must all re-run. If only Job 5 is reworked, only Job 6 re-runs.
+4. Mark the reworked package as a revision: `"G1 DESIGN SYNTHESIS — REVIEW PACKAGE (Rev N)"`.
+5. The GT remains LOCKED throughout rework — rework changes the design, not the contract.
+   If the defects require GT changes, the correct outcome is REJECT, not RETURN.
 
 ---
 
@@ -283,7 +322,11 @@ GT basis: [SRS Document ID] v[version] + [HCS Document ID] v[version]
 - **Justify in writing.** Every selection must have a stated reason. "It seemed best" is
   not a reason. Reference scores, tradeoffs, or constraints.
 - **Stay within the HCS envelope.** If a candidate requires hardware the HCS doesn't
-  list, or exceeds a HARD limit, it is invalid. Disqualify it explicitly.
+  list, or exceeds a HARD limit, it is invalid. Disqualify it at the point of discovery
+  (Job 2 or Job 3) with a one-line explanation. **Replace** the disqualified candidate with
+  a new one to maintain 3–4 valid pathways — the multi-hypothesis mandate requires it.
+  In the Job 6 review package, list disqualified candidates separately with their reason:
+  `- Pathway X: [name] — DISQUALIFIED ([reason])`.
 - **Do not implement.** This is design, not code. No source files, no pseudocode beyond
   what's needed to explain an interface. Implementation is G2+.
 - **Do not invent requirements.** If something isn't in the SRS or HCS, don't add it.

@@ -1,0 +1,317 @@
+SKILL DISSECTION REPORT
+Artifact : G0_SKILL.md — skill "g0-valid-req-and-gt-no-tools"
+Method   : Navaja_ (skill-dissect) — describe, trace, expose; diagnosis only, no fixes
+========================================================================
+
+SCOPE NOTE
+
+Both source files were read in full. The target, G0_SKILL.md, references no
+bundled files, so the whole audit rests on the single artifact; its pipeline
+siblings (the tool-executed G0 it mirrors, G1, custody-chain) are referenced
+conceptually but not attached, which matters for the Unverifiable entries.
+
+
+1. CONCEPT
+========================================================================
+
+The artifact is a gate-keeper checklist for a verification pipeline the author
+calls V-SIL. In that pipeline, a project's Ground Truth (GT) — the pair of
+markdown documents consisting of an SRS (System Requirements Specification,
+IEEE 29148 flavour) and an HCS (Hardware Constraints Specification) — must
+clear G0, a purely structural validation, before any design work happens at
+G1 ("agent-driven design synthesis from validated GT"). This file is the
+no-tools variant of that gate: it instructs a conversational LLM in a plain
+web chat (ChatGPT, Claude, Gemini — explicitly "no terminal, no file system,
+no Python") to be the validator. The user pastes the two documents; the model
+checks them by inspection alone.
+
+Stated purpose, in the author's words: "LLM-executed structural validation of
+SRS/HCS Ground Truth documents. No tools required — paste documents directly."
+The Definitions table pins the yardstick: G0 is "deterministic structural
+validation of GT documents. Must pass before any design work." The scope is
+deliberately narrow: G0 "only reports, never edits," and semantic questions —
+requirement quality, constraint accuracy, SRS↔HCS consistency — are explicitly
+deferred to "later gates." A front-matter disclaimer immediately softens the
+"deterministic" claim: results are approximate and may differ across models
+and runs.
+
+The core trick is a severity economy grafted onto a four-phase inspection
+checklist that a language model can execute by attention alone. Phase 1 checks
+presence of a fixed heading inventory (15 headings for the SRS, 10 for the
+HCS). Phase 2 checks a five-field "Document Metadata" table with enum values
+and a placeholder heuristic. Phase 3 sweeps blocks — discovered by a bold
+"ID — Title" heading convention — against rule tables: ID shape, enum-valued
+fields (Type, Priority, Status, Verification for SRS; Limit type, Source,
+Impact, Status for HCS), and required subsections (Description, Acceptance
+Criteria). Phase 4 runs intra-document cross-references: traceability
+coverage, dependency resolution, cycle detection, orphan components. On top
+sits the gate mechanic: ERRORs block, WARNINGs advise, so the verdict
+collapses to "count the errors" — zero errors means PASS. A fixed report
+template plus a "report, never fix" stance keep the validator from mutating
+the contract it certifies.
+
+Inputs: one paste containing both documents in the author's template shape.
+Output: the "G0 VALIDATION REPORT" block — verdict, numbered [E###]/[W###]
+findings, summary counts — plus, on FAIL, a one-line-per-error Fix List.
+Baked-in assumptions: the paste arrives intact and follows the author's
+template (exact headings, metadata table, bold block headers with em-dashes);
+the model can perform regex-class ID matching, enum comparison, duplicate
+detection and small-graph cycle detection reliably and reproducibly; SemVer
+and the enum vocabularies (MoSCoW-style priorities, verification methods) are
+shared knowledge; and sibling skills (G1, custody-chain, the tool-executed G0
+this variant mirrors) exist elsewhere, outside this file.
+
+
+2. THE TRIP
+========================================================================
+
+1. Activation contract. The host model loads the skill when a toolless-chat
+   user pastes GT material and asks for G0 validation, a structural check, or
+   a GT review. Requests about requirement quality, constraint accuracy, or
+   SRS↔HCS consistency must not activate it (later gates own those); requests
+   to write or fix a GT document are out of scope ("G0 only reports, never
+   edits"). Why: fence the gate against scope creep so it cannot silently
+   become a reviewer or an editor.
+
+2. Precondition gate: the pair. Count the documents. Both present — continue.
+   Only one — ask for the other; if the user insists on single-document
+   validation, refuse and abort. "Do not run a partial G0 — the Ground Truth
+   is the pair." [Exit A — refusal.] Why: the gate certifies a contract, and
+   the contract is defined as the pair; a half-validated GT would produce a
+   gate verdict that does not correspond to anything the pipeline recognizes.
+
+3. Step 1 — type detection, per document. Read each document's title heading.
+   If "the first ## heading" contains "System Requirements Specification" or
+   "SRS" — SRS; if it contains "Hardware Constraints Specification" or "HCS"
+   — HCS; otherwise "report G0: UNDETECTABLE and stop." [Exit B —
+   UNDETECTABLE.] Two pasted documents — "validate each separately," which
+   opens a loop over documents; its exit condition is that every pasted
+   document has been classified (or the run hit Exit B).
+
+4. Step 2 — Phase 1, required headings. Scan the classified document for each
+   heading in its type's list, "match[ing] by content, not exact formatting"
+   — wording latitude is explicitly granted here. Each absent heading becomes
+   one ERROR. Why: cheapest possible completeness check; a missing section
+   means the template was abandoned, and everything downstream of that
+   section is suspect.
+
+5. Step 3 — Phase 2, metadata table. Locate "## Document Metadata," require a
+   table, check five fields: Document ID / Project / Organization non-empty
+   and non-placeholder (placeholder = starts with "_", or contains
+   "_ACRONYM_", "_NNN_", "_project_name_", "YYYY-MM-DD"); Version must match
+   SemVer X.Y.Z; Classification must be exactly PUBLIC / INTERNAL /
+   CONFIDENTIAL. Each violation is an ERROR. Why: identity and governance
+   fields are what the custody chain downstream will key on; placeholder
+   values mean the template was never instantiated.
+
+6. Step 4 — Phase 3, block sweep. Detect blocks by the bold "ID — Title"
+   pattern (markdown source: **ID — Title**), then loop over each detected
+   block — loop exit: end of detected blocks. For an SRS block: ID matches
+   [A-Z]{3,5}-[A-Z]{2,4}-NNN, no duplicate IDs, title ≤ 120 chars,
+   Type/Priority/Status/Verification present and enum-valid, Description
+   exists and mentions SHALL or SHOULD (else WARNING), Acceptance Criteria
+   exists with at least 1 numbered criterion, and every ID in Dependencies
+   resolves to a block in the document. For an HCS block: ID matches
+   HWC-[A-Z]{2,4}-NNN, uniqueness, title length, Component and Parameter
+   present, Limit type enum-valid, Source enum-valid, Source ref present,
+   Impact and Status enum-valid, RANGE implies both Value min and Value max,
+   non-RANGE implies Value non-empty, Component value exists in §1.5 Hardware
+   Inventory (ERROR), Source ref anchored in a §1.4 References entry
+   (WARNING). Why: this is the actual contract enforcement — each block is a
+   requirement or constraint atom, and the fields are what later gates and
+   design synthesis consume.
+
+7. Step 5 — Phase 4, cross-checks. SRS: every requirement ID from §3 should
+   appear in the §6 Traceability table (missing — WARNING); the dependency
+   graph must be acyclic (cycle — ERROR). HCS: orphan components — any
+   Component value not in the §1.5 Hardware Inventory — ERROR. Why:
+   intra-document referential integrity; blocks can be individually
+   well-formed while the document as a whole lies about its own traceability.
+
+8. Step 6 — verdict assembly and report. Emit the fixed-format report:
+   header, "Document: SRS | HCS", "Result: PASS | FAIL (N errors, M
+   warnings)", numbered errors and warnings, SUMMARY counts (sections X/Y,
+   metadata X/Y, blocks checked, errors, warnings). Verdict rule: zero errors
+   — G0: PASS (warnings advisory, "proceed to custody-chain or G1"); one or
+   more errors — G0: FAIL. On FAIL, append the Fix List — one line per error,
+   Block ID → what is wrong → what the valid values are — then stop: no
+   fixes, no rewording suggestions; the user repairs and resubmits
+   (resubmission is a fresh run; nothing iterates within one invocation).
+   [Exit C — report, either verdict.]
+
+No black boxes: there are no scripts or subagents; every decision is made by
+the reading model in-line.
+
+
+3. ISSUES — ALIGNMENT WITH STATED PURPOSE
+========================================================================
+
+Issue 1. Step 1 — EXECUTION ERROR.
+Type detection is pinned to "the first ## heading." On a completely
+conventional document titled "# System Requirements Specification — Project
+Loa" (h1 title, as IEEE-style docs and the template's own "## Document
+Metadata" convention suggest), the first h2 heading is "## Document Metadata"
+— which contains neither "System Requirements Specification" nor "SRS". The
+literal reading sends it to "G0: UNDETECTABLE and stop" despite a perfectly
+clear title. Two readings are plausible — literal (first h2) vs. intended
+(the title heading, whatever its level) — and the trip assumed the literal
+one, because the text says "##". What would settle which reading the author's
+template makes fire in practice is the template itself (see Unverifiable
+issue 10).
+
+Issue 2. Step 1 + Step 6 — EXECUTION ERROR.
+The UNDETECTABLE verdict cannot be expressed in the mandated report. Step 1
+says "report G0: UNDETECTABLE and stop," and the Decision Gates table lists
+it — but the report template only has "Result: PASS | FAIL (N errors, M
+warnings)". On an input where one document classifies and the other does not,
+the model must either abandon the template, or invent a result line the
+format does not define. "Stop" is also ambiguous across the document loop:
+stop the whole run, or finish the other document and then stop? Different
+models will do different things, which for a gate means the verdict is not a
+stable artifact.
+
+Issue 3. Preconditions + Step 6 — EXECUTION ERROR.
+The skill mandates the pair ("Do not run a partial G0 — the Ground Truth is
+the pair"), but the report template is singular: "Document: SRS | HCS" reads
+as a choice between the two, and there is no rule for merging two documents'
+counts into one Result, one SUMMARY, or one gate verdict. On an SRS that is
+clean and an HCS with 2 errors, the plausible outputs diverge: two separate
+reports each with its own verdict; one combined report with pooled counts;
+or per-document results with an overall line the template does not define.
+Since the whole point of G0 is to hand the custody chain a single gate
+verdict before design work, the missing combination rule removes exactly the
+thing the gate is supposed to produce. (Same template-gap family: the Fix
+List format is "Block ID → what is wrong → ...", but heading and metadata
+errors have no block ID, so the model must invent an identifier for them.)
+
+Issue 4. Step 4 — EXECUTION ERROR.
+Block detection is keyed to one exact typographic pattern — bold, ID,
+em-dash: "Blocks are detected by the bold heading pattern: **ID — Title**" —
+with no fallback and no leniency clause. The explicit latitude in Step 2
+("Match by content, not exact formatting") is scoped to required headings, so
+a literal model has no license to extend it to blocks. On an SRS whose blocks
+are written "**ANAL-PAR-001** — Title" (only the ID bolded),
+"**ANAL-PAR-001 - Title**" (hyphen), or "### ANAL-PAR-001 — Title" (heading
+instead of bold), block detection can return zero or partial results — and
+nothing in the text reacts to that. If zero blocks are detected, Phases 3 and
+4 are vacuous, the report says "Blocks checked: 0", errors are zero, and the
+verdict rules yield "G0: PASS". A document whose requirement blocks were
+never examined gets certified as structurally valid — the inverse of the
+stated purpose ("must pass before any design work" only after validation).
+
+Issue 5. Step 4 + Verdict rules — EXECUTION ERROR.
+Even with perfect block detection, there is no minimum-inventory rule
+anywhere: no requirement that at least one block exists, and no cross-check
+tying §3's content to detected blocks. An SRS with all 15 headings, a
+pristine metadata table, and a §3 that says "requirements tracked externally"
+with zero blocks passes everything: no block errors (no blocks),
+traceability vacuous (no §3 IDs), no cycles. Verdict: PASS, "proceed to
+custody-chain or G1." The gate certifies an empty contract, which is the one
+outcome a pre-design gate most exists to prevent.
+
+Issue 6. Step 4 SRS table (last row) — EXECUTION ERROR.
+"Every ID in Dependencies exists as a block in the document" resolves
+dependencies per-document, while the artifact's own precondition defines the
+unit of validation as the pair. On the routine case — an SRS requirement
+ANAL-SDR-003 listing "Dependencies: HWC-SDR-001", the HCS constraint about
+the SDR's sample-rate limit — the rule reports "[E00n] Block ANAL-SDR-003 —
+dependency HWC-SDR-001 not found", even though HWC-SDR-001 is sitting in the
+pasted HCS. The mandated two-document paste does not help, because the check
+only looks inside the SRS. Two readings: either the author's template forbids
+cross-document dependencies (then the rule is right but the text never says
+so, and a model will still hunt for the ID in the other document), or
+pair-level resolution is intended (then this is a guaranteed false ERROR on
+every compliant pair). The trip assumed the literal per-document reading.
+Note the deferral clause — "SRS↔HCS consistency — those are later gates" —
+does not rescue it: ID resolution is structural, not semantic, and it is
+being punished structurally.
+
+Issue 7. Step 3 — EXECUTION ERROR.
+The metadata rules test fields as "Non-empty, not a placeholder" — absence is
+never handled. On a metadata table that has rows for Document ID, Project,
+Version and Classification but no Organization row at all, the literal check
+finds nothing to test and passes; the block-field tables two steps later say
+"field present and valid", so the asymmetry is internal to the same skill.
+The SUMMARY line ("Metadata fields: X/Y valid") then reports 4/4 for a table
+that is missing a mandatory field. The idea (validate identity fields) is
+sound; the text only delivers the invalid-value half, not the missing-value
+half.
+
+Issue 8. Step 4 + Step 5 — EXECUTION ERROR.
+The orphan-component rule is written twice with identical predicate and
+severity: Phase 3's HCS table row "Component value exists in §1.5 Hardware
+Inventory — ERROR", and Phase 4's "Orphan components: ... Report orphans as
+ERROR." A model executing both literally reports the same defect twice — two
+[E###] entries, an error count inflated by one per orphan, and a duplicated
+line in the Fix List. A model that dedupes reports it once. Same input, two
+different counts, depending on how literally the reader follows the text —
+which is precisely the variance a "gate" verdict cannot afford.
+
+Issue 9. Definitions vs. disclaimer — CONCEPT ERROR.
+The Definitions table — the row every downstream pipeline document will quote
+— defines G0 as "deterministic structural validation of GT documents", while
+the artifact's own header prints "G0 VALIDATION REPORT (web-chat,
+non-deterministic)" and its disclaimer says "different models or runs may
+produce slightly different verdicts on the same document." The artifact
+asserts two incompatible properties of itself. This causes a wrong action,
+not merely a stylistic wart: an operator or downstream G1 prompt that anchors
+on the Definitions row treats a web-chat PASS as a deterministic certificate
+and attaches it to the custody chain, when a re-run in another chat can
+legitimately return FAIL — and the pipeline has no rule for which verdict
+then stands. The idea "this variant is the deterministic G0" does not work in
+this context however well it is worded; the disclaimer mitigates but does not
+resolve, because the contradictory definition stays in the file.
+
+Issue 10. UNVERIFIABLE.
+Whether this variant's semantics match the canonical tool-executed G0 it
+mirrors — regex strictness, dedup policy, pair-verdict merging, dependency
+scope — cannot be checked: the canonical checker, the G1 skill, and the
+custody-chain skill are referenced but not attached. What would settle it:
+those pipeline files. Until then, every verdict this skill produces is at
+best an approximation of the gate it claims to be, and issues 2, 3, 6 and 8
+are exactly the points where a deterministic implementation would have had to
+pick one behaviour.
+
+Issue 11. UNVERIFIABLE.
+The author's GT template itself: whether real GT documents title themselves
+with "#" or "##" (determines whether issue 1 fires on every compliant
+document or never), and whether cross-document Dependencies are
+template-legal (determines whether issue 6 fires on every compliant pair or
+is a non-issue). What would settle it: one real SRS/HCS pair from the V-SIL
+pipeline.
+
+
+PROBABLY INTRODUCED — WHY THESE MISTAKES EXIST
+========================================================================
+
+The issues share three visible root causes. First, a gate originally
+conceived as a deterministic script (regexes, assertion counters, one exit
+code per run) was ported to prose, and the guards a script gets for free —
+"did I parse anything?", "does the parsed total match the section
+inventory?", "how do two exit codes become one?" — were never re-derived in
+words (issues 3, 4, 5); testing presumably ran on happy-path pastes in the
+author's own template, em-dashes intact. Second, the late-addition pattern:
+the pair-paste precondition was wrapped around a single-document rule set
+without re-scoping the dependency rule (issue 6), and Phase 4 was added as a
+"cross-checks" sweep without removing the now-duplicated row from Phase 3
+(issue 8). Third, inherited definitions: the Definitions table was copied
+from the pipeline spec where G0 is deterministic, while the non-determinism
+disclaimer was written for this variant, and the two truths were never
+reconciled (issue 9).
+
+People read up on: strict versus tolerant parsing and Postel's-principle
+trade-offs (issues 3-4); "parse, don't validate" and making illegal states
+unrepresentable (issues 4-5); LLM-as-judge reliability and rubric anchoring
+when verdict stability matters (issues 2, 8, 9); referential integrity scoped
+to the unit of validation — foreign keys across the aggregate (issue 6); and
+single-source-of-truth / normalize-before-checking (issue 8).
+
+
+CLOSING
+========================================================================
+
+Diagnosis ends here — per the Navaja_ contract, no fixes are proposed. The
+overall shape: the artifact's ideas are sound (severity economy, four-phase
+checklist, report-don't-edit); nearly every confirmed defect is an
+execution-level gap where the text under-specifies an edge a deterministic
+script would have caught for free.

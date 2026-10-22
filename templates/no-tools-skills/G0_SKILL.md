@@ -1,17 +1,14 @@
 ---
-name: g0-valid-req-and-gt-no-tools
-description: "Web-chat G0: LLM-executed structural validation of SRS/HCS Ground Truth documents. No tools required — paste documents directly."
-license: Apache-2.0
-compatibility: "Any LLM web chat (ChatGPT, Claude, Gemini, etc.). No tools, no file access, no code execution."
+name: g0-valid-req-and-gt
+description: "G0: Structural validation of SRS/HCS Ground Truth documents"
 metadata:
   author: "gcpds"
   version: "1.0"
   gate: "G0"
   pipeline: "V-SIL"
-  variant: "no-tools"
 ---
 
-# G0 — Structural Validation of Ground Truth (Web-Chat)
+# G0 — Structural Validation of Ground Truth
 
 **V-SIL | Gate G0 | No-Tools Variant**
 
@@ -27,14 +24,13 @@ metadata:
 | **GT** | Ground Truth — the pair of `.md` documents (SRS + HCS) that define the project contract |
 | **SRS** | System Requirements Specification — functional and non-functional requirements (IEEE 29148) |
 | **HCS** | Hardware Constraints Specification — COTS hardware limits and design constraints (§2.4) |
-| **G0** | Gate 0 — deterministic structural validation of GT documents. Must pass before any design work |
+| **G0** | Gate 0 — structural validation of GT documents. Must pass before any design work |
 | **G1** | Gate 1 — agent-driven design synthesis from validated GT |
 
 ## Activation Contract
 
 **Load when:**
-- You are in a web chat without tool execution (no terminal, no file system, no Python).
-- The user provides one or two GT documents (SRS and/or HCS) as pasted markdown.
+- The user provides one or two GT documents (SRS and/or HCS) as pasted text or markdown, or attached.
 - The user asks for G0 validation, structural check, or GT review.
 
 **Do NOT load when:**
@@ -51,21 +47,21 @@ metadata:
 
 | Situation | Action |
 |-----------|--------|
-| Zero errors | Report `G0: PASS`. Warnings are advisory — they do not block. Proceed to custody-chain or G1. |
-| One or more errors | Report `G0: FAIL`. List every error with its block ID and what to fix. The user must fix and resubmit. |
-| Cannot detect document type | Report `G0: UNDETECTABLE`. The title heading is missing or ambiguous. |
+| Zero errors (both documents) | Report `G0: PASS`. Warnings are advisory — they do not block. Proceed to G1. |
+| One or more errors (either document) | Report `G0: FAIL`. List every error with its ID and what to fix. The user must fix and resubmit. |
+| Cannot detect document type | Report `G0: UNDETECTABLE` for that document and stop the entire run — do not continue to the other document. |
 
 ---
 
 ## Step 1 — Detect document type
 
-Read the document. Identify it as **SRS** or **HCS** from its title heading.
+Read the document. Identify it as **SRS** or **HCS** from its title heading (any level: `#` or `##`).
 
-- If the first `##` heading contains "System Requirements Specification" or "SRS" → it is an **SRS**.
+- If the title heading contains "System Requirements Specification" or "SRS" → it is an **SRS**.
 - If it contains "Hardware Constraints Specification" or "HCS" → it is an **HCS**.
-- If you cannot determine the type → report `G0: UNDETECTABLE` and stop.
+- If you cannot determine the type → report `G0: UNDETECTABLE` and stop the entire run.
 
-If the user pasted two documents, validate each separately.
+If the user pasted two documents, validate each separately. Produce **one report per document**.
 
 ---
 
@@ -115,11 +111,13 @@ The `## Document Metadata` section must contain a table. Check these fields:
 
 | Field | Rule | Severity |
 |---|---|---|
-| **Document ID** | Non-empty, not a placeholder | ERROR |
-| **Project** | Non-empty, not a placeholder | ERROR |
-| **Organization** | Non-empty, not a placeholder | ERROR |
-| **Version** | Matches SemVer `X.Y.Z` (e.g. `1.0.0`, `0.3.1`) | ERROR |
-| **Classification** | Exactly one of: `PUBLIC`, `INTERNAL`, `CONFIDENTIAL` | ERROR |
+| **Document ID** | Row present, non-empty, not a placeholder | ERROR |
+| **Project** | Row present, non-empty, not a placeholder | ERROR |
+| **Organization** | Row present, non-empty, not a placeholder | ERROR |
+| **Version** | Row present, matches SemVer `X.Y.Z` (e.g. `1.0.0`, `0.3.1`) | ERROR |
+| **Classification** | Row present, exactly one of: `PUBLIC`, `INTERNAL`, `CONFIDENTIAL` | ERROR |
+
+If a required field row is **missing entirely** from the table, report it as an ERROR (missing field).
 
 **Placeholder detection:** A value is a placeholder if it starts with `_`, or contains
 `_ACRONYM_`, `_NNN_`, `_project_name_`, or `YYYY-MM-DD`.
@@ -128,7 +126,13 @@ The `## Document Metadata` section must contain a table. Check these fields:
 
 ## Step 4 — Validate requirement/constraint blocks (Phase 3)
 
-Blocks are detected by the bold heading pattern: **`ID` — Title**
+Blocks are detected by their ID pattern and a title separator. Match any of these forms:
+- **`ID` — Title** (bold ID, em-dash)
+- **`ID` - Title** (bold ID, hyphen)
+- **`ID`: Title** (bold ID, colon)
+- `### ID — Title` (heading-level block)
+
+If a section (§3 for SRS, §3 for HCS) exists but **zero blocks** are detected in it, report as **ERROR**: "section present but contains no requirement/constraint blocks."
 
 ### For SRS requirement blocks
 
@@ -147,7 +151,9 @@ For each block, check:
 | Description contains `SHALL` or `SHOULD` | — | WARNING |
 | **Acceptance Criteria** section exists | — | ERROR |
 | At least 1 numbered criterion listed | — | ERROR |
-| Every ID in **Dependencies** exists as a block in the document | — | ERROR |
+| Every ID in **Dependencies** that matches the document's own ID pattern exists as a block in the same document | — | ERROR |
+
+**Note on dependencies:** Resolve dependencies within the same document only. An SRS requirement citing an HCS ID (e.g. `HWC-SDR-001`) is a cross-document reference — not an error. Only flag IDs that match the current document's pattern (e.g. `[A-Z]{3,5}-[A-Z]{2,4}-NNN` for SRS) but are missing.
 
 ### For HCS constraint blocks
 
@@ -167,8 +173,9 @@ For each block, check:
 | **Status** field present and valid | `CONFIRMED`, `PRELIMINARY`, `DEPRECATED` | ERROR |
 | If Limit type = `RANGE`: both **Value min** and **Value max** present | — | ERROR |
 | If Limit type ≠ `RANGE`: **Value** is non-empty | — | ERROR |
-| **Component** value exists in §1.5 Hardware Inventory | — | ERROR |
 | **Source ref** starts with a §1.4 References entry | — | WARNING |
+
+**Note:** Component-to-inventory validation is in Step 5 (cross-checks), not here — do not duplicate it.
 
 ---
 
@@ -189,34 +196,43 @@ For each block, check:
 
 ## Step 6 — Produce the report
 
-Use this exact format:
+Produce **one report per document**, then a **gate verdict** for the pair.
+
+### Per-document report format
 
 ```
-G0 VALIDATION REPORT (web-chat, non-deterministic)
+G0 VALIDATION REPORT
 ====================================================
 Document: SRS | HCS
-Result: PASS | FAIL (N errors, M warnings)
+Result: PASS | FAIL (N errors, M warnings) | UNDETECTABLE
 
 ERRORS:
-[E001] Block <ID> — <what is wrong>. Expected: <valid values>
-[E002] Block <ID> — <what is wrong>
+[E001] <Block ID or "Metadata"> — <what is wrong>. Expected: <valid values>
+[E002] <Block ID or "Section"> — <what is wrong>
 
 WARNINGS:
-[W001] Block <ID> — <what is wrong>
+[W001] <Block ID> — <what is wrong>
 
 SUMMARY:
 - Sections: X/Y present
-- Metadata fields: X/Y valid
+- Metadata fields: X/Y valid (X/Y present)
 - Blocks checked: N
 - Errors: N (blocking)
 - Warnings: M (advisory)
 ```
 
+### Gate verdict (after both reports)
+
+```
+G0 GATE VERDICT: PASS | FAIL
+```
+
 ## Verdict rules
 
-- **Zero errors** → `G0: PASS` — warnings are advisory, they do not block.
-- **One or more errors** → `G0: FAIL` — list every error with its block ID and what to fix.
-- Always show the full report, even on PASS.
+- **Zero errors in both documents** → `G0: PASS` — warnings are advisory, they do not block.
+- **One or more errors in either document** → `G0: FAIL` — list every error with its ID and what to fix.
+- **UNDETECTABLE** → `G0: FAIL` — stop the entire run, do not validate the other document.
+- Always show the full report for each document, even on PASS.
 
 ## After the report
 
