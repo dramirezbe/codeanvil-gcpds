@@ -10,6 +10,9 @@ description = "V-SIL methodology harness — agent-agnostic project scaffolding 
 license = "Apache-2.0"
 dependencies = ["pyyaml"]
 
+[project.optional-dependencies]
+dev = ["pytest"]
+
 [project.scripts]
 codeanvil = "codeanvil.CLI.cli:main"
 

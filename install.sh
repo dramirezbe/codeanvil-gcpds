@@ -99,10 +99,12 @@ install() {
         info "Upgrading ${TOOL_NAME}..."
         uv tool install --force-reinstall --python 3.12 "git+${REPO}"
         info "Upgraded."
+        codeanvil --version 2>/dev/null || true
     else
         info "Installing ${TOOL_NAME}..."
         uv tool install --python 3.12 "git+${REPO}"
         info "Installed."
+        codeanvil --version 2>/dev/null || true
     fi
 }
 

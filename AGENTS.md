@@ -259,6 +259,28 @@ Agent runtimes discover skills via their own symlinked directory. All point to t
 - **`install.sh`** — curl one-liner installer. Checks Python 3.10+, installs `uv` if missing, runs `uv tool install` from GitHub. Detects shell (bash/zsh/fish via `$SHELL`), injects `~/.local/bin` PATH with sentinel comments (`# >>> codeanvil >>>` / `# <<< codeanvil <<<`). Supports `bash install.sh uninstall`.
 - **Template resolution** — `_find_templates_dir()` in `init/create.py`: editable installs use the source tree (`templates/`), wheel installs use `importlib.resources` (`codeanvil/templates/`).
 
+## Versioning
+
+Version follows SemVer (`X.Y.Z`). The single source of truth is `pyproject.toml`;
+`codeanvil --version` reads it from package metadata at runtime.
+
+| Bump | When | Examples |
+|------|------|----------|
+| **Z** (patch) | Single feature, refactor, important fix | new flag, bug fix, doc restructure |
+| **Y** (minor) | Large feature or 25+ accumulated Z bumps | new gate, new MCP server, sync command |
+| **X** (major) | Full code refactor or 50+ accumulated features | schema break, CLI redesign |
+
+After merging to `main`, if the change warrants a bump per this table:
+
+```bash
+git tag -a v0.Y.Z -m "vX.Y.Z: short description"
+git push origin v0.Y.Z
+```
+
+The tag push triggers the release workflow (`.github/workflows/release.yml`)
+which creates a GitHub Release with a changelog. CI runs on every push and PR
+(`.github/workflows/ci.yml`).
+
 ## Principles
 
 - **GT is pre-processed input**: 3 human-authored `.md` files, not raw PDFs.

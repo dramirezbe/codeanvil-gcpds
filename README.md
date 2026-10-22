@@ -1,5 +1,7 @@
 # CodeAnvil
 
+[![CI](https://github.com/dramirezbe/codeanvil-gcpds/actions/workflows/ci.yml/badge.svg)](https://github.com/dramirezbe/codeanvil-gcpds/actions/workflows/ci.yml)
+
 Agent-agnostic project scaffolding, templates, and agent definitions for the **V-SIL methodology** (V-model at the SIL tier, made continuous). Develops, tests, and validates software on COTS hardware — informed by Ground Truth documents — through a pipeline of deterministic and agent-driven gates.
 
 Works with any AI coding agent: Claude, Codex, OpenCode, Pi, or others.
