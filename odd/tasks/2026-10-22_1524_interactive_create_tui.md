@@ -90,13 +90,13 @@ S12. **New dependency**: `beaupy` added to `pyproject.toml` `dependencies`. Pull
 
 | ID | Spec | Route | Status | Commit |
 |----|------|-------|--------|--------|
-| T0 | S0 | inline | pending | — |
-| T1 | S12 | inline | pending | — |
-| T2 | S1, S4, S11 | inline | pending | — |
-| T3 | S3, S6, S9, S10 | inline | pending | — |
-| T4 | S2 | inline | pending | — |
-| T5 | S5, S7, S8 | inline | pending | — |
-| T6 | all | inline | pending | — |
+| T0 | S0 | inline | done | 68b4649 |
+| T1 | S12 | inline | done | 68b4649 |
+| T2 | S1, S4, S11 | inline | done | 1dd036b |
+| T3 | S3, S6, S9, S10 | inline | done | 1dd036b |
+| T4 | S2 | inline | done | 1dd036b |
+| T5 | S5, S7, S8 | inline | done | 1dd036b |
+| T6 | all | inline | done | 1dd036b |
 
 **T0 — CLI modular refactor (pure structural, no behavior change)**
 Split `CLI/cli.py` into `CLI/main.py`, `CLI/parser.py`, and `CLI/commands/*.py`. Each `cmd_*` function moves to its own module under `commands/`. Shared imports (DB_PATH, connect_db, etc.) are imported locally in each command module. Update all import references:
@@ -149,3 +149,15 @@ L2. User addition (2026-10-22): "Add external TUI library for stylish prompts. C
 L3. Library decision (2026-10-22): Chose **beaupy** over questionary/InquirerPy/stdlib. Reasons: (1) Rich-powered styling matches the Vite aesthetic, (2) lightweight deps (rich + yakh only), (3) cross-platform (Linux/macOS/Windows), (4) actively maintained (v3.11.0, Jan 2026), (5) simple API — `prompt()` + `confirm()` cover all needs.
 
 L4. User addition (2026-10-22): Refactor CLI into modular structure as T0 before TUI work. Split monolithic `cli.py` (353 lines) into `main.py`, `parser.py`, and `commands/*.py`. Four import references to update: pyproject.toml, __main__.py, tests/test_create.py (import + 2 monkeypatch paths).
+
+L5. Implementation (2026-10-22): T0+T1 landed in 68b4649 as a pure structural move — `CLI/cli.py` deleted, `CLI/{main,parser}.py` + `CLI/commands/{init,create,list,sync,status,now}.py` added, `CLI/__init__.py` re-exports `main`, entry point moved to `codeanvil.CLI.main:main`, test imports and monkeypatch paths updated. Suite at that commit: 54 passed (baseline unchanged).
+
+L6. Dependency resolution (2026-10-22): `uv add beaupy` resolved **beaupy 4.0.1** (not 3.11.0), pulling `rich`, `python-yakh`, `questo`. API used is the 4.x one: `beaupy.prompt(text, initial_value=..., validator=..., raise_validation_fail=False)` and `beaupy.confirm(question)` (default No: Enter cancels). Ctrl+C raises `KeyboardInterrupt`, Esc raises `beaupy.Abort` — both handled as a clean cancel.
+
+L7. T2/T3/T4/T5 landed in 1dd036b. `CLI/prompts.py` holds `to_folder_name()` + `interactive_create()`; `CLI/commands/create.py` holds `resolve_create_inputs()` with the 5-case precedence from T3. `scaffold_project(name, folder_name, target, ...)` keeps the label for manifest/DB and the folder for the directory. `--folder` without `--name`, `--name` + positional, and empty names raise `CreateInputError` -> `log.error` + exit 1.
+
+L8. Evidence (2026-10-22): `uv run --extra dev pytest tests/ -q` -> **94 passed** (54 baseline + 40 new). End-to-end in a sandbox `HOME=/tmp/opencode/ca-e2e/home`: `create --name "My SDR Lab"` -> `my_sdr_lab/`, manifest `name: My SDR Lab`, DB row `name='My SDR Lab' path=.../my_sdr_lab`; `list` and `status "My SDR Lab"` show the label; `sync` inside the project reports `already registered`; `create LegacyProj` still uses the verbatim folder name; `--folder` without `--name`, `--name` + positional, and `--mcp bogus` exit 1 before any directory is created. The TUI was driven through a real PTY (see L9): typed name, Enter on the derived folder default, `y` on confirm -> scaffolds; Ctrl+C at the project prompt -> exit 0 and no directory.
+
+L9. Test/verification note (2026-10-22): PTY drivers live outside the repo (`/tmp/opencode/drive_tui.py`, `/tmp/opencode/cancel_tui.py`) and were not committed — committed coverage is the monkeypatched `interactive_create()` unit tests plus the non-TTY subprocess test (`python -I -m codeanvil create` with `stdin=DEVNULL`).
+
+L10. Docs (2026-10-22): README (quick start, command table, how-it-works diagram, project structure), CLAUDE.md (CLI module map, command examples), AGENTS.md (console-script entry point + runtime deps).
