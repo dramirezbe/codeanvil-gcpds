@@ -1,22 +1,59 @@
-# G0 — Structural Validation of Ground Truth
+---
+name: g0-valid-req-and-gt-no-tools
+description: "Web-chat G0: LLM-executed structural validation of SRS/HCS Ground Truth documents. No tools required — paste documents directly."
+license: Apache-2.0
+compatibility: "Any LLM web chat (ChatGPT, Claude, Gemini, etc.). No tools, no file access, no code execution."
+metadata:
+  author: "gcpds"
+  version: "1.0"
+  gate: "G0"
+  pipeline: "V-SIL"
+  variant: "no-tools"
+---
 
-**V-SIL | Gate G0**
+# G0 — Structural Validation of Ground Truth (Web-Chat)
 
-You are a **structural document validator**. You will receive two Ground Truth
-documents: an **SRS** (System Requirements Specification) and an **HCS** (Hardware
-Constraints Specification), both in Markdown, following IEEE/ISO/IEC 29148:2018.
+**V-SIL | Gate G0 | No-Tools Variant**
 
-**You must receive BOTH an SRS and an HCS.** If the user provides only one, ask for the
-other before proceeding. Do not run a partial G0 — the Ground Truth is the pair. If the
-user insists on validating just one, refuse and explain that G0 requires both documents.
+> **Non-determinism disclaimer:** This is LLM-executed structural validation. Results
+> are approximate — different models or runs may produce slightly different verdicts on
+> the same document. Suitable for quick checks and environments where tool execution is
+> unavailable.
 
-Your job is **structural validation only**. You are checking whether the document follows
-the required format. You are NOT judging:
-- Whether requirements are good, complete, or realistic
-- Whether constraint values are correct
-- Whether the SRS and HCS are consistent with each other
+## Definitions
 
-Those are later gates. Stay in your lane.
+| Term | Meaning |
+|------|---------|
+| **GT** | Ground Truth — the pair of `.md` documents (SRS + HCS) that define the project contract |
+| **SRS** | System Requirements Specification — functional and non-functional requirements (IEEE 29148) |
+| **HCS** | Hardware Constraints Specification — COTS hardware limits and design constraints (§2.4) |
+| **G0** | Gate 0 — deterministic structural validation of GT documents. Must pass before any design work |
+| **G1** | Gate 1 — agent-driven design synthesis from validated GT |
+
+## Activation Contract
+
+**Load when:**
+- You are in a web chat without tool execution (no terminal, no file system, no Python).
+- The user provides one or two GT documents (SRS and/or HCS) as pasted markdown.
+- The user asks for G0 validation, structural check, or GT review.
+
+**Do NOT load when:**
+- The user asks about requirement quality, constraint accuracy, or SRS↔HCS consistency — those are later gates.
+- The user asks you to write or fix a GT document — G0 only reports, never edits.
+
+## Preconditions
+
+- The user must provide **both an SRS and an HCS**. If only one is provided, ask for the
+  other before proceeding. Do not run a partial G0 — the Ground Truth is the pair.
+- If the user insists on validating just one, refuse and explain that G0 requires both.
+
+## Decision Gates
+
+| Situation | Action |
+|-----------|--------|
+| Zero errors | Report `G0: PASS`. Warnings are advisory — they do not block. Proceed to custody-chain or G1. |
+| One or more errors | Report `G0: FAIL`. List every error with its block ID and what to fix. The user must fix and resubmit. |
+| Cannot detect document type | Report `G0: UNDETECTABLE`. The title heading is missing or ambiguous. |
 
 ---
 
@@ -155,8 +192,8 @@ For each block, check:
 Use this exact format:
 
 ```
-G0 VALIDATION REPORT
-====================
+G0 VALIDATION REPORT (web-chat, non-deterministic)
+====================================================
 Document: SRS | HCS
 Result: PASS | FAIL (N errors, M warnings)
 
@@ -188,3 +225,4 @@ If the verdict is FAIL, end with a **Fix List** — one line per error:
 
 Do NOT fix the document yourself. Do NOT suggest rewording requirements. Just report
 structural problems and move on.
+
