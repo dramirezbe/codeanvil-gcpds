@@ -148,7 +148,7 @@ hardware}---commercial off-the-shelf, not necessarily out-of-the-box. The Ground
 what constraints the hardware imposes; V-SIL does not design hardware. Within this scope, the
 methodology applies at two levels: (1)~the \emph{target system} (e.g.\ the SDR FM sensor) and
 (2)~the \emph{harness itself}---the agent-agnostic tooling (skills, gates, scaffolds, MCP
-servers) that implements and enforces V-SIL. We call the second level \textbf{harness
+servers, and an agent sandbox for isolated methodology testing) that implements and enforces V-SIL. We call the second level \textbf{harness
 engineering}: the discipline of building the verification infrastructure so that it is
 itself traceable, testable, and governed by the same principles it enforces on the target.
 A harness gate (e.g.\ G0's deterministic validator) is both a tool \emph{for} V-SIL and
@@ -659,7 +659,7 @@ structurally valid but contain wrong or incomplete requirements, which is what G
 Ctx 02 resolves the design space: candidate DSP and classification architectures; alternative
 implementation pathways; hardware/software partitioning; the component dependency graph; trade
 studies and design decisions; and the selection rationale. The output is the \textbf{Selected
-Architecture + Implementation Plan}. The stage is explicitly multi-hypothesis: Pathway~1 through
+Architecture + Implementation Plan}. The stage is explicitly multi-hypothesis~\cite{bass2021}: Pathway~1 through
 Pathway~n are carried into an architecture trade study, and the selection is justified in writing.
 This is the only place in the lifecycle where alternatives are compared; from Ctx 03 onward the
 chosen architecture is contract, and changes go through defect routing rather than reconsideration.
@@ -667,14 +667,17 @@ chosen architecture is contract, and changes go through defect routing rather th
 In the harness, Gate~G1 implements Ctx~02 as a ten-job pipeline.
 Job~0 verifies GT integrity against the custody-chain seal (\texttt{source\_snapshot.py
 verify --strict})---no interactive approval, since CC already locked the GT.
-Job~1 extracts Architecturally Significant Requirements (ASRs) from StRS and SyRS blocks,
+Job~1 extracts Architecturally Significant Requirements
+(ASRs)~\cite{chen2013} from StRS and SyRS blocks,
 grouping them into Condition Groups. Job~2 asks the user how many architecture candidates
 to generate (minimum~3, default~4). Jobs~3--6 produce the multi-hypothesis trade study:
 $N$ candidate architectures, each addressing every Condition Group; a QA$\times$Architecture
-matrix scored against ISO~25010 quality attributes; an ATAM-style sensitivity and tradeoff
-analysis on the top two candidates; and an iterative Attribute-Driven Design decomposition
+matrix scored against ISO/IEC~25010 quality attributes~\cite{iso25010}; an
+ATAM-style~\cite{kazman2000} sensitivity and tradeoff
+analysis on the top two candidates; and an iterative Attribute-Driven
+Design~\cite{wojcik2006} decomposition
 with a complete dependency graph. Job~7 authors the SRS (\texttt{GT/G1\_SRS.md}) per
-IEEE~29148~\S9.6, and Job~8 validates it structurally. Job~9 assembles the review package.
+IEEE~29148~\S9.6~\cite{ieee29148}, and Job~8 validates it structurally. Job~9 assembles the review package.
 Each intermediate artefact is written to a separate file under
 \texttt{G1\_artifacts/} alongside the iterative HITL report, so that every design decision
 is individually auditable and overwritten---not appended---on rework.
@@ -1557,6 +1560,11 @@ governance---and each is explicit, bounded, and tractable.
 \bibitem{sheridan2026b} Sheridan Tech, ``Design Validation vs Verification,'' Mar.\ 2026.
 \bibitem{pith2026} Pith, ``Introducing Background Temperature,'' arXiv:2604.22411, 2026.
 \bibitem{ieee29148} IEEE/ISO/IEC 29148:2018, ``Systems and software engineering --- Life cycle processes --- Requirements engineering,'' 2018.
+\bibitem{bass2021} L.~Bass, P.~Clements, and R.~Kazman, \emph{Software Architecture in Practice}, 4th~ed.\ Addison-Wesley, 2021.
+\bibitem{kazman2000} R.~Kazman, M.~Klein, and P.~Clements, ``ATAM: Method for Architecture Evaluation,'' CMU/SEI-2000-TR-004, Software Engineering Institute, 2000. \url{https://resources.sei.cmu.edu/library/asset-view.cfm?assetid=5177}
+\bibitem{wojcik2006} R.~Wojcik \emph{et al.}, ``Attribute-Driven Design (ADD), Version 2.0,'' CMU/SEI-2006-TR-023, Software Engineering Institute, 2006. \url{https://resources.sei.cmu.edu/library/asset-view.cfm?assetid=8145}
+\bibitem{chen2013} L.~Chen, M.~Ali Babar, and B.~Nuseibeh, ``Characterizing Architecturally Significant Requirements,'' \emph{IEEE Software}, vol.~30, no.~2, pp.~38--45, Mar./Apr.\ 2013.
+\bibitem{iso25010} ISO/IEC 25010:2023, ``Systems and software engineering --- Systems and software Quality Requirements and Evaluation (SQuaRE) --- Product quality model,'' 2023.
 \end{thebibliography}
 
 \end{document}
