@@ -90,6 +90,38 @@ copy_ignore:
   - "*.pyc"
   - "valid_structure_SRS.py"
 
+# Sandbox recipes for `codeanvil sandbox <agent>` — launch an agent inside
+# a scaffolded project with only project-local settings (AGENTS.md,
+# .agents/skills/, GT). Strategies:
+#   native        — isolation via CLI flags only, no temp dir
+#   xdg_redirect  — point XDG_CONFIG_HOME at an empty temp dir
+#   env_redirect  — point env_var at a temp dir seeded with auth_files only
+sandbox_agents:
+  claude:
+    binary: claude
+    strategy: native
+    args: ["--setting-sources", "project"]
+  pi:
+    binary: pi
+    strategy: native
+    args: ["--no-extensions", "--no-mcp", "--no-skills",
+           "--no-prompt-templates", "--no-themes"]
+    # Re-enabled with -e after --no-extensions: without pi-claude-bridge
+    # Pi has no model access. Other extensions stay stripped.
+    required_extensions: ["pi-claude-bridge"]
+  opencode:
+    binary: opencode
+    strategy: xdg_redirect   # empty XDG_CONFIG_HOME, no auth needed
+    env_var: XDG_CONFIG_HOME
+    args: ["--standalone"]
+  codex:
+    binary: codex
+    strategy: env_redirect   # CODEX_HOME override
+    env_var: CODEX_HOME
+    config_dir: "~/.codex"
+    args: ["--no-daemon"]
+    auth_files: ["installation_id"]
+
 # MCP servers — optional external tool integrations.
 # Installed globally during `codeanvil init --mcp <name>`,
 # wired into projects during `codeanvil create --mcp <name>`.

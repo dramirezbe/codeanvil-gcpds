@@ -12,6 +12,7 @@ from pathlib import Path
 def build_parser() -> argparse.ArgumentParser:
     """Build the full `codeanvil` parser (subcommands included)."""
     from codeanvil import __version__
+    from codeanvil.config.paths import CONFIG
 
     parser = argparse.ArgumentParser(
         prog="codeanvil",
@@ -156,6 +157,23 @@ def build_parser() -> argparse.ArgumentParser:
         "--machine",
         action="store_true",
         help="Filename-safe format (no colons or spaces)",
+    )
+
+    sandbox = sub.add_parser(
+        "sandbox",
+        help="Launch an agent isolated to project-local settings",
+        description=(
+            "Starts an AI coding agent inside the current project with only\n"
+            "project-local settings visible: AGENTS.md, .agents/skills/, and\n"
+            "the GT files. Global skills, MCP servers, extensions, and memory\n"
+            "are disabled — no state to revert (ephemeral). Run from inside\n"
+            "a scaffolded project."
+        ),
+    )
+    sandbox.add_argument(
+        "agent",
+        choices=sorted(CONFIG.get("sandbox_agents", {})),
+        help="Agent to launch in the sandbox",
     )
 
     return parser

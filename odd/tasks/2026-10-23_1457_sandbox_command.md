@@ -6,7 +6,7 @@ New subcommand `codeanvil sandbox <agent>` that launches an AI coding agent
 inside a scaffolded project with only project-local settings visible — no
 global skills, MCPs, extensions, or memory. The agent sees only
 `AGENTS.md`, `.agents/skills/`, and the project's GT. Ephemeral — no state
-to revert. Branch: TBD (feature branch).
+to revert. Branch: `feat/sandbox-command`.
 
 Test runner: `uv run pytest tests/ -q`
 
@@ -200,14 +200,14 @@ Update `methodology/test/README.md`:
 
 | ID | Spec | Route | Status | Commit |
 |----|------|-------|--------|--------|
-| T1 | S6 | inline | pending | |
-| T2 | S7 | inline | pending | |
-| T3 | S8 | inline | pending | |
-| T4 | S2, S3, S4, S5 | inline | pending | |
-| T5 | S9 | inline | pending | |
-| T6 | S10 | inline | pending | |
-| T7 | S11 | inline | pending | |
-| T8 | S1 | inline | pending | |
+| T1 | S6 | inline | done | 7fe8101 |
+| T2 | S7 | inline | done | 7fe8101 |
+| T3 | S8 | inline | done | 7fe8101 |
+| T4 | S2, S3, S4, S5 | inline | done | 7fe8101 |
+| T5 | S9 | inline | done | 7fe8101 |
+| T6 | S10 | inline | done | 7fe8101 |
+| T7 | S11 | inline | done | 7fe8101 |
+| T8 | S1 | inline | done | 7fe8101 |
 
 ## Log
 
@@ -232,3 +232,18 @@ test sandboxed (raw, fresh) or methodology."
 `home_redirect` (temp HOME), `env_redirect` (env var for config dir).
 Config-driven via `templates/config.yaml` so adding agents later is just
 a YAML entry.
+
+**L4** (implementation, 2026-10-23): Implemented all tasks T1-T8 on branch
+`feat/sandbox-command`. Notes:
+- S6 config gained `config_dir: "~/.codex"` for the codex recipe — the
+  `env_redirect` strategy needs a source dir to copy `auth_files` from;
+  spec S6 YAML didn't include it but S5 implies it (`~/.codex/`).
+- `_build_command()` handles `required_extensions` for any agent, not just
+  Pi — config-driven, no agent-name special-casing in code.
+- Spec S9 says "verify HOME redirect" for the opencode test; the actual
+  strategy is `xdg_redirect` (XDG_CONFIG_HOME, per S4) — test follows S4.
+- RED observed: `ImportError: cannot import name 'sandbox'` (13 tests).
+  GREEN: 13/13 sandbox tests, full suite 141 passed.
+- CLI error paths verified live (not just mocked): outside project → 1,
+  unknown agent → 2 (argparse choices), missing binary → 1.
+- TEMPLATE_AGENT.md untouched per S11.
