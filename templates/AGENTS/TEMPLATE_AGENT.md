@@ -1,7 +1,10 @@
 # Project Instructions
 
 This project follows the **V-SIL methodology** (V-model at the SIL tier).
-Gates execute sequentially. All instructions below are binding.
+This file is a **reference** — it describes the project, its skills, and its
+conventions. It does not orchestrate gates: each skill enforces its own
+prerequisite report, so the gate chain lives in the skills. All instructions
+below are binding.
 
 ## Context — You are in a user project, not the CodeAnvil repo
 
@@ -25,9 +28,51 @@ the CodeAnvil tool itself.
 - You **MUST NOT** re-implement gate logic in prose — run the scripts and tools the skill prescribes.
 - You **SHALL** treat errors as blocking and warnings as advisory unless a skill says otherwise.
 
+## Cycle
+
+A **cycle** is one complete run of the V-SIL methodology pipeline against a GT
+baseline. Every report belongs to exactly one cycle.
+
+**On every project open**, before any gate work and before loading a skill, ask
+the user for a cycle name using your runtime's native question mechanism
+(`AskUserQuestion` in Claude Code, the equivalent in other runtimes). This is
+mandatory — do not defer it to a "start" command.
+
+- Offer the cycles that already exist under `.codeanvil/report/` as choices,
+  plus the option of a new name.
+- If the user selects an existing cycle, resume it: the next gate is the first
+  one whose latest iteration is not `HITL: PASS`.
+- If the user gives a new name, normalize it to a directory-safe slug:
+  1. lowercase;
+  2. spaces become `_`;
+  3. remove every character except letters, digits, `_`, and `-`;
+  4. collapse repeated `_`;
+  5. trim leading/trailing `_` and `-`;
+  6. prefix the zero-padded sequence number of the new cycle.
+- Examples: `"Test SDR USRP IoT Signals"` → `01_test_sdr_usrp_iot_signals`;
+  the next cycle `"Websocket Refactor"` → `02_websocket_refactor`.
+- Record the selected cycle in `.codeanvil/project.yaml` as `cycle: <name>`.
+  Update only that key — never rewrite the rest of the manifest.
+- Scope every gate report to `.codeanvil/report/<cycle-name>/<gate>.md`.
+
+Previous cycles are preserved and read-only. To run the methodology again (for
+example after a major refactor), start a new cycle: it writes a fresh set of
+reports while the old cycles stay untouched.
+
 ## Available Skills
 
 {skill_table}
+
+Load a skill when the user asks for its gate or when its trigger applies. The
+skill checks its prerequisite report itself:
+
+- prerequisite report missing, or its latest iteration is `HITL: FEEDBACK` →
+  the skill stops and tells you which skill to run first;
+- prerequisite report's latest iteration is `HITL: PASS` → the skill runs and
+  appends its own iteration.
+
+This is a **chain, not orchestration**: nothing in this file sequences gates,
+and you must not sequence them from it either.
 
 ## MCP Servers
 
@@ -52,18 +97,48 @@ before any downstream gate runs. The SRS (Software Requirements Specification,
 
 These files are **inputs**. You **MUST NOT** modify them to make a gate pass.
 
-## Startup
+## Report Format
 
-When the user says **"start"**, **"init"**, **"begin"**, or **"run methodology"**:
+Every gate writes **one** report file: `.codeanvil/report/<cycle-name>/<gate>.md`
+(for example `G0.md`, `CC.md`, `G1.md`). Iterations are appended sections in
+that file — never separate files.
 
-1. Read `GT/` to confirm which GT files are present.
-2. Identify the lowest-numbered incomplete gate from the skill table above.
-3. Load its skill: `.agents/skills/<gate>/SKILL.md`.
-4. Execute the skill instructions. Report the verdict.
-5. Proceed to the next gate only on a pass.
+```markdown
+# <Gate Name>
 
-Do **not** rewrite this file, create a new `CLAUDE.md`, or set up the project —
-the project is already scaffolded. Go straight to the first gate.
+| Field     | Value |
+|-----------|-------|
+| Gate      | <id> |
+| Cycle     | <cycle-name> |
+| Document  | <input files> |
+| Created   | <codeanvil now> |
+
+---
+
+## Iteration <N>
+
+| Field       | Value |
+|-------------|-------|
+| Date        | <codeanvil now> |
+| Timestamp   | <codeanvil now --machine> |
+| Iteration   | <N> |
+| Cycle       | <cycle-name> |
+| HITL        | PASS | FEEDBACK |
+
+### Description
+
+<content — user feedback, script output, or N/A>
+```
+
+Rules:
+
+- Iterations start at `1` and increment on each run.
+- `HITL: PASS` means the gate is done. `HITL: FEEDBACK` means iterate.
+- There is **no DENIED** state — a rejected result is `FEEDBACK` with the
+  user's comments, and the gate re-runs.
+- For G0 (deterministic), the Description carries the full script report, and
+  script errors force `HITL: FEEDBACK`.
+- A gate is complete only when its latest iteration is `HITL: PASS`.
 
 ## Timestamps
 
@@ -72,26 +147,24 @@ the project is already scaffolded. Go straight to the first gate.
 - Do NOT generate timestamps any other way. The tool owns the format.
 - Do not use raw `datetime.now().strftime()`.
 
-## Report creation
+## Folder Reference
 
-After each gate run, write a report to `.codeanvil/report/`:
-
-    GATE=$(gate name, e.g. G0)
-    TIMESTAMP=$(codeanvil now --machine)
-    # Write to: .codeanvil/report/${GATE}_${TIMESTAMP}.md
-
-Report content must include a human-readable timestamp from `codeanvil now`
-at the top of the file. The latest report per gate in `.codeanvil/report/`
-determines the project stage shown by `codeanvil status`.
+| Path | What it holds |
+|------|---------------|
+| `GT/` | Human-authored Ground Truth. Read-only during gates unless the author approves an edit. |
+| `.codeanvil/project.yaml` | Project identity (`id`, `name`, GT pointers) plus the active `cycle`. |
+| `.codeanvil/custody/` | Custody-chain artifacts (source snapshot, custody ledger). |
+| `.codeanvil/report/<cycle-name>/` | One iterative report per gate, scoped to the cycle. |
+| `.agents/skills/` | Canonical skill store — every agent runtime links here. |
 
 ## Project Layout
 
     AGENTS.md              <- you are here (canonical instructions)
     GT/                    <- ground truth documents (human-authored)
     .codeanvil/            <- machine-generated methodology artifacts
-    │   project.yaml       <- project identity (id, name, GT pointers)
+    │   project.yaml       <- project identity (id, name, GT pointers, cycle)
     │   custody/           <- custody-chain artifacts (snapshot, ledger)
-    │   report/            <- timestamped gate reports
+    │   report/            <- per-cycle gate reports (<cycle-name>/<gate>.md)
     .agents/skills/        <- canonical skill store (all gate skills)
 
 Agent-specific directories (`.claude/`, `.github/`, `.opencode/`,

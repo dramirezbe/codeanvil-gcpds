@@ -5,15 +5,21 @@ defaults:
   country: "America/Bogota"
 
 skills:
+  # Declaration order is the gate chain order. `prerequisite` is the report
+  # id of the predecessor gate: the AGENTS.md table renders it and each
+  # skill enforces it on load. null marks the entry point.
   G0_valid_req_and_GT:
     project_dir: ".agents/skills/G0_valid_req_and_GT"
     template_dir: "templates/skills/G0_valid_req_and_GT"
-  G1_start_design:
-    project_dir: ".agents/skills/G1_start_design"
-    template_dir: "templates/skills/G1_start_design"
+    prerequisite: null
   custody-chain:
     project_dir: ".agents/skills/custody-chain"
     template_dir: "templates/skills/custody-chain"
+    prerequisite: "G0"
+  G1_start_design:
+    project_dir: ".agents/skills/G1_start_design"
+    template_dir: "templates/skills/G1_start_design"
+    prerequisite: "CC"
 
 # Skill directory symlinks — agent runtimes that discover skills
 # via a directory convention.

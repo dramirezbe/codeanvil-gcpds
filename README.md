@@ -138,7 +138,7 @@ codeanvil create [<name> | --name <label> [--folder <dir>]] [-p <path>] [--mcp m
        ├── .codeanvil/               ← machine-generated methodology artifacts
        │    ├── project.yaml         ← project identity (UUIDv7, no machine paths)
        │    ├── custody/             ← custody-chain snapshot + ledger
-       │    └── report/              ← timestamped gate reports (<gate>_<ts>.md)
+       │    └── report/              ← per-cycle iterative reports (<cycle>/<gate>.md)
        ├── .agents/
        │    ├── skills/             ← canonical skill store
        │    │    ├── G0_valid_req_and_GT/

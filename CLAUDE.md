@@ -34,7 +34,7 @@ CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks stat
 - **`config/identity.py`** — `generate_uuidv7()` (stdlib-only RFC 9562 UUIDv7; Python 3.10+ compatible)
 - **`config/time.py`** — `format_timestamp()` (human-readable) + `format_timestamp_machine()` (filename-safe, for `codeanvil now --machine`)
 - **`db/schema.py`** — SQLite schema: `projects` table only (TEXT UUIDv7 id, name, path, created_at) + `db_exists()`, `create_schema()`, `has_legacy_schema()`/`recreate_if_legacy()` (pre-release migration)
-- **`db/projects.py`** — registry CRUD: `register_project()` (idempotent by UUID), `sync_project()` (register/no-op/moved upsert), `get_project_by_id()`, `get_project_by_name()`, `list_projects()`. Gate orchestration is harness-driven (in the scaffolded `AGENTS.md`), not tool code — no orchestrator rows.
+- **`db/projects.py`** — registry CRUD: `register_project()` (idempotent by UUID), `sync_project()` (register/no-op/moved upsert), `get_project_by_id()`, `get_project_by_name()`, `list_projects()`. The gate chain is report-driven (each skill checks its predecessor's report), not tool code — no orchestrator rows.
 - **`db/utils.py`** — `connect_db()` (WAL mode, row factory, foreign keys) + `health_db()`
 - **`init/check.py`** — `preflight()` (workdir + DB checks) + `check_project_path()`
 - **`init/create.py`** — `scaffold_project()` (copies skills to `.agents/skills/`, embeds GT reference templates inside skills, rewrites repo-root paths, creates agent symlinks, writes user `GT/` dir + `.codeanvil/` dirs) + `write_project_manifest()`. Templates located via `_find_templates_dir()` (editable install: source tree; wheel install: `importlib.resources`)
@@ -50,7 +50,7 @@ CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks stat
   - **T2_IoT-Indoor** — Indoor IoT radio environment mapping at 2.4 GHz ISM (Proyecto Hermes / GCPDS). Raw proposal + literature (GT must be derived).
 - **Gate (Gn)**: verification checkpoint. Sequential — G0 must pass before G1 runs. G0 is deterministic (script-only). G1+ use AI coding agents (any runtime).
 - **Skill**: `SKILL.md` + optional scripts that define what happens at a gate. Agent-agnostic — any coding agent that reads markdown can execute them. Live in `templates/skills/` (repo) and `.agents/skills/` (scaffolded projects).
-- **Gate progress**: tracked by the harness via the GT files and `.codeanvil/` artifacts (timestamped reports in `.codeanvil/report/`), not by the tool. There is no orchestrator advancing a stored session — the agent reads the scaffolded `AGENTS.md` to find the next gate.
+- **Gate progress**: tracked by the harness via the GT files and cycle-scoped reports (`.codeanvil/report/<cycle>/<gate>.md`), not by the tool. There is no orchestrator advancing a stored session — each skill checks its predecessor's report, and the agent asks for the cycle on project open.
 - **MCP server**: external tool provider (Model Context Protocol) that gives agents callable tools beyond text. Installed globally to `~/.codeanvil-config/mcp/<name>/`, wired into projects via per-agent config files. First server: Marconi (GNU Radio — 19 tools, 6 skills for RF/SDR). Configured in `templates/config.yaml` under `mcp_servers`, logic in `src/codeanvil/init/mcp.py`.
 
 ## V-SIL paper
@@ -118,7 +118,7 @@ project folder — it has no `src/`, no `templates/`, no `pyproject.toml`.
 ├── .codeanvil/                   ← machine-generated methodology artifacts
 │   ├── project.yaml              ← project identity (UUIDv7, name, GT pointers)
 │   ├── custody/                  ← custody-chain artifacts (snapshot, ledger)
-│   └── report/                   ← timestamped gate reports
+│   └── report/                   ← per-cycle iterative reports (<cycle>/<gate>.md)
 ├── .agents/
 │   ├── skills/                   ← copied skills (project-root paths)
 │   │   ├── G0_valid_req_and_GT/
@@ -154,7 +154,7 @@ codeanvil create myproj -p /path/to/        → /path/to/myproj/ (legacy: name =
 codeanvil create myproj --mcp marconi       → + marconi-* skills, MCP configs, PYTHONPATH
 codeanvil sync (inside a clone)            → register the project in the local DB
 codeanvil list                             → registered projects (short UUID + local path)
-codeanvil status [myproj]                  → latest gate report per gate (.codeanvil/report/)
+codeanvil status [myproj]                  → cycles and latest HITL per gate (.codeanvil/report/)
 codeanvil now [--machine]                  → timestamp: human-readable / filename-safe
 ```
 

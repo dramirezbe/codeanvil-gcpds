@@ -38,7 +38,8 @@ codeanvil create ──► scaffold project anywhere
 codeanvil sync ─────► register/move a cloned project in the local DB
                        (reads the project's .codeanvil/project.yaml — no re-scaffold)
 
-the harness (agent runtime) reads the scaffolded AGENTS.md and drives the gates:
+the harness (agent runtime) asks for a cycle, then loads gate skills; each skill
+checks its predecessor's report before it runs:
                        │
                        ├─ G0 (deterministic — no agent)
                        │    ├─ reads: GT pair (StRS + SyRS .md files)
@@ -71,10 +72,11 @@ the harness (agent runtime) reads the scaffolded AGENTS.md and drives the gates:
 
 2. **The user side (a ready harness).** What `codeanvil create` produces: a
    scaffolded project that is itself a complete, runnable harness — MCP servers
-   wired in, skills under `.agents/skills/`, and **gate orchestration expressed
-   in the generated `AGENTS.md`**. The agent runtime reads that `AGENTS.md` and
-   drives the gates. Orchestration is harness engineering, not tool code — there
-   is no `codeanvil run`.
+   wired in, skills under `.agents/skills/`, and the **gate chain encoded in the
+   skills themselves**: each skill checks its predecessor's report before it
+   runs. The generated `AGENTS.md` is a passive reference (cycle protocol, skill
+   table, report format, folders, MCP), not an orchestrator. Orchestration is
+   harness engineering, not tool code — there is no `codeanvil run`.
 
 ## Test GT cases (V-SIL system inputs)
 
@@ -125,19 +127,28 @@ Not a numbered gate — runs alongside any gate to prove GT immutability and tra
 - **Inputs**: validated GT pair (StRS + SyRS) + G0 pass report
 - **Output**: multi-hypothesis design synthesis and the SRS (`GT/G1_SRS.md`, IEEE 29148 §9.6), structurally validated before human review
 
-## Gate orchestration (harness-driven)
+## Gate chain (report-driven)
 
-There is no `codeanvil run` command and no orchestrator in the tool. Gate
-sequencing is **harness engineering**: the agent runtime (Claude, Codex,
-OpenCode, Pi, ...) reads the scaffolded project's `AGENTS.md`, finds the lowest
-incomplete gate, loads that gate's `SKILL.md`, and executes it.
+There is no `codeanvil run` command and no orchestrator in the tool — and none in
+`AGENTS.md` either. The chain lives in the skills: on load, each skill checks its
+predecessor's report (`Gate`, `CC`, `G1` in `config.yaml`) and stops with the
+predecessor's name when it is missing or its latest iteration is not
+`HITL: PASS`.
 
-- G0: the agent runs `g0_validate.py` directly (deterministic, no AI).
-- custody-chain: after G0 passes, the agent seals GT and records custody.
-- G1+: the agent follows the gate's `SKILL.md` against the validated GT.
+- **Cycle:** the agent asks the user for a cycle name on every project open,
+  normalizes it to a slug (`01_test_sdr_usrp_iot_signals`), records it in
+  `.codeanvil/project.yaml`, and scopes reports to
+  `.codeanvil/report/<cycle>/<gate>.md`.
+- **Iteration:** each gate appends one `## Iteration <N>` section per run with a
+  `HITL` verdict (`PASS` or `FEEDBACK`; there is no DENIED state).
+- G0: the agent runs `g0_validate.py` directly (deterministic, no AI) and writes
+  `G0.md`; script errors force `FEEDBACK`.
+- custody-chain (CC): requires `G0.md` latest `PASS`; seals GT and records custody.
+- G1+: requires `CC.md` latest `PASS`; each job pauses for `PASS` or `FEEDBACK`.
 
-State lives in the GT files and `.codeanvil/`, not in the tool. The `codeanvil`
-CLI only scaffolds and registers projects; it never drives gates.
+State lives in the GT files, the cycle reports, and `.codeanvil/`, not in the
+tool. The `codeanvil` CLI only scaffolds and registers projects; it never drives
+gates.
 
 ## Agent contract
 
@@ -194,7 +205,8 @@ codeanvil create proj --mcp marconi → copies 6 marconi-* skills, generates MCP
 1. Create `templates/skills/G<n>_<name>/SKILL.md`
 2. Add validation scripts under `scripts/` if needed
 3. Add GT reference templates under `templates/` if the gate validates document structure
-4. Register the gate in the generated `AGENTS.md` gate sequence (the harness reads it)
+4. Register the gate under `skills:` in `templates/config.yaml` with its
+   `prerequisite` report id; the AGENTS.md generator renders the chain table
 5. Define the gate's artifact outputs in its `SKILL.md` (artifacts are project files, not DB rows)
 6. Run `codeanvil create` — new skills are automatically copied and path-rewritten
 
@@ -215,7 +227,7 @@ myproj/
 │   ├── custody/                     ← custody-chain artifacts
 │   │   ├── snapshot.json            ← sealed GT digests (after G0 pass)
 │   │   └── custody.jsonl            ← append-only chain-of-custody ledger
-│   └── report/                      ← timestamped gate reports (<gate>_<ts>.md)
+│   └── report/                      ← per-cycle iterative reports (<cycle>/<gate>.md)
 ├── .agents/
 │   ├── skills/                      ← canonical skill store
 │   │   ├── G0_valid_req_and_GT/

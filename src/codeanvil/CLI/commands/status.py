@@ -14,12 +14,50 @@ from codeanvil.db.utils import connect_db
 
 log = get_logger(__name__)
 
-# Gate report filenames: <gate>_<machine-timestamp>.md (e.g. G0_2026-10-21_16-23-45-123.md)
+# Legacy gate report filenames: <gate>_<machine-timestamp>.md
+# (e.g. G0_2026-10-21_16-23-45-123.md), written before cycle-scoped reports.
 _REPORT_RE = re.compile(r"^(?P<gate>.+)_(?P<ts>\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}-\d{3})\.md$")
+
+# Cycle-scoped reports: .codeanvil/report/<cycle>/<gate>.md with appended
+# "## Iteration N" sections and a | HITL | PASS|FEEDBACK | row per iteration.
+_ITERATION_RE = re.compile(r"^## Iteration (\d+)\s*$", re.MULTILINE)
+_HITL_RE = re.compile(r"^\|\s*HITL\s*\|\s*(PASS|FEEDBACK)\s*\|", re.MULTILINE)
+
+
+def _report_state(report_file: Path) -> tuple[int | None, str | None]:
+    """Latest iteration number and HITL verdict in one gate report."""
+    try:
+        text = report_file.read_text(encoding="utf-8")
+    except OSError as exc:
+        log.warning("cannot read %s: %s", report_file, exc)
+        return None, None
+    iterations = [int(number) for number in _ITERATION_RE.findall(text)]
+    verdicts = _HITL_RE.findall(text)
+    return (
+        max(iterations) if iterations else None,
+        verdicts[-1] if verdicts else None,
+    )
+
+
+def _cycle_reports(
+    report_dir: Path,
+) -> dict[str, dict[str, tuple[int | None, str | None]]]:
+    """Cycle -> gate -> (latest iteration, HITL) for the cycle-scoped layout."""
+    cycles: dict[str, dict[str, tuple[int | None, str | None]]] = {}
+    if not report_dir.is_dir():
+        return cycles
+    for cycle_dir in sorted(path for path in report_dir.iterdir() if path.is_dir()):
+        gates = {
+            report.stem: _report_state(report)
+            for report in sorted(cycle_dir.glob("*.md"))
+        }
+        if gates:
+            cycles[cycle_dir.name] = gates
+    return cycles
 
 
 def _latest_reports(report_dir: Path) -> dict[str, str]:
-    """Latest report filename per gate, ordered by the machine timestamp."""
+    """Latest legacy report filename per gate, ordered by machine timestamp."""
     latest: dict[str, str] = {}
     latest_ts: dict[str, str] = {}
     if not report_dir.is_dir():
@@ -89,12 +127,29 @@ def cmd_status(name: str | None = None) -> None:
         print(f"Project: {identity['name']} ({identity['id']})")
         print(f"Path:    {project_dir.resolve()}")
 
-        latest = _latest_reports(project_dir / PROJECT_REPORT)
-        if not latest:
+        report_dir = project_dir / PROJECT_REPORT
+        cycles = _cycle_reports(report_dir)
+        legacy = _latest_reports(report_dir)
+
+        if not cycles and not legacy:
             print("Reports: none yet (.codeanvil/report/ is empty)")
             return
-        print("Reports (latest per gate):")
-        for gate in sorted(latest):
-            print(f"  {gate}: {latest[gate]}")
+
+        active_cycle = identity.get("cycle")
+        if cycles:
+            print("Cycles:")
+            for cycle, gates in cycles.items():
+                marker = " (active)" if cycle == active_cycle else ""
+                print(f"  {cycle}{marker}")
+                for gate, (iteration, hitl) in gates.items():
+                    state = hitl or "UNKNOWN"
+                    if iteration is not None:
+                        state += f" (iteration {iteration})"
+                    print(f"    {gate}: {state}")
+
+        if legacy:
+            print("Legacy reports (pre-cycle layout):")
+            for gate in sorted(legacy):
+                print(f"  {gate}: {legacy[gate]}")
     finally:
         conn.close()

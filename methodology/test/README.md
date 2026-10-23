@@ -175,8 +175,11 @@ What project is this? What skills are available? What should you do first?
 ```
 
 **Expected:** Claude reads `AGENTS.md`, identifies this as a V-SIL scaffolded
-project (not the CodeAnvil repo), lists G0 + custody-chain + G1 in the skill
-table, and says the first step is G0 validation of the GT files.
+project (not the CodeAnvil repo), lists G0 + custody-chain (CC) + G1 with their
+prerequisite chain in the skill table, and asks for a **cycle name** before any
+gate work. Answer, for example, `Smoke Test` → it should normalize it to
+`01_smoke_test`, write `cycle:` into `.codeanvil/project.yaml`, and say the first
+gate is G0 validation of the GT files.
 
 #### Prompt 2 — Run G0
 
@@ -186,8 +189,10 @@ start
 
 **Expected:** Claude loads `.agents/skills/G0_valid_req_and_GT/SKILL.md`, runs
 `python .agents/skills/G0_valid_req_and_GT/scripts/g0_validate.py GT/G0_StRS.md GT/G0_SyRS.md`,
-reports the exit code, verdict (G0: PASS or FAIL with specific errors), and the
-full validation output (per-document reports + G0-X cross-document report).
+reports the exit code, verdict, and the full validation output (per-document
+reports + G0-X cross-document report), then writes
+`.codeanvil/report/<cycle>/G0.md` with the script output and asks **PASS** or
+**FEEDBACK**. Answer `PASS` → iteration 1 records `HITL: PASS`.
 
 #### Prompt 3 — Seal GT with custody-chain
 
@@ -195,7 +200,9 @@ full validation output (per-document reports + G0-X cross-document report).
 G0 passed. Now seal the GT files using the custody-chain skill so any tampering is detected going forward.
 ```
 
-**Expected:** Claude loads `.agents/skills/custody-chain/SKILL.md`, then:
+**Expected:** Claude loads `.agents/skills/custody-chain/SKILL.md`, checks that
+`.codeanvil/report/<cycle>/G0.md`'s latest iteration is `HITL: PASS` (and stops
+otherwise), then:
 1. Checks `PROVENANCE_HMAC_KEY` — will report it's unset and ask for it.
    Respond with: `export PROVENANCE_HMAC_KEY="smoke-test-key-2026"` (or tell
    Claude to set it).
@@ -243,8 +250,14 @@ rm -rf /tmp/smoke-test
 After running the full flow, note:
 
 - [ ] Did `codeanvil create` scaffold all skills including custody-chain?
-- [ ] Did the AGENTS.md skill table list all three skills (G0, custody-chain, G1)?
-- [ ] Did `.codeanvil/` contain `project.yaml`, `custody/`, and `report/` (no GT)?
+- [ ] Did the AGENTS.md skill table list all three skills (G0, custody-chain, G1)
+      with the prerequisite chain?
+- [ ] Did Claude ask for a cycle name on project open and normalize it
+      (`01_smoke_test`)?
+- [ ] Did `.codeanvil/` contain `project.yaml` (with `cycle:`), `custody/`, and
+      an empty `report/` (no GT)?
+- [ ] Did each gate write one iterative `<cycle>/<gate>.md` report and ask
+      PASS/FEEDBACK?
 - [ ] Did `codeanvil status` correctly read identity from the manifest?
 - [ ] Did `codeanvil sync` register a cloned project without re-scaffolding?
 - [ ] Did Claude in the sandboxed session correctly identify it's in a user project?

@@ -16,7 +16,7 @@ from codeanvil.CLI.commands.create import (
 from codeanvil.CLI.commands.list import cmd_list
 from codeanvil.CLI.commands.status import cmd_status
 from codeanvil.CLI.parser import argparser
-from codeanvil.config.paths import PROJECT_MANIFEST
+from codeanvil.config.paths import CONFIG, PROJECT_MANIFEST, TEMPLATES_DIR
 from codeanvil.db.schema import create_schema
 from codeanvil.db.utils import connect_db
 
@@ -323,6 +323,164 @@ def test_beaupy_is_a_runtime_dependency():
 
 
 # --- sync reconciles the label with the manifest (S13) ----------------------
+
+# --- report-driven gate chain (S1, S2, S3, S8, S9) --------------------------
+
+def test_config_declares_skill_prerequisite_chain():
+    skills = CONFIG["skills"]
+    assert skills["G0_valid_req_and_GT"]["prerequisite"] is None
+    assert skills["custody-chain"]["prerequisite"] == "G0"
+    assert skills["G1_start_design"]["prerequisite"] == "CC"
+
+
+def test_create_makes_report_dir_without_cycle_subdir(tmp_path, db_path):
+    cmd_create(None, tmp_path, project_name="Proj")
+
+    report = tmp_path / "proj" / ".codeanvil" / "report"
+    assert report.is_dir()
+    assert list(report.iterdir()) == []
+
+
+def _agents_md(tmp_path, db_path) -> str:
+    cmd_create(None, tmp_path, project_name="Proj")
+    return (tmp_path / "proj" / "AGENTS.md").read_text(encoding="utf-8")
+
+
+def test_agents_md_is_a_passive_reference(tmp_path, db_path):
+    text = _agents_md(tmp_path, db_path)
+
+    assert "## Cycle" in text
+    assert "## Report Format" in text
+    assert "## Folder Reference" in text
+    assert "## Startup" not in text
+    assert "## Report creation" not in text
+    assert "Identify the lowest-numbered incomplete gate" not in text
+
+
+def test_agents_md_mandates_a_cycle_on_every_project_open(tmp_path, db_path):
+    text = _agents_md(tmp_path, db_path)
+
+    assert "On every project open" in text
+    assert "native question" in text
+    assert "01_test_sdr_usrp_iot_signals" in text
+    assert "02_websocket_refactor" in text
+    assert "cycle: <name>" in text
+
+
+def test_agents_md_defines_the_iterative_report_format(tmp_path, db_path):
+    text = _agents_md(tmp_path, db_path)
+
+    assert ".codeanvil/report/<cycle-name>/<gate>.md" in text
+    for field in ("Gate", "Cycle", "Document", "Created", "Date", "Timestamp",
+                  "Iteration", "HITL"):
+        assert f"| {field}" in text
+    assert "### Description" in text
+    assert "HITL: PASS" in text
+    assert "HITL: FEEDBACK" in text
+    assert "no DENIED" in text
+
+
+def test_agents_md_skill_table_shows_the_prerequisite_chain(tmp_path, db_path):
+    text = _agents_md(tmp_path, db_path)
+
+    assert "| Gate | Skill | Prerequisite |" in text
+    lines = text.splitlines()
+    g0 = next(line for line in lines if ".agents/skills/G0_valid_req_and_GT/" in line)
+    cc = next(line for line in lines if ".agents/skills/custody-chain/" in line)
+    g1 = next(line for line in lines if ".agents/skills/G1_start_design/" in line)
+
+    assert "None (entry point)" in g0
+    assert "`G0.md` latest iteration `HITL: PASS`" in cc
+    assert "`CC.md` latest iteration `HITL: PASS`" in g1
+    assert lines.index(g0) < lines.index(cc) < lines.index(g1)
+
+
+def _skill_text(*parts: str) -> str:
+    return (TEMPLATES_DIR / "skills" / Path(*parts) / "SKILL.md").read_text(encoding="utf-8")
+
+
+def test_g0_skill_writes_an_iterative_report():
+    text = _skill_text("G0_valid_req_and_GT")
+
+    assert ".codeanvil/report/<cycle-name>/G0.md" in text
+    assert "HITL: FEEDBACK" in text
+    assert "no prerequisite" in text.lower()
+
+
+def test_custody_skill_requires_a_passing_g0_report():
+    text = _skill_text("custody-chain")
+
+    assert ".codeanvil/report/<cycle-name>/G0.md" in text
+    assert "G0 must pass first. Run the G0 skill." in text
+    assert ".codeanvil/report/<cycle-name>/CC.md" in text
+
+
+def test_g1_skill_requires_a_passing_custody_report():
+    text = _skill_text("G1_start_design")
+
+    assert ".codeanvil/report/<cycle-name>/CC.md" in text
+    assert "Custody chain must pass first. Run the custody-chain skill." in text
+    assert ".codeanvil/report/<cycle-name>/G1.md" in text
+
+
+# --- status reads cycle-scoped reports (T7) ---------------------------------
+
+def _write_report(project, cycle: str, gate: str, iterations: list[tuple[int, str]]) -> None:
+    report_dir = project / ".codeanvil" / "report" / cycle
+    report_dir.mkdir(parents=True, exist_ok=True)
+    sections = []
+    for number, hitl in iterations:
+        sections.append(
+            f"## Iteration {number}\n\n"
+            "| Field       | Value |\n"
+            "|-------------|-------|\n"
+            "| Date        | 2026-10-23 10:30 |\n"
+            "| Timestamp   | 2026-10-23_10-30-00-000 |\n"
+            f"| Iteration   | {number} |\n"
+            f"| Cycle       | {cycle} |\n"
+            f"| HITL        | {hitl} |\n\n"
+            "### Description\n\nN/A\n"
+        )
+    (report_dir / f"{gate}.md").write_text(
+        f"# {gate}\n\n" + "\n---\n\n".join(sections), encoding="utf-8"
+    )
+
+
+def _set_cycle(project, cycle: str) -> None:
+    manifest = project / PROJECT_MANIFEST
+    data = yaml.safe_load(manifest.read_text(encoding="utf-8"))
+    data["cycle"] = cycle
+    manifest.write_text(yaml.dump(data, sort_keys=False), encoding="utf-8")
+
+
+def test_status_reads_cycle_scoped_reports(tmp_path, db_path, capsys):
+    cmd_create(None, tmp_path, project_name="Proj")
+    project = tmp_path / "proj"
+    _set_cycle(project, "01_first_run")
+    _write_report(project, "01_first_run", "G0", [(1, "FEEDBACK"), (2, "PASS")])
+    _write_report(project, "01_first_run", "CC", [(1, "FEEDBACK")])
+
+    cmd_status("Proj")
+
+    out = capsys.readouterr().out
+    assert "01_first_run (active)" in out
+    assert "G0: PASS (iteration 2)" in out
+    assert "CC: FEEDBACK (iteration 1)" in out
+
+
+def test_status_lists_every_cycle(tmp_path, db_path, capsys):
+    cmd_create(None, tmp_path, project_name="Proj")
+    project = tmp_path / "proj"
+    _set_cycle(project, "02_second_run")
+    _write_report(project, "01_first_run", "G0", [(1, "PASS")])
+    _write_report(project, "02_second_run", "G0", [(1, "PASS")])
+
+    cmd_status("Proj")
+
+    out = capsys.readouterr().out
+    assert "01_first_run" in out
+    assert "02_second_run (active)" in out
+
 
 def test_sync_reconciles_label_for_list_and_status(tmp_path, db_path, monkeypatch, capsys):
     from codeanvil.init.sync import run_sync

@@ -2,15 +2,49 @@
 name: custody-chain
 description: "Trigger: provenance, custody, integrity, hash, seal, snapshot, tamper, audit trail, evidence, lineage. Verify source immutability and track chain of custody of generated audit documents across all V-SIL gates."
 license: Apache-2.0
-compatibility: "Requires Python 3.9+ (stdlib only). No network access. Writes only to .codeanvil/custody/ directory."
+compatibility: "Requires Python 3.9+ (stdlib only). No network access. Writes only to .codeanvil/custody/ and .codeanvil/report/<cycle-name>/CC.md."
 metadata:
   author: "gcpds"
-  version: "1.0"
-  gate: "*"
+  version: "2.0"
+  gate: "CC"
   pipeline: "V-SIL"
 ---
 
 # Custody Chain — Data Provenance & Integrity Verification
+
+## Prerequisite and Cycle
+
+G0 must have passed on both Ground Truth documents.
+
+Before running anything:
+
+1. Resolve the active cycle from `.codeanvil/project.yaml` (the `cycle:` key).
+   If the key is missing, stop and ask the user for a cycle name (see
+   `AGENTS.md`, `## Cycle`).
+2. Read `.codeanvil/report/<cycle-name>/G0.md`. If the file does not exist, or
+   its **latest** iteration is not `HITL: PASS`, stop and return exactly:
+
+   > G0 must pass first. Run the G0 skill.
+
+   Write no report iteration and run no custody script in that case.
+
+## Report Contract
+
+Write exactly one file: `.codeanvil/report/<cycle-name>/CC.md`.
+
+- First run: write the header and `## Iteration 1`.
+- Later runs: append `## Iteration <N>`, where `N` is the number of existing
+  iterations plus one.
+- Header fields: `Gate` = `CC`, `Cycle` = the active cycle, `Document` = the
+  GT files sealed by the snapshot, `Created` = `codeanvil now`.
+- Iteration fields: `Date` = `codeanvil now`, `Timestamp` = `codeanvil now --machine`,
+  `Iteration` = `N`, `Cycle` = the active cycle, `HITL` = `PASS` or `FEEDBACK`.
+- `Description` carries the provenance report (the same text returned in the
+  Output Contract), the observed exit codes, and the user's feedback when there
+  is any.
+
+Never edit a previous iteration. Iterations are append-only; the latest
+iteration is the gate state.
 
 ## Activation Contract
 
@@ -18,8 +52,9 @@ Load this skill when **any** V-SIL gate needs to prove that (1) original source 
 was not altered and (2) generated audit documents have a complete, tamper-evident chain
 of custody.
 
-This is a **cross-cutting skill** — it runs alongside any gate, not as a gate itself.
-Invoke it before and after operations that create, modify, or export audit documents.
+This is a **chain link** after G0 and a **cross-cutting** check — it runs once as the
+CC gate, and it also applies before and after operations that create, modify, or
+export audit documents.
 
 Do **not** load it to judge data correctness or quality, perform column/row-level lineage,
 access databases or APIs, enforce access control, or draw legal conclusions — those are
@@ -46,6 +81,8 @@ out of scope (see Scope & Boundaries below).
 - **No secrets in output.** Never print, log, store, or echo the HMAC key.
 - **Exit codes are verdicts.** `0` = PASS, `1` = FAIL, `2` = usage/IO error. Never
   record a PASS on exit `1` or `2`.
+- **One report file, append-only.** Never write a second `CC` file and never edit
+  an earlier iteration.
 
 ## Scope & Boundaries
 
@@ -79,10 +116,10 @@ out of scope (see Scope & Boundaries below).
 
 | Situation | Action |
 |-----------|--------|
-| All scripts exit `0` | Record custody status as PASS. Proceed. |
-| Any script exits `1` | Record FAIL. Return the report verbatim so each finding is actionable. Do not proceed to the next gate until resolved. |
-| Any script exits `2` | Script error (bad args, unreadable file). Fix the invocation, re-run. Record **no** verdict. |
-| `PROVENANCE_HMAC_KEY` not set | FAIL. Tell the user; do not generate a key silently. |
+| All scripts exit `0` | Present the provenance report to the user and ask **PASS** or **FEEDBACK**. Write the iteration with that `HITL` value. `PASS` completes CC. |
+| Any script exits `1` | `HITL` is forced to **FEEDBACK**. Write the iteration with the report verbatim so each finding is actionable. |
+| Any script exits `2` | Script error (bad args, unreadable file). Fix the invocation, re-run. Write **no** iteration. |
+| `PROVENANCE_HMAC_KEY` not set | FAIL. Tell the user; do not generate a key silently. Write a `FEEDBACK` iteration naming the missing key. |
 | Hash mismatch on sealed source | FAIL. Report the expected vs. actual digest. Never explain it away (line endings, encoding). |
 | Re-sealing requested | Requires explicit user authorization. Record the re-seal as a ledger entry with the reason. |
 | Ambiguous include patterns or zero matched files | Ask the human before proceeding. |
@@ -94,6 +131,7 @@ to continue.
 
 ### 1. Preflight
 
+- Confirm the prerequisite report check passed (see Prerequisite and Cycle).
 - Identify the project root and the provenance directory (default `.codeanvil/custody/`).
 - Confirm `PROVENANCE_HMAC_KEY` is set in the environment.
 
@@ -160,6 +198,7 @@ Return all of:
 3. **Finding list** — when there are failures, one entry per finding: code, path/id,
    expected vs. actual.
 4. **The observed exit codes** of each script invocation.
+5. **The report path** — `.codeanvil/report/<cycle-name>/CC.md` and the iteration number.
 
 `INCOMPLETE` = no failures but something was UNVERIFIED or skipped.
 
