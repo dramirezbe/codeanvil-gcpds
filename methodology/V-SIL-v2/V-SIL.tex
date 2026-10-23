@@ -1489,8 +1489,14 @@ deterministic G0 gate with G0-X cross-document consistency) feed the design stag
 Artefact~3 is already the CI regression harness; and the Promotion Gate binds the
 regression-passing build to the production pipeline as a versioned, revocable contract. Gate G0
 is the first fully implemented gate---deterministic, reproducible, and exercised before any
-human or AI-driven gate runs. Nothing is invented at the boundaries, which is why the
-methodology can be adopted incrementally.
+human or AI-driven gate runs. The gate chain is report-driven: each gate produces a structured
+iterative report, and the next gate's precondition is the previous gate's terminal
+\texttt{PASS}---no central orchestrator is required, and adding a gate means adding a skill,
+not rewriting control flow. Cycle identity makes the methodology re-entrant: the same project
+can run multiple V-SIL cycles, each with full traceability. The methodology applies at two
+levels---the target system and the harness itself---so that the verification infrastructure is
+governed by the same principles it enforces. Nothing is invented at the boundaries, which is
+why the methodology can be adopted incrementally.
 
 The claims stay honest by construction. The system is \verified{} at software-in-the-loop and
 \validated{} only at hardware-in-the-loop and in the field; every claim names the environment in
