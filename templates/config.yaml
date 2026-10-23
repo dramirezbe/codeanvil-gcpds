@@ -59,15 +59,22 @@ agents_template: "templates/AGENTS/TEMPLATE_AGENT.md"
 g0_skill: "G0_valid_req_and_GT"
 
 gt_reference_templates:
-  - "G0_SRS.md"
-  - "G0_HCS.md"
+  - "G0_StRS.md"
+  - "G0_SyRS.md"
+
+# G1 ships its SRS reference template inside the G1 skill (the user authors
+# GT/G1_SRS.md later — this is the locked structure copy).
+g1_skill: "G1_start_design"
+g1_reference_templates:
+  - "G1_SRS.md"
 
 # Repo-root paths inside SKILL.md / RULES.md become project-relative after
 # copy. Order matters: applied in insertion order.
 path_replacements:
   "templates/skills/": ".agents/skills/"
-  "templates/GT/G0_SRS.md": ".agents/skills/G0_valid_req_and_GT/templates/G0_SRS.md"
-  "templates/GT/G0_HCS.md": ".agents/skills/G0_valid_req_and_GT/templates/G0_HCS.md"
+  "templates/GT/G0_StRS.md": ".agents/skills/G0_valid_req_and_GT/templates/G0_StRS.md"
+  "templates/GT/G0_SyRS.md": ".agents/skills/G0_valid_req_and_GT/templates/G0_SyRS.md"
+  "templates/GT/G1_SRS.md": ".agents/skills/G1_start_design/templates/G1_SRS.md"
   "(repository-root relative)": "(project-root relative)"
   ".provenance/": ".codeanvil/custody/"
 

@@ -3,8 +3,12 @@
 **FM Spectrum Monitor · Ctx 02 Design Stage · GCPDS / Universidad Nacional de Colombia**
 
 > V-SIL | Ctx 02 → Gate H | AI-Assisted Design
+>
+> **Note (2026-10-22):** GT document names updated to the IEEE 29148:2018 family —
+> the former SRS + HCS pair is now StRS (`G0_StRS.md`) + SyRS (`G0_SyRS.md`).
+> Mentions of "SRS" in cited literature frameworks are unchanged.
 
-This document synthesizes four AI-assisted software architecture design frameworks from the literature and maps them to V-SIL's Ctx 02 stage for the FM spectrum monitoring sensor. The goal: derive a multi-hypothesis software architecture from the Ground Truth documents (G0_SRS.md + G0_HCS.md), evaluate candidates via trade study, and select one with written justification — as Ctx 02 requires.
+This document synthesizes four AI-assisted software architecture design frameworks from the literature and maps them to V-SIL's Ctx 02 stage for the FM spectrum monitoring sensor. The goal: derive a multi-hypothesis software architecture from the Ground Truth documents (G0_StRS.md + G0_SyRS.md), evaluate candidates via trade study, and select one with written justification — as Ctx 02 requires.
 
 ---
 
@@ -50,7 +54,7 @@ Natively multi-hypothesis. The mismatch report feeds directly into a trade study
 
 #### Gaps
 
-No built-in hardware constraint integration — HCS requirements must be injected into the RAG knowledge base or the Analyst's prompt. No MCDA scoring framework — the ATAM produces qualitative risk/tradeoff analysis, not a quantitative ranking. Needs a human gate between Evaluator output and architecture selection to satisfy Gate H.
+No built-in hardware constraint integration — hardware constraints (HWC- blocks in the StRS) must be injected into the RAG knowledge base or the Analyst's prompt. No MCDA scoring framework — the ATAM produces qualitative risk/tradeoff analysis, not a quantitative ranking. Needs a human gate between Evaluator output and architecture selection to satisfy Gate H.
 
 ---
 
@@ -172,7 +176,7 @@ No single framework covers all Ctx 02 requirements. The proposed approach combin
 
 ### Step 1 — ASR Extraction from GT
 
-Parse G0_SRS.md and G0_HCS.md to extract Architecturally Significant Requirements. Classify each by ISO 25010 quality attribute. Input: validated GT documents. Output: ASR catalog with QA mapping. Agent: Analyst (MAAD).
+Parse G0_StRS.md and G0_SyRS.md to extract Architecturally Significant Requirements. Classify each by ISO 25010 quality attribute. Input: validated GT documents. Output: ASR catalog with QA mapping. Agent: Analyst (MAAD).
 
 ### Step 2 — Architecture Candidate Generation
 
@@ -185,7 +189,7 @@ Generate 3–4 candidate architecture pathways using MAAD's Modeler with RAG-inj
 
 ### Step 3 — QA × Architecture Matrix (ARLO)
 
-Build the scoring matrix: rows = quality attributes from ASRs, columns = candidate pathways. Score each cell [0–5]. Populate with domain knowledge from FM_MONITOR_DSP_REFERENCE.md and HCS constraints (Pi 5 thermal, HackRF USB bandwidth, 3-thread OpenMP). Run ILP to find optimal selection under concurrent condition groups.
+Build the scoring matrix: rows = quality attributes from ASRs, columns = candidate pathways. Score each cell [0–5]. Populate with domain knowledge from FM_MONITOR_DSP_REFERENCE.md and hardware constraints (Pi 5 thermal, HackRF USB bandwidth, 3-thread OpenMP). Run ILP to find optimal selection under concurrent condition groups.
 
 ### Step 4 — ATAM Evaluation (MAAD Evaluator)
 
@@ -261,7 +265,7 @@ graph TD
 
 | Step | Deliverable | V-SIL Artifact | Status |
 |---|---|---|---|
-| ASR extraction from G0_SRS + G0_HCS | ASR catalog with QA classification | Input to trade study | Next |
+| ASR extraction from G0_StRS + G0_SyRS | ASR catalog with QA classification | Input to trade study | Next |
 | Generate 3–4 architecture pathways | 4+1 view sets per candidate | Ctx 02 candidates | Pending |
 | Build QA × Architecture matrix | Scored matrix + ILP formulation | MCDA (gap closure) | Pending |
 | ATAM evaluation on top candidates | Sensitivity/tradeoff/risk report | Trade study | Pending |

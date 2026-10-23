@@ -66,17 +66,19 @@ def _copy_skills(project_dir: Path) -> None:
 
 
 def _copy_gt_reference_templates(project_dir: Path) -> None:
-    """GT templates are locked reference artifacts inside the G0 skill,
+    """GT templates are locked reference artifacts inside their gate skill,
     not user-editable project files."""
-    dest_dir = project_dir / SKILLS_DIRNAME / CONFIG["g0_skill"] / "templates"
-    dest_dir.mkdir(parents=True, exist_ok=True)
-    for template_name in CONFIG["gt_reference_templates"]:
-        src = TEMPLATES_DIR / "GT" / template_name
-        if not src.exists():
-            log.warning("GT reference template %s not found", src)
-            continue
-        shutil.copy2(src, dest_dir / template_name)
-        log.debug("copied GT reference template %s -> %s", src, dest_dir / template_name)
+    for skill_key, list_key in (("g0_skill", "gt_reference_templates"),
+                                ("g1_skill", "g1_reference_templates")):
+        dest_dir = project_dir / SKILLS_DIRNAME / CONFIG[skill_key] / "templates"
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        for template_name in CONFIG[list_key]:
+            src = TEMPLATES_DIR / "GT" / template_name
+            if not src.exists():
+                log.warning("GT reference template %s not found", src)
+                continue
+            shutil.copy2(src, dest_dir / template_name)
+            log.debug("copied GT reference template %s -> %s", src, dest_dir / template_name)
 
 
 def _rewrite_skill_paths(skills_root: Path) -> None:
@@ -146,8 +148,8 @@ def write_project_manifest(project_dir: Path, project_id: str, name: str) -> Non
         "id": project_id,
         "name": name,
         "gt": {
-            "srs": "GT/G0_SRS.md",
-            "hcs": "GT/G0_HCS.md",
+            "strs": "GT/G0_StRS.md",
+            "syrs": "GT/G0_SyRS.md",
         },
     }
     dest.parent.mkdir(parents=True, exist_ok=True)

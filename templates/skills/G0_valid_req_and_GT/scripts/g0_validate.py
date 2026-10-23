@@ -2,16 +2,21 @@
 """
 G0 - deterministic structural validator for V-SIL Ground Truth documents.
 
-Validates an SRS or HCS markdown file against the IEEE 29148 templates.
-Stdlib only. No AI, no network, no filesystem writes: it reads
+Validates a StRS (IEEE 29148 §9.4) or SyRS (§9.5) markdown file against the
+templates, then — when both are given — the G0-X cross-document consistency
+rules. Stdlib only. No AI, no network, no filesystem writes: it reads
 the input `.md` files, prints a report to stdout, and exits.
 
 Usage:
     python g0_validate.py <file> [<file> ...]
 
+G0 is a pair gate: a StRS and a SyRS must both be provided. Missing
+either one is an ERROR (exit 1).
+
 Exit codes:
     0  all files passed (warnings allowed)
-    1  at least one file has structural errors
+    1  at least one file has structural errors, G0-X errors, or the
+       StRS/SyRS pair is incomplete
     2  script error (bad arguments, unreadable file, undetectable doc type)
 """
 
@@ -27,35 +32,43 @@ from typing import Dict, List, Optional, Sequence, Tuple
 # Required sections (Phase 1)
 # --------------------------------------------------------------------------
 
-SRS_REQUIRED: List[str] = [
+STRS_REQUIRED: List[str] = [
     "## Document Metadata",
     "### 1.1 Purpose",
     "### 1.2 Scope",
     "### 1.3 Definitions, Acronyms, and Abbreviations",
     "### 1.4 References",
     "### 1.5 Document Overview",
+    "### 1.6 Hardware Inventory",
     "### 2.1 Product Perspective",
     "### 2.2 Product Functions",
     "### 2.3 User Characteristics",
     "### 2.4 Constraints",
     "### 2.5 Assumptions and Dependencies",
+    "### 2.6 Block Diagram",
+    "### 2.7 Bus and Interface Topology",
     "## 3. Specific Requirements",
     "## 4. External Interface Requirements",
     "## 5. Non-Functional Requirements",
     "## 6. Traceability",
 ]
 
-HCS_REQUIRED: List[str] = [
+SYRS_REQUIRED: List[str] = [
     "## Document Metadata",
     "### 1.1 Purpose",
     "### 1.2 Scope",
     "### 1.3 Definitions, Acronyms, and Abbreviations",
     "### 1.4 References",
-    "### 1.5 Hardware Inventory",
-    "### 2.1 Block Diagram",
-    "### 2.2 Bus and Interface Topology",
-    "## 3. Hardware Constraints",
-    "## 4. Derived Constraints",
+    "### 1.5 Document Overview",
+    "## 2. Measurement Framework",
+    "### 2.1 Measurand Catalog",
+    "### 2.2 Method Selection and Rationale",
+    "### 2.3 Normative-to-Method Mapping",
+    "## 3. System Requirements",
+    "## 4. Correction Chains",
+    "## 5. Uncertainty Budgets",
+    "## 6. Field Measurement Protocols",
+    "## 7. Traceability",
 ]
 
 # --------------------------------------------------------------------------
@@ -78,24 +91,70 @@ _PLACEHOLDER_MARKERS = ("_ACRONYM_", "_NNN_", "_project_name_", "YYYY-MM-DD")
 # Block / field rules (Phase 3)
 # --------------------------------------------------------------------------
 
-SRS_BLOCK_ID_RE = re.compile(r"^[A-Z]{3,5}-[A-Z]{2,4}-\d{3}$")
-HCS_BLOCK_ID_RE = re.compile(r"^HWC-[A-Z]{2,4}-\d{3}$")
+NRM_ID_RE = re.compile(r"^NRM-[A-Z]{2,8}-\d{3}$")
+HWC_ID_RE = re.compile(r"^HWC-[A-Z]{2,4}-\d{3}$")
+STK_ID_RE = re.compile(r"^STK-[A-Z]{2,4}-\d{3}$")
+SYS_ID_RE = re.compile(r"^SYS-[A-Z]{2,4}-\d{3}$")
 
-SRS_ENUMS: Dict[str, Sequence[str]] = {
+STRS_ID_PATTERN_TEXT = r"^(NRM-[A-Z]{2,8}|HWC-[A-Z]{2,4}|STK-[A-Z]{2,4})-\d{3}$"
+SYS_ID_PATTERN_TEXT = r"^SYS-[A-Z]{2,4}-\d{3}$"
+
+# Any well-formed StRS block ID appearing inside a cell (traces_to, Dependencies).
+_STRS_TOKEN_RE = re.compile(
+    r"(?:NRM-[A-Z]{2,8}|HWC-[A-Z]{2,4}|STK-[A-Z]{2,4})-\d{3}"
+)
+
+# Dependency IDs: generic 3-5/2-4 form plus long-sub normative IDs (NRM-ICNIRP-001).
+_DEP_RE = re.compile(r"NRM-[A-Z]{2,8}-\d{3}|[A-Z]{3,5}-[A-Z]{2,4}-\d{3}")
+
+COMPLIANCE_VALUES: Tuple[str, ...] = (
+    "COMPLIANT",
+    "PARTIAL",
+    "NOT_APPLICABLE",
+    "PENDING",
+)
+
+# Inline compliance traceability: rows must exist on every StRS block;
+# `Standard(s)` / `Clause` may hold an em dash when no source applies.
+STRS_COMPLIANCE_PRESENCE: Tuple[str, ...] = ("Standard(s)", "Clause")
+
+STK_ENUMS: Dict[str, Sequence[str]] = {
     "Type": ("FUNCTIONAL", "NON_FUNCTIONAL", "INTERFACE", "CONSTRAINT"),
     "Priority": ("MUST", "SHOULD", "COULD", "WONT"),
     "Status": ("PROPOSED", "APPROVED", "IMPLEMENTED", "VERIFIED", "REJECTED"),
     "Verification": ("INSPECTION", "DEMONSTRATION", "TEST", "ANALYSIS"),
+    "Compliance": COMPLIANCE_VALUES,
 }
-SRS_REQUIRED_FIELDS: Tuple[str, ...] = ("Type", "Priority", "Status", "Verification")
+STK_REQUIRED_FIELDS: Tuple[str, ...] = (
+    "Type",
+    "Priority",
+    "Status",
+    "Verification",
+    "Compliance",
+)
 
-HCS_ENUMS: Dict[str, Sequence[str]] = {
+NRM_ENUMS: Dict[str, Sequence[str]] = {
+    "Priority": ("MUST", "SHOULD", "COULD", "WONT"),
+    "Status": ("PROPOSED", "APPROVED", "IMPLEMENTED", "VERIFIED", "REJECTED"),
+    "Compliance": COMPLIANCE_VALUES,
+}
+# A normative obligation always cites its source concretely (never an em dash).
+NRM_REQUIRED_FIELDS: Tuple[str, ...] = (
+    "Priority",
+    "Status",
+    "Standard(s)",
+    "Clause",
+    "Compliance",
+)
+
+HWC_ENUMS: Dict[str, Sequence[str]] = {
     "Limit type": ("MAX", "MIN", "RANGE", "FIXED", "ENUM"),
     "Source": ("DATASHEET", "DRIVER_API", "MEASURED", "DERIVED"),
     "Impact": ("HARD", "SOFT", "INFORMATIONAL"),
     "Status": ("CONFIRMED", "PRELIMINARY", "DEPRECATED"),
+    "Compliance": COMPLIANCE_VALUES,
 }
-HCS_REQUIRED_FIELDS: Tuple[str, ...] = (
+HWC_REQUIRED_FIELDS: Tuple[str, ...] = (
     "Component",
     "Parameter",
     "Limit type",
@@ -103,7 +162,11 @@ HCS_REQUIRED_FIELDS: Tuple[str, ...] = (
     "Source ref",
     "Impact",
     "Status",
+    "Compliance",
 )
+
+# SyRS MVP (structural only): ID, type, parameter, method, traces_to.
+SYS_REQUIRED_FIELDS: Tuple[str, ...] = ("Type", "Parameter", "Method", "Traces to")
 
 MAX_TITLE_LEN = 120
 
@@ -120,8 +183,6 @@ _NUMBERED_RE = re.compile(r"^\d+\.")
 # malformed ID is still captured and reported as an ERROR rather than silently
 # skipped.
 _BLOCK_HEADING_RE = re.compile(r"^\*\*`([^`]+)`\s*[\u2014\u2013-]\s*(.+?)\*\*\s*$")
-
-_DEP_RE = re.compile(r"[A-Z]{3,5}-[A-Z]{2,4}-\d{3}")
 
 _EMPTY_VALUES = frozenset({"", "\u2014", "\u2013", "-", "--"})
 _NA_VALUES = frozenset({"n/a", "na", "none", "null", "tbd"})
@@ -181,11 +242,12 @@ class Finding:
     block_id: str  # requirement/constraint ID, or "" for doc-level
     message: str  # human/LLM-readable description
     expected: str = ""  # valid values, shown as "Expected: ..." when set
+    doc: str = ""  # "StRS" | "SyRS" — only set on G0-X findings
 
 
 @dataclass
 class Block:
-    """A parsed requirement (SRS) or constraint (HCS) block."""
+    """A parsed StRS block (NRM/HWC/STK) or SyRS block (SYS)."""
 
     id: str
     title: str
@@ -221,15 +283,15 @@ def parse_markdown(lines: Sequence[str]) -> List[Section]:
 
 
 def detect_doc_type(sections: Sequence[Section]) -> Optional[str]:
-    """Detect SRS/HCS from the first `## ` heading."""
+    """Detect StRS/SyRS from the first `## ` heading."""
     for section in sections:
         if section.level != 2:
             continue
         title = section.title.lower()
-        if "system requirements specification" in title:
-            return "SRS"
-        if "hardware constraints specification" in title:
-            return "HCS"
+        if "stakeholder requirements specification" in title or "strs" in title:
+            return "StRS"
+        if "system requirements specification" in title or "syrs" in title:
+            return "SyRS"
         return None  # first top-level heading is something else entirely
     return None
 
@@ -303,7 +365,7 @@ def _find_section(sections: Sequence[Section], required: str) -> Optional[Sectio
 
 
 def validate_sections(sections: Sequence[Section], doc_type: str) -> List[Finding]:
-    required = SRS_REQUIRED if doc_type == "SRS" else HCS_REQUIRED
+    required = STRS_REQUIRED if doc_type == "StRS" else SYRS_REQUIRED
     findings: List[Finding] = []
     for heading in required:
         if _find_section(sections, heading) is None:
@@ -453,7 +515,7 @@ def _build_block(
 
 def parse_blocks(lines: Sequence[str], doc_type: str) -> List[Block]:
     """Extract every requirement/constraint block from the raw lines."""
-    del doc_type  # block syntax is identical for SRS and HCS
+    del doc_type  # block syntax is identical for StRS and SyRS
     blocks: List[Block] = []
     total = len(lines)
     index = 0
@@ -488,26 +550,95 @@ def parse_blocks(lines: Sequence[str], doc_type: str) -> List[Block]:
     return blocks
 
 
-def validate_blocks(blocks: Sequence[Block], doc_type: str) -> List[Finding]:
-    findings: List[Finding] = []
-    id_re = SRS_BLOCK_ID_RE if doc_type == "SRS" else HCS_BLOCK_ID_RE
-    required_fields = SRS_REQUIRED_FIELDS if doc_type == "SRS" else HCS_REQUIRED_FIELDS
-    enums = SRS_ENUMS if doc_type == "SRS" else HCS_ENUMS
-    id_pattern_text = r"^[A-Z]{3,5}-[A-Z]{2,4}-\d{3}$" if doc_type == "SRS" else r"^HWC-[A-Z]{2,4}-\d{3}$"
+def strs_block_kind(block_id: str) -> Optional[str]:
+    """Return "NRM" | "HWC" | "STK" for a well-formed StRS ID, else None."""
+    if NRM_ID_RE.match(block_id):
+        return "NRM"
+    if HWC_ID_RE.match(block_id):
+        return "HWC"
+    if STK_ID_RE.match(block_id):
+        return "STK"
+    return None
 
-    seen: Dict[str, int] = {}
-    for block in blocks:
-        if not id_re.match(block.id):
+
+def _check_fields(
+    block: Block,
+    required: Sequence[str],
+    presence: Sequence[str],
+    enums: Dict[str, Sequence[str]],
+) -> List[Finding]:
+    findings: List[Finding] = []
+    for name in required:
+        if name not in block.fields or is_unset(block.fields[name][0]):
             findings.append(
                 Finding(
                     severity="ERROR",
                     line=block.line,
                     block_id=block.id,
-                    message="block ID does not match the required pattern",
-                    expected=id_pattern_text,
+                    message=f"missing required field '{name}'",
+                    expected=name,
                 )
             )
+    for name in presence:
+        if name not in block.fields:
+            findings.append(
+                Finding(
+                    severity="ERROR",
+                    line=block.line,
+                    block_id=block.id,
+                    message=f"missing required field '{name}'",
+                    expected=f"{name} row (may hold \u2014 when no normative source applies)",
+                )
+            )
+    for name, allowed in enums.items():
+        if name not in block.fields or is_unset(block.fields[name][0]):
+            continue  # already reported as missing
+        value = cell_text(block.fields[name][0])
+        if value.upper() not in allowed:
+            findings.append(
+                Finding(
+                    severity="ERROR",
+                    line=block.fields[name][1],
+                    block_id=block.id,
+                    message=f"field '{name}' has invalid value '{value}'",
+                    expected=" | ".join(allowed),
+                )
+            )
+    return findings
 
+
+def validate_blocks(blocks: Sequence[Block], doc_type: str) -> List[Finding]:
+    findings: List[Finding] = []
+    seen: Dict[str, int] = {}
+
+    for block in blocks:
+        # --- ID pattern -----------------------------------------------------
+        if doc_type == "StRS":
+            kind = strs_block_kind(block.id)
+            if kind is None:
+                findings.append(
+                    Finding(
+                        severity="ERROR",
+                        line=block.line,
+                        block_id=block.id,
+                        message="block ID does not match the required pattern",
+                        expected=STRS_ID_PATTERN_TEXT,
+                    )
+                )
+        else:
+            kind = "SYS"
+            if not SYS_ID_RE.match(block.id):
+                findings.append(
+                    Finding(
+                        severity="ERROR",
+                        line=block.line,
+                        block_id=block.id,
+                        message="block ID does not match the required pattern",
+                        expected=SYS_ID_PATTERN_TEXT,
+                    )
+                )
+
+        # --- uniqueness -----------------------------------------------------
         if block.id in seen:
             findings.append(
                 Finding(
@@ -521,6 +652,7 @@ def validate_blocks(blocks: Sequence[Block], doc_type: str) -> List[Finding]:
         else:
             seen[block.id] = block.line
 
+        # --- title length ---------------------------------------------------
         if len(block.title) > MAX_TITLE_LEN:
             findings.append(
                 Finding(
@@ -532,42 +664,34 @@ def validate_blocks(blocks: Sequence[Block], doc_type: str) -> List[Finding]:
                 )
             )
 
-        for name in required_fields:
-            if name not in block.fields or is_unset(block.fields[name][0]):
-                findings.append(
-                    Finding(
-                        severity="ERROR",
-                        line=block.line,
-                        block_id=block.id,
-                        message=f"missing required field '{name}'",
-                        expected=name,
-                    )
+        # --- fields and type-specific rules ---------------------------------
+        if doc_type == "StRS":
+            if kind is None:
+                continue  # unusable ID — field rules would be noise
+            if kind == "STK":
+                findings.extend(
+                    _check_fields(block, STK_REQUIRED_FIELDS, STRS_COMPLIANCE_PRESENCE, STK_ENUMS)
                 )
-
-        for name, allowed in enums.items():
-            if name not in block.fields or is_unset(block.fields[name][0]):
-                continue  # already reported as missing
-            value = cell_text(block.fields[name][0])
-            if value.upper() not in allowed:
-                findings.append(
-                    Finding(
-                        severity="ERROR",
-                        line=block.fields[name][1],
-                        block_id=block.id,
-                        message=f"field '{name}' has invalid value '{value}'",
-                        expected=" | ".join(allowed),
-                    )
+                findings.extend(_validate_requirement_block(block))
+            elif kind == "NRM":
+                findings.extend(
+                    _check_fields(block, NRM_REQUIRED_FIELDS, (), NRM_ENUMS)
                 )
-
-        if doc_type == "SRS":
-            findings.extend(_validate_srs_block(block))
+                findings.extend(_validate_requirement_block(block))
+            else:  # HWC
+                findings.extend(
+                    _check_fields(block, HWC_REQUIRED_FIELDS, STRS_COMPLIANCE_PRESENCE, HWC_ENUMS)
+                )
+                findings.extend(_validate_hwc_block(block))
         else:
-            findings.extend(_validate_hcs_block(block))
+            findings.extend(_check_fields(block, SYS_REQUIRED_FIELDS, (), {}))
+            findings.extend(_validate_sys_block(block))
 
     return findings
 
 
-def _validate_srs_block(block: Block) -> List[Finding]:
+def _validate_requirement_block(block: Block) -> List[Finding]:
+    """Description + acceptance-criteria rules shared by STK and NRM blocks."""
     findings: List[Finding] = []
 
     if not block.has_description:
@@ -615,7 +739,35 @@ def _validate_srs_block(block: Block) -> List[Finding]:
     return findings
 
 
-def _validate_hcs_block(block: Block) -> List[Finding]:
+def _validate_sys_block(block: Block) -> List[Finding]:
+    """SyRS MVP: every SYS block carries at least one acceptance criterion."""
+    findings: List[Finding] = []
+
+    if not block.has_criteria:
+        findings.append(
+            Finding(
+                severity="ERROR",
+                line=block.line,
+                block_id=block.id,
+                message="missing '**Acceptance Criteria:**' section",
+                expected="a '**Acceptance Criteria:**' line with numbered items",
+            )
+        )
+    elif block.criteria_count < 1:
+        findings.append(
+            Finding(
+                severity="ERROR",
+                line=block.line,
+                block_id=block.id,
+                message="acceptance criteria section has no numbered items",
+                expected="at least 1 numbered item",
+            )
+        )
+
+    return findings
+
+
+def _validate_hwc_block(block: Block) -> List[Finding]:
     findings: List[Finding] = []
     limit_type_raw = block.fields.get("Limit type", ("", 0))[0]
     limit_type = cell_text(limit_type_raw).upper() if not is_unset(limit_type_raw) else ""
@@ -648,7 +800,7 @@ def _validate_hcs_block(block: Block) -> List[Finding]:
 
 
 # --------------------------------------------------------------------------
-# Phase 4: cross-references
+# Phase 4: cross-references within one document
 # --------------------------------------------------------------------------
 
 
@@ -685,84 +837,93 @@ def _find_cycles(blocks: Sequence[Block]) -> List[List[str]]:
 def validate_cross_refs(
     blocks: Sequence[Block], sections: Sequence[Section], doc_type: str
 ) -> List[Finding]:
+    """Intra-document cross-checks (StRS only; SyRS needs its StRS — G0-X)."""
     findings: List[Finding] = []
+    if doc_type != "StRS":
+        return findings
+
     known_ids = {block.id for block in blocks}
 
-    if doc_type == "SRS":
-        for block in blocks:
-            for dep in block.dependencies:
-                if dep not in known_ids:
+    for block in blocks:
+        for dep in block.dependencies:
+            if dep not in known_ids:
+                findings.append(
+                    Finding(
+                        severity="ERROR",
+                        line=block.line,
+                        block_id=block.id,
+                        message=f"dependency '{dep}' does not exist in this document",
+                        expected="an ID declared in this document",
+                    )
+                )
+
+    for cycle in _find_cycles(blocks):
+        findings.append(
+            Finding(
+                severity="ERROR",
+                line=block_line(blocks, cycle[0]),
+                block_id=cycle[0],
+                message="circular dependency: " + " -> ".join(cycle),
+                expected="an acyclic dependency graph",
+            )
+        )
+
+    trace = _find_section(sections, "## 6. Traceability")
+    if trace is not None:
+        traced = {value for value, _ in _parse_first_column(trace.content)}
+        for block in _blocks_in_section(sections, "## 3. Specific Requirements", blocks):
+            if block.id not in traced:
+                findings.append(
+                    Finding(
+                        severity="WARNING",
+                        line=block.line,
+                        block_id=block.id,
+                        message="block is not listed in the §6 Traceability table",
+                        expected="a row in §6",
+                    )
+                )
+
+    inventory = {
+        value
+        for value, _ in _parse_first_column(
+            _section_content(sections, "### 1.6 Hardware Inventory")
+        )
+    }
+    refs = {
+        value for value, _ in _parse_first_column(_section_content(sections, "### 1.4 References"))
+    }
+
+    for block in blocks:
+        if strs_block_kind(block.id) != "HWC":
+            continue
+
+        comp_raw = block.fields.get("Component", ("", 0))[0]
+        if not is_unset(comp_raw):
+            for comp in (c.strip() for c in cell_text(comp_raw).replace("`", "").split(",")):
+                if comp and comp not in inventory:
                     findings.append(
                         Finding(
                             severity="ERROR",
-                            line=block.line,
+                            line=block.fields["Component"][1],
                             block_id=block.id,
-                            message=f"dependency '{dep}' does not exist in this document",
-                            expected="an ID declared in this document",
+                            message=f"component '{comp}' is not listed in the §1.6 Hardware Inventory",
+                            expected="a Component ID from §1.6",
                         )
                     )
 
-        for cycle in _find_cycles(blocks):
-            findings.append(
-                Finding(
-                    severity="ERROR",
-                    line=block_line(blocks, cycle[0]),
-                    block_id=cycle[0],
-                    message="circular dependency: " + " -> ".join(cycle),
-                    expected="an acyclic dependency graph",
+        ref_raw = block.fields.get("Source ref", ("", 0))[0]
+        if refs and not is_unset(ref_raw):
+            candidate = cell_text(ref_raw).replace("`", "").strip()
+            if not any(candidate.startswith(ref) for ref in refs):
+                findings.append(
+                    Finding(
+                        severity="WARNING",
+                        line=block.fields["Source ref"][1],
+                        block_id=block.id,
+                        message=f"source ref '{candidate}' does not start with a known §1.4 reference",
+                        expected=" | ".join(sorted(refs)),
+                    )
                 )
-            )
-
-        trace = _find_section(sections, "## 6. Traceability")
-        if trace is not None:
-            traced = {value for value, _ in _parse_first_column(trace.content)}
-            for block in _blocks_in_section(sections, "## 3. Specific Requirements", blocks):
-                if block.id not in traced:
-                    findings.append(
-                        Finding(
-                            severity="WARNING",
-                            line=block.line,
-                            block_id=block.id,
-                            message="requirement is not listed in the §6 Traceability table",
-                            expected="a row in §6",
-                        )
-                    )
-    else:
-        inventory = {
-            value for value, _ in _parse_first_column(_section_content(sections, "### 1.5 Hardware Inventory"))
-        }
-        refs = {
-            value for value, _ in _parse_first_column(_section_content(sections, "### 1.4 References"))
-        }
-
-        for block in blocks:
-            comp_raw = block.fields.get("Component", ("", 0))[0]
-            if not is_unset(comp_raw):
-                for comp in (c.strip() for c in cell_text(comp_raw).replace("`", "").split(",")):
-                    if comp and comp not in inventory:
-                        findings.append(
-                            Finding(
-                                severity="ERROR",
-                                line=block.fields["Component"][1],
-                                block_id=block.id,
-                                message=f"component '{comp}' is not listed in the §1.5 Hardware Inventory",
-                                expected="a Component ID from §1.5",
-                            )
-                        )
-
-            ref_raw = block.fields.get("Source ref", ("", 0))[0]
-            if refs and not is_unset(ref_raw):
-                candidate = cell_text(ref_raw).replace("`", "").strip()
-                if not any(candidate.startswith(ref) for ref in refs):
-                    findings.append(
-                        Finding(
-                            severity="WARNING",
-                            line=block.fields["Source ref"][1],
-                            block_id=block.id,
-                            message=f"source ref '{candidate}' does not start with a known §1.4 reference",
-                            expected=" | ".join(sorted(refs)),
-                        )
-                    )
 
     return findings
 
@@ -788,6 +949,102 @@ def _blocks_in_section(
     first = section.heading_line
     last = section.content[-1][0] if section.content else first
     return [block for block in blocks if first <= block.line <= last]
+
+
+# --------------------------------------------------------------------------
+# G0-X: cross-document consistency (StRS + SyRS pair)
+# --------------------------------------------------------------------------
+
+
+def validate_cross_document(
+    strs_blocks: Sequence[Block], syrs_blocks: Sequence[Block]
+) -> List[Finding]:
+    """G0-X rules, evaluated when both GT documents are present.
+
+    - Every STK- StRS block is covered by at least one SYS- `Traces to`.
+    - Every `Traces to` value resolves to a real StRS block (NRM-/HWC-/STK-).
+    - Block IDs form one namespace: no ID appears in both documents.
+    - Every SYS- block cites a normative source (`Standard(s)` never unset).
+    """
+    findings: List[Finding] = []
+    strs_ids = {block.id for block in strs_blocks}
+    sys_ids = {block.id for block in syrs_blocks}
+    covered: set = set()
+
+    for block in syrs_blocks:
+        raw = block.fields.get("Traces to", ("", block.line))[0]
+        if not is_unset(raw):
+            targets = _STRS_TOKEN_RE.findall(cell_text(raw))
+            if not targets:
+                findings.append(
+                    Finding(
+                        severity="ERROR",
+                        line=block.fields["Traces to"][1],
+                        block_id=block.id,
+                        message=(
+                            "'Traces to' does not reference any StRS block ID"
+                        ),
+                        expected=STRS_ID_PATTERN_TEXT,
+                        doc="SyRS",
+                    )
+                )
+            for target in targets:
+                covered.add(target)
+                if target not in strs_ids:
+                    findings.append(
+                        Finding(
+                            severity="ERROR",
+                            line=block.fields["Traces to"][1],
+                            block_id=block.id,
+                            message=f"'Traces to' target '{target}' does not exist in the StRS",
+                            expected="an NRM-, HWC-, or STK- block ID declared in the StRS",
+                            doc="SyRS",
+                        )
+                    )
+
+        std_raw = block.fields.get("Standard(s)", ("", block.line))[0]
+        if "Standard(s)" not in block.fields or is_unset(std_raw):
+            findings.append(
+                Finding(
+                    severity="ERROR",
+                    line=block.line,
+                    block_id=block.id,
+                    message="no normative source cited — 'Standard(s)' is missing or unset",
+                    expected="a concrete normative reference",
+                    doc="SyRS",
+                )
+            )
+
+    for block in strs_blocks:
+        if strs_block_kind(block.id) == "STK" and block.id not in covered:
+            findings.append(
+                Finding(
+                    severity="ERROR",
+                    line=block.line,
+                    block_id=block.id,
+                    message=(
+                        "stakeholder requirement has no SyRS specification — "
+                        "no SYS- block traces to it"
+                    ),
+                    expected="at least one SYS- block with 'Traces to' naming this ID",
+                    doc="StRS",
+                )
+            )
+
+    for block in syrs_blocks:
+        if block.id in strs_ids:
+            findings.append(
+                Finding(
+                    severity="ERROR",
+                    line=block.line,
+                    block_id=block.id,
+                    message="block ID collides with a StRS block ID (shared namespace)",
+                    expected="an ID unique across StRS + SyRS",
+                    doc="SyRS",
+                )
+            )
+
+    return findings
 
 
 # --------------------------------------------------------------------------
@@ -824,10 +1081,68 @@ def format_report(path: str, doc_type: str, findings: Sequence[Finding]) -> str:
     return "\n".join(lines)
 
 
-def _render_finding(prefix: str, position: int, finding: Finding) -> str:
+def format_cross_document_report(
+    strs_path: str, syrs_path: str, findings: Sequence[Finding]
+) -> str:
+    """Report for the G0-X pair rules; each finding names its document."""
+    ordered = sorted(findings, key=lambda f: f.line)
+    errors = [f for f in ordered if f.severity == "ERROR"]
+    warnings = [f for f in ordered if f.severity == "WARNING"]
+
+    result = "FAIL" if errors else "PASS"
+    lines = [
+        "G0-X CROSS-DOCUMENT REPORT",
+        "==========================",
+        f"StRS: {strs_path}",
+        f"SyRS: {syrs_path}",
+        f"Result: {result} ({len(errors)} errors, {len(warnings)} warnings)",
+    ]
+
+    if errors:
+        lines.append("")
+        lines.append("ERRORS:")
+        for position, finding in enumerate(errors, start=1):
+            lines.append(_render_finding("E", position, finding, with_doc=True))
+
+    if warnings:
+        lines.append("")
+        lines.append("WARNINGS:")
+        for position, finding in enumerate(warnings, start=1):
+            lines.append(_render_finding("W", position, finding, with_doc=True))
+
+    return "\n".join(lines)
+
+
+def format_gate_report(findings: Sequence[Finding]) -> str:
+    """Report for an incomplete StRS/SyRS pair (gate-level findings)."""
+    errors = [f for f in findings if f.severity == "ERROR"]
+    warnings = [f for f in findings if f.severity == "WARNING"]
+    result = "FAIL" if errors else "PASS"
+    lines = [
+        "G0 GATE REPORT",
+        "==============",
+        f"Result: {result} ({len(errors)} errors, {len(warnings)} warnings)",
+    ]
+    if errors:
+        lines.append("")
+        lines.append("ERRORS:")
+        for position, finding in enumerate(errors, start=1):
+            lines.append(_render_finding("E", position, finding))
+    if warnings:
+        lines.append("")
+        lines.append("WARNINGS:")
+        for position, finding in enumerate(warnings, start=1):
+            lines.append(_render_finding("W", position, finding))
+    return "\n".join(lines)
+
+
+def _render_finding(
+    prefix: str, position: int, finding: Finding, with_doc: bool = False
+) -> str:
     tag = f"[{prefix}{position:03d}]"
+    where = f" [{finding.doc}]" if with_doc and finding.doc else ""
     scope = f"{finding.block_id} \u2014 " if finding.block_id else ""
-    line = f"{tag} Line {finding.line}: {scope}{finding.message}"
+    line = f"{tag} Line {finding.line}{where}: {scope}{finding.message}"
     if finding.expected:
         line += f". Expected: {finding.expected}"
     return line
@@ -838,22 +1153,27 @@ def _render_finding(prefix: str, position: int, finding: Finding) -> str:
 # --------------------------------------------------------------------------
 
 
-def validate_file(path: str) -> Tuple[str, List[Finding]]:
-    """Validate one file. Raises SystemExit(2) on a script-level error."""
+def _read_lines(path: str) -> List[str]:
     try:
         with open(path, "r", encoding="utf-8") as handle:
-            lines = handle.read().splitlines()
+            return handle.read().splitlines()
     except OSError as exc:
         print(f"error: cannot read '{path}': {exc}", file=sys.stderr)
         raise SystemExit(2)
+
+
+def validate_file(path: str) -> Tuple[str, List[Finding]]:
+    """Validate one file (Phases 1-4, per document). Raises SystemExit(2) on a
+    script-level error."""
+    lines = _read_lines(path)
 
     sections = parse_markdown(lines)
     doc_type = detect_doc_type(sections)
     if doc_type is None:
         print(
             f"error: cannot detect document type for '{path}' - "
-            "expected a '## System Requirements Specification (SRS)' or "
-            "'## Hardware Constraints Specification (HCS)' heading",
+            "expected a '## Stakeholder Requirements Specification (StRS)' or "
+            "'## System Requirements Specification (SyRS)' heading",
             file=sys.stderr,
         )
         raise SystemExit(2)
@@ -872,19 +1192,66 @@ def validate_file(path: str) -> Tuple[str, List[Finding]]:
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(
         prog="g0_validate.py",
-        description="Deterministic structural validation of V-SIL SRS/HCS Ground Truth documents.",
+        description=(
+            "Deterministic structural validation of V-SIL StRS/SyRS Ground Truth documents."
+        ),
     )
-    parser.add_argument("files", nargs="+", metavar="file", help="path to a GT .md file (SRS or HCS)")
+    parser.add_argument(
+        "files",
+        nargs="+",
+        metavar="file",
+        help="path to a GT .md file (StRS or SyRS); pass both for the G0 gate",
+    )
     args = parser.parse_args(argv)
 
     exit_code = 0
     reports: List[str] = []
+    detected: Dict[str, str] = {}  # path -> doc_type, in input order
+    order: List[str] = []
 
     for path in args.files:
         doc_type, findings = validate_file(path)
+        detected[path] = doc_type
+        order.append(path)
         reports.append(format_report(path, doc_type, findings))
         if any(finding.severity == "ERROR" for finding in findings):
             exit_code = 1
+
+    strs_path = next((p for p in order if detected[p] == "StRS"), None)
+    syrs_path = next((p for p in order if detected[p] == "SyRS"), None)
+
+    if strs_path is not None and syrs_path is not None:
+        strs_blocks = parse_blocks(_read_lines(strs_path), "StRS")
+        syrs_blocks = parse_blocks(_read_lines(syrs_path), "SyRS")
+        g0x = validate_cross_document(strs_blocks, syrs_blocks)
+        reports.append(format_cross_document_report(strs_path, syrs_path, g0x))
+        if any(finding.severity == "ERROR" for finding in g0x):
+            exit_code = 1
+    else:
+        # Gate logic: G0 needs the pair.
+        gate_findings: List[Finding] = []
+        if strs_path is None:
+            gate_findings.append(
+                Finding(
+                    severity="ERROR",
+                    line=1,
+                    block_id="",
+                    message="G0 requires a StRS document — none provided",
+                    expected="a file with a '## Stakeholder Requirements Specification (StRS)' heading",
+                )
+            )
+        if syrs_path is None:
+            gate_findings.append(
+                Finding(
+                    severity="ERROR",
+                    line=1,
+                    block_id="",
+                    message="G0 requires a SyRS document — none provided",
+                    expected="a file with a '## System Requirements Specification (SyRS)' heading",
+                )
+            )
+        reports.append(format_gate_report(gate_findings))
+        exit_code = 1
 
     print("\n\n".join(reports))
     return exit_code

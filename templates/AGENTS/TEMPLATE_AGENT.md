@@ -43,8 +43,12 @@ The `GT/` directory holds human-authored `.md` files:
 
 | File | Purpose |
 |------|---------|
-| `G0_SRS.md` | System Requirements Specification (IEEE 29148) |
-| `G0_HCS.md` | Hardware Constraints Specification (design constraints) |
+| `G0_StRS.md` | Stakeholder Requirements Specification (IEEE 29148 §9.4) |
+| `G0_SyRS.md` | System Requirements Specification (IEEE 29148 §9.5) |
+
+G0 is a **pair gate**: both files must pass, plus the G0-X cross-document rules,
+before any downstream gate runs. The SRS (Software Requirements Specification,
+§9.6) is **produced at G1** at `GT/G1_SRS.md` — it is not a G0 input.
 
 These files are **inputs**. You **MUST NOT** modify them to make a gate pass.
 

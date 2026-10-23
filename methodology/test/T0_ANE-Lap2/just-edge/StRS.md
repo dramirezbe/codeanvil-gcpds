@@ -1,6 +1,6 @@
 # PROJECT: Edge Sensor — ANE Spectrum Monitoring System
 
-## System Requirements Specification (SRS)
+## Stakeholder Requirements Specification (StRS)
 
 > **Standard:** IEEE/ISO/IEC 29148:2018 — *Systems and software engineering — Life cycle processes — Requirements engineering.*
 >
@@ -15,10 +15,10 @@
 
 | Field                  | Value                                                      |
 |------------------------|------------------------------------------------------------|
-| **Document ID**        | `SRS-ANE-EDGE-001`                                        |
+| **Document ID**        | `STRS-ANE-EDGE-001`                                        |
 | **Project**            | Edge Sensor — Spectrum Monitoring Subsystem (Phase 2)      |
 | **Organization**       | National Spectrum Agency (ANE) — Colombia                  |
-| **Version**            | 1.0.0                                                     |
+| **Version**            | 2.0.0                                                     |
 | **Classification**     | `INTERNAL`                                                |
 | **Author(s)**          | _To be defined_                                           |
 | **Reviewer(s)**        | _To be defined_                                           |
@@ -28,10 +28,10 @@
 
 | Document ID            | Title                                                   | Relationship              |
 |------------------------|---------------------------------------------------------|---------------------------|
-| `HCS-ANE-EDGE-001`    | Edge Sensor Hardware Constraints Specification          | Design constraints envelope |
+| `SYRS-ANE-EDGE-001`   | Edge Sensor System Requirements Specification           | Per-measurand derived specification (G0 pair) |
 | `SRS-ANE-001`         | Full-System SRS (Phase 2)                               | Parent system requirements |
 
-> **Note:** The companion HCS-ANE-EDGE-001 documents the parametric limits of the HackRF One + Raspberry Pi 4B platform. This SRS was written with those limits already incorporated — every requirement is feasible within the hardware envelope.
+> **Note:** This document merges the former Hardware Constraints Specification: COTS platform limits live in §1.6/§2.6/§2.7 and as HWC- blocks in §3. The companion SyRS-ANE-EDGE-001 derives per-measurand specifications from this document.
 
 ### Change Log
 
@@ -39,6 +39,7 @@
 |---------|------------|------------------------|---------------------------------------------|
 | 0.1.0   | 2026-10-13 | AI-assisted generation | Initial extraction from SRS-ANE-001         |
 | 1.0.0   | 2026-10-13 | AI-assisted generation | Approved — IEEE 29148 v3 structure          |
+| 2.0.0   | 2026-10-22 | Migration              | StRS per IEEE 29148 §9.4 — merged HCS, inline compliance |
 
 ---
 
@@ -71,7 +72,6 @@ The edge sensor is an autonomous spectrum-monitoring node based on an SDR (HackR
 | FFT        | Fast Fourier Transform                                                               |
 | CS8        | Complex Signed 8-bit — the HackRF IQ sample format                                  |
 | AF         | Antenna Factor                                                                       |
-| HCS        | Hardware Constraints Specification — companion document                              |
 | OTA        | Over The Air — remote software update                                               |
 
 ### 1.4 References
@@ -83,11 +83,33 @@ The edge sensor is an autonomous spectrum-monitoring node based on an SDR (HackR
 | `REF-003`  | ITU-T K.113 — Electric field measurement in urban environments         | In force            |
 | `REF-004`  | ITU-T K.100 — Assessment of human exposure to electromagnetic fields   | In force            |
 | `REF-007`  | IEEE/ISO/IEC 29148:2018 — Requirements engineering                     | 2018                |
-| `REF-HCS`  | HCS-ANE-EDGE-001 — Companion HW Constraints Specification             | 1.0.0 / 2026-10-13  |
+| `REF-DS-001`  | HackRF One Datasheet / Specifications                           | Rev 2024                |
+| `REF-DS-002`  | Raspberry Pi 4 Model B Datasheet                                | Rev 2023                |
+| `REF-DS-003`  | BCM2711 (RPi 4B SoC) Datasheet                                 | Broadcom, 2019          |
+| `REF-DRV-001` | libhackrf API Documentation                                    | v2024.02.1              |
+| `REF-DRV-002` | SoapySDR API Documentation                                     | v0.8                    |
+| `REF-DRV-003` | Linux USB 2.0 Subsystem Documentation                           | Kernel 6.x              |
+| `REF-MEAS-001`| HackRF DANL Characterization (measured)                         | _To be performed_       |
+| `REF-MEAS-002`| USB 2.0 Sustained Throughput Test (measured)                    | _To be performed_       |
+| `REF-GUM`     | JCGM 100:2008 — Evaluation of measurement data (GUM)            | 2008                    |
+| `REF-ICNIRP`  | ICNIRP 2010 — Exposure limits for time-varying electric and magnetic fields | 2010     |
+| `REF-SYRS`    | SYRS-ANE-EDGE-001 — Companion System Requirements Specification  | 2.0.0 / 2026-10-22      |
 
 ### 1.5 Document Overview
 
 Section 3 contains specific requirements organized by subsystem. Section 4 covers external interfaces. Section 5 covers non-functional requirements. Section 6 presents the traceability matrix.
+### 1.6 Hardware Inventory
+
+| Component ID | Component Name         | Role in System                        | Manufacturer       | Part Number         |
+|-------------|------------------------|---------------------------------------|---------------------|---------------------|
+| `HW-SDR`   | HackRF One             | SDR receiver / transmitter            | Great Scott Gadgets  | HackRF One          |
+| `HW-CPU`   | Raspberry Pi 4 Model B | Embedded processing platform          | Raspberry Pi Foundation | RPi 4B 4GB/8GB  |
+| `HW-GPS`   | GPS Module (TBD)       | Geolocation and timing                | TBD                 | TBD                 |
+| `HW-4G5G`  | 4G/5G Modem (TBD)     | Mobile data connectivity              | TBD                 | TBD                 |
+| `HW-MUX`   | Antenna Multiplexer    | RF path switching between antennas    | TBD                 | TBD                 |
+| `HW-PWR`   | Solar + Battery System | Autonomous power supply               | TBD                 | TBD                 |
+| `HW-STR`   | SSD / microSD          | Local data storage                    | TBD                 | TBD                 |
+
 
 ---
 
@@ -141,7 +163,7 @@ Real-time spectrum capture (1 MHz–6 GHz), DSP processing (FFT, PSD, traces, RB
 
 ### 2.4 Constraints
 
-Summary of hardware constraints (see HCS-ANE-EDGE-001 for parametric details):
+Summary of hardware constraints (see the HWC- blocks in §3.12–§3.17 for parametric details):
 
 - **RF front-end:** HackRF One — 1 MHz to 6 GHz, 20 MHz instantaneous BW, 8-bit IQ (CS8), manual gain only.
 - **Processing:** Raspberry Pi 4B — 4× Cortex-A72 @ 1.8 GHz, 4/8 GB RAM.
@@ -153,6 +175,54 @@ Summary of hardware constraints (see HCS-ANE-EDGE-001 for parametric details):
 - The ANE provides data SIM cards for mobile connectivity.
 - Sensors are deployed at sites with mains power or viable solar.
 - Antennas are correctly connected and calibrated for the operating band.
+### 2.6 Block Diagram
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                    EDGE SENSOR NODE                               │
+│                                                                   │
+│  ┌─────────────┐    USB 2.0     ┌──────────────────────┐         │
+│  │  HackRF One │◄──────────────►│  Raspberry Pi 4B     │         │
+│  │  [HW-SDR]   │   IQ (CS8)    │  [HW-CPU]            │         │
+│  └──────┬──────┘               │                      │         │
+│         │ SMA                   │  ┌────────────────┐  │         │
+│  ┌──────┴──────┐               │  │ DSP Pipeline   │  │         │
+│  │ Antenna Mux │               │  │ (software)     │  │         │
+│  │ [HW-MUX]   │               │  └────────────────┘  │         │
+│  └──────┬──────┘               │                      │         │
+│         │ SMA                   │  ┌────────────────┐  │         │
+│  ┌──────┴──────┐               │  │ Storage        │  │         │
+│  │  Antennas   │               │  │ [HW-STR]       │  │         │
+│  │  (per band) │               │  └────────────────┘  │         │
+│  └─────────────┘               └──────────┬───────────┘         │
+│                                           │                      │
+│  ┌─────────────┐  UART/USB    ┌──────────┴──────────┐           │
+│  │ GPS Module  │◄────────────►│  Peripheral Bus     │           │
+│  │ [HW-GPS]   │              │  (USB/UART/GPIO)    │           │
+│  └─────────────┘              └──────────┬──────────┘           │
+│                                          │                       │
+│  ┌─────────────┐  USB         ┌──────────┴──────────┐           │
+│  │ 4G/5G Modem │◄────────────►│  Network Manager    │           │
+│  │ [HW-4G5G]  │              │  (software)         │           │
+│  └─────────────┘              └─────────────────────┘           │
+│                                                                   │
+│  ┌────────────────────────────────────────────┐                  │
+│  │ Solar Panel + Battery + Charge Manager     │                  │
+│  │ [HW-PWR]                                   │                  │
+│  └────────────────────────────────────────────┘                  │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+### 2.7 Bus and Interface Topology
+
+| From       | To         | Bus/Protocol | Data Rate (theoretical) | Data Rate (sustained) |
+|------------|------------|-------------|-------------------------|----------------------|
+| HW-SDR     | HW-CPU     | USB 2.0     | 480 Mbps                | ~256 Mbps (~32 MB/s) |
+| HW-GPS     | HW-CPU     | UART / USB  | 9600 baud (NMEA)        | < 1 KB/s             |
+| HW-4G5G   | HW-CPU     | USB         | Varies by modem         | Carrier-dependent    |
+| HW-MUX     | HW-CPU     | GPIO        | N/A (control signals)   | N/A                  |
+| HW-STR     | HW-CPU     | USB 3.0 / microSD | 5 Gbps / 104 MB/s | ~400 MB/s / ~90 MB/s |
+
 
 ---
 
@@ -166,7 +236,7 @@ Summary of hardware constraints (see HCS-ANE-EDGE-001 for parametric details):
 
 ---
 
-**`ANAL-EMC-001` — Sensor EMC optimization**
+**`STK-EMC-001` — Sensor EMC optimization**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -177,6 +247,9 @@ Summary of hardware constraints (see HCS-ANE-EDGE-001 for parametric details):
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL incorporate filtering in the sensor's receive path and RF shielding to prevent spurious signals generated by its own electronics from appearing in measurement results.
@@ -196,7 +269,7 @@ The HackRF lacks pre-selection filters, so its broadband front-end is susceptibl
 
 ---
 
-**`ANAL-RNG-001` — Frequency-range coverage**
+**`STK-RNG-001` — Frequency-range coverage**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -207,6 +280,9 @@ The HackRF lacks pre-selection filters, so its broadband front-end is susceptibl
 | **Standard(s)**        | ITU-R SM.1537; `REF-001`                                 |
 | **Dependencies**       | —                                                        |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL capture emissions from 1 MHz up to 6 GHz.
@@ -221,7 +297,7 @@ Sensitivity degrades at band edges (below 10 MHz and above 4 GHz). Characterizat
 
 ---
 
-**`ANAL-RNG-002` — Real-time monitoring bandwidth**
+**`STK-RNG-002` — Real-time monitoring bandwidth**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -232,6 +308,9 @@ Sensitivity degrades at band edges (below 10 MHz and above 4 GHz). Characterizat
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL provide real-time monitoring with a configurable bandwidth between 6 MHz and 20 MHz, and an automatic mode fixed at 20 MHz.
@@ -253,7 +332,7 @@ At 20 MS/s, sample drops are possible due to the USB 2.0 bottleneck (~32 MB/s su
 
 ---
 
-**`ANAL-PAR-001` — Parameterizable frequency range**
+**`STK-PAR-001` — Parameterizable frequency range**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -262,8 +341,11 @@ At 20 MS/s, sample drops are possible due to the USB 2.0 bottleneck (~32 MB/s su
 | **Status**             | `APPROVED`                                                |
 | **Verification**       | `DEMONSTRATION`                                          |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `ANAL-RNG-001`                                           |
+| **Dependencies**       | `STK-RNG-001`                                           |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL allow the user to define frequency ranges within the 1 MHz – 6 GHz envelope (center+span or start+stop).
@@ -276,7 +358,7 @@ The system SHALL allow the user to define frequency ranges within the 1 MHz – 
 
 ---
 
-**`ANAL-PAR-002` — RBW configuration**
+**`STK-PAR-002` — RBW configuration**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -285,8 +367,11 @@ The system SHALL allow the user to define frequency ranges within the 1 MHz – 
 | **Status**             | `APPROVED`                                                |
 | **Verification**       | `TEST`                                                   |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `ANAL-PAR-001`                                           |
+| **Dependencies**       | `STK-PAR-001`                                           |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL allow the resolution bandwidth (RBW) to be configured over a defined range (≥ 6 discrete values).
@@ -298,7 +383,7 @@ The system SHALL allow the resolution bandwidth (RBW) to be configured over a de
 
 ---
 
-**`ANAL-PAR-003` — Frequency-resolution steps**
+**`STK-PAR-003` — Frequency-resolution steps**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -307,8 +392,11 @@ The system SHALL allow the resolution bandwidth (RBW) to be configured over a de
 | **Status**             | `APPROVED`                                                |
 | **Verification**       | `TEST`                                                   |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `ANAL-PAR-002`                                           |
+| **Dependencies**       | `STK-PAR-002`                                           |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL offer resolution steps of 500 Hz, with a minimum resolution of 10 Hz.
@@ -324,7 +412,7 @@ The system SHALL offer resolution steps of 500 Hz, with a minimum resolution of 
 
 ---
 
-**`ANAL-PAR-004` — VBW configuration**
+**`STK-PAR-004` — VBW configuration**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -333,8 +421,11 @@ The system SHALL offer resolution steps of 500 Hz, with a minimum resolution of 
 | **Status**             | `APPROVED`                                                |
 | **Verification**       | `TEST`                                                   |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `ANAL-PAR-002`                                           |
+| **Dependencies**       | `STK-PAR-002`                                           |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL implement Video Bandwidth (VBW) filters suited to fine or averaged analysis.
@@ -351,7 +442,7 @@ The system SHALL implement Video Bandwidth (VBW) filters suited to fine or avera
 
 ---
 
-**`ANAL-PAR-005` — Manual entry of GPS coordinates**
+**`STK-PAR-005` — Manual entry of GPS coordinates**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -362,6 +453,9 @@ The system SHALL implement Video Bandwidth (VBW) filters suited to fine or avera
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL allow the sensor's location coordinates to be entered manually when automatic GPS is unavailable.
@@ -374,7 +468,7 @@ The system SHALL allow the sensor's location coordinates to be entered manually 
 
 ---
 
-**`ANAL-PAR-006` — Measurement unit conversion**
+**`STK-PAR-006` — Measurement unit conversion**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -385,6 +479,9 @@ The system SHALL allow the sensor's location coordinates to be entered manually 
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL allow selection and conversion of measurement units: frequency (Hz, kHz, MHz, GHz), power (dBm, dBmV, dBµV, V, W), and field/power density (V/m, W/m², dBµV/m).
@@ -400,7 +497,7 @@ The system SHALL allow selection and conversion of measurement units: frequency 
 
 ---
 
-**`ANAL-PAR-007` — Analysis and detection thresholds**
+**`STK-PAR-007` — Analysis and detection thresholds**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -411,6 +508,9 @@ The system SHALL allow selection and conversion of measurement units: frequency 
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL allow detection thresholds to be parameterized and SHALL distinguish the noise floor from signal occupancy.
@@ -432,7 +532,7 @@ Detection sensitivity is bounded by the receiver's DANL (~−100 dBm/Hz).
 
 ---
 
-**`ANAL-MED-001` — Spectral traces**
+**`STK-MED-001` — Spectral traces**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -441,8 +541,11 @@ Detection sensitivity is bounded by the receiver's DANL (~−100 dBm/Hz).
 | **Status**             | `APPROVED`                                                |
 | **Verification**       | `DEMONSTRATION`                                          |
 | **Standard(s)**        | ITU-R SM.1537; `REF-001`                                 |
-| **Dependencies**       | `ANAL-PAR-001`                                           |
+| **Dependencies**       | `STK-PAR-001`                                           |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL compute spectral traces: max hold, min hold, average, and RMS; with peak, average, and RMS detection modes.
@@ -460,7 +563,7 @@ The system SHALL compute spectral traces: max hold, min hold, average, and RMS; 
 
 ---
 
-**`ANAL-MED-003` — Occupied-bandwidth measurement**
+**`STK-MED-003` — Occupied-bandwidth measurement**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -469,8 +572,11 @@ The system SHALL compute spectral traces: max hold, min hold, average, and RMS; 
 | **Status**             | `APPROVED`                                                |
 | **Verification**       | `TEST`                                                   |
 | **Standard(s)**        | ITU-R SM.1537; `REF-001`                                 |
-| **Dependencies**       | `ANAL-MED-001`                                           |
+| **Dependencies**       | `STK-MED-001`                                           |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL measure the occupied bandwidth (OBW) using the –X dB and 99% methods.
@@ -486,7 +592,7 @@ OBW measurement limited to signals within the 20 MHz instantaneous BW. Wider sig
 
 ---
 
-**`ANAL-MED-004` — Channel power measurement**
+**`STK-MED-004` — Channel power measurement**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -495,8 +601,11 @@ OBW measurement limited to signals within the 20 MHz instantaneous BW. Wider sig
 | **Status**             | `APPROVED`                                                |
 | **Verification**       | `TEST`                                                   |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `ANAL-RNG-002`                                           |
+| **Dependencies**       | `STK-RNG-002`                                           |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL perform channel-power measurements for emissions up to 20 MHz wide.
@@ -513,7 +622,7 @@ The system SHALL perform channel-power measurements for emissions up to 20 MHz w
 
 ---
 
-**`ANAL-MED-005` — RDS reading in FM**
+**`STK-MED-005` — RDS reading in FM**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -524,6 +633,9 @@ The system SHALL perform channel-power measurements for emissions up to 20 MHz w
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL decode and extract RDS information from FM signals (PI, PS, RT fields).
@@ -535,7 +647,7 @@ The system SHALL decode and extract RDS information from FM signals (PI, PS, RT 
 
 ---
 
-**`ANAL-MED-006` — FM and AM demodulation**
+**`STK-MED-006` — FM and AM demodulation**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -544,8 +656,11 @@ The system SHALL decode and extract RDS information from FM signals (PI, PS, RT 
 | **Status**             | `APPROVED`                                                |
 | **Verification**       | `DEMONSTRATION`                                          |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `ANAL-RNG-001`                                           |
+| **Dependencies**       | `STK-RNG-001`                                           |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL demodulate FM and AM signals in real time, producing digital audio.
@@ -561,7 +676,7 @@ AM reception at 1 MHz is at the lower edge of the receiver's range. Sensitivity 
 
 ---
 
-**`ANAL-MED-007` — AM and FM modulation measurement**
+**`STK-MED-007` — AM and FM modulation measurement**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -570,8 +685,11 @@ AM reception at 1 MHz is at the lower edge of the receiver's range. Sensitivity 
 | **Status**             | `APPROVED`                                                |
 | **Verification**       | `TEST`                                                   |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `ANAL-MED-006`                                           |
+| **Dependencies**       | `STK-MED-006`                                           |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL measure AM modulation depth (%) and FM frequency deviation (kHz) in real time.
@@ -590,7 +708,7 @@ The system SHALL measure AM modulation depth (%) and FM frequency deviation (kHz
 
 ---
 
-**`NORM-VER-001` — Intermodulation detection**
+**`STK-VER-001` — Intermodulation detection**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -599,8 +717,11 @@ The system SHALL measure AM modulation depth (%) and FM frequency deviation (kHz
 | **Status**             | `APPROVED`                                                |
 | **Verification**       | `TEST`                                                   |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `ANAL-MED-001`                                           |
+| **Dependencies**       | `STK-MED-001`                                           |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL detect intermodulation products in AM, FM, and the aeronautical band (108–137 MHz), and perform IF verification.
@@ -616,7 +737,7 @@ The detection algorithm must distinguish receiver-generated IM from real over-th
 
 ---
 
-**`NORM-VER-002` — Interference detection**
+**`STK-VER-002` — Interference detection**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -625,8 +746,11 @@ The detection algorithm must distinguish receiver-generated IM from real over-th
 | **Status**             | `APPROVED`                                                |
 | **Verification**       | `TEST`                                                   |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `ANAL-PAR-007`                                           |
+| **Dependencies**       | `STK-PAR-007`                                           |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL detect interference (signals exceeding the channel average by > 3 dB) and generate a local record.
@@ -643,7 +767,7 @@ The system SHALL detect interference (signals exceeding the channel average by >
 
 ---
 
-**`NORM-SRV-002` — Audio extraction for verification**
+**`STK-SRV-002` — Audio extraction for verification**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -652,8 +776,11 @@ The system SHALL detect interference (signals exceeding the channel average by >
 | **Status**             | `APPROVED`                                                |
 | **Verification**       | `DEMONSTRATION`                                          |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `ANAL-MED-006`                                           |
+| **Dependencies**       | `STK-MED-006`                                           |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL demodulate and store FM/AM audio locally for forensic analysis.
@@ -669,7 +796,7 @@ The system SHALL demodulate and store FM/AM audio locally for forensic analysis.
 
 ---
 
-**`FORN-ALM-001` — Local historical storage**
+**`STK-ALM-001` — Local historical storage**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -680,6 +807,9 @@ The system SHALL demodulate and store FM/AM audio locally for forensic analysis.
 | **Standard(s)**        | ITU-R SM.1537; `REF-001`                                 |
 | **Dependencies**       | —                                                        |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL provide local historical storage for forensic analysis, including spectral data with timestamp and GPS location.
@@ -692,7 +822,7 @@ The system SHALL provide local historical storage for forensic analysis, includi
 
 ---
 
-**`FORN-ALM-003` — Raw IQ storage**
+**`STK-ALM-003` — Raw IQ storage**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -703,6 +833,9 @@ The system SHALL provide local historical storage for forensic analysis, includi
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL store CS8 raw IQ files with metadata for forensic evidence.
@@ -724,7 +857,7 @@ Raw CS8 at 20 MS/s = 40 MB/s. Storage must sustain ≥ 40 MB/s writes.
 
 ---
 
-**`CONN-RED-001` — 4G/5G module**
+**`STK-RED-001` — 4G/5G module**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -735,6 +868,9 @@ Raw CS8 at 20 MS/s = 40 MB/s. Storage must sustain ≥ 40 MB/s writes.
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL support a 4G/5G mobile-connectivity module with a data SIM card, with multi-carrier service.
@@ -747,7 +883,7 @@ The system SHALL support a 4G/5G mobile-connectivity module with a data SIM card
 
 ---
 
-**`CONN-RED-002` — WiFi connection**
+**`STK-RED-002` — WiFi connection**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -758,6 +894,9 @@ The system SHALL support a 4G/5G mobile-connectivity module with a data SIM card
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL enable WiFi connectivity, configurable via Ethernet cable.
@@ -769,7 +908,7 @@ The system SHALL enable WiFi connectivity, configurable via Ethernet cable.
 
 ---
 
-**`CONN-RED-003` — Accessible Ethernet port**
+**`STK-RED-003` — Accessible Ethernet port**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -780,6 +919,9 @@ The system SHALL enable WiFi connectivity, configurable via Ethernet cable.
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL provide an externally accessible Ethernet port (≥ 100 Mbps) without requiring the enclosure to be opened.
@@ -791,7 +933,7 @@ The system SHALL provide an externally accessible Ethernet port (≥ 100 Mbps) w
 
 ---
 
-**`CONN-RED-004` — Network auto-routing**
+**`STK-RED-004` — Network auto-routing**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -800,8 +942,11 @@ The system SHALL provide an externally accessible Ethernet port (≥ 100 Mbps) w
 | **Status**             | `APPROVED`                                                |
 | **Verification**       | `TEST`                                                   |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `CONN-RED-001`, `CONN-RED-002`, `CONN-RED-003`           |
+| **Dependencies**       | `STK-RED-001`, `STK-RED-002`, `STK-RED-003`           |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL implement automatic network routing with failover/priority among 4G/5G, WiFi, and Ethernet.
@@ -818,7 +963,7 @@ The system SHALL implement automatic network routing with failover/priority amon
 
 ---
 
-**`CONN-SOP-001` — Remote access and OTA update**
+**`STK-SOP-001` — Remote access and OTA update**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -827,8 +972,11 @@ The system SHALL implement automatic network routing with failover/priority amon
 | **Status**             | `APPROVED`                                                |
 | **Verification**       | `DEMONSTRATION`                                          |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `CONN-RED-004`                                           |
+| **Dependencies**       | `STK-RED-004`                                           |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL allow remote IP access (SSH or equivalent) and OTA software updates with automatic rollback on failure.
@@ -841,7 +989,7 @@ The system SHALL allow remote IP access (SSH or equivalent) and OTA software upd
 
 ---
 
-**`CONN-GPS-001` — GPS location redundancy**
+**`STK-GPS-001` — GPS location redundancy**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -850,8 +998,11 @@ The system SHALL allow remote IP access (SSH or equivalent) and OTA software upd
 | **Status**             | `APPROVED`                                                |
 | **Verification**       | `TEST`                                                   |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `ANAL-PAR-005`                                           |
+| **Dependencies**       | `STK-PAR-005`                                           |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL continue reporting automatic GPS location even when manual coordinates are configured, storing both sources.
@@ -863,7 +1014,7 @@ The system SHALL continue reporting automatic GPS location even when manual coor
 
 ---
 
-**`CONN-GPS-002` — GPS accuracy**
+**`STK-GPS-002` — GPS accuracy**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -874,6 +1025,9 @@ The system SHALL continue reporting automatic GPS location even when manual coor
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL achieve a horizontal GPS accuracy ≤ 3 m (CEP 50%) under open sky.
@@ -891,7 +1045,7 @@ The system SHALL achieve a horizontal GPS accuracy ≤ 3 m (CEP 50%) under open 
 
 ---
 
-**`ANTE-ANT-001` — Band-specific antennas**
+**`STK-ANT-001` — Band-specific antennas**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -900,8 +1054,11 @@ The system SHALL achieve a horizontal GPS accuracy ≤ 3 m (CEP 50%) under open 
 | **Status**             | `APPROVED`                                                |
 | **Verification**       | `INSPECTION`                                             |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `ANAL-RNG-001`                                           |
+| **Dependencies**       | `STK-RNG-001`                                           |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL incorporate specific antennas optimized for DTT and mobile-telephony downlink (> 2 GHz), each with a documented antenna factor (AF).
@@ -914,7 +1071,7 @@ The system SHALL incorporate specific antennas optimized for DTT and mobile-tele
 
 ---
 
-**`ANTE-ANT-002` — Active antenna for non-ionizing radiation**
+**`STK-ANT-002` — Active antenna for non-ionizing radiation**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -925,6 +1082,9 @@ The system SHALL incorporate specific antennas optimized for DTT and mobile-tele
 | **Standard(s)**        | ITU-T K.113, K.100; `REF-003`, `REF-004`                 |
 | **Dependencies**       | —                                                        |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL incorporate an active antenna with coverage up to 6 GHz, SAW filter, flat response (≤ 2 dB variation), and known AF.
@@ -942,7 +1102,7 @@ The system SHALL incorporate an active antenna with coverage up to 6 GHz, SAW fi
 
 ---
 
-**`ANTE-RNI-001` — Radiation measurement units**
+**`STK-RNI-001` — Radiation measurement units**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -951,8 +1111,11 @@ The system SHALL incorporate an active antenna with coverage up to 6 GHz, SAW fi
 | **Status**             | `APPROVED`                                                |
 | **Verification**       | `DEMONSTRATION`                                          |
 | **Standard(s)**        | ITU-T K.113, K.100; `REF-003`, `REF-004`                 |
-| **Dependencies**       | `ANTE-ANT-002`                                           |
+| **Dependencies**       | `STK-ANT-002`                                           |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL support measurement units for non-ionizing radiation: S (W/m²), A/m, V/m, dBµV/m, dBA/m.
@@ -964,7 +1127,7 @@ The system SHALL support measurement units for non-ionizing radiation: S (W/m²)
 
 ---
 
-**`ANTE-RNI-002` — Field-strength measurement**
+**`STK-RNI-002` — Field-strength measurement**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -973,8 +1136,11 @@ The system SHALL support measurement units for non-ionizing radiation: S (W/m²)
 | **Status**             | `APPROVED`                                                |
 | **Verification**       | `TEST`                                                   |
 | **Standard(s)**        | ITU-T K.113, K.100; `REF-003`, `REF-004`                 |
-| **Dependencies**       | `ANTE-ANT-002`, `ANTE-RNI-001`                           |
+| **Dependencies**       | `STK-ANT-002`, `STK-RNI-001`                           |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL measure field strength using the antenna factor: E [V/m] = V_measured [V] × AF.
@@ -993,7 +1159,7 @@ Amplitude accuracy requires a software calibration table mapping gain settings t
 
 ---
 
-**`POWR-AUT-001` — Autonomous power**
+**`STK-AUT-001` — Autonomous power**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1004,6 +1170,9 @@ Amplitude accuracy requires a software calibration table mapping gain settings t
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL integrate autonomous power modules (solar panel + battery + charge manager) for continuous operation.
@@ -1023,7 +1192,7 @@ Total system consumption ~15 W. Solar + battery sizing must account for worst-ca
 
 ---
 
-**`GEST-MON-001` — Sensor health monitoring**
+**`STK-MON-001` — Sensor health monitoring**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1034,6 +1203,9 @@ Total system consumption ~15 W. Solar + battery sizing must account for worst-ca
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL monitor and record sensor health: disk usage, RAM, CPU, and temperature.
@@ -1049,7 +1221,7 @@ RPi throttles above 80 °C. Alert thresholds should warn before throttle onset.
 
 ---
 
-**`GEST-MON-002` — Network and connectivity monitoring**
+**`STK-MON-002` — Network and connectivity monitoring**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1060,6 +1232,9 @@ RPi throttles above 80 °C. Alert thresholds should warn before throttle onset.
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL measure and record IP-connection quality: RTT, channel status, available bandwidth, and packet loss.
@@ -1072,7 +1247,7 @@ The system SHALL measure and record IP-connection quality: RTT, channel status, 
 
 ---
 
-**`GEST-PRG-001` — Scheduled spectrum scan**
+**`STK-PRG-001` — Scheduled spectrum scan**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1081,8 +1256,11 @@ The system SHALL measure and record IP-connection quality: RTT, channel status, 
 | **Status**             | `APPROVED`                                                |
 | **Verification**       | `DEMONSTRATION`                                          |
 | **Standard(s)**        | ITU-R SM.1537; `REF-001`                                 |
-| **Dependencies**       | `ANAL-PAR-001`                                           |
+| **Dependencies**       | `STK-PAR-001`                                           |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL allow parameterized spectrum scans to be scheduled, run locally, and stored.
@@ -1101,7 +1279,7 @@ The system SHALL allow parameterized spectrum scans to be scheduled, run locally
 
 ---
 
-**`CONF-SIN-001` — NTP synchronization**
+**`STK-SIN-001` — NTP synchronization**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1110,8 +1288,11 @@ The system SHALL allow parameterized spectrum scans to be scheduled, run locally
 | **Status**             | `APPROVED`                                                |
 | **Verification**       | `TEST`                                                   |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `CONN-RED-004`                                           |
+| **Dependencies**       | `STK-RED-004`                                           |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL synchronize to an NTP server with a time offset ≤ 100 ms.
@@ -1124,7 +1305,7 @@ The system SHALL synchronize to an NTP server with a time offset ≤ 100 ms.
 
 ---
 
-**`CONF-CAL-001` — Calibration procedures**
+**`STK-CAL-001` — Calibration procedures**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1135,6 +1316,9 @@ The system SHALL synchronize to an NTP server with a time offset ≤ 100 ms.
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL include calibration procedures for frequency, receive gain, IQ balance, and DC-offset correction.
@@ -1155,7 +1339,7 @@ Calibration uses external reference sources (signal generator) to build correcti
 
 ---
 
-**`CONF-CAR-001` — DANL**
+**`STK-CAR-001` — DANL**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1166,6 +1350,9 @@ Calibration uses external reference sources (signal generator) to build correcti
 | **Standard(s)**        | ITU-R SM.1138; `REF-002`                                 |
 | **Dependencies**       | —                                                        |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL achieve a DANL ≤ –100 dBm across the operating range.
@@ -1180,7 +1367,7 @@ Software averaging improves effective DANL at the cost of temporal resolution.
 
 ---
 
-**`CONF-CAR-002` — Dynamic range**
+**`STK-CAR-002` — Dynamic range**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1189,8 +1376,11 @@ Software averaging improves effective DANL at the cost of temporal resolution.
 | **Status**             | `APPROVED`                                                |
 | **Verification**       | `TEST`                                                   |
 | **Standard(s)**        | ITU-R SM.1138; `REF-002`                                 |
-| **Dependencies**       | `CONF-CAR-001`                                           |
+| **Dependencies**       | `STK-CAR-001`                                           |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL achieve a dynamic range ≥ 80 dB.
@@ -1205,7 +1395,7 @@ The 8-bit ADC provides ~48 dB single-capture SFDR. The ≥ 80 dB target is achie
 
 ---
 
-**`CONF-CAR-003` — Frequency accuracy**
+**`STK-CAR-003` — Frequency accuracy**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1216,6 +1406,9 @@ The 8-bit ADC provides ~48 dB single-capture SFDR. The ≥ 80 dB target is achie
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL achieve a frequency accuracy of ± 2 ppm.
@@ -1230,7 +1423,7 @@ The stock oscillator is ± 20 ppm. A TCXO replacement (± 0.5–2 ppm) or GPS-di
 
 ---
 
-**`CONF-CAR-004` — Oscillator aging**
+**`STK-CAR-004` — Oscillator aging**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1239,8 +1432,11 @@ The stock oscillator is ± 20 ppm. A TCXO replacement (± 0.5–2 ppm) or GPS-di
 | **Status**             | `APPROVED`                                                |
 | **Verification**       | `ANALYSIS`                                               |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `CONF-CAR-003`                                           |
+| **Dependencies**       | `STK-CAR-003`                                           |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL meet a frequency drift due to oscillator aging ≤ 1 ppm/year.
@@ -1252,7 +1448,7 @@ The system SHALL meet a frequency drift due to oscillator aging ≤ 1 ppm/year.
 
 ---
 
-**`CONF-CAR-005` — Amplitude accuracy**
+**`STK-CAR-005` — Amplitude accuracy**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1263,6 +1459,9 @@ The system SHALL meet a frequency drift due to oscillator aging ≤ 1 ppm/year.
 | **Standard(s)**        | —                                                        |
 | **Dependencies**       | —                                                        |
 | **Phase**              | 2025–2026                                                |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
 
 **Description:**  
 The system SHALL achieve a typical amplitude accuracy of ± 1 dB.
@@ -1274,6 +1473,467 @@ The system SHALL achieve a typical amplitude accuracy of ± 1 dB.
 
 **Notes:**  
 Requires per-frequency, per-gain-setting calibration tables built using external reference sources.
+---
+
+### 3.11 Normative Basis
+
+**`NRM-ITU-001` — Monitoring-station automation requirements**
+
+| Field | Value |
+|-------|-------|
+| **Priority** | `MUST` |
+| **Status** | `APPROVED` |
+| **Standard(s)** | ITU-R SM.1537 |
+| **Clause** | §5 |
+| **Compliance** | `COMPLIANT` |
+
+**Description:**
+
+The system SHALL implement the monitoring-station automation requirements of ITU-R SM.1537 (REF-001).
+
+**Acceptance Criteria:**
+
+1. [ ] Station automation and reporting match the ITU-R SM.1537 station requirements.
+
+**`NRM-ITU-002` — Monitoring sensitivity and selectivity**
+
+| Field | Value |
+|-------|-------|
+| **Priority** | `MUST` |
+| **Status** | `APPROVED` |
+| **Standard(s)** | ITU-R SM.1138 |
+| **Clause** | §4 |
+| **Compliance** | `COMPLIANT` |
+
+**Description:**
+
+The system SHALL meet the sensitivity and selectivity requirements of ITU-R SM.1138 (REF-002) for monitored bands.
+
+**Acceptance Criteria:**
+
+1. [ ] Achieved DANL and selectivity meet ITU-R SM.1138 for each monitored band.
+
+**`NRM-GUM-001` — Measurement uncertainty evaluation**
+
+| Field | Value |
+|-------|-------|
+| **Priority** | `MUST` |
+| **Status** | `APPROVED` |
+| **Standard(s)** | JCGM 100:2008 (GUM) |
+| **Clause** | §4 |
+| **Compliance** | `COMPLIANT` |
+
+**Description:**
+
+The system SHALL evaluate measurement uncertainty of reported quantities in accordance with JCGM 100:2008 (REF-GUM).
+
+**Acceptance Criteria:**
+
+1. [ ] Every reported measurand carries a GUM-consistent uncertainty budget.
+
+**`NRM-ICNIRP-001` — Human-exposure context for field measurements**
+
+| Field | Value |
+|-------|-------|
+| **Priority** | `SHOULD` |
+| **Status** | `APPROVED` |
+| **Standard(s)** | ICNIRP 2010 |
+| **Clause** | §4 |
+| **Compliance** | `PENDING` |
+
+**Description:**
+
+The system SHOULD report field-strength results with reference to ICNIRP 2010 exposure guidelines (REF-ICNIRP) where applicable.
+
+**Acceptance Criteria:**
+
+1. [ ] Field-strength reports optionally annotate ICNIRP 2010 reference levels.
+
+---
+
+### 3.12 SDR Receiver (HackRF One)
+
+---
+
+**`HWC-SDR-001` — Frequency range**
+
+| Field                  | Value                                                     |
+|------------------------|-----------------------------------------------------------|
+| **Component**          | `HW-SDR`                                                  |
+| **Parameter**          | Operating frequency range                                 |
+| **Limit type**         | `RANGE`                                                   |
+| **Value min**          | 1 MHz                                                     |
+| **Value max**          | 6 GHz                                                     |
+| **Source**             | `DATASHEET`                                               |
+| **Source ref**         | `REF-DS-001` — Specifications                             |
+| **Impact**             | `HARD`                                                    |
+| **Status**             | `CONFIRMED`                                               |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
+
+**Notes:**  
+Sensitivity degrades significantly below 10 MHz and above 4 GHz.
+
+---
+
+**`HWC-SDR-002` — Maximum instantaneous bandwidth**
+
+| Field                  | Value                                                     |
+|------------------------|-----------------------------------------------------------|
+| **Component**          | `HW-SDR`                                                  |
+| **Parameter**          | Maximum instantaneous (real-time) bandwidth               |
+| **Limit type**         | `MAX`                                                     |
+| **Value**              | 20 MHz                                                    |
+| **Source**             | `DATASHEET`                                               |
+| **Source ref**         | `REF-DS-001` — Specifications                             |
+| **Impact**             | `HARD`                                                    |
+| **Status**             | `CONFIRMED`                                               |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
+
+**Notes:**  
+Wider spans require frequency hopping (sweep mode), which introduces temporal gaps.
+
+---
+
+**`HWC-SDR-003` — ADC resolution**
+
+| Field                  | Value                                                     |
+|------------------------|-----------------------------------------------------------|
+| **Component**          | `HW-SDR`                                                  |
+| **Parameter**          | ADC resolution / IQ sample format                         |
+| **Limit type**         | `FIXED`                                                   |
+| **Value**              | 8 bit I + 8 bit Q (CS8)                                  |
+| **Source**             | `DATASHEET`                                               |
+| **Source ref**         | `REF-DS-001`; `REF-DRV-001`                               |
+| **Impact**             | `HARD`                                                    |
+| **Status**             | `CONFIRMED`                                               |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
+
+**Notes:**  
+8-bit resolution yields a theoretical SFDR of ~48 dB (6.02 × 8). Achieving higher dynamic range requires software techniques: averaging, dithering, or gain-stepped captures.
+
+---
+
+**`HWC-SDR-004` — DANL**
+
+| Field                  | Value                                                     |
+|------------------------|-----------------------------------------------------------|
+| **Component**          | `HW-SDR`                                                  |
+| **Parameter**          | Displayed Average Noise Level                             |
+| **Limit type**         | `MIN`                                                     |
+| **Value**              | −100 dBm/Hz (approximate, frequency-dependent)            |
+| **Source**             | `MEASURED`                                                |
+| **Source ref**         | `REF-MEAS-001` — To be performed                          |
+| **Impact**             | `SOFT`                                                    |
+| **Status**             | `PRELIMINARY`                                             |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
+
+**Notes:**  
+DANL varies by frequency band and gain setting. Formal characterization per band is required. Software averaging can improve effective DANL at the cost of temporal resolution.
+
+---
+
+**`HWC-SDR-005` — Frequency accuracy (oscillator)**
+
+| Field                  | Value                                                     |
+|------------------------|-----------------------------------------------------------|
+| **Component**          | `HW-SDR`                                                  |
+| **Parameter**          | Local oscillator frequency accuracy                       |
+| **Limit type**         | `MAX`                                                     |
+| **Value**              | ± 20 ppm (uncompensated, typical)                         |
+| **Source**             | `DATASHEET`                                               |
+| **Source ref**         | `REF-DS-001` — Crystal oscillator specifications          |
+| **Impact**             | `SOFT`                                                    |
+| **Status**             | `CONFIRMED`                                               |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
+
+**Notes:**  
+Stock crystal is ± 20 ppm. Can be replaced with a TCXO (± 0.5–2 ppm) or compensated via GPS-disciplined correction.
+
+---
+
+**`HWC-SDR-006` — Gain control (no AGC)**
+
+| Field                  | Value                                                     |
+|------------------------|-----------------------------------------------------------|
+| **Component**          | `HW-SDR`                                                  |
+| **Parameter**          | Gain control mechanism                                    |
+| **Limit type**         | `ENUM`                                                    |
+| **Value**              | Manual LNA gain (0–40 dB), VGA gain (0–62 dB), no AGC    |
+| **Source**             | `DRIVER_API`                                              |
+| **Source ref**         | `REF-DRV-001` — hackrf_set_lna_gain(), hackrf_set_vga_gain() |
+| **Impact**             | `SOFT`                                                    |
+| **Status**             | `CONFIRMED`                                               |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
+
+**Notes:**  
+Gain must be set manually or via software-controlled stepping. Amplitude accuracy requires calibration tables mapping gain settings to correction factors across frequency.
+
+---
+
+**`HWC-SDR-007` — No pre-selection filters**
+
+| Field                  | Value                                                     |
+|------------------------|-----------------------------------------------------------|
+| **Component**          | `HW-SDR`                                                  |
+| **Parameter**          | RF front-end filtering                                    |
+| **Limit type**         | `FIXED`                                                   |
+| **Value**              | No band-pass pre-selection filters                        |
+| **Source**             | `DATASHEET`                                               |
+| **Source ref**         | `REF-DS-001` — Block diagram                              |
+| **Impact**             | `SOFT`                                                    |
+| **Status**             | `CONFIRMED`                                               |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
+
+**Notes:**  
+Susceptible to out-of-band interference, image frequencies, and intermodulation products. Detection algorithms must account for artifacts generated by the receiver itself.
+
+---
+
+### 3.13 Embedded Platform (Raspberry Pi 4B)
+
+---
+
+**`HWC-CPU-001` — Processing capacity**
+
+| Field                  | Value                                                     |
+|------------------------|-----------------------------------------------------------|
+| **Component**          | `HW-CPU`                                                  |
+| **Parameter**          | CPU cores and clock speed                                 |
+| **Limit type**         | `FIXED`                                                   |
+| **Value**              | 4× ARM Cortex-A72 @ 1.8 GHz                              |
+| **Source**             | `DATASHEET`                                               |
+| **Source ref**         | `REF-DS-002`; `REF-DS-003`                                |
+| **Impact**             | `HARD`                                                    |
+| **Status**             | `CONFIRMED`                                               |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
+
+**Notes:**  
+At 20 MHz BW / 20 MS/s, a 2048-point FFT produces ~9,765 FFTs/second. Profiling under load is required to verify processing budget.
+
+---
+
+**`HWC-CPU-002` — RAM capacity**
+
+| Field                  | Value                                                     |
+|------------------------|-----------------------------------------------------------|
+| **Component**          | `HW-CPU`                                                  |
+| **Parameter**          | System RAM                                                |
+| **Limit type**         | `FIXED`                                                   |
+| **Value**              | 4 GB or 8 GB (model-dependent)                            |
+| **Source**             | `DATASHEET`                                               |
+| **Source ref**         | `REF-DS-002`                                              |
+| **Impact**             | `HARD`                                                    |
+| **Status**             | `CONFIRMED`                                               |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
+
+**Notes:**  
+Must accommodate OS, DSP pipeline buffers, IQ sample buffers, trace storage, and network stack simultaneously.
+
+---
+
+**`HWC-CPU-003` — Operating temperature**
+
+| Field                  | Value                                                     |
+|------------------------|-----------------------------------------------------------|
+| **Component**          | `HW-CPU`                                                  |
+| **Parameter**          | Operating temperature                                     |
+| **Limit type**         | `RANGE`                                                   |
+| **Value min**          | 0 °C                                                      |
+| **Value max**          | 50 °C (throttles above 80 °C)                             |
+| **Source**             | `DATASHEET`                                               |
+| **Source ref**         | `REF-DS-002` — Thermal specifications                     |
+| **Impact**             | `SOFT`                                                    |
+| **Status**             | `CONFIRMED`                                               |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
+
+**Notes:**  
+Colombian field deployments may exceed 50 °C ambient inside an enclosed housing. Thermal management (heatsink, ventilation, or duty-cycling) is required.
+
+---
+
+### 3.14 Data Bus (USB 2.0: SDR ↔ RPi)
+
+---
+
+**`HWC-BUS-001` — USB 2.0 sustained throughput**
+
+| Field                  | Value                                                     |
+|------------------------|-----------------------------------------------------------|
+| **Component**          | `HW-SDR`, `HW-CPU`                                       |
+| **Parameter**          | Sustained data throughput (SDR → RPi)                     |
+| **Limit type**         | `MAX`                                                     |
+| **Value**              | ~32 MB/s sustained (measured)                             |
+| **Source**             | `MEASURED`                                                |
+| **Source ref**         | `REF-MEAS-002` — To be performed                          |
+| **Impact**             | `HARD`                                                    |
+| **Status**             | `PRELIMINARY`                                             |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
+
+**Notes:**  
+USB 2.0 theoretical: 480 Mbps = 60 MB/s. Practical sustained: ~32 MB/s. HackRF at 20 MS/s × 2 bytes = 40 MB/s exceeds this. Sample drops at sustained 20 MS/s are possible.
+
+---
+
+### 3.15 GPS Module
+
+---
+
+**`HWC-GPS-001` — Horizontal accuracy**
+
+| Field                  | Value                                                     |
+|------------------------|-----------------------------------------------------------|
+| **Component**          | `HW-GPS`                                                  |
+| **Parameter**          | Horizontal position accuracy (CEP 50%)                    |
+| **Limit type**         | `MAX`                                                     |
+| **Value**              | ≤ 3 m (open sky, target)                                  |
+| **Source**             | `DATASHEET`                                               |
+| **Source ref**         | _TBD — depends on selected GPS module_                    |
+| **Impact**             | `HARD`                                                    |
+| **Status**             | `PRELIMINARY`                                             |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
+
+---
+
+**`HWC-GPS-002` — GPS output protocol**
+
+| Field                  | Value                                                     |
+|------------------------|-----------------------------------------------------------|
+| **Component**          | `HW-GPS`                                                  |
+| **Parameter**          | Data output protocol                                      |
+| **Limit type**         | `FIXED`                                                   |
+| **Value**              | NMEA 0183 over UART (9600 baud default)                   |
+| **Source**             | `DATASHEET`                                               |
+| **Source ref**         | _TBD — depends on selected GPS module_                    |
+| **Impact**             | `INFORMATIONAL`                                           |
+| **Status**             | `PRELIMINARY`                                             |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
+
+**Notes:**  
+Standard NMEA sentences (GGA, RMC, GSA). Parsing library required for timestamp and position extraction.
+
+---
+
+### 3.16 Power System
+
+---
+
+**`HWC-PWR-001` — System power consumption**
+
+| Field                  | Value                                                     |
+|------------------------|-----------------------------------------------------------|
+| **Component**          | `HW-PWR`                                                  |
+| **Parameter**          | Total system power consumption (all components active)    |
+| **Limit type**         | `MAX`                                                     |
+| **Value**              | ~15 W (estimated: RPi 6W + HackRF 2.5W + peripherals)    |
+| **Source**             | `DERIVED`                                                 |
+| **Source ref**         | `REF-DS-001` + `REF-DS-002` — Power specifications        |
+| **Impact**             | `HARD`                                                    |
+| **Status**             | `PRELIMINARY`                                             |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
+
+**Notes:**  
+Solar panel and battery sizing must exceed 15 W for 24/7 autonomous operation. Actual measurement under full DSP load is required.
+
+---
+
+### 3.17 Storage
+
+---
+
+**`HWC-STR-001` — Storage write speed**
+
+| Field                  | Value                                                     |
+|------------------------|-----------------------------------------------------------|
+| **Component**          | `HW-STR`                                                  |
+| **Parameter**          | Sustained sequential write speed                          |
+| **Limit type**         | `MIN`                                                     |
+| **Value**              | ≥ 40 MB/s (required to store raw CS8 at 20 MS/s)         |
+| **Source**             | `DERIVED`                                                 |
+| **Source ref**         | IQ rate: 20 MS/s × 2 bytes = 40 MB/s                     |
+| **Impact**             | `HARD`                                                    |
+| **Status**             | `PRELIMINARY`                                             |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
+
+**Notes:**  
+USB 3.0 SSD easily meets this; microSD may not. Burst recording (limited duration) is an alternative.
+
+---
+
+### 3.18 Derived Constraints
+
+---
+
+**`HWC-DRV-001` — IQ throughput budget (end-to-end)**
+
+| Field                  | Value                                                     |
+|------------------------|-----------------------------------------------------------|
+| **Component**          | `HW-SDR`, `HW-CPU`, `HW-STR`                             |
+| **Parameter**          | End-to-end IQ data flow budget                            |
+| **Limit type**         | `FIXED`                                                   |
+| **Value**              | 20 MS/s × 2 B = 40 MB/s (SDR → USB → RAM → DSP → Storage) |
+| **Source**             | `DERIVED`                                                 |
+| **Source ref**         | `HWC-SDR-002` + `HWC-BUS-001` + `HWC-STR-001`           |
+| **Impact**             | `HARD`                                                    |
+| **Status**             | `PRELIMINARY`                                             |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
+
+**Notes:**  
+The USB 2.0 bottleneck (~32 MB/s) is the weakest link in the 40 MB/s chain. Mitigations: (1) accept occasional drops in non-forensic mode, (2) reduce sample rate for continuous recording, (3) use burst capture for forensic storage.
+
+---
+
+**`HWC-DRV-002` — Dynamic range via software enhancement**
+
+| Field                  | Value                                                     |
+|------------------------|-----------------------------------------------------------|
+| **Component**          | `HW-SDR`                                                  |
+| **Parameter**          | Achievable dynamic range with software techniques         |
+| **Limit type**         | `RANGE`                                                   |
+| **Value min**          | ~48 dB (single capture, limited by 8-bit ADC)             |
+| **Value max**          | ~90 dB (with gain stepping + averaging, estimated)        |
+| **Source**             | `DERIVED`                                                 |
+| **Source ref**         | `HWC-SDR-003` + `HWC-SDR-006`                            |
+| **Impact**             | `SOFT`                                                    |
+| **Status**             | `PRELIMINARY`                                             |
+| **Standard(s)** | — |
+| **Clause** | — |
+| **Compliance** | `NOT_APPLICABLE` |
+
+**Notes:**  
+The ≥ 80 dB target is achievable with: (1) gain-stepped captures at multiple LNA/VGA settings, (2) spectral averaging over N sweeps, (3) software dithering. Must be validated experimentally.
+
 
 ---
 
@@ -1342,46 +2002,67 @@ Requires per-frequency, per-gain-setting calibration tables built using external
 
 | Requirement ID   | Subsystem              | Standard Ref        | Test Case   |
 |------------------|------------------------|---------------------|-------------|
-| `ANAL-EMC-001`   | RF architecture        | —                   | _TC-001_    |
-| `ANAL-RNG-001`   | Spectral range         | ITU-R SM.1537       | _TC-002_    |
-| `ANAL-RNG-002`   | Bandwidth              | —                   | _TC-003_    |
-| `ANAL-PAR-001`   | DSP parameterization   | —                   | _TC-004_    |
-| `ANAL-PAR-002`   | DSP parameterization   | —                   | _TC-005_    |
-| `ANAL-PAR-003`   | DSP parameterization   | —                   | _TC-006_    |
-| `ANAL-PAR-004`   | DSP parameterization   | —                   | _TC-007_    |
-| `ANAL-PAR-005`   | GPS                    | —                   | _TC-008_    |
-| `ANAL-PAR-006`   | Units                  | —                   | _TC-009_    |
-| `ANAL-PAR-007`   | Detection              | —                   | _TC-010_    |
-| `ANAL-MED-001`   | DSP / traces           | ITU-R SM.1537       | _TC-011_    |
-| `ANAL-MED-003`   | DSP / OBW              | ITU-R SM.1537       | _TC-012_    |
-| `ANAL-MED-004`   | DSP / channel power    | —                   | _TC-013_    |
-| `ANAL-MED-005`   | DSP / RDS              | —                   | _TC-014_    |
-| `ANAL-MED-006`   | DSP / demodulation     | —                   | _TC-015_    |
-| `ANAL-MED-007`   | DSP / modulation       | —                   | _TC-016_    |
-| `NORM-VER-001`   | Local detection        | —                   | _TC-017_    |
-| `NORM-VER-002`   | Local detection        | —                   | _TC-018_    |
-| `NORM-SRV-002`   | Forensic audio         | —                   | _TC-019_    |
-| `FORN-ALM-001`   | Local storage          | ITU-R SM.1537       | _TC-020_    |
-| `FORN-ALM-003`   | Local storage          | —                   | _TC-021_    |
-| `CONN-RED-001`   | Connectivity           | —                   | _TC-022_    |
-| `CONN-RED-002`   | Connectivity           | —                   | _TC-023_    |
-| `CONN-RED-003`   | Connectivity           | —                   | _TC-024_    |
-| `CONN-RED-004`   | Connectivity           | —                   | _TC-025_    |
-| `CONN-SOP-001`   | Maintenance            | —                   | _TC-026_    |
-| `CONN-GPS-001`   | GPS                    | —                   | _TC-027_    |
-| `CONN-GPS-002`   | GPS                    | —                   | _TC-028_    |
-| `ANTE-ANT-001`   | Antennas               | —                   | _TC-029_    |
-| `ANTE-ANT-002`   | Antennas               | ITU-T K.113, K.100  | _TC-030_    |
-| `ANTE-RNI-001`   | Non-ionizing radiation | ITU-T K.113, K.100  | _TC-031_    |
-| `ANTE-RNI-002`   | Non-ionizing radiation | ITU-T K.113, K.100  | _TC-032_    |
-| `POWR-AUT-001`   | Power                  | —                   | _TC-033_    |
-| `GEST-MON-001`   | Health monitoring      | —                   | _TC-034_    |
-| `GEST-MON-002`   | Health monitoring      | —                   | _TC-035_    |
-| `GEST-PRG-001`   | Local scheduler        | ITU-R SM.1537       | _TC-036_    |
-| `CONF-SIN-001`   | Synchronization        | —                   | _TC-037_    |
-| `CONF-CAL-001`   | Calibration            | —                   | _TC-038_    |
-| `CONF-CAR-001`   | Characterization       | ITU-R SM.1138       | _TC-039_    |
-| `CONF-CAR-002`   | Characterization       | ITU-R SM.1138       | _TC-040_    |
-| `CONF-CAR-003`   | Characterization       | —                   | _TC-041_    |
-| `CONF-CAR-004`   | Characterization       | —                   | _TC-042_    |
-| `CONF-CAR-005`   | Characterization       | —                   | _TC-043_    |
+| `STK-EMC-001`   | RF architecture        | —                   | _TC-001_    |
+| `STK-RNG-001`   | Spectral range         | ITU-R SM.1537       | _TC-002_    |
+| `STK-RNG-002`   | Bandwidth              | —                   | _TC-003_    |
+| `STK-PAR-001`   | DSP parameterization   | —                   | _TC-004_    |
+| `STK-PAR-002`   | DSP parameterization   | —                   | _TC-005_    |
+| `STK-PAR-003`   | DSP parameterization   | —                   | _TC-006_    |
+| `STK-PAR-004`   | DSP parameterization   | —                   | _TC-007_    |
+| `STK-PAR-005`   | GPS                    | —                   | _TC-008_    |
+| `STK-PAR-006`   | Units                  | —                   | _TC-009_    |
+| `STK-PAR-007`   | Detection              | —                   | _TC-010_    |
+| `STK-MED-001`   | DSP / traces           | ITU-R SM.1537       | _TC-011_    |
+| `STK-MED-003`   | DSP / OBW              | ITU-R SM.1537       | _TC-012_    |
+| `STK-MED-004`   | DSP / channel power    | —                   | _TC-013_    |
+| `STK-MED-005`   | DSP / RDS              | —                   | _TC-014_    |
+| `STK-MED-006`   | DSP / demodulation     | —                   | _TC-015_    |
+| `STK-MED-007`   | DSP / modulation       | —                   | _TC-016_    |
+| `STK-VER-001`   | Local detection        | —                   | _TC-017_    |
+| `STK-VER-002`   | Local detection        | —                   | _TC-018_    |
+| `STK-SRV-002`   | Forensic audio         | —                   | _TC-019_    |
+| `STK-ALM-001`   | Local storage          | ITU-R SM.1537       | _TC-020_    |
+| `STK-ALM-003`   | Local storage          | —                   | _TC-021_    |
+| `STK-RED-001`   | Connectivity           | —                   | _TC-022_    |
+| `STK-RED-002`   | Connectivity           | —                   | _TC-023_    |
+| `STK-RED-003`   | Connectivity           | —                   | _TC-024_    |
+| `STK-RED-004`   | Connectivity           | —                   | _TC-025_    |
+| `STK-SOP-001`   | Maintenance            | —                   | _TC-026_    |
+| `STK-GPS-001`   | GPS                    | —                   | _TC-027_    |
+| `STK-GPS-002`   | GPS                    | —                   | _TC-028_    |
+| `STK-ANT-001`   | Antennas               | —                   | _TC-029_    |
+| `STK-ANT-002`   | Antennas               | ITU-T K.113, K.100  | _TC-030_    |
+| `STK-RNI-001`   | Non-ionizing radiation | ITU-T K.113, K.100  | _TC-031_    |
+| `STK-RNI-002`   | Non-ionizing radiation | ITU-T K.113, K.100  | _TC-032_    |
+| `STK-AUT-001`   | Power                  | —                   | _TC-033_    |
+| `STK-MON-001`   | Health monitoring      | —                   | _TC-034_    |
+| `STK-MON-002`   | Health monitoring      | —                   | _TC-035_    |
+| `STK-PRG-001`   | Local scheduler        | ITU-R SM.1537       | _TC-036_    |
+| `STK-SIN-001`   | Synchronization        | —                   | _TC-037_    |
+| `STK-CAL-001`   | Calibration            | —                   | _TC-038_    |
+| `STK-CAR-001`   | Characterization       | ITU-R SM.1138       | _TC-039_    |
+| `STK-CAR-002`   | Characterization       | ITU-R SM.1138       | _TC-040_    |
+| `STK-CAR-003`   | Characterization       | —                   | _TC-041_    |
+| `STK-CAR-004`   | Characterization       | —                   | _TC-042_    |
+| `STK-CAR-005`   | Characterization       | —                   | _TC-043_    |
+| `NRM-ITU-001` | Normative basis | ITU-R SM.1537 | _TC-N01_ |
+| `NRM-ITU-002` | Normative basis | ITU-R SM.1138 | _TC-N02_ |
+| `NRM-GUM-001` | Normative basis | JCGM 100:2008 | _TC-N03_ |
+| `NRM-ICNIRP-001` | Normative basis | ICNIRP 2010 | _TC-N04_ |
+| `HWC-SDR-001` | Platform constraints | — | _TC-H01_ |
+| `HWC-SDR-002` | Platform constraints | — | _TC-H02_ |
+| `HWC-SDR-003` | Platform constraints | — | _TC-H03_ |
+| `HWC-SDR-004` | Platform constraints | — | _TC-H04_ |
+| `HWC-SDR-005` | Platform constraints | — | _TC-H05_ |
+| `HWC-SDR-006` | Platform constraints | — | _TC-H06_ |
+| `HWC-SDR-007` | Platform constraints | — | _TC-H07_ |
+| `HWC-CPU-001` | Platform constraints | — | _TC-H08_ |
+| `HWC-CPU-002` | Platform constraints | — | _TC-H09_ |
+| `HWC-CPU-003` | Platform constraints | — | _TC-H10_ |
+| `HWC-BUS-001` | Platform constraints | — | _TC-H11_ |
+| `HWC-GPS-001` | Platform constraints | — | _TC-H12_ |
+| `HWC-GPS-002` | Platform constraints | — | _TC-H13_ |
+| `HWC-PWR-001` | Platform constraints | — | _TC-H14_ |
+| `HWC-STR-001` | Platform constraints | — | _TC-H15_ |
+| `HWC-DRV-001` | Platform constraints | — | _TC-H16_ |
+| `HWC-DRV-002` | Platform constraints | — | _TC-H17_ |
