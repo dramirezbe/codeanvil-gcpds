@@ -200,14 +200,14 @@ Update `methodology/test/README.md`:
 
 | ID | Spec | Route | Status | Commit |
 |----|------|-------|--------|--------|
-| T1 | S6 | inline | done | 7fe8101 |
-| T2 | S7 | inline | done | 7fe8101 |
-| T3 | S8 | inline | done | 7fe8101 |
-| T4 | S2, S3, S4, S5 | inline | done | 7fe8101 |
-| T5 | S9 | inline | done | 7fe8101 |
-| T6 | S10 | inline | done | 7fe8101 |
-| T7 | S11 | inline | done | 7fe8101 |
-| T8 | S1 | inline | done | 7fe8101 |
+| T1 | S6 | inline | done | c4001ce |
+| T2 | S7 | inline | done | c4001ce |
+| T3 | S8 | inline | done | c4001ce |
+| T4 | S2, S3, S4, S5 | inline | done | c4001ce |
+| T5 | S9 | inline | done | c4001ce |
+| T6 | S10 | inline | done | c4001ce |
+| T7 | S11 | inline | done | c4001ce |
+| T8 | S1 | inline | done | c4001ce |
 
 ## Log
 
