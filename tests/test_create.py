@@ -349,6 +349,8 @@ def _agents_md(tmp_path, db_path) -> str:
 def test_agents_md_is_a_passive_reference(tmp_path, db_path):
     text = _agents_md(tmp_path, db_path)
 
+    assert "## On Project Open" in text
+    assert "codeanvil status" in text
     assert "## Cycle" in text
     assert "## Report Format" in text
     assert "## Folder Reference" in text
@@ -360,7 +362,7 @@ def test_agents_md_is_a_passive_reference(tmp_path, db_path):
 def test_agents_md_mandates_a_cycle_on_every_project_open(tmp_path, db_path):
     text = _agents_md(tmp_path, db_path)
 
-    assert "On every project open" in text
+    assert "codeanvil status" in text
     assert "native question" in text
     assert "01_test_sdr_usrp_iot_signals" in text
     assert "02_websocket_refactor" in text

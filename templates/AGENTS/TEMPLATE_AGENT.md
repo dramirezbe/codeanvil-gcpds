@@ -28,15 +28,29 @@ the CodeAnvil tool itself.
 - You **MUST NOT** re-implement gate logic in prose — run the scripts and tools the skill prescribes.
 - You **SHALL** treat errors as blocking and warnings as advisory unless a skill says otherwise.
 
+## On Project Open
+
+**First action on every project open** — before any gate work, before loading a
+skill, and before asking the user anything — run:
+
+```bash
+codeanvil status
+```
+
+This prints the project identity, active cycle, and per-gate HITL verdicts.
+Use its output as your orientation: it tells you where the methodology stands
+so you do not need to read files or list directories to discover progress.
+
 ## Cycle
 
 A **cycle** is one complete run of the V-SIL methodology pipeline against a GT
 baseline. Every report belongs to exactly one cycle.
 
-**On every project open**, before any gate work and before loading a skill, ask
-the user for a cycle name using your runtime's native question mechanism
-(`AskUserQuestion` in Claude Code, the equivalent in other runtimes). This is
-mandatory — do not defer it to a "start" command.
+**After running `codeanvil status`**, before any gate work and before loading a
+skill, ask the user for a cycle name using your runtime's native question
+mechanism (`AskUserQuestion` in Claude Code, the equivalent in other runtimes).
+This is mandatory — do not defer it to a "start" command. If `codeanvil status`
+already shows an active cycle, offer it as the default choice.
 
 - Offer the cycles that already exist under `.codeanvil/report/` as choices,
   plus the option of a new name.
