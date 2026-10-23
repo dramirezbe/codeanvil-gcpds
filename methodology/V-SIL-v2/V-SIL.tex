@@ -143,6 +143,19 @@ verifies the software. Layer~3 operates the system in production under metrologi
 regulatory governance. Detail is deferred to Sections~\ref{sec:layer1}, \ref{sec:layer2}, and~\ref{sec:layer3};
 Section~\ref{sec:overview} gives the integrated picture.
 
+\textbf{Methodology scope.} V-SIL develops, tests, and validates \emph{software on COTS
+hardware}---commercial off-the-shelf, not necessarily out-of-the-box. The Ground Truth informs
+what constraints the hardware imposes; V-SIL does not design hardware. Within this scope, the
+methodology applies at two levels: (1)~the \emph{target system} (e.g.\ the SDR FM sensor) and
+(2)~the \emph{harness itself}---the agent-agnostic tooling (skills, gates, scaffolds, MCP
+servers) that implements and enforces V-SIL. We call the second level \textbf{harness
+engineering}: the discipline of building the verification infrastructure so that it is
+itself traceable, testable, and governed by the same principles it enforces on the target.
+A harness gate (e.g.\ G0's deterministic validator) is both a tool \emph{for} V-SIL and
+a deliverable \emph{of} V-SIL---its own correctness is verified by the same pipeline it
+serves, preventing the common failure mode where the verification apparatus is trusted
+without evidence.
+
 % ===========================================================================
 \section{V-SIL Overview}
 \label{sec:overview}
@@ -709,6 +722,67 @@ that the requirements process is weak, not that the code is unlucky. G0 failures
 case of R1: the GT document is structurally defective and must be fixed before any further gate
 runs. Layer~2 reuses the same routing for CI failures (Section~\ref{sec:layer2}), and Layer~3's
 Stage~5 feedback loop is its operational counterpart (Section~\ref{sec:layer3}).
+
+\subsection{Report-driven gate orchestration}
+\label{sec:reports}
+
+The gate chain is \emph{report-driven}, not orchestrator-driven. Each gate produces a
+structured report; the next gate's precondition is the previous gate's report containing a
+terminal \texttt{HITL: PASS} iteration. No central orchestrator tracks state or sequences
+gates---the reports \emph{are} the state, and each skill is self-sufficient: it reads the
+prerequisite report, verifies the precondition, and either proceeds or exits with a message
+naming the missing prerequisite. The orchestration document (e.g.\ \texttt{AGENTS.md} in
+the harness) becomes a passive reference---listing available skills, folders, and
+tools---rather than an imperative script.
+
+\textbf{Iterative reports.} Each gate writes one report file per gate, not per run.
+Iterations are appended as sections within the same file. Each iteration carries structured
+metadata: human-readable and machine-safe timestamps (for audit reconstruction), an
+iteration counter (starting at~1), a human-in-the-loop verdict (\texttt{HITL: PASS} or
+\texttt{HITL: FEEDBACK}), and a description field carrying either user feedback or, for
+deterministic gates like G0, the full script output. A gate is complete when its latest
+iteration has \texttt{HITL: PASS}. There is no \texttt{DENIED} state---rejection is
+expressed as \texttt{FEEDBACK} with the user's comments, which triggers a new iteration.
+For deterministic gates, a script failure forces \texttt{HITL: FEEDBACK} automatically.
+
+\textbf{Cycle identity.} A \emph{cycle} is one complete run of the V-SIL pipeline against a
+GT baseline. All reports within a cycle are scoped to a named subdirectory (e.g.\
+\texttt{.codeanvil/report/01\_initial\_design/}). Starting a new cycle---for instance after
+a major requirements refactor---creates a fresh report directory; previous cycles are
+preserved and read-only. The cycle name is requested from the user at project start,
+normalized to a directory-safe slug with a zero-padded sequence prefix, and recorded in the
+project manifest. This makes the methodology \emph{re-entrant}: the same project can run
+multiple V-SIL cycles, each with full traceability, without overwriting prior evidence.
+
+\textbf{The chain.} The prerequisite graph is declared in the harness configuration and
+rendered in the skill table:
+
+\begin{center}
+\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Gate} & \textbf{Skill} & \textbf{Prerequisite} & \textbf{Report} \\
+\midrule
+G0 & Structural validation & None (entry point) & \texttt{G0.md} \\
+CC & Custody chain & G0 latest \texttt{PASS} & \texttt{CC.md} \\
+G1 & Design synthesis & CC latest \texttt{PASS} & \texttt{G1.md} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+When a skill finds its prerequisite missing or in \texttt{FEEDBACK} state, it does not
+fail---it exits cleanly and tells the agent which prerequisite skill to run first. This
+produces a natural chain of returns: the agent loads G1, G1 sends it to CC, CC sends it to
+G0, G0 runs and produces a report, and the chain unwinds forward. The orchestrator need not
+know the sequence; it follows wherever the skills direct it.
+
+This design has three consequences for the methodology. First, adding a new gate requires
+only a new skill with its prerequisite declared---no orchestration logic changes. Second,
+the report files constitute a complete, portable audit trail of every gate run, every user
+decision, and every iteration. Third, the same report schema works in environments without
+file access (e.g.\ web-based chat): the LLM produces the report as structured text output,
+the user carries it forward by pasting it into the next skill invocation, and the
+prerequisite check parses the pasted content identically.
 
 \subsection{The six governing artefacts}
 \label{sec:artefacts}
@@ -1386,8 +1460,11 @@ LLM governance in production & Not specified & Use constraints for LLMs inside S
 \end{table}
 
 None of these gaps is structural. Gates G1+ follow the pattern G0 established---each gate is
-a skill with a contract, a script or agent, and a binary verdict---but the AI-driven gates
-require the agent-agnostic skill interface that the harness is building. The HIL bench is an
+a skill with a contract, a script or agent, and a binary verdict---and the report-driven
+orchestration (Section~\ref{sec:reports}) means adding a gate requires only a new skill with
+its prerequisite declared, not new orchestration logic. The harness engineering effort
+(Section~\ref{sec:intro}) treats these gates as its own deliverables under the same V-SIL
+discipline. The HIL bench is an
 infrastructure project that the Mock HAL already anticipates through its same-interface swap;
 MCDA formalizes a trade study that Ctx 02 already performs informally; the Controlled Source
 Specification Baseline is a document-binding task with a defined record schema; single-to-array
