@@ -57,8 +57,9 @@ Do **not** load it for GT validation (that is G0) or implementation (that is G2+
 
 - **The prerequisite chain must have passed.** `CC.md`'s latest iteration must be
   `HITL: PASS` (which in turn required G0 to pass) before starting.
-- **The GT is locked at approval.** Never edit `GT/G0_StRS.md` or `GT/G0_SyRS.md`
-  during G1. Gaps go in the SRS Gap List, not into silent GT edits.
+- **The GT is locked by CC.** The custody-chain seal is the lock — never edit
+  `GT/G0_StRS.md` or `GT/G0_SyRS.md` during G1. Gaps go in the SRS Gap List,
+  not into silent GT edits.
 - **Multi-hypothesis is mandatory.** Generate and score 3–4 candidate architectures;
   a single-candidate design is not a G1 output.
 - **Every REQ- traces to a SYS-.** No software requirement may exist without upstream
@@ -87,8 +88,10 @@ job ask **PASS** or **FEEDBACK**:
   redoes the named jobs and their downstream jobs.
 - The final job's PASS appends the closing iteration with `HITL: PASS`.
 
-0. **GT Approval Gate** — present the approval prompt (StRS + SyRS IDs and versions,
-   `y`/`N`/`x`). No `y` means no Job 1. The GT is then LOCKED.
+0. **GT Integrity Check** — run `source_snapshot.py verify --strict` against the
+   CC snapshot. If PASS, the GT is confirmed intact since sealing — proceed to
+   Job 1. If FAIL, stop: the GT was tampered after CC sealed it; a new cycle
+   starting at G0 is required. No interactive approval — CC already locked the GT.
 1. **Extract ASRs** from STK-/HWC-/NRM- (StRS) and SYS- (SyRS) blocks. Priority from
    the block; HWC Impact maps HARD→MUST, SOFT→SHOULD, INFORMATIONAL→COULD; SYS
    priority is inherited from its traced STKs (highest wins), else SHOULD.
@@ -118,7 +121,7 @@ job ask **PASS** or **FEEDBACK**:
 
 FEEDBACK re-runs the named jobs and every downstream job that consumed their output
 (Job 1 rework ⇒ Jobs 2–8; Job 6 rework ⇒ Jobs 7–8). Each feedback round appends one
-report iteration; the package is re-issued as `Rev N`. The GT stays locked — a
+report iteration; the package is re-issued as `Rev N`. The GT stays sealed — a
 GT-changing defect means a new cycle that starts at G0.
 
 ## Verdicts
