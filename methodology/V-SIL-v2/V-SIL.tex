@@ -218,8 +218,10 @@ stages, from the development sandbox to metrological guardrails and back.
 \node[vsbox] (gt) at (-4.2,5.9)
       {\textbf{GT Documents}\\[-1pt]{\scriptsize StRS + SyRS (IEEE 29148)}};
 \node[vsgate] (g0) at (-4.2,5.05) {G0};
+\node[vsgate] (cc) at (-4.2,4.65) {CC};
+\node[vsgate] (g1gate) at (-4.2,4.25) {G1};
 
-\node[zzgate] (g1)  at (-4.2,4.25) {H};
+\node[zzgate] (g1)  at (-4.2,3.85) {H};
 \node[zzbox] (l2L) at (-4.2,3.35) {\textbf{System Design}\\[-1pt]{\scriptsize Ctx 02}};
 \node[zzbox] (l3L) at (-4.2,2.25) {\textbf{Arch.\ Design}\\[-1pt]{\scriptsize Ctx 02}};
 \node[zzgate] (g2)  at (-4.2,1.45) {H};
@@ -229,7 +231,9 @@ stages, from the development sandbox to metrological guardrails and back.
 \draw[zzflow] (ctx00.south) -- (l1L.north);
 \draw[zzflow] (l1L.south)   -- (gt.north);
 \draw[vsflow] (gt.south)    -- (g0.north);
-\draw[vsflow] (g0.south)    -- (g1.north);
+\draw[vsflow] (g0.south)    -- (cc.north);
+\draw[vsflow] (cc.south)    -- (g1gate.north);
+\draw[vsflow] (g1gate.south) -- (g1.north);
 \draw[zzflow] (g1.south)    -- (l2L.north);
 \draw[zzflow] (l2L.south)   -- (l3L.north);
 \draw[zzflow] (l3L.south)   -- (g2.north);
@@ -248,11 +252,11 @@ stages, from the development sandbox to metrological guardrails and back.
   node[midway, left=5pt, font=\scriptsize\itshape, text=zzblue!70!black,
        align=right, rotate=90, anchor=south] {zz\_Workflow};
 
-% V-SIL bracket (right side of GT+G0)
+% V-SIL bracket (right side of GT+G0+CC+G1)
 \draw[brace, vsgreen!60!black] ([xshift=3mm]gt.north east)
-  -- ([xshift=3mm]g0.south east)
+  -- ([xshift=3mm]g1gate.south east)
   node[midway, right=5pt, font=\scriptsize\itshape, text=vsgreen!70!black,
-       align=left] {V-SIL\\[-1pt]{\scriptsize deterministic}};
+       align=left] {V-SIL\\[-1pt]{\scriptsize G0+CC+G1}};
 
 % ============================================================
 % RIGHT ARM — test, ascending (CI+SIL)
@@ -324,7 +328,7 @@ stages, from the development sandbox to metrological guardrails and back.
 % ============================================================
 \node[anchor=north, font=\scriptsize, align=center, text=vgrey!80!black] at (0,-5.3) {%
   \textcolor{zzblue}{\rule{0.5em}{0.5em}}\;zz\_Workflow \quad
-  \textcolor{vsgreen}{\rule{0.5em}{0.5em}}\;V-SIL (G0, GT) \quad
+  \textcolor{vsgreen}{\rule{0.5em}{0.5em}}\;V-SIL (G0, CC, G1) \quad
   \textcolor{coral}{\rule{0.5em}{0.5em}}\;Human gate \quad
   \textcolor{vteal}{\rule{0.5em}{0.5em}}\;CI+SIL \quad
   \textcolor{vred}{\rule{0.5em}{0.5em}}\;HIL \quad
@@ -333,11 +337,13 @@ stages, from the development sandbox to metrological guardrails and back.
 
 \end{tikzpicture}}% end resizebox
 \caption{\textbf{V-SIL lifecycle.} Side brackets distinguish the conceptual methodology
-(zz\_Workflow, blue) from the concrete implementation (V-SIL, green) and the continuous test
+(zz\_Workflow, blue) from the concrete implementation (V-SIL, green: G0 structural validation,
+CC custody chain, and G1 design synthesis) and the continuous test
 arm (CI+SIL, teal). After Ctx 01 produces the requirements, the Ground Truth documents (StRS
 and SyRS, structured per IEEE 29148) pass through Gate~G0---a deterministic structural
-validator with cross-document consistency (green diamond)---before the first human readiness
-gate~H (coral diamond) admits
+validator with cross-document consistency (green diamond)---then CC seals GT provenance,
+and G1 produces the multi-hypothesis design with individually auditable artefacts,
+before the first human readiness gate~H (coral diamond) admits
 the project to design. The ascending right arm runs SIL tests on every commit, merge, and
 nightly build. Only acceptance (red) stays at HIL with real hardware. Below the V, the PCG
 pipeline (violet) governs the deployed array.}
@@ -626,7 +632,7 @@ concepts (blue) from the V-SIL implementation additions (green).
 % ---- Legend ----
 \node[anchor=north, font=\scriptsize, align=center, text=vgrey!80!black] at (0,-10.2) {%
   \textcolor{zzblue}{\rule{0.5em}{0.5em}}\;zz\_Workflow \quad
-  \textcolor{vsgreen}{\rule{0.5em}{0.5em}}\;V-SIL (G0, GT) \quad
+  \textcolor{vsgreen}{\rule{0.5em}{0.5em}}\;V-SIL (G0, CC, G1) \quad
   \textcolor{coral}{\rule{0.5em}{0.5em}}\;Human gate / fail};
 
 \end{tikzpicture}}% end resizebox
@@ -657,6 +663,21 @@ Architecture + Implementation Plan}. The stage is explicitly multi-hypothesis: P
 Pathway~n are carried into an architecture trade study, and the selection is justified in writing.
 This is the only place in the lifecycle where alternatives are compared; from Ctx 03 onward the
 chosen architecture is contract, and changes go through defect routing rather than reconsideration.
+
+In the harness, Gate~G1 implements Ctx~02 as a ten-job pipeline.
+Job~0 verifies GT integrity against the custody-chain seal (\texttt{source\_snapshot.py
+verify --strict})---no interactive approval, since CC already locked the GT.
+Job~1 extracts Architecturally Significant Requirements (ASRs) from StRS and SyRS blocks,
+grouping them into Condition Groups. Job~2 asks the user how many architecture candidates
+to generate (minimum~3, default~4). Jobs~3--6 produce the multi-hypothesis trade study:
+$N$ candidate architectures, each addressing every Condition Group; a QA$\times$Architecture
+matrix scored against ISO~25010 quality attributes; an ATAM-style sensitivity and tradeoff
+analysis on the top two candidates; and an iterative Attribute-Driven Design decomposition
+with a complete dependency graph. Job~7 authors the SRS (\texttt{GT/G1\_SRS.md}) per
+IEEE~29148~\S9.6, and Job~8 validates it structurally. Job~9 assembles the review package.
+Each intermediate artefact is written to a separate file under
+\texttt{G1\_artifacts/} alongside the iterative HITL report, so that every design decision
+is individually auditable and overwritten---not appended---on rework.
 
 \subsection{Gate H (Ctx 02 $\rightarrow$ 03)}
 \label{sec:gate-h2}
@@ -759,13 +780,13 @@ rendered in the skill table:
 
 \begin{center}
 \small
-\begin{tabular}{@{}llll@{}}
+\begin{tabular}{@{}lllp{4.5cm}@{}}
 \toprule
-\textbf{Gate} & \textbf{Skill} & \textbf{Prerequisite} & \textbf{Report} \\
+\textbf{Gate} & \textbf{Skill} & \textbf{Prerequisite} & \textbf{Report / Artefacts} \\
 \midrule
 G0 & Structural validation & None (entry point) & \texttt{G0.md} \\
 CC & Custody chain & G0 latest \texttt{PASS} & \texttt{CC.md} \\
-G1 & Design synthesis & CC latest \texttt{PASS} & \texttt{G1.md} \\
+G1 & Design synthesis & CC latest \texttt{PASS} & \texttt{G1.md} + \texttt{G1\_artifacts/} (ASR, candidates, QA matrix, ATAM, ADD, review package) \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -1319,7 +1340,7 @@ exactly what the pipeline executes. The Ground Truth documents (StRS and SyRS) t
 G0's structural and cross-document validation carry forward as the authoritative reference:
 the acceptance criteria in the StRS and SyRS become the deterministic gate's thresholds, the
 SRS (produced at G1 from the validated StRS and SyRS) supplies software-level specifications,
-and any change to a GT document triggers G0 re-validation and a full CI re-run. \textbf{Artefact~3} (eval and benchmarking suites) seeds
+and any change to a GT document triggers G0 re-validation, custody-chain re-sealing, and a full CI re-run. \textbf{Artefact~3} (eval and benchmarking suites) seeds
 the CI regression baseline---the suites zz\_Workflow already requires \emph{are} the CI harness,
 so the coupling adds automation and not concepts. Three artefacts complete the interface: the
 Ctx 01 measurable acceptance criteria become the deterministic gate's thresholds; Artefact~4's guardrail
@@ -1434,9 +1455,13 @@ reliability decays roughly geometrically with sequential steps, with a practical
 \section{Gaps and Maturity Assessment}
 \label{sec:gaps}
 
-Honesty about maturity is part of the method. Gate G0 (structural validation of GT documents
-against IEEE 29148 templates) is the first fully implemented gate: deterministic, reproducible,
-and exercised on every GT change. All subsequent gates (G1+) remain unimplemented.
+Honesty about maturity is part of the method. Three gates are now fully implemented:
+Gate~G0 (deterministic structural validation of GT documents against IEEE~29148 templates),
+Gate~CC (custody chain: HMAC-signed hash-chain provenance sealing GT after G0 passes), and
+Gate~G1 (AI-driven design synthesis: a ten-job pipeline from ASR extraction through
+multi-hypothesis architecture, ATAM trade study, and SRS authoring, with intermediate
+artefacts written to individually auditable files). All subsequent gates (G2+) remain
+unimplemented.
 Table~\ref{tab:gaps} lists the components V-SIL depends on that are not yet implemented or
 instantiated, with the gap each one leaves.
 
@@ -1449,9 +1474,9 @@ instantiated, with the gap each one leaves.
 \toprule
 \textbf{Component} & \textbf{Status} & \textbf{Gap} \\
 \midrule
-Gates G1+ & Not implemented & Only G0 (deterministic structural validation) is implemented; AI-driven design, architecture, and implementation gates remain unspecified \\
+Gates G2+ & Not implemented & G0, CC, and G1 are implemented as agent-agnostic skills (see Section~\ref{sec:ctx02}); implementation and integration gates remain unspecified \\
 HIL bench & Not implemented & No live-RF validation infrastructure; the apex of the V cannot yet be exercised, so all claims remain at the SIL level of verification \\
-MCDA \cite{mcda2026} & Not implemented & Multi-hypothesis selection (Ctx 02 trade study) is not formalized into a repeatable decision procedure \\
+MCDA \cite{mcda2026} & Partially implemented & G1 formalizes the trade study as a QA$\times$Architecture matrix with ATAM analysis; repeatable but not yet validated against a formal MCDA framework \\
 Controlled Source Specification Baseline & Not instantiated & Stage~2 formal compliance execution remains disabled until the Stage~4 baseline record is populated and approved \\
 Single-to-array scaling & Not covered & The pipeline assumes a sensor array, but no methodology exists for scaling the Layer~1/2 single-node results to array level \\
 LLM governance in production & Not specified & Use constraints for LLMs inside Stage~2 (orchestration) and Stage~5 (review support) are undefined \\
@@ -1459,14 +1484,16 @@ LLM governance in production & Not specified & Use constraints for LLMs inside S
 \end{tabular}
 \end{table}
 
-None of these gaps is structural. Gates G1+ follow the pattern G0 established---each gate is
+None of these gaps is structural. Gates G0, CC, and G1 demonstrate the pattern: each gate is
 a skill with a contract, a script or agent, and a binary verdict---and the report-driven
 orchestration (Section~\ref{sec:reports}) means adding a gate requires only a new skill with
-its prerequisite declared, not new orchestration logic. The harness engineering effort
+its prerequisite declared, not new orchestration logic. Gates G2+ follow the same pattern.
+The harness engineering effort
 (Section~\ref{sec:intro}) treats these gates as its own deliverables under the same V-SIL
 discipline. The HIL bench is an
 infrastructure project that the Mock HAL already anticipates through its same-interface swap;
-MCDA formalizes a trade study that Ctx 02 already performs informally; the Controlled Source
+MCDA is partially formalized within G1's QA$\times$Architecture matrix and ATAM trade study,
+but not yet validated against a formal framework; the Controlled Source
 Specification Baseline is a document-binding task with a defined record schema; single-to-array
 scaling is a research programme rather than a methodology gap; and production LLM governance
 can be written as an extension of the four rules in Section~\ref{sec:governance}, constrained by the
@@ -1487,9 +1514,8 @@ The coupling is clean because each layer's terminal output is the next layer's i
 Ground Truth documents (StRS and SyRS, structured per IEEE 29148 and validated by the
 deterministic G0 gate with G0-X cross-document consistency) feed the design stages; the Ctx 03 Build Package is Layer~2's executable specification;
 Artefact~3 is already the CI regression harness; and the Promotion Gate binds the
-regression-passing build to the production pipeline as a versioned, revocable contract. Gate G0
-is the first fully implemented gate---deterministic, reproducible, and exercised before any
-human or AI-driven gate runs. The gate chain is report-driven: each gate produces a structured
+regression-passing build to the production pipeline as a versioned, revocable contract. Three gates are now implemented: G0 (deterministic structural validation), CC (custody-chain
+provenance), and G1 (AI-driven design synthesis with individually auditable artefacts). The gate chain is report-driven: each gate produces a structured
 iterative report, and the next gate's precondition is the previous gate's terminal
 \texttt{PASS}---no central orchestrator is required, and adding a gate means adding a skill,
 not rewriting control flow. Cycle identity makes the methodology re-entrant: the same project
@@ -1502,7 +1528,7 @@ The claims stay honest by construction. The system is \verified{} at software-in
 \validated{} only at hardware-in-the-loop and in the field; every claim names the environment in
 which its evidence was produced. The model drafts but never approves: mechanical rejection beats
 LLM approval, never the reverse, and acceptance is decided by pre-declared criteria applied to
-recorded measurements. Six gaps remain---gates G1+, a HIL bench, formalized MCDA, an instantiated Controlled
+recorded measurements. Five gaps remain---gates G2+, a HIL bench, formal MCDA validation, an instantiated Controlled
 Source Specification Baseline, a single-to-array scaling methodology, and production LLM
 governance---and each is explicit, bounded, and tractable.
 
