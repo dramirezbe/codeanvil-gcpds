@@ -7,6 +7,7 @@ from codeanvil.CLI.commands import (
     cmd_init,
     cmd_list,
     cmd_now,
+    cmd_sandbox,
     cmd_status,
     cmd_sync,
 )
@@ -33,6 +34,8 @@ def choose_option(args: argparse.Namespace) -> None:
             cmd_status(args.name)
         case "now":
             cmd_now(tz=args.tz, machine=args.machine)
+        case "sandbox":
+            cmd_sandbox(args.agent)
 
 
 def main() -> None:

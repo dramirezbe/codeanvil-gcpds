@@ -8,7 +8,7 @@ import sys
 
 import pytest
 
-EXPECTED_SUBCOMMANDS = {"init", "create", "list", "sync", "status", "now"}
+EXPECTED_SUBCOMMANDS = {"init", "create", "list", "sync", "status", "now", "sandbox"}
 
 
 def _run_cli(*args: str) -> subprocess.CompletedProcess:

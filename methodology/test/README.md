@@ -141,27 +141,52 @@ head -1 /tmp/smoke-test/GT/G0_SyRS.md  # "# PROJECT: Edge Sensor ..."
 
 ```bash
 cd /tmp/smoke-test
-claude --setting-sources "project"
+codeanvil sandbox claude
 ```
 
-The `--setting-sources "project"` flag loads only project-level settings
-(CLAUDE.md → AGENTS.md) and ignores user/local settings, ensuring a clean test
-of the scaffolded instructions without interference from global config.
-
-*(Note: `--setting-sources ""` disables ALL settings including CLAUDE.md
-autodiscovery — don't use it for methodology testing.)*
+This launches Claude Code with only project-local settings visible (see
+[Two modes: sandbox vs. normal](#two-modes-sandbox-vs-normal) below).
 
 ### 4b. Enter sandboxed Pi session in the project (alternative)
 
 ```bash
 cd /tmp/smoke-test
-pi --no-extensions -e ~/.pi/agent/npm/node_modules/pi-claude-bridge/src/index.ts -e ~/.pi/agent/npm/node_modules/opencode-pi/src/index.ts --no-mcp --no-skills --no-prompt-templates
+codeanvil sandbox pi
 ```
 
-This launches Pi with all user extensions, MCP servers, skills, and prompt
-templates disabled, then re-enables only the Claude bridge and OpenCode
-extensions. The result is a clean session that reads only the project's
-`AGENTS.md` without interference from global config.
+This launches Pi with all user extensions, MCP servers, skills, prompt
+templates, and themes disabled, re-enabling only the `pi-claude-bridge`
+extension (model access). The result is a clean session that reads only
+the project's `AGENTS.md` without interference from global config.
+
+### Two modes: sandbox vs. normal
+
+- **Sandbox** (`codeanvil sandbox <agent>`) — the agent sees only the
+  project: `AGENTS.md`, `.agents/skills/`, and the GT. Global skills,
+  MCP servers, extensions, and memory are disabled. Use this to test the
+  methodology on a clean agent, with no interference from your own config.
+  Nothing persists outside the project — no state to revert.
+- **Normal** (run `claude`, `pi`, `opencode`, or `codex` directly) — your
+  full setup loads as usual: global skills, MCP servers, extensions,
+  memory. Use this for day-to-day work on the project.
+
+Internally, `codeanvil sandbox` just applies each agent's native isolation:
+
+```bash
+# what `codeanvil sandbox claude` runs:
+claude --setting-sources "project"
+
+# what `codeanvil sandbox pi` runs:
+pi --no-extensions --no-mcp --no-skills --no-prompt-templates --no-themes \
+   -e ~/.pi/agent/npm/node_modules/pi-claude-bridge/src/index.ts
+```
+
+The `--setting-sources "project"` flag loads only project-level settings
+(CLAUDE.md → AGENTS.md) and ignores user/local settings, ensuring a clean
+test of the scaffolded instructions without interference from global config.
+
+*(Note: `--setting-sources ""` disables ALL settings including CLAUDE.md
+autodiscovery — don't use it for methodology testing.)*
 
 ### 5. Test prompts (inside sandboxed Claude or Pi)
 

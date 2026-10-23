@@ -27,7 +27,7 @@ The V-SIL pipeline encoded as executable artifacts:
 CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks state:
 
 - **`__main__.py`** — entry point (`python -m codeanvil`)
-- **`CLI/`** — argparse CLI: `main.py` (entry point + dispatch), `parser.py` (argument definitions), `prompts.py` (interactive `create` TUI via beaupy/Rich), `commands/` (one module per subcommand: `init`, `create`, `list`, `sync`, `status`, `now`)
+- **`CLI/`** — argparse CLI: `main.py` (entry point + dispatch), `parser.py` (argument definitions), `prompts.py` (interactive `create` TUI via beaupy/Rich), `commands/` (one module per subcommand: `init`, `create`, `list`, `sync`, `status`, `now`, `sandbox`)
 - **`UI/ui.py`** — PySide6 graphical interface (planned; see `UI/README.md` for scope)
 - **`config/logger.py`** — cross-platform colored logger (`get_logger(__name__)`)
 - **`config/paths.py`** — canonical paths (`WORKDIR`, `DB_PATH`) + `ensure_dirs()` (with one-time `~/.codeanvil/` → `~/.codeanvil-config/` migration) + `find_manifest()` + project-local `PROJECT_*` constants. Projects live wherever the user creates them, not under `~/.codeanvil-config/`.
@@ -156,6 +156,7 @@ codeanvil sync (inside a clone)            → register the project in the local
 codeanvil list                             → registered projects (short UUID + local path)
 codeanvil status [myproj]                  → cycles and latest HITL per gate (.codeanvil/report/)
 codeanvil now [--machine]                  → timestamp: human-readable / filename-safe
+codeanvil sandbox <agent>                  → launch agent (claude|pi|opencode|codex) with only project-local settings
 ```
 
 The scaffold copies `templates/skills/` → `.agents/skills/`, runs `path_replacements`
