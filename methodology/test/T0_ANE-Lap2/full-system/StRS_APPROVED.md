@@ -1,6 +1,6 @@
 # PROJECT: Spectrum Monitoring System — Phase 2 Optimization
 
-## System Requirements Specification (SRS)
+## Stakeholder Requirements Specification (StRS)
 
 > **Template based on:** IEEE/ISO/IEC 29148:2018 — *Systems and software engineering — Life cycle processes — Requirements engineering*, adapted with elements of ETSI EN 303 645 (Cyber Security for IoT) and a deterministic structure for automated AI-based validation.
 >
@@ -15,7 +15,7 @@
 
 | Field                  | Value                                                      |
 |------------------------|------------------------------------------------------------|
-| **Document ID**        | `SRS-ANE-001`                                             |
+| **Document ID**        | `STRS-ANE-001`                                             |
 | **Project**            | Phase 2 Roadmap — Spectrum Monitoring System Optimization  |
 | **Organization**       | National Spectrum Agency (ANE) — Colombia                  |
 | **Version**            | 0.1.0                                                     |
@@ -155,7 +155,7 @@ The system provides: real-time spectrum monitoring (1 MHz–6 GHz), detection of
 
 ---
 
-**`ANAL-SEG-001` — TLS/SSL-encrypted communications**
+**`STK-SEG-001` — TLS/SSL-encrypted communications**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -186,7 +186,7 @@ A valid certificate is required. No exceptions for development environments in p
 
 ---
 
-**`ANAL-EMC-001` — Sensor EMC optimization**
+**`STK-EMC-001` — Sensor EMC optimization**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -217,7 +217,7 @@ Includes the implementation of an RF gasket. Analysis owner: Bernardo.
 
 ---
 
-**`ANAL-RNG-001` — Frequency-range extension**
+**`STK-RNG-001` — Frequency-range extension**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -244,7 +244,7 @@ The upper limit may depend on the model of the connected antenna. A specific ant
 
 ---
 
-**`ANAL-RNG-002` — Real-time monitoring bandwidth**
+**`STK-RNG-002` — Real-time monitoring bandwidth**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -277,7 +277,7 @@ Manual between 6 and 20 MHz; automatic at 20 MHz.
 
 ---
 
-**`ANAL-PAR-001` — Parameterizable frequency range**
+**`STK-PAR-001` — Parameterizable frequency range**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -287,7 +287,7 @@ Manual between 6 and 20 MHz; automatic at 20 MHz.
 | **Verification**       | `DEMONSTRATION`                                          |
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `ANAL-RNG-001`                                           |
+| **Dependencies**       | `STK-RNG-001`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -304,7 +304,7 @@ IF span = the frequency range on screen.
 
 ---
 
-**`ANAL-PAR-002` — RBW configuration**
+**`STK-PAR-002` — RBW configuration**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -314,7 +314,7 @@ IF span = the frequency range on screen.
 | **Verification**       | `TEST`                                                   |
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `ANAL-PAR-001`                                           |
+| **Dependencies**       | `STK-PAR-001`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -331,7 +331,7 @@ Define ≥ 6 RBW options.
 
 ---
 
-**`ANAL-PAR-003` — Frequency-resolution steps**
+**`STK-PAR-003` — Frequency-resolution steps**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -341,7 +341,7 @@ Define ≥ 6 RBW options.
 | **Verification**       | `TEST`                                                   |
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `ANAL-PAR-002`                                           |
+| **Dependencies**       | `STK-PAR-002`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -358,7 +358,7 @@ Expand the range of resolutions in later phases as demand requires.
 
 ---
 
-**`ANAL-PAR-004` — VBW configuration**
+**`STK-PAR-004` — VBW configuration**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -368,7 +368,7 @@ Expand the range of resolutions in later phases as demand requires.
 | **Verification**       | `TEST`                                                   |
 | **New hardware**       | Yes (filters)                                           |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `ANAL-PAR-002`                                           |
+| **Dependencies**       | `STK-PAR-002`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -389,7 +389,7 @@ Filtering applied after RBW to smooth the displayed signal.
 
 ---
 
-**`ANAL-PAR-005` — Manual entry of GPS coordinates**
+**`STK-PAR-005` — Manual entry of GPS coordinates**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -416,7 +416,7 @@ The system SHALL allow the sensor's location coordinates to be entered manually 
 
 ---
 
-**`ANAL-PAR-006` — Parameterization of measurement units**
+**`STK-PAR-006` — Parameterization of measurement units**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -447,7 +447,7 @@ The system SHALL allow the selection and conversion of measurement units: freque
 
 ---
 
-**`ANAL-PAR-007` — Analysis and detection thresholds**
+**`STK-PAR-007` — Analysis and detection thresholds**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -480,7 +480,7 @@ Parameterize the threshold and, based on it, define the portion of the spectrum 
 
 ---
 
-**`ANAL-MED-001` — Spectral indicators (traces)**
+**`STK-MED-001` — Spectral indicators (traces)**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -490,7 +490,7 @@ Parameterize the threshold and, based on it, define the portion of the spectrum 
 | **Verification**       | `DEMONSTRATION`                                          |
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | ITU-R SM.1537; `REF-001`                                 |
-| **Dependencies**       | `ANAL-PAR-001`                                           |
+| **Dependencies**       | `STK-PAR-001`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -508,7 +508,7 @@ The system SHALL present spectral traces: maximum (max hold), minimum (min hold)
 
 ---
 
-**`ANAL-MED-002` — Spectral markers**
+**`STK-MED-002` — Spectral markers**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -518,7 +518,7 @@ The system SHALL present spectral traces: maximum (max hold), minimum (min hold)
 | **Verification**       | `DEMONSTRATION`                                          |
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `ANAL-MED-001`                                           |
+| **Dependencies**       | `STK-MED-001`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -539,7 +539,7 @@ Each marker shows: freq, power. Delta shows: ΔPower and ΔFreq.
 
 ---
 
-**`ANAL-MED-003` — Occupied-bandwidth measurement**
+**`STK-MED-003` — Occupied-bandwidth measurement**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -549,7 +549,7 @@ Each marker shows: freq, power. Delta shows: ΔPower and ΔFreq.
 | **Verification**       | `TEST`                                                   |
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | ITU-R SM.1537; `REF-001`                                 |
-| **Dependencies**       | `ANAL-MED-001`                                           |
+| **Dependencies**       | `STK-MED-001`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -566,7 +566,7 @@ OBW = the spectrum that contains 99% of the signal. –X dB is where the signal 
 
 ---
 
-**`ANAL-MED-004` — Channel power (up to 20 MHz)**
+**`STK-MED-004` — Channel power (up to 20 MHz)**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -576,7 +576,7 @@ OBW = the spectrum that contains 99% of the signal. –X dB is where the signal 
 | **Verification**       | `TEST`                                                   |
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `ANAL-RNG-002`                                           |
+| **Dependencies**       | `STK-RNG-002`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -597,7 +597,7 @@ Channel-power measurements limited to 20 MHz in this phase. More than 20 MHz in 
 
 ---
 
-**`ANAL-MED-005` — RDS reading in FM**
+**`STK-MED-005` — RDS reading in FM**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -623,7 +623,7 @@ Requires the ANE to confirm the feature (ANE column: YES).
 
 ---
 
-**`ANAL-MED-006` — FM and AM demodulation and listening**
+**`STK-MED-006` — FM and AM demodulation and listening**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -633,7 +633,7 @@ Requires the ANE to confirm the feature (ANE column: YES).
 | **Verification**       | `DEMONSTRATION`                                          |
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `ANAL-RNG-001`                                           |
+| **Dependencies**       | `STK-RNG-001`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -650,7 +650,7 @@ AM is only possible with the HackRF One from 1 MHz upward; it requires an additi
 
 ---
 
-**`ANAL-MED-007` — AM and FM modulation measurement**
+**`STK-MED-007` — AM and FM modulation measurement**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -660,7 +660,7 @@ AM is only possible with the HackRF One from 1 MHz upward; it requires an additi
 | **Verification**       | `TEST`                                                   |
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `ANAL-MED-006`                                           |
+| **Dependencies**       | `STK-MED-006`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -683,7 +683,7 @@ AM only from 1 MHz upward with the HackRF One; it requires an additional antenna
 
 ---
 
-**`NORM-DET-001` — Detection of unauthorized emissions**
+**`STK-DET-001` — Detection of unauthorized emissions**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -693,7 +693,7 @@ AM only from 1 MHz upward with the HackRF One; it requires an additional antenna
 | **Verification**       | `TEST`                                                   |
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | ITU-R SM.1537; `REF-001`                                 |
-| **Dependencies**       | `ANAL-PAR-007`                                           |
+| **Dependencies**       | `STK-PAR-007`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -710,7 +710,7 @@ Requires integration with the ANE database.
 
 ---
 
-**`NORM-DET-002` — Authorized-bandwidth non-compliance**
+**`STK-DET-002` — Authorized-bandwidth non-compliance**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -720,7 +720,7 @@ Requires integration with the ANE database.
 | **Verification**       | `TEST`                                                   |
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | ITU-R SM.1537; `REF-001`                                 |
-| **Dependencies**       | `NORM-DET-001`, `ANAL-MED-003`                           |
+| **Dependencies**       | `STK-DET-001`, `STK-MED-003`                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -737,7 +737,7 @@ Requires the ANE database with per-emission bandwidth limits.
 
 ---
 
-**`NORM-DET-003` — Authorized-power non-compliance**
+**`STK-DET-003` — Authorized-power non-compliance**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -747,7 +747,7 @@ Requires the ANE database with per-emission bandwidth limits.
 | **Verification**       | `TEST`                                                   |
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | ITU-R SM.1537; `REF-001`                                 |
-| **Dependencies**       | `NORM-DET-001`                                           |
+| **Dependencies**       | `STK-DET-001`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -768,7 +768,7 @@ Requires the ANE database with per-emission power limits.
 
 ---
 
-**`NORM-SRV-001` — AM and FM modulation quantification (compliance)**
+**`STK-SRV-001` — AM and FM modulation quantification (compliance)**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -778,7 +778,7 @@ Requires the ANE database with per-emission power limits.
 | **Verification**       | `TEST`                                                   |
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `ANAL-MED-007`                                           |
+| **Dependencies**       | `STK-MED-007`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -794,7 +794,7 @@ AM only from 1 MHz with the HackRF One; it requires an additional antenna.
 
 ---
 
-**`NORM-SRV-002` — Audio extraction for verification**
+**`STK-SRV-002` — Audio extraction for verification**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -804,7 +804,7 @@ AM only from 1 MHz with the HackRF One; it requires an additional antenna.
 | **Verification**       | `DEMONSTRATION`                                          |
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `ANAL-MED-006`                                           |
+| **Dependencies**       | `STK-MED-006`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -824,7 +824,7 @@ AM only from 1 MHz with the HackRF One; it requires an additional antenna.
 
 ---
 
-**`NORM-VER-001` — Intermodulation detection**
+**`STK-VER-001` — Intermodulation detection**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -834,7 +834,7 @@ AM only from 1 MHz with the HackRF One; it requires an additional antenna.
 | **Verification**       | `TEST`                                                   |
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `ANAL-MED-001`                                           |
+| **Dependencies**       | `STK-MED-001`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -851,7 +851,7 @@ Covers AM, FM, and the aeronautical band (108–137 MHz). ANE confirms (YES).
 
 ---
 
-**`NORM-VER-002` — Interference detection**
+**`STK-VER-002` — Interference detection**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -861,7 +861,7 @@ Covers AM, FM, and the aeronautical band (108–137 MHz). ANE confirms (YES).
 | **Verification**       | `TEST`                                                   |
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `ANAL-PAR-007`                                           |
+| **Dependencies**       | `STK-PAR-007`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -884,7 +884,7 @@ Detection threshold: > 3 dB above the average level. ANE confirms (YES).
 
 ---
 
-**`GEST-MON-001` — Monitoring of sensors and remote stations**
+**`STK-MON-001` — Monitoring of sensors and remote stations**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -911,7 +911,7 @@ The system SHALL measure and alert on sensor health variables (disk, RAM, CPU, t
 
 ---
 
-**`GEST-MON-002` — Network and connectivity monitoring**
+**`STK-MON-002` — Network and connectivity monitoring**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -942,7 +942,7 @@ The system SHALL measure and alert on IP-connection quality, including RTT, chan
 
 ---
 
-**`GEST-PRG-001` — Scheduled spectrum scan**
+**`STK-PRG-001` — Scheduled spectrum scan**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -952,7 +952,7 @@ The system SHALL measure and alert on IP-connection quality, including RTT, chan
 | **Verification**       | `DEMONSTRATION`                                          |
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | ITU-R SM.1537; `REF-001`                                 |
-| **Dependencies**       | `ANAL-PAR-001`                                           |
+| **Dependencies**       | `STK-PAR-001`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -969,7 +969,7 @@ ANE confirms (YES).
 
 ---
 
-**`GEST-REP-001` — Automatic report generation**
+**`STK-REP-001` — Automatic report generation**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -979,7 +979,7 @@ ANE confirms (YES).
 | **Verification**       | `DEMONSTRATION`                                          |
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `ANAL-MED-001`, `NORM-DET-001`                           |
+| **Dependencies**       | `STK-MED-001`, `STK-DET-001`                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -1000,7 +1000,7 @@ More report formats in subsequent phases.
 
 ---
 
-**`FORN-ALM-001` — Historical storage for forensic analysis**
+**`STK-ALM-001` — Historical storage for forensic analysis**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1027,7 +1027,7 @@ With current hardware. ANE confirms (YES).
 
 ---
 
-**`FORN-ALM-002` — Storage on ANE servers**
+**`STK-ALM-002` — Storage on ANE servers**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1037,7 +1037,7 @@ With current hardware. ANE confirms (YES).
 | **Verification**       | `DEMONSTRATION`                                          |
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `FORN-ALM-001`                                           |
+| **Dependencies**       | `STK-ALM-001`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -1054,7 +1054,7 @@ The ANE decides, depending on resources, whether to store only JSON or also CS8 
 
 ---
 
-**`FORN-ALM-003` — Storage on sensors**
+**`STK-ALM-003` — Storage on sensors**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1087,7 +1087,7 @@ Include the cost of the storage solution to be used.
 
 ---
 
-**`CONN-RED-001` — 4G/5G module**
+**`STK-RED-001` — 4G/5G module**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1114,7 +1114,7 @@ Currently uses a 4.5G module limited to Movistar. The new module must be multi-c
 
 ---
 
-**`CONN-RED-002` — WiFi connection**
+**`STK-RED-002` — WiFi connection**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1141,7 +1141,7 @@ Initial configuration must be done over an Ethernet cable.
 
 ---
 
-**`CONN-RED-003` — Accessible Ethernet port**
+**`STK-RED-003` — Accessible Ethernet port**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1167,7 +1167,7 @@ It currently requires opening the enclosure to reach the port. ANE confirms (YES
 
 ---
 
-**`CONN-RED-004` — Network auto-routing**
+**`STK-RED-004` — Network auto-routing**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1177,7 +1177,7 @@ It currently requires opening the enclosure to reach the port. ANE confirms (YES
 | **Verification**       | `TEST`                                                   |
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `CONN-RED-001`, `CONN-RED-002`, `CONN-RED-003`           |
+| **Dependencies**       | `STK-RED-001`, `STK-RED-002`, `STK-RED-003`           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -1198,7 +1198,7 @@ The system SHALL implement automatic IP-network connection and routing, using th
 
 ---
 
-**`CONN-SOP-001` — Remote access and software update**
+**`STK-SOP-001` — Remote access and software update**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1208,7 +1208,7 @@ The system SHALL implement automatic IP-network connection and routing, using th
 | **Verification**       | `DEMONSTRATION`                                          |
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `CONN-RED-004`                                           |
+| **Dependencies**       | `STK-RED-004`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -1225,7 +1225,7 @@ ANE confirms (YES).
 
 ---
 
-**`CONN-GPS-001` — GPS location redundancy**
+**`STK-GPS-001` — GPS location redundancy**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1235,7 +1235,7 @@ ANE confirms (YES).
 | **Verification**       | `TEST`                                                   |
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `ANAL-PAR-005`                                           |
+| **Dependencies**       | `STK-PAR-005`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -1251,7 +1251,7 @@ The system SHALL continue to report location via GPS regardless of the manual pa
 
 ---
 
-**`CONN-GPS-002` — GPS accuracy**
+**`STK-GPS-002` — GPS accuracy**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1283,7 +1283,7 @@ May require a change of GPS hardware.
 
 ---
 
-**`ANTE-ANT-001` — New antennas for specific bands**
+**`STK-ANT-001` — New antennas for specific bands**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1293,7 +1293,7 @@ May require a change of GPS hardware.
 | **Verification**       | `INSPECTION`                                             |
 | **New hardware**       | Yes                                                     |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `ANAL-RNG-001`                                           |
+| **Dependencies**       | `STK-RNG-001`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -1310,7 +1310,7 @@ Priority bands: 1. DTT, 2. Verify > 2 GHz mobile telephony (downlink), 3. Evalua
 
 ---
 
-**`ANTE-ANT-002` — Active antenna for non-ionizing radiation**
+**`STK-ANT-002` — Active antenna for non-ionizing radiation**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1342,7 +1342,7 @@ ANE confirms (YES). Requires new hardware.
 
 ---
 
-**`ANTE-RNI-001` — Measurement units for radiation**
+**`STK-RNI-001` — Measurement units for radiation**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1352,7 +1352,7 @@ ANE confirms (YES). Requires new hardware.
 | **Verification**       | `DEMONSTRATION`                                          |
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | ITU-T K.113, K.100; `REF-003`, `REF-004`                 |
-| **Dependencies**       | `ANTE-ANT-002`                                           |
+| **Dependencies**       | `STK-ANT-002`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -1368,7 +1368,7 @@ The system SHALL adopt the following measurement units for non-ionizing radiatio
 
 ---
 
-**`ANTE-RNI-002` — Field-strength measurement**
+**`STK-RNI-002` — Field-strength measurement**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1378,7 +1378,7 @@ The system SHALL adopt the following measurement units for non-ionizing radiatio
 | **Verification**       | `TEST`                                                   |
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | ITU-T K.113, K.100; `REF-003`, `REF-004`                 |
-| **Dependencies**       | `ANTE-ANT-002`, `ANTE-RNI-001`                           |
+| **Dependencies**       | `STK-ANT-002`, `STK-RNI-001`                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -1399,7 +1399,7 @@ Antenna factor AF = V_measured / E.
 
 ---
 
-**`POWR-AUT-001` — Autonomous power modules**
+**`STK-AUT-001` — Autonomous power modules**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1432,7 +1432,7 @@ Battery manager, small unobtrusive solar charging. Owner: Bernardo.
 
 ---
 
-**`CONF-SIN-001` — NTP synchronization**
+**`STK-SIN-001` — NTP synchronization**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1442,7 +1442,7 @@ Battery manager, small unobtrusive solar charging. Owner: Bernardo.
 | **Verification**       | `TEST`                                                   |
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `CONN-RED-004`                                           |
+| **Dependencies**       | `STK-RED-004`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -1459,7 +1459,7 @@ ANE confirms (YES).
 
 ---
 
-**`CONF-CAL-001` — Calibration procedures**
+**`STK-CAL-001` — Calibration procedures**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1491,7 +1491,7 @@ The system SHALL include calibration procedures for frequency, receive gain, IQ 
 
 ---
 
-**`CONF-CAR-001` — DANL (Displayed Average Noise Level)**
+**`STK-CAR-001` — DANL (Displayed Average Noise Level)**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1517,7 +1517,7 @@ Known HackRF limitations: it has neither a calibrated attenuator nor a known ref
 
 ---
 
-**`CONF-CAR-002` — Dynamic range**
+**`STK-CAR-002` — Dynamic range**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1527,7 +1527,7 @@ Known HackRF limitations: it has neither a calibrated attenuator nor a known ref
 | **Verification**       | `TEST`                                                   |
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | ITU-R SM.1138; `REF-002`                                 |
-| **Dependencies**       | `CONF-CAR-001`                                           |
+| **Dependencies**       | `STK-CAR-001`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -1543,7 +1543,7 @@ The system SHALL have a minimum dynamic range of ≥ 80 dB.
 
 ---
 
-**`CONF-CAR-003` — Frequency accuracy**
+**`STK-CAR-003` — Frequency accuracy**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1569,7 +1569,7 @@ The system SHALL have a maximum frequency accuracy of ± 2 ppm.
 
 ---
 
-**`CONF-CAR-004` — Delta aging (oscillator aging)**
+**`STK-CAR-004` — Delta aging (oscillator aging)**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1579,7 +1579,7 @@ The system SHALL have a maximum frequency accuracy of ± 2 ppm.
 | **Verification**       | `ANALYSIS`                                               |
 | **New hardware**       | Yes (oscillator change possible)                        |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `CONF-CAR-003`                                           |
+| **Dependencies**       | `STK-CAR-003`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -1595,7 +1595,7 @@ The HackRF starts with 20–50 ppm of error, uncompensated. An oscillator change
 
 ---
 
-**`CONF-CAR-005` — Amplitude accuracy**
+**`STK-CAR-005` — Amplitude accuracy**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1625,7 +1625,7 @@ HackRF limitations: no AGC or calibrated attenuators, no pre-filters, image nois
 
 ---
 
-**`INTG-EXP-001` — Data export in CSV, JSON, and XML**
+**`STK-EXP-001` — Data export in CSV, JSON, and XML**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1652,7 +1652,7 @@ ANE confirms (YES).
 
 ---
 
-**`INTG-API-001` — Standard API**
+**`STK-API-001` — Standard API**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1662,7 +1662,7 @@ ANE confirms (YES).
 | **Verification**       | `DEMONSTRATION`                                          |
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | —                                                        |
-| **Dependencies**       | `ANAL-SEG-001`                                           |
+| **Dependencies**       | `STK-SEG-001`                                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -1683,7 +1683,7 @@ Review functions based on ITU standards for interoperability.
 
 ---
 
-**`ESTD-ITU-001` — Compliance with ITU-R recommendations**
+**`STK-ITU-001` — Compliance with ITU-R recommendations**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1710,7 +1710,7 @@ SM.1537: accuracy, response time, scanning capability, storage. SM.1138: sensiti
 
 ---
 
-**`ESTD-ITU-002` — Compliance with CEPT/ERC standards**
+**`STK-ITU-002` — Compliance with CEPT/ERC standards**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1736,7 +1736,7 @@ CEPT/ERC/REC 70-03: shared use of licence-exempt spectrum (433 MHz, 2.4 GHz). EC
 
 ---
 
-**`ESTD-RNI-001` — Electric-field compliance with ITU-T K.113/K.100**
+**`STK-RNI-001` — Electric-field compliance with ITU-T K.113/K.100**
 
 | Field                  | Value                                                     |
 |------------------------|-----------------------------------------------------------|
@@ -1746,7 +1746,7 @@ CEPT/ERC/REC 70-03: shared use of licence-exempt spectrum (433 MHz, 2.4 GHz). EC
 | **Verification**       | `ANALYSIS`                                               |
 | **New hardware**       | No                                                       |
 | **Standard(s)**        | ITU-T K.113, K.100; `REF-003`, `REF-004`                 |
-| **Dependencies**       | `ANTE-ANT-002`, `ANTE-RNI-002`                           |
+| **Dependencies**       | `STK-ANT-002`, `STK-RNI-002`                           |
 | **Phase**              | 2025–2026                                                |
 
 **Description:**  
@@ -1804,20 +1804,20 @@ The frontend will be developed in React.js (or Vue.js) with the D3.js/Plotly.js 
 
 ### 5.2 Security
 
-- All communications encrypted with TLS ≥ 1.2 (`ANAL-SEG-001`).
-- Token-based authentication for the API (`INTG-API-001`).
+- All communications encrypted with TLS ≥ 1.2 (`STK-SEG-001`).
+- Token-based authentication for the API (`STK-API-001`).
 - Secure session management.
 
 ### 5.3 Reliability / Availability
 
-- Network auto-routing for high connectivity availability (`CONN-RED-004`).
-- Local storage on the sensor for operation during connectivity loss (`FORN-ALM-003`).
+- Network auto-routing for high connectivity availability (`STK-RED-004`).
+- Local storage on the sensor for operation during connectivity loss (`STK-ALM-003`).
 
 ### 5.4 Maintainability
 
-- OTA software updates (`CONN-SOP-001`).
+- OTA software updates (`STK-SOP-001`).
 - Remote SSH access for diagnostics.
-- Documented calibration procedures (`CONF-CAL-001`).
+- Documented calibration procedures (`STK-CAL-001`).
 
 ### 5.5 Portability
 
@@ -1830,62 +1830,62 @@ The frontend will be developed in React.js (or Vue.js) with the D3.js/Plotly.js 
 
 | Requirement ID   | Category               | Standard Ref              | New Hardware   |
 |------------------|------------------------|---------------------------|----------------|
-| `ANAL-SEG-001`   | Security               | ETSI EN 303 645           | No             |
-| `ANAL-EMC-001`   | EMC                    | —                         | Yes            |
-| `ANAL-RNG-001`   | Spectral range         | ITU-R SM.1537             | No             |
-| `ANAL-RNG-002`   | Bandwidth              | —                         | No             |
-| `ANAL-PAR-001`   | Parameterization       | —                         | No             |
-| `ANAL-PAR-002`   | Parameterization       | —                         | No             |
-| `ANAL-PAR-003`   | Parameterization       | —                         | No             |
-| `ANAL-PAR-004`   | Parameterization       | —                         | Yes            |
-| `ANAL-PAR-005`   | GPS                    | —                         | No             |
-| `ANAL-PAR-006`   | Units                  | —                         | No             |
-| `ANAL-PAR-007`   | Detection              | —                         | No             |
-| `ANAL-MED-001`   | Measurement            | ITU-R SM.1537             | No             |
-| `ANAL-MED-002`   | Measurement            | —                         | No             |
-| `ANAL-MED-003`   | Measurement            | ITU-R SM.1537             | No             |
-| `ANAL-MED-004`   | Measurement            | —                         | No             |
-| `ANAL-MED-005`   | Broadcasting           | —                         | No             |
-| `ANAL-MED-006`   | Broadcasting           | —                         | No             |
-| `ANAL-MED-007`   | Broadcasting           | —                         | No             |
-| `NORM-DET-001`   | Compliance             | ITU-R SM.1537             | No             |
-| `NORM-DET-002`   | Compliance             | ITU-R SM.1537             | No             |
-| `NORM-DET-003`   | Compliance             | ITU-R SM.1537             | No             |
-| `NORM-SRV-001`   | Broadcasting           | —                         | No             |
-| `NORM-SRV-002`   | Broadcasting           | —                         | No             |
-| `NORM-VER-001`   | Verification           | —                         | No             |
-| `NORM-VER-002`   | Verification           | —                         | No             |
-| `GEST-MON-001`   | Management             | —                         | No             |
-| `GEST-MON-002`   | Management             | —                         | No             |
-| `GEST-PRG-001`   | Management             | ITU-R SM.1537             | No             |
-| `GEST-REP-001`   | Management             | —                         | No             |
-| `FORN-ALM-001`   | Storage                | ITU-R SM.1537             | No             |
-| `FORN-ALM-002`   | Storage                | —                         | No             |
-| `FORN-ALM-003`   | Storage                | —                         | Yes            |
-| `CONN-RED-001`   | Connectivity           | —                         | Yes            |
-| `CONN-RED-002`   | Connectivity           | —                         | No             |
-| `CONN-RED-003`   | Connectivity           | —                         | Yes            |
-| `CONN-RED-004`   | Connectivity           | —                         | No             |
-| `CONN-SOP-001`   | Support                | —                         | No             |
-| `CONN-GPS-001`   | GPS                    | —                         | No             |
-| `CONN-GPS-002`   | GPS                    | —                         | Yes            |
-| `ANTE-ANT-001`   | Antennas               | —                         | Yes            |
-| `ANTE-ANT-002`   | Antennas               | ITU-T K.113, K.100        | Yes            |
-| `ANTE-RNI-001`   | Non-ionizing radiation | ITU-T K.113, K.100        | No             |
-| `ANTE-RNI-002`   | Non-ionizing radiation | ITU-T K.113, K.100        | No             |
-| `POWR-AUT-001`   | Power                  | —                         | Yes            |
-| `CONF-SIN-001`   | Synchronization        | —                         | No             |
-| `CONF-CAL-001`   | Calibration            | —                         | No             |
-| `CONF-CAR-001`   | Characterization       | ITU-R SM.1138             | No             |
-| `CONF-CAR-002`   | Characterization       | ITU-R SM.1138             | No             |
-| `CONF-CAR-003`   | Characterization       | —                         | No             |
-| `CONF-CAR-004`   | Characterization       | —                         | Yes            |
-| `CONF-CAR-005`   | Characterization       | —                         | No             |
-| `INTG-EXP-001`   | Export                 | —                         | No             |
-| `INTG-API-001`   | Integration            | —                         | No             |
-| `ESTD-ITU-001`   | Standards              | ITU-R SM.1537, SM.1138    | No             |
-| `ESTD-ITU-002`   | Standards              | CEPT/ERC/REC 70-03        | No             |
-| `ESTD-RNI-001`   | Standards              | ITU-T K.113, K.100        | No             |
+| `STK-SEG-001`   | Security               | ETSI EN 303 645           | No             |
+| `STK-EMC-001`   | EMC                    | —                         | Yes            |
+| `STK-RNG-001`   | Spectral range         | ITU-R SM.1537             | No             |
+| `STK-RNG-002`   | Bandwidth              | —                         | No             |
+| `STK-PAR-001`   | Parameterization       | —                         | No             |
+| `STK-PAR-002`   | Parameterization       | —                         | No             |
+| `STK-PAR-003`   | Parameterization       | —                         | No             |
+| `STK-PAR-004`   | Parameterization       | —                         | Yes            |
+| `STK-PAR-005`   | GPS                    | —                         | No             |
+| `STK-PAR-006`   | Units                  | —                         | No             |
+| `STK-PAR-007`   | Detection              | —                         | No             |
+| `STK-MED-001`   | Measurement            | ITU-R SM.1537             | No             |
+| `STK-MED-002`   | Measurement            | —                         | No             |
+| `STK-MED-003`   | Measurement            | ITU-R SM.1537             | No             |
+| `STK-MED-004`   | Measurement            | —                         | No             |
+| `STK-MED-005`   | Broadcasting           | —                         | No             |
+| `STK-MED-006`   | Broadcasting           | —                         | No             |
+| `STK-MED-007`   | Broadcasting           | —                         | No             |
+| `STK-DET-001`   | Compliance             | ITU-R SM.1537             | No             |
+| `STK-DET-002`   | Compliance             | ITU-R SM.1537             | No             |
+| `STK-DET-003`   | Compliance             | ITU-R SM.1537             | No             |
+| `STK-SRV-001`   | Broadcasting           | —                         | No             |
+| `STK-SRV-002`   | Broadcasting           | —                         | No             |
+| `STK-VER-001`   | Verification           | —                         | No             |
+| `STK-VER-002`   | Verification           | —                         | No             |
+| `STK-MON-001`   | Management             | —                         | No             |
+| `STK-MON-002`   | Management             | —                         | No             |
+| `STK-PRG-001`   | Management             | ITU-R SM.1537             | No             |
+| `STK-REP-001`   | Management             | —                         | No             |
+| `STK-ALM-001`   | Storage                | ITU-R SM.1537             | No             |
+| `STK-ALM-002`   | Storage                | —                         | No             |
+| `STK-ALM-003`   | Storage                | —                         | Yes            |
+| `STK-RED-001`   | Connectivity           | —                         | Yes            |
+| `STK-RED-002`   | Connectivity           | —                         | No             |
+| `STK-RED-003`   | Connectivity           | —                         | Yes            |
+| `STK-RED-004`   | Connectivity           | —                         | No             |
+| `STK-SOP-001`   | Support                | —                         | No             |
+| `STK-GPS-001`   | GPS                    | —                         | No             |
+| `STK-GPS-002`   | GPS                    | —                         | Yes            |
+| `STK-ANT-001`   | Antennas               | —                         | Yes            |
+| `STK-ANT-002`   | Antennas               | ITU-T K.113, K.100        | Yes            |
+| `STK-RNI-001`   | Non-ionizing radiation | ITU-T K.113, K.100        | No             |
+| `STK-RNI-002`   | Non-ionizing radiation | ITU-T K.113, K.100        | No             |
+| `STK-AUT-001`   | Power                  | —                         | Yes            |
+| `STK-SIN-001`   | Synchronization        | —                         | No             |
+| `STK-CAL-001`   | Calibration            | —                         | No             |
+| `STK-CAR-001`   | Characterization       | ITU-R SM.1138             | No             |
+| `STK-CAR-002`   | Characterization       | ITU-R SM.1138             | No             |
+| `STK-CAR-003`   | Characterization       | —                         | No             |
+| `STK-CAR-004`   | Characterization       | —                         | Yes            |
+| `STK-CAR-005`   | Characterization       | —                         | No             |
+| `STK-EXP-001`   | Export                 | —                         | No             |
+| `STK-API-001`   | Integration            | —                         | No             |
+| `STK-ITU-001`   | Standards              | ITU-R SM.1537, SM.1138    | No             |
+| `STK-ITU-002`   | Standards              | CEPT/ERC/REC 70-03        | No             |
+| `STK-RNI-001`   | Standards              | ITU-T K.113, K.100        | No             |
 
 ---
 

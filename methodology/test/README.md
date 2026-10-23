@@ -7,7 +7,7 @@ methodology pipeline. They are the methodology's integration tests.
 
 | T# | Domain | GT-ready | Contents |
 |----|--------|----------|----------|
-| **T0_ANE-Lap2** | SDR spectrum monitoring (ANE edge sensor) | **Yes** — `just-edge/SRS.md` + `just-edge/HCS.md` are valid GT files | Also has `full-system/SRS_APPROVED.md` (broader scope) |
+| **T0_ANE-Lap2** | SDR spectrum monitoring (ANE edge sensor) | **Yes** — `just-edge/StRS.md` + `just-edge/SyRS.md` are valid GT files | Also has `full-system/StRS_APPROVED.md` (broader scope, historical snapshot) |
 | **T1_FM-monitoring** | SDR-based FM broadcast compliance | No — raw LaTeX spec, GT must be derived | `00_sdr_spectrum_sensor_design/` (RAG-informed from FCC/ANE/ITU) |
 | **T2_IoT-Indoor** | Indoor IoT radio environment mapping, 2.4 GHz | No — raw proposal + literature | Hermes proposal, radio env mapping papers, variable adaptation doc |
 
@@ -127,14 +127,14 @@ Verify:
 
 ```bash
 # From the codeanvil repo:
-cp methodology/test/T0_ANE-Lap2/just-edge/SRS.md /tmp/smoke-test/GT/G0_SRS.md
-cp methodology/test/T0_ANE-Lap2/just-edge/HCS.md /tmp/smoke-test/GT/G0_HCS.md
+cp methodology/test/T0_ANE-Lap2/just-edge/StRS.md /tmp/smoke-test/GT/G0_StRS.md
+cp methodology/test/T0_ANE-Lap2/just-edge/SyRS.md /tmp/smoke-test/GT/G0_SyRS.md
 ```
 
 Verify:
 ```bash
-head -1 /tmp/smoke-test/GT/G0_SRS.md  # "# PROJECT: Edge Sensor ..."
-head -1 /tmp/smoke-test/GT/G0_HCS.md  # "# PROJECT: Edge Sensor ..."
+head -1 /tmp/smoke-test/GT/G0_StRS.md  # "# PROJECT: Edge Sensor ..."
+head -1 /tmp/smoke-test/GT/G0_SyRS.md  # "# PROJECT: Edge Sensor ..."
 ```
 
 ### 4. Enter sandboxed Claude session in the project
@@ -185,9 +185,9 @@ start
 ```
 
 **Expected:** Claude loads `.agents/skills/G0_valid_req_and_GT/SKILL.md`, runs
-`python .agents/skills/G0_valid_req_and_GT/scripts/g0_validate.py GT/G0_SRS.md GT/G0_HCS.md`,
+`python .agents/skills/G0_valid_req_and_GT/scripts/g0_validate.py GT/G0_StRS.md GT/G0_SyRS.md`,
 reports the exit code, verdict (G0: PASS or FAIL with specific errors), and the
-full validation report.
+full validation output (per-document reports + G0-X cross-document report).
 
 #### Prompt 3 — Seal GT with custody-chain
 
@@ -202,14 +202,14 @@ G0 passed. Now seal the GT files using the custody-chain skill so any tampering 
 2. Runs `source_snapshot.py snapshot --root . --include 'GT/**' --out .codeanvil/custody/snapshot.json`
    → SEALED, 2 files, manifest digest.
 3. Records custody: `custody_ledger.py record --ledger .codeanvil/custody/custody.jsonl
-   --doc GT/G0_SRS.md --action created --actor "tester" ...` (for both files).
+   --doc GT/G0_StRS.md --action created --actor "tester" ...` (for both files).
 4. Runs `custody_ledger.py verify` → PASS.
 5. Reports the provenance report with all statuses.
 
 #### Prompt 4 — Tamper detection
 
 ```
-I secretly edited GT/G0_SRS.md. Verify the GT files are still intact.
+I secretly edited GT/G0_StRS.md. Verify the GT files are still intact.
 ```
 
 **Expected:** Claude runs `source_snapshot.py verify --strict` → FAIL with
@@ -223,10 +223,10 @@ If you don't edit it, it should PASS — that's also a valid test.)*
 #### Prompt 5 — Custody history
 
 ```
-Show the full custody history for GT/G0_SRS.md.
+Show the full custody history for GT/G0_StRS.md.
 ```
 
-**Expected:** Claude runs `custody_ledger.py history --doc GT/G0_SRS.md` and
+**Expected:** Claude runs `custody_ledger.py history --doc GT/G0_StRS.md` and
 displays the timeline of actions (seq, timestamp, action, actor, hash prefix).
 
 ### 6. Cleanup

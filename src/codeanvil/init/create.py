@@ -146,8 +146,8 @@ def write_project_manifest(project_dir: Path, project_id: str, name: str) -> Non
         "id": project_id,
         "name": name,
         "gt": {
-            "srs": "GT/G0_SRS.md",
-            "hcs": "GT/G0_HCS.md",
+            "strs": "GT/G0_StRS.md",
+            "syrs": "GT/G0_SyRS.md",
         },
     }
     dest.parent.mkdir(parents=True, exist_ok=True)

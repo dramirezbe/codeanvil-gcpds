@@ -130,7 +130,7 @@ def test_write_project_manifest_content(tmp_path):
     data = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
     assert data["id"] == pid
     assert data["name"] == "proj"
-    assert data["gt"] == {"srs": "GT/G0_SRS.md", "hcs": "GT/G0_HCS.md"}
+    assert data["gt"] == {"strs": "GT/G0_StRS.md", "syrs": "GT/G0_SyRS.md"}
     assert "path" not in data  # manifest is collaboration-safe: no absolute paths
 
 
