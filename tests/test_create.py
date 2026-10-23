@@ -482,6 +482,94 @@ def test_status_lists_every_cycle(tmp_path, db_path, capsys):
     assert "02_second_run (active)" in out
 
 
+def test_status_ignores_the_ambiguous_schema_row(tmp_path, db_path, capsys):
+    """S1 — the literal schema row (two values) is not a verdict."""
+    cmd_create(None, tmp_path, project_name="Proj")
+    project = tmp_path / "proj"
+    _set_cycle(project, "01_c")
+    report_dir = project / ".codeanvil" / "report" / "01_c"
+    report_dir.mkdir(parents=True)
+    (report_dir / "G0.md").write_text(
+        "| Field | Value |\n|---|---|\n| HITL | PASS | FEEDBACK |\n", encoding="utf-8"
+    )
+
+    cmd_status("Proj")
+
+    out = capsys.readouterr().out
+    assert "G0: UNKNOWN" in out
+    assert "G0: PASS" not in out
+
+
+def test_status_reads_legacy_reports_when_no_cycles_exist(tmp_path, db_path, capsys):
+    """T7 — legacy <gate>_<timestamp>.md stay readable, newest per gate."""
+    cmd_create(None, tmp_path, project_name="Proj")
+    report = tmp_path / "proj" / ".codeanvil" / "report"
+    (report / "G0_2026-10-21_16-23-45-123.md").write_text("# old\n", encoding="utf-8")
+    (report / "G0_2026-10-22_09-00-00-000.md").write_text("# new\n", encoding="utf-8")
+    (report / "CC_2026-10-21_17-00-00-000.md").write_text("# cc\n", encoding="utf-8")
+
+    cmd_status("Proj")
+
+    out = capsys.readouterr().out
+    assert "Legacy reports (pre-cycle layout):" in out
+    assert "G0: G0_2026-10-22_09-00-00-000.md" in out
+    assert "CC: CC_2026-10-21_17-00-00-000.md" in out
+    assert "Reports: none yet" not in out
+
+
+def test_status_reports_latest_hitl_not_first(tmp_path, db_path, capsys):
+    """S1/T7 — the last appended iteration verdict wins (PASS then FEEDBACK)."""
+    cmd_create(None, tmp_path, project_name="Proj")
+    project = tmp_path / "proj"
+    _set_cycle(project, "01_c")
+    _write_report(project, "01_c", "G0", [(1, "PASS"), (2, "FEEDBACK")])
+
+    cmd_status("Proj")
+
+    out = capsys.readouterr().out
+    assert "G0: FEEDBACK (iteration 2)" in out
+    assert "G0: PASS" not in out
+
+
+def test_g0_validator_is_side_effect_free_and_maps_exit_codes(tmp_path):
+    """S4 — validator prints only; 0 pass, 1 errors, 2 usage/IO."""
+    import hashlib
+    import shutil
+
+    repo = Path(__file__).resolve().parents[1]
+    validator = repo / "templates/skills/G0_valid_req_and_GT/scripts/g0_validate.py"
+    t0 = repo / "methodology/test/T0_ANE-Lap2/just-edge"
+    strs, syrs = tmp_path / "StRS.md", tmp_path / "SyRS.md"
+    shutil.copy2(t0 / "StRS.md", strs)
+    shutil.copy2(t0 / "SyRS.md", syrs)
+
+    def digests():
+        return [hashlib.sha256(p.read_bytes()).hexdigest() for p in (strs, syrs)]
+
+    before = digests()
+    ok = subprocess.run(
+        [sys.executable, str(validator), str(strs), str(syrs)],
+        capture_output=True, text=True,
+    )
+    assert ok.returncode == 0, ok.stdout + ok.stderr
+    assert digests() == before
+
+    bad = tmp_path / "Bad.md"
+    bad.write_text(
+        "## Stakeholder Requirements Specification (StRS)\n\njunk\n", encoding="utf-8"
+    )
+    errs = subprocess.run(
+        [sys.executable, str(validator), str(bad), str(syrs)], capture_output=True
+    )
+    assert errs.returncode == 1
+
+    usage = subprocess.run(
+        [sys.executable, str(validator), str(strs), str(tmp_path / "nope.md")],
+        capture_output=True,
+    )
+    assert usage.returncode == 2
+
+
 def test_sync_reconciles_label_for_list_and_status(tmp_path, db_path, monkeypatch, capsys):
     from codeanvil.init.sync import run_sync
 

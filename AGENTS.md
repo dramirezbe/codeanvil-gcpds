@@ -131,7 +131,7 @@ Not a numbered gate — runs alongside any gate to prove GT immutability and tra
 
 There is no `codeanvil run` command and no orchestrator in the tool — and none in
 `AGENTS.md` either. The chain lives in the skills: on load, each skill checks its
-predecessor's report (`Gate`, `CC`, `G1` in `config.yaml`) and stops with the
+predecessor's report (`G0`, `CC`, `G1` in `config.yaml`) and stops with the
 predecessor's name when it is missing or its latest iteration is not
 `HITL: PASS`.
 

@@ -21,7 +21,9 @@ _REPORT_RE = re.compile(r"^(?P<gate>.+)_(?P<ts>\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{
 # Cycle-scoped reports: .codeanvil/report/<cycle>/<gate>.md with appended
 # "## Iteration N" sections and a | HITL | PASS|FEEDBACK | row per iteration.
 _ITERATION_RE = re.compile(r"^## Iteration (\d+)\s*$", re.MULTILINE)
-_HITL_RE = re.compile(r"^\|\s*HITL\s*\|\s*(PASS|FEEDBACK)\s*\|", re.MULTILINE)
+# Exactly two cells: the schema placeholder "| HITL | PASS | FEEDBACK |" is not
+# a verdict and must not be read as PASS.
+_HITL_RE = re.compile(r"^\|\s*HITL\s*\|\s*(PASS|FEEDBACK)\s*\|\s*$", re.MULTILINE)
 
 
 def _report_state(report_file: Path) -> tuple[int | None, str | None]:
