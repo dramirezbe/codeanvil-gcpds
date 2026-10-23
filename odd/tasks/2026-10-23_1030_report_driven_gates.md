@@ -174,13 +174,13 @@ This is consumed by the AGENTS.md template generator to build the prerequisite c
 
 | ID | Spec | Route | Status | Commit |
 |----|------|-------|--------|--------|
-| T1 | S9 | inline | done — RED/GREEN (`test_config_declares_skill_prerequisite_chain`) | pending |
-| T2 | S1, S2, S3 | inline | done — RED/GREEN (`test_agents_md_*`, 6 tests) | pending |
-| T3 | S4 | inline | done — RED/GREEN (`test_g0_skill_writes_an_iterative_report`) | pending |
-| T4 | S5 | inline | done — RED/GREEN (`test_custody_skill_requires_a_passing_g0_report`) | pending |
-| T5 | S6 | inline | done — RED/GREEN (`test_g1_skill_requires_a_passing_custody_report`) | pending |
-| T6 | S8 | inline | done — already conformant, pinned by `test_create_makes_report_dir_without_cycle_subdir` | pending |
-| T7 | S2 (report discovery) | inline | done — RED/GREEN (`test_status_reads_cycle_scoped_reports`, `test_status_lists_every_cycle`) | pending |
+| T1 | S9 | inline | done — RED/GREEN (`test_config_declares_skill_prerequisite_chain`) | aa1ab12 |
+| T2 | S1, S2, S3 | inline | done — RED/GREEN (`test_agents_md_*`, 6 tests) | aa1ab12 |
+| T3 | S4 | inline | done — RED/GREEN (`test_g0_skill_writes_an_iterative_report`) | aa1ab12 |
+| T4 | S5 | inline | done — RED/GREEN (`test_custody_skill_requires_a_passing_g0_report`) | aa1ab12 |
+| T5 | S6 | inline | done — RED/GREEN (`test_g1_skill_requires_a_passing_custody_report`) | aa1ab12 |
+| T6 | S8 | inline | done — already conformant, pinned by `test_create_makes_report_dir_without_cycle_subdir` | aa1ab12 |
+| T7 | S2 (report discovery) | inline | done — RED/GREEN (`test_status_reads_cycle_scoped_reports`, `test_status_lists_every_cycle`) | aa1ab12 |
 
 ## Log
 
