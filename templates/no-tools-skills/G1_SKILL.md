@@ -274,9 +274,11 @@ module must appear. Show data flow direction.
 
 ## Job 6 — Author the SRS (G1_SRS.md)
 
-Author the **Software Requirements Specification** per the template
-`templates/GT/G1_SRS.md` (in a scaffolded project: `GT/G1_SRS.md`). The SRS is the
-G1 deliverable — it records the selected design as software requirements.
+Author the **Software Requirements Specification** per the locked template
+`templates/GT/G1_SRS.md` (scaffolded projects:
+`.agents/skills/G1_start_design/templates/G1_SRS.md`), and write the document itself
+to `GT/G1_SRS.md`. The SRS is the G1 deliverable — it records the selected design as
+software requirements.
 
 Requirements:
 

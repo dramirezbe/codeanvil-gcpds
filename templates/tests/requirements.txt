@@ -5,7 +5,7 @@
 # is deliberately stdlib-only and needs NO virtualenv, NO install, and NO
 # network access. Run it directly with bare `python3`:
 #
-#     python3 templates/skills/G0_valid_req_and_GT/scripts/g0_validate.py SRS.md HCS.md
+#     python3 templates/skills/G0_valid_req_and_GT/scripts/g0_validate.py GT/G0_StRS.md GT/G0_SyRS.md
 #
 # Install these only to run the tests:
 #

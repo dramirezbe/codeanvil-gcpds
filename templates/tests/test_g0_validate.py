@@ -880,7 +880,7 @@ class TestPhase3NrmBlocks(unittest.TestCase):
 
 
 class TestPhase3HwcBlocks(unittest.TestCase):
-    """HWC- COTS constraints: the old HCS field rules plus compliance."""
+    """HWC- COTS constraints: the hardware-constraint field rules plus compliance."""
 
     def _strs(self, **kw) -> str:
         doc = MINIMAL_STRS

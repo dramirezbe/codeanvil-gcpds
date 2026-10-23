@@ -12,12 +12,12 @@ The repo has two sides with very different roles:
 
 The V-SIL pipeline encoded as executable artifacts:
 
-- **`templates/GT/`** — Ground Truth document templates. GT is the methodology's input: 3 pre-processed `.md` files (not raw PDFs), human-authored, that define the contract a project must satisfy:
-  1. **Requirements** (`G0_SRS.md`) — System Requirements Specification (IEEE 29148)
-  2. **HW Restrictions** (`G0_HCS.md`) — Hardware Constraints Specification (§2.4 Design Constraints)
-  3. **Normativity** — applicable standards (ITU, ICNIRP, IEEE, etc.) — template not yet implemented
+- **`templates/GT/`** — Ground Truth document templates. GT is the methodology's input: human-authored `.md` files (not raw PDFs) that define the contract a project must satisfy, following the IEEE/ISO/IEC 29148:2018 document family:
+  1. **StRS** (`G0_StRS.md`) — Stakeholder Requirements Specification (§9.4): stakeholder requirements (`STK-`), COTS hardware constraints (`HWC-`), and normative obligations (`NRM-` with inline compliance traceability)
+  2. **SyRS** (`G0_SyRS.md`) — System Requirements Specification (§9.5): per-measurand system requirements (`SYS-`) — methods, correction chains, uncertainty budgets — tracing to StRS blocks
+  3. **SRS** (`G1_SRS.md`) — Software Requirements Specification (§9.6): **produced at G1**, not a G0 input
 - **`templates/skills/`** — Skills executed at each gate:
-  - `G0_valid_req_and_GT/` — **Deterministic structural validation** of the GT files (SRS + HCS). No AI — pure script (`scripts/g0_validate.py`). `SKILL.md` is the agent contract, `references/RULES.md` the full rule tables. Hard pass/fail.
+  - `G0_valid_req_and_GT/` — **Deterministic structural validation** of the GT pair (StRS + SyRS) plus the G0-X cross-document rules. No AI — pure script (`scripts/g0_validate.py`). `SKILL.md` is the agent contract, `references/RULES.md` the full rule tables. Hard pass/fail.
   - `custody-chain/` — **Cross-cutting provenance skill** (gate `*`). Seals GT files after G0 pass (`source_snapshot.py`), tracks chain of custody for audit documents (`custody_ledger.py`, HMAC-signed hash-chain), validates audit controls (`control_registry.py`), and verifies port bindings (`port_check.py`). All stdlib-only.
   - `G1_start_design/` — Agent-driven: initiate design once G0 passes.
   - Future gates (G2, G3, ...) follow the same pattern.
@@ -43,9 +43,9 @@ CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks stat
 
 ## Key concepts
 
-- **GT (Ground Truth)**: 3 pre-processed `.md` files (requirements, HW restrictions, normativity) that define what "correct" means. Human-authored, not raw PDFs.
+- **GT (Ground Truth)**: the pair of human-authored `.md` files (StRS + SyRS) that define what "correct" means. Human-authored, not raw PDFs. Normativity lives inline in the StRS as `NRM-` blocks; the SRS is produced later at G1.
 - **T# (Test GT)**: numbered test cases (`methodology/test/T<n>_<name>/`) that serve as V-SIL system inputs — real-world GT instances used to validate and stress-test the methodology pipeline end-to-end. See [`methodology/test/README.md`](methodology/test/README.md) for the full test catalog and end-to-end manual test procedure.
-  - **T0_ANE-Lap2** — SDR spectrum monitoring edge sensor (ANE). **GT-ready**: `just-edge/SRS.md` + `just-edge/HCS.md` are valid GT files that can be copied directly into a project as `G0_SRS.md` / `G0_HCS.md`.
+  - **T0_ANE-Lap2** — SDR spectrum monitoring edge sensor (ANE). **GT-ready**: `just-edge/StRS.md` + `just-edge/SyRS.md` are valid GT files that can be copied directly into a project as `G0_StRS.md` / `G0_SyRS.md`.
   - **T1_FM-monitoring** — SDR-based FM broadcast compliance monitoring system. Raw LaTeX spec (GT must be derived). RAG-informed from regulatory docs (FCC Part 73, ANE Res. 105, ITU-R BS.412/450/SM.2152, ISO/IEC 17025).
   - **T2_IoT-Indoor** — Indoor IoT radio environment mapping at 2.4 GHz ISM (Proyecto Hermes / GCPDS). Raw proposal + literature (GT must be derived).
 - **Gate (Gn)**: verification checkpoint. Sequential — G0 must pass before G1 runs. G0 is deterministic (script-only). G1+ use AI coding agents (any runtime).
@@ -59,7 +59,7 @@ Plans moved to `odd/tasks/` with commit-date prefixes. All are DONE.
 
 | Plan                 | Path                                              | Description                                                        |
 |----------------------|---------------------------------------------------|--------------------------------------------------------------------|
-| G0 validation script | `odd/tasks/2026-10-13_1227_g0_skill_plan.md`      | Deterministic Python script to structurally validate SRS/HCS against IEEE 29148 templates |
+| G0 validation script | `odd/tasks/2026-10-13_1227_g0_skill_plan.md`      | Deterministic Python script to structurally validate the GT documents against IEEE 29148 templates |
 | Scaffold CLI         | `odd/tasks/2026-10-21_1423_scaffold_cli_plan.md`   | pyproject.toml, skill dir convention (.agents/skills/ + symlinks), path rewriting, GT inside skills |
 | AGENTS.md template   | `odd/tasks/2026-10-14_1514_agents_md_template_plan.md` | Config-driven scaffold: YAML config, AGENTS.md template with dynamic skills, multi-agent symlinks |
 
@@ -108,9 +108,9 @@ project folder — it has no `src/`, no `templates/`, no `pyproject.toml`.
 /path/to/project/                 ← project root (anywhere on disk)
 ├── AGENTS.md                     ← generated from TEMPLATE_AGENT.md (canonical)
 ├── CLAUDE.md -> AGENTS.md        ← symlink
-├── GT/                           ← user-authored ground truth (SRS, HCS)
-│   ├── G0_SRS.md
-│   └── G0_HCS.md
+├── GT/                           ← user-authored ground truth (StRS, SyRS)
+│   ├── G0_StRS.md
+│   └── G0_SyRS.md
 ├── .codeanvil/                   ← machine-generated methodology artifacts
 │   ├── project.yaml              ← project identity (UUIDv7, name, GT pointers)
 │   ├── custody/                  ← custody-chain artifacts (snapshot, ledger)

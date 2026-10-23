@@ -27,7 +27,7 @@ def build_parser() -> argparse.ArgumentParser:
             "  2. codeanvil create                 Interactive prompts: project and folder name\n"
             "     codeanvil create myproj          ...or non-interactive, legacy positional name\n"
             "     codeanvil create --name 'My Lab' ...or flags for agents and scripts (no TUI)\n"
-            "  3. Fill in the GT files              G0_SRS.md, G0_HCS.md\n"
+            "  3. Fill in the GT files              G0_StRS.md, G0_SyRS.md\n"
             "  4. codeanvil status myproj           Check gate progress (or 'status' inside a project)"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -35,11 +35,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("-v", "--version", action="version", version=f"%(prog)s {__version__}")
     parser.epilog = (
             "GT files (Ground Truth):\n"
-            "  G0_SRS.md            System Requirements Specification (IEEE 29148)\n"
-            "  G0_HCS.md            Hardware Constraints Specification (design constraints)\n"
+            "  G0_StRS.md           Stakeholder Requirements Specification (IEEE 29148 §9.4)\n"
+            "  G0_SyRS.md           System Requirements Specification (IEEE 29148 §9.5)\n"
+            "  (G1_SRS.md — Software Requirements Specification §9.6 — is produced at G1)\n"
             "\n"
             "Gates:\n"
-            "  G0  Deterministic structural validation of GT files (no AI)\n"
+            "  G0  Deterministic structural validation of the GT pair + G0-X (no AI)\n"
             "  G1+ Agent-driven design, implementation, and verification gates\n"
             "\n"
             "Config and DB stored at ~/.codeanvil-config/ — projects live anywhere."

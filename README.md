@@ -50,13 +50,13 @@ codeanvil create myproject
 codeanvil create myproject -p ~/projects
 
 # Write your GT files in myproject/GT/
-#   G0_SRS.md  — System Requirements Specification
-#   G0_HCS.md  — Hardware Constraints Specification
+#   G0_StRS.md  — Stakeholder Requirements Specification (IEEE 29148 §9.4)
+#   G0_SyRS.md  — System Requirements Specification (IEEE 29148 §9.5)
 # Reference templates: .agents/skills/G0_valid_req_and_GT/templates/
 
-# Validate GT structure (deterministic, no AI)
+# Validate the GT pair (deterministic, no AI)
 cd myproject
-python .agents/skills/G0_valid_req_and_GT/scripts/g0_validate.py GT/G0_SRS.md GT/G0_HCS.md
+python .agents/skills/G0_valid_req_and_GT/scripts/g0_validate.py GT/G0_StRS.md GT/G0_SyRS.md
 
 # Check project status (reads .codeanvil/report/ from the current directory)
 codeanvil status
@@ -132,9 +132,9 @@ codeanvil create [<name> | --name <label> [--folder <dir>]] [-p <path>] [--mcp m
        ├── AGENTS.md                 ← generated (canonical agent instructions)
        ├── CLAUDE.md → AGENTS.md     ← symlink
        ├── GT/
-       │    ├── README.md            ← instructions: write G0_SRS.md, G0_HCS.md here
-       │    ├── G0_SRS.md            ← you author (IEEE 29148)
-       │    └── G0_HCS.md            ← you author (design constraints)
+       │    ├── README.md            ← instructions: write G0_StRS.md, G0_SyRS.md here
+       │    ├── G0_StRS.md           ← you author (IEEE 29148 §9.4)
+       │    └── G0_SyRS.md           ← you author (IEEE 29148 §9.5)
        ├── .codeanvil/               ← machine-generated methodology artifacts
        │    ├── project.yaml         ← project identity (UUIDv7, no machine paths)
        │    ├── custody/             ← custody-chain snapshot + ledger
@@ -144,8 +144,8 @@ codeanvil create [<name> | --name <label> [--folder <dir>]] [-p <path>] [--mcp m
        │    │    ├── G0_valid_req_and_GT/
        │    │    │    ├── SKILL.md           ← agent contract (paths rewritten)
        │    │    │    ├── templates/         ← locked IEEE 29148 reference templates
-       │    │    │    │    ├── G0_SRS.md
-       │    │    │    │    └── G0_HCS.md
+       │    │    │    │    ├── G0_StRS.md
+       │    │    │    │    └── G0_SyRS.md
        │    │    │    ├── references/RULES.md
        │    │    │    └── scripts/g0_validate.py
        │    │    ├── G1_start_design/
@@ -162,15 +162,15 @@ Skills live in `.agents/skills/` — the single source of truth. Agent runtime d
 
 GT reference templates are **locked** inside each skill (e.g. `.agents/skills/G0_.../templates/`). Users write their own GT files in `GT/`.
 
-1. **Write your GT** — author `G0_SRS.md` and `G0_HCS.md` in `GT/`, following the locked reference templates
-2. **G0 validates structure** — a deterministic script checks that each GT file follows the expected format. Hard pass/fail, no LLM.
+1. **Write your GT** — author `G0_StRS.md` and `G0_SyRS.md` in `GT/`, following the locked reference templates
+2. **G0 validates structure** — a deterministic script checks that both GT documents follow the expected format and that the pair is cross-consistent (G0-X). Hard pass/fail, no LLM. The SRS (Software Requirements Specification, §9.6) is produced later at G1.
 3. **G1+ gates run agents** — AI coding agents (any runtime) execute skills that drive design, implementation, and verification stages. Each gate reads the GT and prior gate outputs.
 
 ## Definitions
 
 | Acronym | Meaning |
 |---------|---------|
-| **GT**  | Ground Truth — the 3 `.md` files that define the project contract |
+| **GT**  | Ground Truth — the StRS + SyRS `.md` pair that defines the project contract (the SRS is produced at G1) |
 | **T#**  | Test GT — real-world V-SIL input sets (`methodology/test/T<n>_<name>/`) used to validate the methodology end-to-end |
 | **G#**  | Gate # — a verification checkpoint in the V-SIL pipeline |
 | **COTS** | Commercial Off-The-Shelf |
@@ -208,16 +208,17 @@ codeanvil-gcpds/
 │       └── mcp.py           # MCP server install, skill copy, per-agent config gen
 │
 ├── methodology/test/        # Test GT cases (V-SIL system inputs)
-│   ├── T0_ANE-Lap2/        # ANE edge sensor (SRS + HCS examples, Phase 2)
+│   ├── T0_ANE-Lap2/        # ANE edge sensor (StRS + SyRS examples, Phase 2)
 │   ├── T1_FM-monitoring/    # SDR-based FM compliance monitoring (LaTeX spec)
 │   └── T2_IoT-Indoor/      # Indoor IoT radio environment (Hermes/GCPDS)
 │
 ├── templates/               # The methodology (the real product)
 │   ├── GT/                  # Ground Truth document templates (IEEE 29148)
-│   │   ├── G0_SRS.md       # SRS template
-│   │   ├── G0_HCS.md       # HCS template (§2.4 Design Constraints)
+│   │   ├── G0_StRS.md      # StRS template (§9.4 — merged stakeholder + HW + normativity)
+│   │   ├── G0_SyRS.md      # SyRS template (§9.5 — per-measurand system requirements)
+│   │   ├── G1_SRS.md       # SRS template (§9.6 — G1 output)
 │   │   ├── README.md
-│   │   └── legacy/         # Old template versions (v1, v2)
+│   │   └── legacy/         # Old template versions (v1, v2, v3)
 │   └── skills/              # Gate skills (deterministic + agent-driven)
 │       ├── G0_valid_req_and_GT/
 │       │   ├── SKILL.md            # Agent contract (agentskills.io format)

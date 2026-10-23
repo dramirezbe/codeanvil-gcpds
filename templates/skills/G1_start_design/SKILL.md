@@ -30,9 +30,10 @@ Do **not** load it for GT validation (that is G0) or implementation (that is G2+
   a single-candidate design is not a G1 output.
 - **Every REQ- traces to a SYS-.** No software requirement may exist without upstream
   justification in the approved SyRS.
-- **The SRS is the G1 deliverable.** Author it at `GT/G1_SRS.md` following
-  `templates/GT/G1_SRS.md` (template store: the G1_SRS template shipped with this
-  project). Validate it structurally before the review package.
+- **The SRS is the G1 deliverable.** Author it at `GT/G1_SRS.md` following the
+  `G1_SRS.md` template (in the CodeAnvil repo: `templates/GT/G1_SRS.md`; request a
+  copy if your project does not have one yet). Validate it structurally before the
+  review package.
 
 ## Inputs and Outputs
 

@@ -24,16 +24,18 @@ packages = ["src/codeanvil"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "templates/skills" = "codeanvil/templates/skills"
-"templates/GT/G0_SRS.md" = "codeanvil/templates/GT/G0_SRS.md"
-"templates/GT/G0_HCS.md" = "codeanvil/templates/GT/G0_HCS.md"
+"templates/GT/G0_StRS.md" = "codeanvil/templates/GT/G0_StRS.md"
+"templates/GT/G0_SyRS.md" = "codeanvil/templates/GT/G0_SyRS.md"
+"templates/GT/G1_SRS.md" = "codeanvil/templates/GT/G1_SRS.md"
 "templates/GT/README.md.template" = "codeanvil/templates/GT/README.md.template"
 "templates/config.yaml" = "codeanvil/templates/config.yaml"
 "templates/AGENTS" = "codeanvil/templates/AGENTS"
 
 [tool.hatch.build.targets.sdist.force-include]
 "templates/skills" = "codeanvil/templates/skills"
-"templates/GT/G0_SRS.md" = "codeanvil/templates/GT/G0_SRS.md"
-"templates/GT/G0_HCS.md" = "codeanvil/templates/GT/G0_HCS.md"
+"templates/GT/G0_StRS.md" = "codeanvil/templates/GT/G0_StRS.md"
+"templates/GT/G0_SyRS.md" = "codeanvil/templates/GT/G0_SyRS.md"
+"templates/GT/G1_SRS.md" = "codeanvil/templates/GT/G1_SRS.md"
 "templates/GT/README.md.template" = "codeanvil/templates/GT/README.md.template"
 "templates/config.yaml" = "codeanvil/templates/config.yaml"
 "templates/AGENTS" = "codeanvil/templates/AGENTS"

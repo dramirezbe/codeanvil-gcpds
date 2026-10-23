@@ -72,7 +72,6 @@ The edge sensor is an autonomous spectrum-monitoring node based on an SDR (HackR
 | FFT        | Fast Fourier Transform                                                               |
 | CS8        | Complex Signed 8-bit — the HackRF IQ sample format                                  |
 | AF         | Antenna Factor                                                                       |
-| HCS        | Hardware Constraints Specification — companion document                              |
 | OTA        | Over The Air — remote software update                                               |
 
 ### 1.4 References
@@ -164,7 +163,7 @@ Real-time spectrum capture (1 MHz–6 GHz), DSP processing (FFT, PSD, traces, RB
 
 ### 2.4 Constraints
 
-Summary of hardware constraints (see HCS-ANE-EDGE-001 for parametric details):
+Summary of hardware constraints (see the HWC- blocks in §3.12–§3.17 for parametric details):
 
 - **RF front-end:** HackRF One — 1 MHz to 6 GHz, 20 MHz instantaneous BW, 8-bit IQ (CS8), manual gain only.
 - **Processing:** Raspberry Pi 4B — 4× Cortex-A72 @ 1.8 GHz, 4/8 GB RAM.

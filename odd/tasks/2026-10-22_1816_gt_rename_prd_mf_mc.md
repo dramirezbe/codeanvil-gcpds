@@ -148,13 +148,13 @@ S19. **Legacy name eradication**. After all implementation tasks are complete, v
 | T4b | S18 (SyRS validation) | inline | done | 1ff05b4 |
 | T4c | S5 (G0-X cross-doc) | inline | done | 1ff05b4 |
 | T4d | S14 (test fixtures) | inline | done | 1ff05b4 |
-| T5 | S6, S8 | inline | todo | |
-| T6 | S7, S8 | inline | todo | |
-| T7 | S9, S10, S11, S12, S16 | inline | todo | |
-| T8 | S13 | inline | partial (fixtures done 1ff05b4; README + legacy removal pending) | 1ff05b4 |
-| T9 | S15 | inline | todo | |
-| T10 | S1 (all) | inline | todo | |
-| T11 | S19 (legacy eradication) | inline | todo | |
+| T5 | S6, S8 | inline | done | d4e3b06 |
+| T6 | S7, S8 | inline | done | d4e3b06 |
+| T7 | S9, S10, S11, S12, S16 | inline | done | d4e3b06 |
+| T8 | S13 | inline | done | 1ff05b4, d4e3b06 |
+| T9 | S15 | inline | done | (next commit) |
+| T10 | S1 (all) | inline | done | (next commit) — scaffold smoke + G0 pair exit 0/1 verified, 205+93 tests green |
+| T11 | S19 (legacy eradication) | inline | done | (next commit) — zero live hits; carve-outs per L8 |
 
 **T1 — StRS template**: Create `templates/GT/G0_StRS.md` by merging current SRS + HCS templates. IEEE 29148 §9.4 sections (§9.4.2–§9.4.17). Block types: NRM-\*, HWC-\*, STK-\*. Inline compliance traceability. Single metadata table.
 
@@ -197,3 +197,9 @@ L4. Plan revision (2026-10-22): Split T4 into T4a–T4d for explicit StRS valida
 L5. Implementation pass (2026-10-22): Searched repo for all legacy SRS/HCS references. Found 26 files. Added S19 (legacy name eradication) and T11 (final grep pass). Task count: 13 → 14. File inventory recorded in S19 across 4 categories: source code + config (6), templates + skills (9), documentation (3), methodology + test cases (8).
 
 L6. T1–T4d + T8 fixtures (2026-10-22, commit 1ff05b4): Created G0_StRS.md / G0_SyRS.md / G1_SRS.md templates; rewrote g0_validate.py (StRS 18 + SyRS 15 required headings, STK/NRM/HWC/SYS per-kind field+enum rules, inline compliance rows, G0-X pair rules, pair-gate CLI); rewrote test_g0_validate.py (93 tests, stdlib unittest + pytest runners); migrated T0 just-edge fixtures (43 STK renamed CAT/ANTE/CONF/CONN/FORN/GEST/NORM/POWR→STK, 17 HWC with compliance rows, 4 new NRM blocks, SyRS with 27 SYS covering all 43 STKs). Validator pair run: StRS PASS (5 known source-ref warnings), SyRS PASS, G0-X PASS, exit 0. Template noise on unfilled templates (placeholder + example-block enum choice cells) matches old-validator behavior — contract is "fails, no missing section".
+
+L7. T5–T9 + T11 (2026-10-22, commit d4e3b06 + follow-up): Rewrote G0 SKILL.md/RULES.md/no-tools G0 skill (pair gate, per-kind rules, G0-X); G1 no-tools skill now runs 8 jobs incl. SRS authoring (Job 6), SRS structural validation (Job 7), review package (Job 8); wrote G1_start_design/SKILL.md; config.yaml/create.py/test_sync manifest gt={strs,syrs}; legacy templates moved to templates/GT/legacy/ as v3; TEMPLATE_AGENT + GT READMEs + CLAUDE.md + README.md + repo AGENTS.md updated; T0 legacy just-edge SRS.md/HCS.md removed, full-system renamed StRS_APPROVED.md (155 IDs → STK-*); test README procedure updated; pyproject force-include + parser.py help fixed.
+
+L8. S19 carve-out decision (2026-10-22): Historical deliverable snapshots — `methodology/V-SIL/` (v1 paper .md/.tex), `methodology/reports/`, `methodology/slides/`, and `methodology/V-SIL-v2/` pipeline/literature artifacts (all outside S19's 26-file inventory) — retain legacy GT names as historical record; rewriting published-style artifacts would falsify them. Also intentional historical mentions: `templates/GT/README.md` Legacy section (documents legacy/ contents), the StRS change-log "merged HCS" entry, and cited-literature "SRS" wording in `G1_DESIGN.md` (flagged via top-of-file note). All 26 inventoried files are updated.
+
+L9. T10/T11 integration verification (2026-10-22): scaffold smoke (`codeanvil init` + `create` in /tmp/opencode) — GT README, locked templates G0_StRS/G0_SyRS in G0 skill + G1_SRS in G1 skill (new g1_skill scaffold copy, path_replacements added), manifest gt={strs,syrs}, no `templates/GT` paths leak into rewritten skills. G0 with T0 pair: StRS PASS (0e/5w), SyRS PASS, G0-X PASS, exit 0; missing-SyRS run: G0 GATE REPORT FAIL, exit 1. Suites: pytest 205 passed, unittest 93 OK. S19 final grep: zero live legacy hits; only intentional historical mentions remain (L8 carve-outs). Smoke project + its DB rows removed after verification.

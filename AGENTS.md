@@ -32,7 +32,7 @@ codeanvil create ──► scaffold project anywhere
                        ├─ .claude/skills → ../.agents/skills  (symlink)
                        ├─ .opencode/skills → ../.agents/skills
                        ├─ .codex/skills → ../.agents/skills
-                       ├─ GT/README.md         (user writes G0_SRS.md, G0_HCS.md here)
+                       ├─ GT/README.md         (user writes G0_StRS.md, G0_SyRS.md here)
                        ├─ .codeanvil/          (project.yaml + custody/ + report/)
                        └─ DB registration (idempotent)
 codeanvil sync ─────► register/move a cloned project in the local DB
@@ -41,9 +41,9 @@ codeanvil sync ─────► register/move a cloned project in the local DB
 the harness (agent runtime) reads the scaffolded AGENTS.md and drives the gates:
                        │
                        ├─ G0 (deterministic — no agent)
-                       │    ├─ reads: 3 GT .md files
+                       │    ├─ reads: GT pair (StRS + SyRS .md files)
                        │    ├─ script: g0_validate.py
-                       │    ├─ checks: required sections, format, fields
+                       │    ├─ checks: required sections, format, fields, G0-X pair rules
                        │    └─ output: pass/fail (hard gate)
                        │
                        ├─ custody-chain (cross-cutting — after G0 pass)
@@ -78,11 +78,11 @@ the harness (agent runtime) reads the scaffolded AGENTS.md and drives the gates:
 
 ## Test GT cases (V-SIL system inputs)
 
-`methodology/test/T<n>_<name>/` — numbered test cases containing real-world project materials from which the 3 GT files are derived. They are the methodology's integration tests. See [`methodology/test/README.md`](methodology/test/README.md) for the full catalog and the **end-to-end manual test procedure** (clean install → scaffold → GT → G0 → custody-chain, with sandboxed Claude prompts).
+`methodology/test/T<n>_<name>/` — numbered test cases containing real-world project materials from which the GT pair is derived. They are the methodology's integration tests. See [`methodology/test/README.md`](methodology/test/README.md) for the full catalog and the **end-to-end manual test procedure** (clean install → scaffold → GT → G0 → custody-chain, with sandboxed Claude prompts).
 
 | Test | Domain | GT-ready | Contents |
 |------|--------|----------|----------|
-| **T0_ANE-Lap2** | SDR spectrum monitoring (ANE edge sensor) | **Yes** | `just-edge/SRS.md` + `just-edge/HCS.md` — copy as `G0_SRS.md`/`G0_HCS.md` |
+| **T0_ANE-Lap2** | SDR spectrum monitoring (ANE edge sensor) | **Yes** | `just-edge/StRS.md` + `just-edge/SyRS.md` — copy as `G0_StRS.md`/`G0_SyRS.md` |
 | **T1_FM-monitoring** | SDR-based FM broadcast compliance monitoring | No (raw) | LaTeX specification (RAG-informed from FCC Part 73, ANE Res. 105, ITU-R BS.412/450/SM.2152, ISO/IEC 17025) |
 | **T2_IoT-Indoor** | Indoor IoT radio environment mapping, 2.4 GHz ISM (GCPDS) | No (raw) | Hermes proposal, radio environment mapping literature, variable adaptation design doc |
 
@@ -92,15 +92,15 @@ the harness (agent runtime) reads the scaffolded AGENTS.md and drives the gates:
 
 Pure Python script. No LLM, no AI agent — just `g0_validate.py`.
 
-- **Purpose**: hard gate ensuring each GT `.md` file has the required structure before any agent gate runs.
+- **Purpose**: hard gate ensuring the GT pair (StRS + SyRS) has the required structure before any agent gate runs.
 - **Script**: `templates/skills/G0_valid_req_and_GT/scripts/g0_validate.py` (repo), `.agents/skills/G0_valid_req_and_GT/scripts/g0_validate.py` (scaffolded project)
 - **Spec**: `SKILL.md` documents the expected structure; `references/RULES.md` holds the full rule tables.
-- **GT reference templates**: locked inside the skill at `.agents/skills/G0_valid_req_and_GT/templates/` (G0_SRS.md, G0_HCS.md)
-- **Inputs** (3 pre-processed `.md` files, human-authored):
-  1. **Requirements** — functional and non-functional requirements
-  2. **HW Restrictions** — COTS hardware constraints (embedded, server, DAQ/SDR)
-  3. **Normativity** — applicable standards (ITU, ICNIRP, IEEE, etc.)
-- **Output**: pass/fail with exact listing of missing/malformed sections.
+- **GT reference templates**: locked inside the skill at `.agents/skills/G0_valid_req_and_GT/templates/` (G0_StRS.md, G0_SyRS.md)
+- **Inputs** (the Ground Truth **pair**, human-authored, IEEE 29148:2018 family):
+  1. **StRS** (`G0_StRS.md`, §9.4) — stakeholder requirements (`STK-`), COTS hardware constraints (`HWC-`), normative obligations (`NRM-` with inline compliance traceability)
+  2. **SyRS** (`G0_SyRS.md`, §9.5) — per-measurand system requirements (`SYS-`) tracing to StRS block IDs
+- **G0-X**: cross-document consistency — STK coverage, trace resolvability, shared-ID namespace, normative citations.
+- **Output**: per-document reports + G0-X report + gate report; pass/fail with exact listing of missing/malformed sections.
 - **Property**: deterministic — same input, same result. No interpretation.
 
 ### Custody Chain — Data Provenance & Integrity (cross-cutting, after G0)
@@ -122,8 +122,8 @@ Not a numbered gate — runs alongside any gate to prove GT immutability and tra
 
 - **Purpose**: initiate design phase once GT is validated.
 - **Skill**: `templates/skills/G1_start_design/SKILL.md`
-- **Inputs**: validated GT + G0 pass report
-- **Output**: initial design artifacts (architecture, interfaces, GT-derived constraints)
+- **Inputs**: validated GT pair (StRS + SyRS) + G0 pass report
+- **Output**: multi-hypothesis design synthesis and the SRS (`GT/G1_SRS.md`, IEEE 29148 §9.6), structurally validated before human review
 
 ## Gate orchestration (harness-driven)
 
@@ -207,9 +207,9 @@ myproj/
 ├── AGENTS.md                        ← generated (canonical agent instructions)
 ├── CLAUDE.md → AGENTS.md            ← symlink
 ├── GT/
-│   ├── README.md                    ← write G0_SRS.md, G0_HCS.md here
-│   ├── G0_SRS.md                    ← user-authored SRS (IEEE 29148)
-│   └── G0_HCS.md                    ← user-authored HCS (design constraints)
+│   ├── README.md                    ← write G0_StRS.md, G0_SyRS.md here
+│   ├── G0_StRS.md                   ← user-authored StRS (IEEE 29148 §9.4)
+│   └── G0_SyRS.md                   ← user-authored SyRS (IEEE 29148 §9.5)
 ├── .codeanvil/                      ← machine-generated methodology artifacts
 │   ├── project.yaml                 ← project identity (UUIDv7, name, GT pointers)
 │   ├── custody/                     ← custody-chain artifacts
@@ -221,8 +221,8 @@ myproj/
 │   │   ├── G0_valid_req_and_GT/
 │   │   │   ├── SKILL.md             ← paths rewritten to project-relative
 │   │   │   ├── templates/           ← locked IEEE 29148 reference templates
-│   │   │   │   ├── G0_SRS.md
-│   │   │   │   └── G0_HCS.md
+│   │   │   │   ├── G0_StRS.md
+│   │   │   │   └── G0_SyRS.md
 │   │   │   ├── references/RULES.md  ← paths rewritten
 │   │   │   └── scripts/g0_validate.py
 │   │   ├── custody-chain/
@@ -283,7 +283,7 @@ which creates a GitHub Release with a changelog. CI runs on every push and PR
 
 ## Principles
 
-- **GT is pre-processed input**: 3 human-authored `.md` files, not raw PDFs.
+- **GT is pre-processed input**: the human-authored StRS + SyRS pair (`.md` files), not raw PDFs.
 - **G0 is deterministic**: no AI, no interpretation. Valid or not.
 - **Gates are sequential**: G(n+1) requires G(n) pass.
 - **Skills are the methodology**: not in `SKILL.md` (or G0 script) → not in V-SIL.
