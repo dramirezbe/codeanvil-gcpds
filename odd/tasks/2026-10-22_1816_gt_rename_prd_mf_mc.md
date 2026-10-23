@@ -152,9 +152,9 @@ S19. **Legacy name eradication**. After all implementation tasks are complete, v
 | T6 | S7, S8 | inline | done | d4e3b06 |
 | T7 | S9, S10, S11, S12, S16 | inline | done | d4e3b06 |
 | T8 | S13 | inline | done | 1ff05b4, d4e3b06 |
-| T9 | S15 | inline | done | (next commit) |
-| T10 | S1 (all) | inline | done | (next commit) — scaffold smoke + G0 pair exit 0/1 verified, 205+93 tests green |
-| T11 | S19 (legacy eradication) | inline | done | (next commit) — zero live hits; carve-outs per L8 |
+| T9 | S15 | inline | done | 6e31845 |
+| T10 | S1 (all) | inline | done | 6e31845 — scaffold smoke + G0 pair exit 0/1 verified, 205+93 tests green |
+| T11 | S19 (legacy eradication) | inline | done | 6e31845 — zero live hits; carve-outs per L8 |
 
 **T1 — StRS template**: Create `templates/GT/G0_StRS.md` by merging current SRS + HCS templates. IEEE 29148 §9.4 sections (§9.4.2–§9.4.17). Block types: NRM-\*, HWC-\*, STK-\*. Inline compliance traceability. Single metadata table.
 
