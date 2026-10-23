@@ -236,6 +236,33 @@ Show the full custody history for GT/G0_StRS.md.
 **Expected:** Claude runs `custody_ledger.py history --doc GT/G0_StRS.md` and
 displays the timeline of actions (seq, timestamp, action, actor, hash prefix).
 
+#### Prompt 6 — Run G1 (design synthesis)
+
+```
+Run G1: design the architecture from the sealed GT.
+```
+
+**Expected:** Claude loads `.agents/skills/G1_start_design/SKILL.md`, checks that
+`.codeanvil/report/<cycle>/CC.md`'s latest iteration is `HITL: PASS`, runs the GT
+integrity check (Job 0), extracts the ASRs, then asks how many architecture
+candidates to generate (minimum 3, default 4). It works the nine jobs in order,
+pausing for **PASS** or **FEEDBACK** after each, writes `GT/G1_SRS.md`, validates
+it structurally, and appends iterations to `.codeanvil/report/<cycle>/G1.md`.
+
+After G1 runs, verify the design artifacts exist — one file per job:
+
+```bash
+ls /tmp/smoke-test/.codeanvil/report/<cycle>/G1_artifacts/
+# ASR.md  Arch_01.md  Arch_02.md  Arch_03.md ...  QA_matrix.md  ATAM.md  ADD.md  review_package.md
+```
+
+- `Arch_NN.md` files are zero-padded and match the number of candidates requested.
+- `FEEDBACK` rework **overwrites** the artifact file — it never appends.
+- `G1.md` still holds only iterations and verdicts, no design content.
+
+*(If you ran Prompt 4's tampering test, restore `GT/G0_StRS.md` from the repo and
+re-seal before G1 — Job 0 fails on a tampered GT.)*
+
 ### 6. Cleanup
 
 ```bash
@@ -258,6 +285,7 @@ After running the full flow, note:
       an empty `report/` (no GT)?
 - [ ] Did each gate write one iterative `<cycle>/<gate>.md` report and ask
       PASS/FEEDBACK?
+- [ ] Did G1 write design artifacts to `.codeanvil/report/<cycle>/G1_artifacts/`?
 - [ ] Did `codeanvil status` correctly read identity from the manifest?
 - [ ] Did `codeanvil sync` register a cloned project without re-scaffolding?
 - [ ] Did Claude in the sandboxed session correctly identify it's in a user project?

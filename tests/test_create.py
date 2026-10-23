@@ -425,6 +425,17 @@ def test_g1_skill_requires_a_passing_custody_report():
     assert ".codeanvil/report/<cycle-name>/G1.md" in text
 
 
+def test_scaffolded_g1_skill_writes_artifacts_to_g1_artifacts_dir(tmp_path, db_path):
+    cmd_create(None, tmp_path, project_name="Proj")
+
+    text = (
+        tmp_path / "proj" / ".agents" / "skills" / "G1_start_design" / "SKILL.md"
+    ).read_text(encoding="utf-8")
+
+    assert ".codeanvil/report/<cycle-name>/G1_artifacts/" in text
+    assert "Arch_NN.md" in text
+
+
 # --- status reads cycle-scoped reports (T7) ---------------------------------
 
 def _write_report(project, cycle: str, gate: str, iterations: list[tuple[int, str]]) -> None:

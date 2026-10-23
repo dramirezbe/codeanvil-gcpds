@@ -115,7 +115,9 @@ These files are **inputs**. You **MUST NOT** modify them to make a gate pass.
 
 Every gate writes **one** report file: `.codeanvil/report/<cycle-name>/<gate>.md`
 (for example `G0.md`, `CC.md`, `G1.md`). Iterations are appended sections in
-that file — never separate files.
+that file — never separate files. G1 additionally writes its design artifacts
+to `.codeanvil/report/<cycle-name>/G1_artifacts/` — working files that are
+overwritten on rework, not report iterations.
 
 ```markdown
 # <Gate Name>
@@ -169,6 +171,7 @@ Rules:
 | `.codeanvil/project.yaml` | Project identity (`id`, `name`, GT pointers) plus the active `cycle`. |
 | `.codeanvil/custody/` | Custody-chain artifacts (source snapshot, custody ledger). |
 | `.codeanvil/report/<cycle-name>/` | One iterative report per gate, scoped to the cycle. |
+| `.codeanvil/report/<cycle-name>/G1_artifacts/` | G1 intermediate design files (ASR, candidates, trade study, etc.). Overwritten on rework. |
 | `.agents/skills/` | Canonical skill store — every agent runtime links here. |
 
 ## Project Layout
@@ -179,6 +182,7 @@ Rules:
     │   project.yaml       <- project identity (id, name, GT pointers, cycle)
     │   custody/           <- custody-chain artifacts (snapshot, ledger)
     │   report/            <- per-cycle gate reports (<cycle-name>/<gate>.md)
+    │                          <cycle-name>/G1_artifacts/  <- G1 intermediate design files
     .agents/skills/        <- canonical skill store (all gate skills)
 
 Agent-specific directories (`.claude/`, `.github/`, `.opencode/`,
