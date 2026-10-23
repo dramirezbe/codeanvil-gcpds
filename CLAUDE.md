@@ -19,7 +19,7 @@ The V-SIL pipeline encoded as executable artifacts:
 - **`templates/skills/`** — Skills executed at each gate:
   - `G0_valid_req_and_GT/` — **Deterministic structural validation** of the GT pair (StRS + SyRS) plus the G0-X cross-document rules. No AI — pure script (`scripts/g0_validate.py`). `SKILL.md` is the agent contract, `references/RULES.md` the full rule tables. Hard pass/fail.
   - `custody-chain/` — **Cross-cutting provenance skill** (gate `*`). Seals GT files after G0 pass (`source_snapshot.py`), tracks chain of custody for audit documents (`custody_ledger.py`, HMAC-signed hash-chain), validates audit controls (`control_registry.py`), and verifies port bindings (`port_check.py`). All stdlib-only.
-  - `G1_start_design/` — Agent-driven: initiate design once G0 passes.
+  - `G1_start_design/` — Agent-driven: 8-job design synthesis from G0-validated GT. Multi-hypothesis architecture (3–4 candidates), ATAM trade study, SRS authoring (`GT/G1_SRS.md`, IEEE 29148 §9.6) with structural self-validation. Review package with APPROVE/RETURN/REJECT.
   - Future gates (G2, G3, ...) follow the same pattern.
 
 ### `src/codeanvil/` — The delivery tool (serves the methodology)
@@ -52,6 +52,10 @@ CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks stat
 - **Skill**: `SKILL.md` + optional scripts that define what happens at a gate. Agent-agnostic — any coding agent that reads markdown can execute them. Live in `templates/skills/` (repo) and `.agents/skills/` (scaffolded projects).
 - **Gate progress**: tracked by the harness via the GT files and `.codeanvil/` artifacts (timestamped reports in `.codeanvil/report/`), not by the tool. There is no orchestrator advancing a stored session — the agent reads the scaffolded `AGENTS.md` to find the next gate.
 - **MCP server**: external tool provider (Model Context Protocol) that gives agents callable tools beyond text. Installed globally to `~/.codeanvil-config/mcp/<name>/`, wired into projects via per-agent config files. First server: Marconi (GNU Radio — 19 tools, 6 skills for RF/SDR). Configured in `templates/config.yaml` under `mcp_servers`, logic in `src/codeanvil/init/mcp.py`.
+
+## V-SIL paper
+
+The formal methodology paper lives at `methodology/V-SIL-v2/V-SIL.tex` (+ compiled PDF). It defines the V-SIL continuous verification framework that CodeAnvil implements.
 
 ## Archived plans
 
