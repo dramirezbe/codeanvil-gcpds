@@ -60,8 +60,9 @@ Do **not** load it for GT validation (that is G0) or implementation (that is G2+
 - **The GT is locked by CC.** The custody-chain seal is the lock — never edit
   `GT/G0_StRS.md` or `GT/G0_SyRS.md` during G1. Gaps go in the SRS Gap List,
   not into silent GT edits.
-- **Multi-hypothesis is mandatory.** Generate and score 3–4 candidate architectures;
-  a single-candidate design is not a G1 output.
+- **Multi-hypothesis is mandatory.** Generate and score multiple candidate
+  architectures (minimum 3); a single-candidate design is not a G1 output.
+  The user chooses how many candidates before Job 2.
 - **Every REQ- traces to a SYS-.** No software requirement may exist without upstream
   justification in the approved SyRS.
 - **The SRS is the G1 deliverable.** Author it at `GT/G1_SRS.md` following the
@@ -80,7 +81,7 @@ Do **not** load it for GT validation (that is G0) or implementation (that is G2+
 
 ## Execution Flow
 
-Work the eight jobs **in order**, pausing after each for the user. After every
+Work the nine jobs **in order**, pausing after each for the user. After every
 job ask **PASS** or **FEEDBACK**:
 
 - **PASS** moves on to the next job.
@@ -96,31 +97,35 @@ job ask **PASS** or **FEEDBACK**:
    the block; HWC Impact maps HARD→MUST, SOFT→SHOULD, INFORMATIONAL→COULD; SYS
    priority is inherited from its traced STKs (highest wins), else SHOULD.
    Group into Condition Groups.
-2. **Generate 3–4 architecture candidates**, each addressing every Condition Group.
-3. **Score the QA × Architecture matrix** (ISO 25010 rows, 0–5 cells, weights 3/2/1,
+2. **Ask the user how many architecture candidates** to generate (minimum 3,
+   default 4). Use the runtime's native question mechanism. Record the answer —
+   it drives Job 2 and the trade study scope.
+3. **Generate N architecture candidates** (where N is the user's answer), each
+   addressing every Condition Group.
+4. **Score the QA × Architecture matrix** (ISO 25010 rows, 0–5 cells, weights 3/2/1,
    highest-priority aggregation per row).
-4. **ATAM-style trade study** on the top 2: sensitivity points, tradeoff points,
+5. **ATAM-style trade study** on the top 2: sensitivity points, tradeoff points,
    Condition Group satisfaction, risks, verdict.
-5. **Select and decompose** via iterative Attribute-Driven Design (3–5 iterations);
+6. **Select and decompose** via iterative Attribute-Driven Design (3–5 iterations);
    produce the complete component dependency graph.
-6. **Author the SRS** at `GT/G1_SRS.md` per the template: metadata + companion rows,
+7. **Author the SRS** at `GT/G1_SRS.md` per the template: metadata + companion rows,
    §2 design (libraries with rationale), §3 REQ- blocks
    (`REQ-[A-Z]{2,4}-NNN`, SHALL descriptions, acceptance criteria, `Traces to` SYS-),
    §4–§6 algorithms/schemas/interfaces/error behavior, §7 test cases (≥1 per REQ-),
    §8 traceability (REQ → SYS → STK/NRM/HWC).
-7. **Validate the SRS structurally** (the template's G1 Validation Rules):
+8. **Validate the SRS structurally** (the template's G1 Validation Rules):
    metadata placeholders; required sections; REQ- ID format + uniqueness; every
    `Traces to` resolves in the SyRS; testable SHALL + criteria + §7 case; §2.2
    rationale non-empty; Dependencies acyclic and resolvable; §8 lists every REQ-.
    Fix your own drafting errors; report upstream gaps to the user.
-8. **Produce the review package** (project, GT basis, ASR catalog, candidates with
+9. **Produce the review package** (project, GT basis, ASR catalog, candidates with
    scores, selection rationale, accepted tradeoffs, risks, modules, SRS Gap List)
    and ask **PASS** or **FEEDBACK** (naming the jobs to rework).
 
 ### Rework
 
 FEEDBACK re-runs the named jobs and every downstream job that consumed their output
-(Job 1 rework ⇒ Jobs 2–8; Job 6 rework ⇒ Jobs 7–8). Each feedback round appends one
+(Job 1 rework ⇒ Jobs 2–9; Job 7 rework ⇒ Jobs 8–9). Each feedback round appends one
 report iteration; the package is re-issued as `Rev N`. The GT stays sealed — a
 GT-changing defect means a new cycle that starts at G0.
 

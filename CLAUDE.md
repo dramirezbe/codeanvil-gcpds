@@ -19,7 +19,7 @@ The V-SIL pipeline encoded as executable artifacts:
 - **`templates/skills/`** — Skills executed at each gate:
   - `G0_valid_req_and_GT/` — **Deterministic structural validation** of the GT pair (StRS + SyRS) plus the G0-X cross-document rules. No AI — pure script (`scripts/g0_validate.py`). `SKILL.md` is the agent contract, `references/RULES.md` the full rule tables. Hard pass/fail.
   - `custody-chain/` — **Cross-cutting provenance skill** (gate `*`). Seals GT files after G0 pass (`source_snapshot.py`), tracks chain of custody for audit documents (`custody_ledger.py`, HMAC-signed hash-chain), validates audit controls (`control_registry.py`), and verifies port bindings (`port_check.py`). All stdlib-only.
-  - `G1_start_design/` — Agent-driven: 8-job design synthesis from G0-validated GT. Multi-hypothesis architecture (3–4 candidates), ATAM trade study, SRS authoring (`GT/G1_SRS.md`, IEEE 29148 §9.6) with structural self-validation. Review package with APPROVE/RETURN/REJECT.
+  - `G1_start_design/` — Agent-driven: 9-job design synthesis from G0-validated GT. Multi-hypothesis architecture (user-chosen N candidates, minimum 3), ATAM trade study, SRS authoring (`GT/G1_SRS.md`, IEEE 29148 §9.6) with structural self-validation. Review package with APPROVE/RETURN/REJECT.
   - Future gates (G2, G3, ...) follow the same pattern.
 
 ### `src/codeanvil/` — The delivery tool (serves the methodology)
