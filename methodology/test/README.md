@@ -25,10 +25,12 @@ GT → G0 → custody-chain, using T0 as the test input.
 
 - Python 3.10+
 - `curl`
-- `claude` CLI (for sandboxed agent test)
+- Agent CLI: `claude`, `pi`, or `opencode` (for sandboxed agent test)
 - Internet access (for curl install from GitHub)
 
-### 1. Install or upgrade (no clone needed)
+### 1. Install or upgrade
+
+#### Remote (GitHub `main` — no clone needed)
 
 The same curl command installs fresh or upgrades an existing installation:
 
@@ -40,9 +42,20 @@ source ~/.zshrc  # or ~/.bashrc
 If codeanvil is already installed, this auto-detects it and runs
 `--force-reinstall` to pull the latest commit from `main`.
 
+#### Local repository (development or testing unreleased changes)
+
+From the root of this repository:
+
+```bash
+uv tool install --force-reinstall .
+# or run the local installer:
+bash install.sh
+```
+
 Verify:
 ```bash
-codeanvil --help                      # should show: init, create, list, sync, status, now
+codeanvil --help                      # should show: init, create, list, sync, status, now, sandbox
+codeanvil sandbox --help              # shows supported agents: claude, codex, opencode, pi
 codeanvil now                         # timestamp works
 ```
 
@@ -159,6 +172,18 @@ templates, and themes disabled, re-enabling only the `pi-claude-bridge`
 extension (model access). The result is a clean session that reads only
 the project's `AGENTS.md` without interference from global config.
 
+### 4c. Enter sandboxed OpenCode session in the project (alternative)
+
+```bash
+cd /tmp/smoke-test
+codeanvil sandbox opencode
+```
+
+This launches OpenCode in standalone mode with `XDG_CONFIG_HOME` redirected
+to an isolated temporary directory. Global plugins, custom agent definitions,
+and user prompt overrides are stripped while preserving stored credentials.
+OpenCode reads `AGENTS.md` and project skills symlinked at `.opencode/skills/`.
+
 ### Two modes: sandbox vs. normal
 
 - **Sandbox** (`codeanvil sandbox <agent>`) — the agent sees only the
@@ -170,7 +195,7 @@ the project's `AGENTS.md` without interference from global config.
   full setup loads as usual: global skills, MCP servers, extensions,
   memory. Use this for day-to-day work on the project.
 
-Internally, `codeanvil sandbox` just applies each agent's native isolation:
+Internally, `codeanvil sandbox` applies each agent's native isolation strategy:
 
 ```bash
 # what `codeanvil sandbox claude` runs:
@@ -179,6 +204,9 @@ claude --setting-sources "project"
 # what `codeanvil sandbox pi` runs:
 pi --no-extensions --no-mcp --no-skills --no-prompt-templates --no-themes \
    -e ~/.pi/agent/npm/node_modules/pi-claude-bridge/src/index.ts
+
+# what `codeanvil sandbox opencode` runs (XDG_CONFIG_HOME redirected to empty tempdir):
+opencode --standalone
 ```
 
 The `--setting-sources "project"` flag loads only project-level settings
@@ -188,7 +216,7 @@ test of the scaffolded instructions without interference from global config.
 *(Note: `--setting-sources ""` disables ALL settings including CLAUDE.md
 autodiscovery — don't use it for methodology testing.)*
 
-### 5. Test prompts (inside sandboxed Claude or Pi)
+### 5. Test prompts (inside sandboxed Claude, Pi, or OpenCode)
 
 Run these prompts in sequence inside the sandboxed session. After each,
 verify the expected outcome before proceeding.

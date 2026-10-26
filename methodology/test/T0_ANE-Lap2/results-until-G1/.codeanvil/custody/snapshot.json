@@ -1,0 +1,35 @@
+{
+  "schema": "source-snapshot/1",
+  "created_utc": "2026-10-26T15:30:23.421436+00:00",
+  "root_label": "smoke-test",
+  "algorithm": "sha256",
+  "file_count": 4,
+  "total_bytes": 193522,
+  "includes": [
+    "GT/**"
+  ],
+  "excludes": [],
+  "entries": [
+    {
+      "path": "GT/G0_StRS.md",
+      "bytes": 102543,
+      "sha256": "6c0ee2dbff10a5698933b515078377c935859e2121c718c4b9af682b728382ec"
+    },
+    {
+      "path": "GT/G0_SyRS.md",
+      "bytes": 19122,
+      "sha256": "b731d95bb429fabd0a2665d414f79960aeb157ab28b093b34b9360e190e90955"
+    },
+    {
+      "path": "GT/G1_SRS.md",
+      "bytes": 70966,
+      "sha256": "4a0a5fda816da025fcc976478cabf5def218cc08075d1faf03e58df5245722e2"
+    },
+    {
+      "path": "GT/README.md",
+      "bytes": 891,
+      "sha256": "1499e53db314280a08c712ea583c3944c8ae498b957c5d8d3518b6bf677b5e06"
+    }
+  ],
+  "manifest_digest": "17ddad919dc4181c5ea9ae5a3cc363795bc0267b8ef7f97beff0e74271dcccf6"
+}
