@@ -1,0 +1,1537 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Agent Harness Architecture</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,700&display=swap">
+<style>
+/* Layout: scrolling single-page explainer with section tabs and interactive SVG diagrams */
+:root {
+  --bg: #FAFAF8;
+  --bg-surface: #FFFFFF;
+  --bg-surface-alt: #F3F3F0;
+  --fg: #1A1A1A;
+  --fg-muted: #6B6B6B;
+  --fg-dim: #999999;
+  --border: #E2E2DE;
+  --accent: #3B5BA9;
+  --accent-light: #EEF1F8;
+  --own: #16A34A;
+  --own-light: #ECFDF5;
+  --own-bg: #F0FDF4;
+  --rent: #6B7280;
+  --rent-light: #F3F4F6;
+  --rent-bg: #F9FAFB;
+  --human: #8E3B8E;
+  --human-light: #F5EBF5;
+  --risk: #B23A3A;
+  --risk-light: #FEF2F2;
+  --synth: #C77A12;
+  --synth-light: #FFF8EB;
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #141414;
+    --bg-surface: #1E1E1E;
+    --bg-surface-alt: #252525;
+    --fg: #E8E8E8;
+    --fg-muted: #A0A0A0;
+    --fg-dim: #707070;
+    --border: #333333;
+    --accent: #7B9FE0;
+    --accent-light: #1C2640;
+    --own: #4ADE80;
+    --own-light: #0A2618;
+    --own-bg: #0D2E1A;
+    --rent: #9CA3AF;
+    --rent-light: #252830;
+    --rent-bg: #1F2228;
+    --human: #C084C0;
+    --human-light: #2A1A2A;
+    --risk: #F87171;
+    --risk-light: #2A1010;
+    --synth: #F59E0B;
+    --synth-light: #2A1F0A;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #141414;
+  --bg-surface: #1E1E1E;
+  --bg-surface-alt: #252525;
+  --fg: #E8E8E8;
+  --fg-muted: #A0A0A0;
+  --fg-dim: #707070;
+  --border: #333333;
+  --accent: #7B9FE0;
+  --accent-light: #1C2640;
+  --own: #4ADE80;
+  --own-light: #0A2618;
+  --own-bg: #0D2E1A;
+  --rent: #9CA3AF;
+  --rent-light: #252830;
+  --rent-bg: #1F2228;
+  --human: #C084C0;
+  --human-light: #2A1A2A;
+  --risk: #F87171;
+  --risk-light: #2A1010;
+  --synth: #F59E0B;
+  --synth-light: #2A1F0A;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  line-height: 1.65;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+.wrapper {
+  max-width: 960px;
+  margin: 0 auto;
+  padding-block: 2rem 4rem;
+}
+
+/* Hero */
+.hero {
+  text-align: center;
+  padding: 3rem 0 2rem;
+}
+.hero h1 {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 700;
+  line-height: 1.15;
+  text-wrap: balance;
+  margin: 0 0 0.75rem;
+}
+.hero .subtitle {
+  font-size: 1.05rem;
+  color: var(--fg-muted);
+  max-width: 600px;
+  margin: 0 auto 1.5rem;
+}
+.equation-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: clamp(1.1rem, 3vw, 1.5rem);
+  font-weight: 600;
+  background: var(--bg-surface);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem 2rem;
+  margin: 1rem 0;
+}
+.eq-agent { color: var(--accent); }
+.eq-model { color: var(--rent); }
+.eq-harness { color: var(--own); }
+.eq-op { color: var(--fg-dim); }
+
+.hero .meta {
+  font-size: 0.82rem;
+  color: var(--fg-dim);
+  margin-top: 1rem;
+}
+
+/* Nav tabs */
+.nav {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--border);
+  margin: 2rem 0 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.nav::-webkit-scrollbar { display: none; }
+.nav button {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--fg-muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  white-space: nowrap;
+  margin-bottom: -2px;
+  transition: color 0.2s, border-color 0.2s;
+  letter-spacing: 0.01em;
+}
+.nav button:hover { color: var(--fg); }
+.nav button.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+
+/* Sections */
+.section { display: none; padding: 2rem 0; }
+.section.active { display: block; }
+.section h2 {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+  text-wrap: balance;
+}
+.section .lead {
+  color: var(--fg-muted);
+  font-size: 1rem;
+  margin: 0 0 2rem;
+  max-width: 680px;
+}
+.section h3 {
+  font-family: var(--font-body);
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 2rem 0 0.5rem;
+}
+
+/* Stack diagram */
+.stack-diagram {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-width: 680px;
+  margin: 1.5rem auto;
+}
+.stack-layer {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  align-items: stretch;
+  min-height: 80px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: -1px;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+.stack-layer:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+.stack-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  writing-mode: horizontal-tb;
+  padding: 0.5rem;
+  text-align: center;
+}
+.stack-content {
+  padding: 0.75rem 1rem;
+  min-width: 0;
+}
+.stack-content .title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin: 0 0 0.25rem;
+}
+.stack-content .desc {
+  font-size: 0.82rem;
+  color: var(--fg-muted);
+  margin: 0;
+}
+.stack-content .detail {
+  font-size: 0.82rem;
+  color: var(--fg-muted);
+  margin: 0.5rem 0 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+.stack-layer.expanded .detail { max-height: 300px; }
+
+.layer-own .stack-label { background: var(--own-bg); color: var(--own); }
+.layer-own { border-color: var(--own); }
+.layer-rent .stack-label { background: var(--rent-bg); color: var(--rent); }
+.layer-rent { border-color: var(--rent); }
+
+.ownership-tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+.tag-own { background: var(--own-light); color: var(--own); }
+.tag-rent { background: var(--rent-light); color: var(--rent); }
+.tag-human { background: var(--human-light); color: var(--human); }
+
+/* ETCSLV table */
+.split-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.85rem;
+  margin: 1.5rem 0;
+}
+.split-table th, .split-table td {
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.split-table th {
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fg-muted);
+  background: var(--bg-surface-alt);
+}
+.split-table td:first-child {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+.cell-rent { background: var(--rent-bg); }
+.cell-own { background: var(--own-bg); }
+.split-table-wrap { overflow-x: auto; }
+
+/* Decision tree / flowchart */
+.flowchart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  margin: 2rem auto;
+  max-width: 100%;
+}
+.flow-node {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 0.75rem 1.25rem;
+  border-radius: 10px;
+  border: 2px solid var(--border);
+  background: var(--bg-surface);
+  max-width: 340px;
+  width: 100%;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.flow-node:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.flow-diamond {
+  border-radius: 0;
+  transform: none;
+  background: var(--accent-light);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  width: 200px;
+  height: 100px;
+  font-size: 0.8rem;
+  padding: 0;
+}
+.flow-diamond:hover { transform: translateY(-1px); }
+.flow-arrow {
+  width: 2px;
+  height: 28px;
+  background: var(--fg-dim);
+  position: relative;
+}
+.flow-arrow::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: -4px;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid var(--fg-dim);
+}
+.flow-arrow-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--fg-dim);
+  font-family: var(--font-mono);
+}
+.flow-branches {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  width: 100%;
+}
+.flow-branch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  flex: 1;
+  min-width: 140px;
+  max-width: 260px;
+}
+.flow-result {
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  text-align: center;
+  width: 100%;
+}
+.result-d { background: var(--own-light); border: 2px solid var(--own); color: var(--own); }
+.result-a { background: var(--synth-light); border: 2px solid var(--synth); color: var(--synth); }
+.result-h { background: var(--human-light); border: 2px solid var(--human); color: var(--human); }
+.result-no { background: var(--risk-light); border: 2px solid var(--risk); color: var(--risk); }
+
+/* Rule cards */
+.rule-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+.rule-card {
+  background: var(--bg-surface);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem;
+  transition: border-color 0.2s;
+}
+.rule-card:hover { border-color: var(--accent); }
+.rule-card .rule-name {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin: 0 0 0.25rem;
+}
+.rule-card .rule-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 0.5rem;
+}
+.rule-card .rule-desc {
+  font-size: 0.85rem;
+  color: var(--fg-muted);
+  margin: 0;
+}
+.rule-d .rule-name { color: var(--own); }
+.rule-d .rule-label { color: var(--own); }
+.rule-d { border-color: var(--own); }
+.rule-a .rule-name { color: var(--synth); }
+.rule-a .rule-label { color: var(--synth); }
+.rule-a { border-color: var(--synth); }
+.rule-h .rule-name { color: var(--human); }
+.rule-h .rule-label { color: var(--human); }
+.rule-h { border-color: var(--human); }
+
+/* Blueprint phases */
+.phases {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 1.5rem 0;
+  position: relative;
+}
+.phases::before {
+  content: '';
+  position: absolute;
+  left: 20px;
+  top: 20px;
+  bottom: 20px;
+  width: 2px;
+  background: var(--border);
+}
+.phase {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  cursor: pointer;
+}
+.phase-num {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 0.85rem;
+  background: var(--bg-surface);
+  border: 2px solid var(--accent);
+  color: var(--accent);
+  z-index: 1;
+  flex-shrink: 0;
+  transition: background 0.2s, color 0.2s;
+}
+.phase:hover .phase-num,
+.phase.expanded .phase-num {
+  background: var(--accent);
+  color: var(--bg-surface);
+}
+.phase-body { min-width: 0; }
+.phase-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin: 0.5rem 0 0.2rem;
+}
+.phase-summary {
+  font-size: 0.82rem;
+  color: var(--fg-muted);
+  margin: 0;
+}
+.phase-detail {
+  font-size: 0.82rem;
+  color: var(--fg-muted);
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s ease;
+  margin-top: 0;
+}
+.phase.expanded .phase-detail { max-height: 500px; margin-top: 0.5rem; }
+.phase-exit {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-surface-alt);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+/* Maturity levels */
+.maturity {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 1.5rem 0;
+}
+.maturity-level {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border);
+  align-items: start;
+}
+.maturity-level:last-child { border-bottom: none; }
+.maturity-badge {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 0.8rem;
+  padding: 0.3rem 0;
+  border-radius: 4px;
+  text-align: center;
+  background: var(--bg-surface-alt);
+  color: var(--fg-muted);
+  border: 1px solid var(--border);
+}
+.maturity-level:nth-child(4) .maturity-badge,
+.maturity-level:nth-child(5) .maturity-badge {
+  background: var(--own-light);
+  color: var(--own);
+  border-color: var(--own);
+}
+.maturity-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin: 0 0 0.15rem;
+}
+.maturity-desc {
+  font-size: 0.82rem;
+  color: var(--fg-muted);
+  margin: 0;
+}
+.maturity-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  margin-top: 0.4rem;
+  overflow: hidden;
+}
+.maturity-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent);
+  transition: width 0.6s ease;
+}
+
+/* Paradigm spectrum */
+.spectrum {
+  display: flex;
+  gap: 0;
+  margin: 1.5rem 0;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid var(--border);
+  flex-wrap: wrap;
+}
+.spectrum-item {
+  flex: 1;
+  min-width: 120px;
+  padding: 1rem;
+  text-align: center;
+  cursor: pointer;
+  border-right: 1px solid var(--border);
+  transition: background 0.2s;
+  background: var(--bg-surface);
+}
+.spectrum-item:last-child { border-right: none; }
+.spectrum-item:hover, .spectrum-item.active { background: var(--accent-light); }
+.spectrum-item .sp-num {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--fg-dim);
+  margin: 0 0 0.25rem;
+}
+.spectrum-item .sp-name {
+  font-weight: 600;
+  font-size: 0.82rem;
+  margin: 0;
+}
+.spectrum-detail {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: var(--fg-muted);
+  min-height: 80px;
+}
+
+/* Trade-off matrix */
+.matrix-wrap { overflow-x: auto; margin: 1.5rem 0; }
+.matrix {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.78rem;
+}
+.matrix th, .matrix td {
+  padding: 0.5rem 0.6rem;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+.matrix th {
+  font-weight: 600;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fg-muted);
+  background: var(--bg-surface-alt);
+  position: sticky;
+  top: 0;
+}
+.matrix td:first-child {
+  text-align: left;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.matrix .dot { color: var(--accent); }
+.matrix .dot-empty { color: var(--fg-dim); }
+
+/* Quadruple H */
+.quad-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+.quad-card {
+  background: var(--bg-surface);
+  border: 2px solid var(--own);
+  border-radius: 10px;
+  padding: 1rem;
+}
+.quad-letter {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 1.5rem;
+  color: var(--own);
+  margin: 0;
+}
+.quad-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin: 0.25rem 0;
+}
+.quad-desc {
+  font-size: 0.82rem;
+  color: var(--fg-muted);
+  margin: 0;
+}
+
+/* Custody diagram */
+.custody-flow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 1.5rem 0;
+}
+.custody-step {
+  background: var(--bg-surface);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-align: center;
+  min-width: 120px;
+}
+.custody-arrow {
+  font-size: 1.2rem;
+  color: var(--fg-dim);
+}
+
+/* Conflation cards */
+.conflation-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+.conflation-card {
+  background: var(--risk-light);
+  border: 2px solid var(--risk);
+  border-radius: 10px;
+  padding: 1rem;
+}
+.conflation-card .cc-name {
+  font-weight: 600;
+  color: var(--risk);
+  font-size: 0.9rem;
+  margin: 0 0 0.35rem;
+}
+.conflation-card .cc-desc {
+  font-size: 0.82rem;
+  color: var(--fg-muted);
+  margin: 0;
+}
+
+/* Gate chain SVG area */
+.gate-chain-wrap {
+  overflow-x: auto;
+  margin: 1.5rem 0;
+  padding: 1rem 0;
+}
+.gate-chain-svg {
+  display: block;
+  margin: 0 auto;
+}
+.gate-chain-svg text {
+  font-family: var(--font-body);
+}
+
+/* Factory/Vehicle */
+.fv-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin: 1.5rem 0;
+}
+@media (max-width: 600px) {
+  .fv-grid { grid-template-columns: 1fr; }
+}
+.fv-card {
+  border-radius: 10px;
+  padding: 1.25rem;
+  border: 2px solid var(--border);
+}
+.fv-card h4 {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem;
+}
+.fv-factory { border-color: var(--synth); background: var(--synth-light); }
+.fv-factory h4 { color: var(--synth); }
+.fv-vehicle { border-color: var(--own); background: var(--own-light); }
+.fv-vehicle h4 { color: var(--own); }
+.fv-card p { font-size: 0.85rem; color: var(--fg-muted); margin: 0.5rem 0 0; }
+.fv-card ul { font-size: 0.82rem; color: var(--fg-muted); margin: 0.5rem 0 0; padding-left: 1.2rem; }
+.fv-card li { margin: 0.2rem 0; }
+
+/* Responsive */
+@media (max-width: 600px) {
+  .hero h1 { font-size: 1.8rem; }
+  .equation-box { font-size: 1rem; padding: 0.75rem 1rem; }
+  .stack-layer { grid-template-columns: 60px 1fr; }
+  .nav button { font-size: 0.75rem; padding: 0.6rem 0.6rem; }
+  .section h2 { font-size: 1.4rem; }
+  .quad-grid { grid-template-columns: 1fr 1fr; }
+  .spectrum-item { min-width: 80px; padding: 0.6rem 0.4rem; }
+  .spectrum-item .sp-name { font-size: 0.72rem; }
+  .flow-branches { gap: 0.5rem; }
+}
+
+/* Interactive highlights */
+.highlight-pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Tooltip */
+.tip {
+  position: relative;
+  border-bottom: 1px dashed var(--fg-dim);
+  cursor: help;
+}
+.tip::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--fg);
+  color: var(--bg);
+  font-size: 0.75rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 10;
+  max-width: 260px;
+  white-space: normal;
+  text-align: center;
+}
+.tip:hover::after { opacity: 1; }
+
+.inline-code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--bg-surface-alt);
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+}
+</style>
+
+<div class="wrapper">
+  <!-- Hero -->
+  <div class="hero">
+    <h1>Engineering AI Agent Harnesses</h1>
+    <p class="subtitle">A visual guide to the architectural paradigms, ownership boundaries, and verification strategies for building reliable agent systems.</p>
+    <div class="equation-box">
+      <span class="eq-agent">Agent</span>
+      <span class="eq-op">=</span>
+      <span class="eq-model">Model</span>
+      <span class="eq-op">+</span>
+      <span class="eq-harness">Harness</span>
+    </div>
+    <p class="meta">Based on the paper by David Ramírez-Betancourt · Universidad Nacional de Colombia · v2.1</p>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="nav" role="tablist">
+    <button class="active" data-tab="stack" role="tab">The Stack</button>
+    <button data-tab="etcslv" role="tab">ETCSLV Split</button>
+    <button data-tab="harness" role="tab">Outer Harness</button>
+    <button data-tab="decidability" role="tab">Decidability</button>
+    <button data-tab="gates" role="tab">Gate Topology</button>
+    <button data-tab="blueprint" role="tab">Blueprint</button>
+    <button data-tab="maturity" role="tab">Maturity</button>
+    <button data-tab="spectrum" role="tab">Paradigms</button>
+  </nav>
+
+  <!-- Section: The Stack -->
+  <div class="section active" id="sec-stack">
+    <h2>The Four-Layer Stack</h2>
+    <p class="lead">The model is rented. The cockpit is rented. The harness is owned. The stacking order is also a dependency order: higher layers depend on lower layers, but never the reverse.</p>
+
+    <div class="stack-diagram">
+      <div class="stack-layer layer-own" onclick="this.classList.toggle('expanded')">
+        <div class="stack-label">L3</div>
+        <div class="stack-content">
+          <p class="title">Domain Governance <span class="ownership-tag tag-own">Owned</span></p>
+          <p class="desc">Ground truth, Rule D validators, standards, custody</p>
+          <div class="detail">
+            <p>The field's invariants — what counts as correct in your domain. A requirement that must trace to its source, a schema that stays backward-compatible, a dose inside a range. This layer holds the deterministic validators, the standards, and the cryptographic custody chain. It survives every change of model, cockpit, and personnel.</p>
+          </div>
+        </div>
+      </div>
+      <div class="stack-layer layer-own" onclick="this.classList.toggle('expanded')">
+        <div class="stack-label">L2</div>
+        <div class="stack-content">
+          <p class="title">Methodology Harness <span class="ownership-tag tag-own">Owned</span></p>
+          <p class="desc">Skills, gate DAG, reports, verdicts</p>
+          <div class="detail">
+            <p>The procedures that encode how work is verified. Skills packaged as runtime-agnostic directories, an ordered gate topology (a DAG of verification stages), append-only reports per gate and cycle, and a verdict protocol where only PASS and FEEDBACK exist — no DENIED.</p>
+          </div>
+        </div>
+      </div>
+      <div class="stack-layer layer-rent" onclick="this.classList.toggle('expanded')">
+        <div class="stack-label">L1</div>
+        <div class="stack-content">
+          <p class="title">Cockpit <span class="ownership-tag tag-rent">Rented</span></p>
+          <p class="desc">Loop, tools, permissions, streaming, diffs, compaction</p>
+          <div class="detail">
+            <p>The commercial coding agent — Claude Code, Codex CLI, OpenCode, Pi. The interface where a human and a model collaborate. It owns execution, tool dispatch, streaming, permission prompts, diff rendering, context compaction, and model routing. These are solved products with years of edge cases — rebuilding them is maintenance, not differentiation.</p>
+            <div style="margin-top:.75rem; padding:.6rem .8rem; border-left:3px solid var(--accent); background:color-mix(in srgb, var(--accent) 8%, transparent); border-radius:0 6px 6px 0; font-size:.85rem; line-height:1.5;">
+              <strong style="color:var(--accent);">⟁ Terminology note</strong><br>
+              This paper uses <em>cockpit</em> for the rented agent runtime layer. The broader field adopted different terms for the same concept:<br>
+              <span style="margin-top:.3rem; display:inline-block;">
+                <strong>Cockpit</strong> <span style="color:var(--fg-muted);">(this paper)</span>
+                = <strong>Builder harness</strong> <span style="color:var(--fg-muted);">(Böckeler / Thoughtworks, Apr 2026)</span>
+                = <strong>Inner harness</strong>
+                = <strong>Agent runtime</strong> <span style="color:var(--fg-muted);">(Microsoft Build 2026)</span>
+              </span><br>
+              <span style="display:inline-block; margin-top:.2rem;">
+                Conversely, this paper's <em>Outer harness</em> maps to Thoughtworks' <strong>User harness</strong>.
+              </span><br>
+              <span style="display:inline-block; margin-top:.2rem; color:var(--fg-muted); font-size:.8rem;">
+                Note: "harness" is polysemous in the field — it may denote the whole product (inner + outer) or just the user's layer, depending on source. Red Hat frames a five-layer matryoshka (Infrastructure → Sandbox → Harness → Runtime → Model); Thoughtworks uses concentric rings (Model → Builder harness → User harness).
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="stack-layer layer-rent" onclick="this.classList.toggle('expanded')">
+        <div class="stack-label">M</div>
+        <div class="stack-content">
+          <p class="title">Model <span class="ownership-tag tag-rent">Rented</span></p>
+          <p class="desc">Weights — interchangeable, no memory of the project</p>
+          <div class="detail">
+            <p>The language model itself. Rented weights that improve on the vendor's schedule. Interchangeable — the harness does not depend on any specific model. The model is confined to synthesis: producing artefacts that validators and humans will judge.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Three Conflations That Cause Failures</h3>
+    <div class="conflation-cards">
+      <div class="conflation-card">
+        <p class="cc-name">Capability Conflation</p>
+        <p class="cc-desc">Assuming a better model will fix a broken workflow. It won't — whether a requirement traces to a system requirement is a property of the document, not of the prose.</p>
+      </div>
+      <div class="conflation-card">
+        <p class="cc-name">Layer Conflation</p>
+        <p class="cc-desc">Assuming that building an agent means building its environment. The streaming renderer, the diff applicator, the permission prompt are already products.</p>
+      </div>
+      <div class="conflation-card">
+        <p class="cc-name">Ownership Conflation</p>
+        <p class="cc-desc">Assuming a vendor can ship a harness. A vendor ships a runtime and a tool protocol — it cannot ship your domain's acceptance criteria.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section: ETCSLV -->
+  <div class="section" id="sec-etcslv">
+    <h2>The ETCSLV Ownership Split</h2>
+    <p class="lead">Meng et al. decompose an agent into six concerns. Three are runtime and belong to the cockpit; three are durable and belong to the outer harness. Confusing the two is the mechanism behind layer conflation.</p>
+
+    <div class="split-table-wrap">
+      <table class="split-table">
+        <thead>
+          <tr>
+            <th>Concern</th>
+            <th>Cockpit (Rented, Runtime)</th>
+            <th>Outer Harness (Owned, Durable)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="color:var(--rent)">Execution</td>
+            <td class="cell-rent">Agent loop, tool dispatch, streaming, interruption</td>
+            <td class="cell-own">Which steps run, in what order, and what exit criterion closes each</td>
+          </tr>
+          <tr>
+            <td style="color:var(--rent)">Tools</td>
+            <td class="cell-rent">Tool transport, MCP client, permission prompts</td>
+            <td class="cell-own">Declarative server definitions; capability policy per gate</td>
+          </tr>
+          <tr>
+            <td style="color:var(--rent)">Context</td>
+            <td class="cell-rent">Window management, compaction, injection</td>
+            <td class="cell-own">What must be loaded: the procedure, the baseline, the prior reports</td>
+          </tr>
+          <tr>
+            <td style="color:var(--own)">State</td>
+            <td class="cell-rent">Session transcript, resumption</td>
+            <td class="cell-own">Gate state, append-only reports, cycle identity, baseline pointers</td>
+          </tr>
+          <tr>
+            <td style="color:var(--own)">Lifecycle</td>
+            <td class="cell-rent">Session start and stop, model routing</td>
+            <td class="cell-own">Gate order, prerequisites, verdict domain, review mode</td>
+          </tr>
+          <tr>
+            <td style="color:var(--own)">Evaluation</td>
+            <td class="cell-rent">None beyond rendering a diff</td>
+            <td class="cell-own">Validators, decidability partition, human verdicts</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>The Seam</h3>
+    <p style="font-size:0.9rem;color:var(--fg-muted)">The seam is contractual: the cockpit owns everything that must respond within a frame (input, streaming, approval, rendering). The outer harness owns everything that must survive the session (which gate is open, what the last verdict was, what the baseline digest is, who is accountable). The harness treats the cockpit as a function from <span class="inline-code">(prompt, tools, workspace)</span> → <span class="inline-code">(artefacts, transcript)</span>, and evaluates only the artefacts.</p>
+  </div>
+
+  <!-- Section: Outer Harness -->
+  <div class="section" id="sec-harness">
+    <h2>The Outer Harness Quadruple</h2>
+    <p class="lead">An outer harness is defined as <strong>H = (M, G, S, C)</strong> — four components, deliberately minimal. Anything not in it (a scheduler, a database, a server, a dashboard) is an implementation choice.</p>
+
+    <div class="quad-grid">
+      <div class="quad-card">
+        <p class="quad-letter">M</p>
+        <p class="quad-name">Methodology</p>
+        <p class="quad-desc">Procedures stated as runtime-agnostic skills. Packaged as SKILL.md directories — YAML frontmatter, Markdown procedure, optional scripts and assets. No runtime API, no execution model.</p>
+      </div>
+      <div class="quad-card">
+        <p class="quad-letter">G</p>
+        <p class="quad-name">Gate Topology</p>
+        <p class="quad-desc">A directed acyclic graph of verification stages, each with a precondition and a verdict domain. Acyclic, ordered, starting with a deterministic entry gate. Only two verdicts: PASS and FEEDBACK.</p>
+      </div>
+      <div class="quad-card">
+        <p class="quad-letter">S</p>
+        <p class="quad-name">State Substrate</p>
+        <p class="quad-desc">Durable, append-only records. A manifest (identity + position), a report tree (one file per gate per cycle), and a custody directory. No database, no session store — just files.</p>
+      </div>
+      <div class="quad-card">
+        <p class="quad-letter">C</p>
+        <p class="quad-name">Custody</p>
+        <p class="quad-desc">Binds baseline inputs to digests and a signed chain of events. Sealing (SHA-256 per file, manifest digest), Ledgering (HMAC-SHA256 signed hash chain). Detects modification and reordering.</p>
+      </div>
+    </div>
+
+    <h3>Factory vs Vehicle</h3>
+    <div class="fv-grid">
+      <div class="fv-card fv-factory">
+        <h4>🏭 Factory</h4>
+        <p>The methodology repository where the harness is engineered.</p>
+        <ul>
+          <li>Procedures as data</li>
+          <li>Deterministic validators</li>
+          <li>Scaffold generator</li>
+          <li>Regression corpus</li>
+          <li>Allowed to be unstable — tests keep evolution honest</li>
+        </ul>
+      </div>
+      <div class="fv-card fv-vehicle">
+        <h4>🚗 Vehicle</h4>
+        <p>The scaffolded project. A snapshot — does not track the factory.</p>
+        <ul>
+          <li>Layout + skills + state directory</li>
+          <li>No orchestrator program</li>
+          <li>No scheduler, no server, no daemon</li>
+          <li>Open with any conforming cockpit to start work</li>
+          <li>Immutable history — reports are append-only</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Custody Chain</h3>
+    <div class="custody-flow">
+      <div class="custody-step" style="border-color:var(--own)">Seal Baseline<br><small style="color:var(--fg-dim)">SHA-256 per file</small></div>
+      <span class="custody-arrow">→</span>
+      <div class="custody-step" style="border-color:var(--accent)">Manifest Digest<br><small style="color:var(--fg-dim)">Over sorted entries</small></div>
+      <span class="custody-arrow">→</span>
+      <div class="custody-step" style="border-color:var(--human)">Ledger Entry<br><small style="color:var(--fg-dim)">Hash-chained</small></div>
+      <span class="custody-arrow">→</span>
+      <div class="custody-step" style="border-color:var(--synth)">HMAC-SHA256<br><small style="color:var(--fg-dim)">Signed chain head</small></div>
+    </div>
+  </div>
+
+  <!-- Section: Decidability -->
+  <div class="section" id="sec-decidability">
+    <h2>The Decidability Partition</h2>
+    <p class="lead">The single most consequential decision in the harness: which checks are scripts, which are model+human judgment, and which are not verification at all.</p>
+
+    <div class="rule-cards">
+      <div class="rule-card rule-d">
+        <p class="rule-name">Rule D</p>
+        <p class="rule-label">Decidability</p>
+        <p class="rule-desc">If a total function over bytes can decide the property — a section is present, an identifier resolves, a schema validates, a digest matches — implement it as a <strong>pure script</strong>. Exit 0 = pass, 1 = fail, 2 = error. Never ask a model to check what code can decide.</p>
+      </div>
+      <div class="rule-card rule-a">
+        <p class="rule-name">Rule A</p>
+        <p class="rule-label">Attribution</p>
+        <p class="rule-desc">If the property requires judgment — is the design sound, is the evidence sufficient — it becomes an <strong>agent gate</strong> that produces a bounded artefact and requests a human verdict. A gate never certifies itself.</p>
+      </div>
+      <div class="rule-card rule-h">
+        <p class="rule-name">Rule H</p>
+        <p class="rule-label">Human Closure</p>
+        <p class="rule-desc">The verdict is recorded by a <strong>named human</strong>, in the report, at a named iteration. PASS is an act of accountability, not a measurement. The verdict is committed out-of-band.</p>
+      </div>
+    </div>
+
+    <h3>Decision Flowchart</h3>
+    <p style="font-size:0.9rem;color:var(--fg-muted);margin-bottom:1.5rem;">The partition is asked <strong>per check</strong>, not per gate. A single gate can combine a deterministic script (for structure) with a human verdict (for content). The question is always: <em>what kind of evidence does this check produce?</em></p>
+    <div class="flowchart">
+      <div class="flow-node" style="background:var(--accent-light);border-color:var(--accent);font-weight:600;color:var(--accent)">
+        Can a total function over bytes decide this property?
+      </div>
+      <div style="display:flex;gap:2rem;width:100%;justify-content:center;margin-top:0.5rem;">
+        <div class="flow-branch">
+          <div class="flow-arrow" style="height:20px;"></div>
+          <div class="flow-arrow-label" style="color:var(--own)">YES</div>
+          <div class="flow-arrow" style="height:20px;"></div>
+          <div class="flow-result result-d">
+            <strong>Rule D — Pure Script</strong><br>
+            <small>exit 0 / 1 / 2<br>Checks <em>structure</em>, not content<br>Reproducible by anyone with the same bytes</small>
+          </div>
+          <div class="flow-arrow" style="height:16px;"></div>
+          <div style="font-size:0.75rem;color:var(--fg-dim);text-align:center;padding:0.3rem;">Script passes → but is the <em>content</em> right?</div>
+          <div class="flow-arrow" style="height:16px;"></div>
+          <div class="flow-result result-h" style="font-size:0.78rem;">
+            <strong>HITL still required</strong><br>
+            <small>Structure ≠ correctness. A well-formed document can still be wrong.</small>
+          </div>
+        </div>
+        <div class="flow-branch">
+          <div class="flow-arrow" style="height:20px;"></div>
+          <div class="flow-arrow-label" style="color:var(--risk)">NO</div>
+          <div class="flow-arrow" style="height:20px;"></div>
+          <div class="flow-node" style="background:var(--synth-light);border-color:var(--synth);font-weight:600;color:var(--synth);font-size:0.82rem;">
+            Is there a bounded artefact a human can review in minutes?
+          </div>
+          <div style="display:flex;gap:1.5rem;width:100%;justify-content:center;margin-top:0.5rem;">
+            <div class="flow-branch">
+              <div class="flow-arrow" style="height:16px;"></div>
+              <div class="flow-arrow-label" style="color:var(--own)">YES</div>
+              <div class="flow-arrow" style="height:16px;"></div>
+              <div class="flow-result result-a">
+                <strong>Rule A+H — Pure Judgment</strong><br>
+                <small>No script. Agent synthesizes → bounded artefact → human verdict</small>
+              </div>
+            </div>
+            <div class="flow-branch">
+              <div class="flow-arrow" style="height:16px;"></div>
+              <div class="flow-arrow-label" style="color:var(--risk)">NO</div>
+              <div class="flow-arrow" style="height:16px;"></div>
+              <div class="flow-result result-no">
+                <strong>Not a Gate</strong><br>
+                <small>Exploration or advice. Do not present as verification.</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Gates Combine Both Modes</h3>
+    <div class="rule-cards" style="margin-bottom:1.5rem;">
+      <div class="rule-card rule-d" style="position:relative;">
+        <p class="rule-name">Script + HITL Gate</p>
+        <p class="rule-label">Deterministic entry</p>
+        <p class="rule-desc">A script checks <strong>structure</strong>: sections present, identifiers resolve, schema validates, cross-references intact. But a well-structured document can still be wrong. <strong>The human reviews the actual content</strong> after the script confirms the form is sound.</p>
+        <div style="display:flex;gap:0.5rem;margin-top:0.75rem;flex-wrap:wrap;">
+          <span class="ownership-tag tag-own" style="margin:0">Script: structure</span>
+          <span class="ownership-tag tag-human" style="margin:0">Human: content</span>
+        </div>
+      </div>
+      <div class="rule-card rule-a">
+        <p class="rule-name">Agent + HITL Gate</p>
+        <p class="rule-label">Pure judgment</p>
+        <p class="rule-desc"><strong>No script validator.</strong> The agent synthesizes a bounded artefact. The property being checked — is the design sound? is the evidence sufficient? — cannot be decided by code. The human reviews and gives PASS or FEEDBACK.</p>
+        <div style="display:flex;gap:0.5rem;margin-top:0.75rem;flex-wrap:wrap;">
+          <span class="ownership-tag" style="margin:0;background:var(--synth-light);color:var(--synth)">Agent: synthesis</span>
+          <span class="ownership-tag tag-human" style="margin:0">Human: verdict</span>
+        </div>
+      </div>
+    </div>
+
+    <h3>Why Rule D Is Load-Bearing</h3>
+    <p style="font-size:0.9rem;color:var(--fg-muted)">Rule D draws the line between what is <em>reproducible</em> and what is <em>accountable</em>. A deterministic check runs as a standalone process — any CI system, auditor, or second harness can re-run it without a model. But Rule D checks <strong>form, not content</strong>: a script can confirm a section exists but not that it says the right thing. That's why even a gate with a passing script still needs HITL — the script gates the structure so the human can focus on substance. The cheapest token is the one never sent, but the most important verdict is still the human's.</p>
+  </div>
+
+  <!-- Section: Gates -->
+  <div class="section" id="sec-gates">
+    <h2>Gate Topology & Choreography</h2>
+    <p class="lead">Gates are verification stages in a DAG. Instead of a central orchestrator, each gate enforces its own precondition — choreographed enforcement replaces orchestration.</p>
+
+    <h3>Gate Properties</h3>
+    <div class="rule-cards">
+      <div class="rule-card" style="border-color:var(--accent)">
+        <p class="rule-name" style="color:var(--accent)">Precondition</p>
+        <p class="rule-desc">Predecessor's latest verdict must be PASS. Each gate checks this itself — no central scheduler.</p>
+      </div>
+      <div class="rule-card" style="border-color:var(--accent)">
+        <p class="rule-name" style="color:var(--accent)">Bounded Artefact</p>
+        <p class="rule-desc">Every gate produces something a human can review in minutes. A gate that takes an hour to review will be rubber-stamped.</p>
+      </div>
+      <div class="rule-card" style="border-color:var(--accent)">
+        <p class="rule-name" style="color:var(--accent)">Verdict Domain</p>
+        <p class="rule-desc">Exactly two values: <strong>PASS</strong> and <strong>FEEDBACK</strong>. No DENIED — a terminal rejection carries no information about what would be acceptable.</p>
+      </div>
+    </div>
+
+    <h3>Choreographed Gate Chain</h3>
+    <div class="gate-chain-wrap">
+      <svg class="gate-chain-svg" viewBox="0 0 720 240" width="720" height="240" style="max-width:100%">
+        <!-- Entry gate -->
+        <rect x="10" y="50" width="150" height="80" rx="8" fill="var(--own-light)" stroke="var(--own)" stroke-width="2"/>
+        <text x="85" y="72" text-anchor="middle" font-size="12" font-weight="700" fill="var(--own)">Entry Gate</text>
+        <text x="85" y="88" text-anchor="middle" font-size="9" fill="var(--fg-muted)">Script + HITL</text>
+        <text x="85" y="104" text-anchor="middle" font-size="8" fill="var(--fg-dim)">Deterministic start</text>
+        <!-- Arrow -->
+        <line x1="160" y1="90" x2="200" y2="90" stroke="var(--fg-dim)" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <text x="180" y="82" text-anchor="middle" font-size="9" fill="var(--own)" font-weight="600">PASS</text>
+        <!-- Middle gate -->
+        <rect x="200" y="50" width="150" height="80" rx="8" fill="var(--synth-light)" stroke="var(--synth)" stroke-width="2"/>
+        <text x="275" y="72" text-anchor="middle" font-size="12" font-weight="700" fill="var(--synth)">Gate k</text>
+        <text x="275" y="88" text-anchor="middle" font-size="9" fill="var(--fg-muted)">Agent + HITL</text>
+        <text x="275" y="104" text-anchor="middle" font-size="8" fill="var(--fg-dim)">or Script + HITL</text>
+        <!-- Arrow -->
+        <line x1="350" y1="90" x2="390" y2="90" stroke="var(--fg-dim)" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <text x="370" y="82" text-anchor="middle" font-size="9" fill="var(--own)" font-weight="600">PASS</text>
+        <!-- Last gate -->
+        <rect x="390" y="50" width="150" height="80" rx="8" fill="var(--human-light)" stroke="var(--human)" stroke-width="2"/>
+        <text x="465" y="72" text-anchor="middle" font-size="12" font-weight="700" fill="var(--human)">Gate n</text>
+        <text x="465" y="88" text-anchor="middle" font-size="9" fill="var(--fg-muted)">Final human verdict</text>
+        <text x="465" y="104" text-anchor="middle" font-size="8" fill="var(--fg-dim)">HITL at every gate</text>
+        <!-- Done -->
+        <line x1="540" y1="90" x2="580" y2="90" stroke="var(--fg-dim)" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <text x="610" y="95" text-anchor="middle" font-size="12" fill="var(--own)" font-weight="700">✓ Done</text>
+        <!-- Feedback loop -->
+        <path d="M 275 130 L 275 175 L 85 175 L 85 130" stroke="var(--risk)" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#arrowred)"/>
+        <text x="180" y="192" text-anchor="middle" font-size="9" fill="var(--risk)" font-weight="500">FEEDBACK → revise &amp; re-enter chain</text>
+        <!-- Legend -->
+        <rect x="10" y="210" width="10" height="10" rx="2" fill="var(--own-light)" stroke="var(--own)" stroke-width="1"/>
+        <text x="25" y="219" font-size="8" fill="var(--fg-muted)">Script + HITL</text>
+        <rect x="120" y="210" width="10" height="10" rx="2" fill="var(--synth-light)" stroke="var(--synth)" stroke-width="1"/>
+        <text x="135" y="219" font-size="8" fill="var(--fg-muted)">Agent + HITL (no script)</text>
+        <rect x="270" y="210" width="10" height="10" rx="2" fill="var(--human-light)" stroke="var(--human)" stroke-width="1"/>
+        <text x="285" y="219" font-size="8" fill="var(--fg-muted)">HITL present at every gate</text>
+        <!-- Arrowheads -->
+        <defs>
+          <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="var(--fg-dim)"/>
+          </marker>
+          <marker id="arrowred" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="var(--risk)"/>
+          </marker>
+        </defs>
+      </svg>
+    </div>
+
+    <h3>Choreographed Enforcement</h3>
+    <p style="font-size:0.9rem;color:var(--fg-muted)">Each gate skill performs three steps: <strong>(1)</strong> resolve the active cycle from the manifest; <strong>(2)</strong> read the predecessor's latest verdict and <em>refuse</em> if it is not PASS, returning the predecessor's name and the unblocking action; <strong>(3)</strong> run the gate and append exactly one iteration. The refusal string is a literal contract — it names the blocking gate and tells the human what to do. No central scheduler, no coordinator, no orchestrator program.</p>
+
+    <h3>State Substrate — Three Artefacts, No Database</h3>
+    <div class="rule-cards">
+      <div class="rule-card" style="border-color:var(--accent)">
+        <p class="rule-name" style="color:var(--accent)">Manifest</p>
+        <p class="rule-desc">Identity and position: stable identifier, baseline pointers, active cycle. The single source of "where are we."</p>
+      </div>
+      <div class="rule-card" style="border-color:var(--accent)">
+        <p class="rule-name" style="color:var(--accent)">Report Tree</p>
+        <p class="rule-desc">One file per gate per cycle. Append-only iterations. The latest iteration <em>is</em> the state — no separate status field can disagree.</p>
+      </div>
+      <div class="rule-card" style="border-color:var(--accent)">
+        <p class="rule-name" style="color:var(--accent)">Custody Directory</p>
+        <p class="rule-desc">Sealed manifest of the baseline and a signed ledger. Integrity evidence that detects modification and reordering.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section: Blueprint -->
+  <div class="section" id="sec-blueprint">
+    <h2>Six-Phase Blueprint</h2>
+    <p class="lead">Ordered by dependency — each phase produces something the next consumes, and each has an exit criterion that can be checked rather than believed.</p>
+
+    <div class="phases">
+      <div class="phase" onclick="this.classList.toggle('expanded')">
+        <div class="phase-num">1</div>
+        <div class="phase-body">
+          <p class="phase-title">Domain Invariant & Ground Truth</p>
+          <p class="phase-summary">Baseline format, identity rules, deterministic validator, adversarial fixtures.</p>
+          <div class="phase-detail">
+            <p>Choose the baseline format — if the domain has a standard, adopt it. Fix the identity rules, because traceability is decided by identifier namespaces rather than by prose. Write the validator <em>before</em> any procedure and build adversarial fixtures: a missing section, a duplicated identifier, a reference that points nowhere.</p>
+            <div class="phase-exit"><strong>Exit:</strong> The validator accepts the reference baseline and rejects every fixture with a line number.</div>
+          </div>
+        </div>
+      </div>
+      <div class="phase" onclick="this.classList.toggle('expanded')">
+        <div class="phase-num">2</div>
+        <div class="phase-body">
+          <p class="phase-title">Gate Topology</p>
+          <p class="phase-summary">Prerequisite graph, entry point, report schema, verdict domain, cycle scoping.</p>
+          <div class="phase-detail">
+            <p>Enumerate verification stages, assign prerequisites, draw the graph. Write refusal strings before the procedures — they are the entire coordination mechanism. Each gate must be reviewable in bounded time.</p>
+            <div class="phase-exit"><strong>Exit:</strong> A human can walk the chain by hand, and each gate refuses correctly when its predecessor is absent.</div>
+          </div>
+        </div>
+      </div>
+      <div class="phase" onclick="this.classList.toggle('expanded')">
+        <div class="phase-num">3</div>
+        <div class="phase-body">
+          <p class="phase-title">Verification Partition</p>
+          <p class="phase-summary">Check inventory with exactly one owner per check. Apply Rules D, A, H.</p>
+          <div class="phase-detail">
+            <p>Build a table with one row per check and one column for its owner. The table forces the question teams otherwise skip: "who is accountable when this check passes and the artefact is still wrong?" The division is by decidability, not difficulty.</p>
+            <div class="phase-exit"><strong>Exit:</strong> No decidable check is model-evaluated; every agent gate ends in a human verdict; no row is unassigned.</div>
+          </div>
+        </div>
+      </div>
+      <div class="phase" onclick="this.classList.toggle('expanded')">
+        <div class="phase-num">4</div>
+        <div class="phase-body">
+          <p class="phase-title">Runtime Projection & Discovery</p>
+          <p class="phase-summary">Canonical store, projection mesh, instruction convergence, tool manifests.</p>
+          <div class="phase-detail">
+            <p>Package procedures in a runtime-agnostic format, keep one canonical copy, project into each cockpit's discovery path. Render tool manifests from one declaration. State that configuration isolation is <em>not</em> process isolation.</p>
+            <div class="phase-exit"><strong>Exit:</strong> Two cockpits complete the same gate with no edits to the methodology (the interchangeability test).</div>
+          </div>
+        </div>
+      </div>
+      <div class="phase" onclick="this.classList.toggle('expanded')">
+        <div class="phase-num">5</div>
+        <div class="phase-body">
+          <p class="phase-title">State Persistence & Integrity</p>
+          <p class="phase-summary">Manifest, append-only report tree, sealed baseline, signed ledger.</p>
+          <div class="phase-detail">
+            <p>Choose durable state and make it boring: manifest for identity, report tree for history, custody directory for integrity. Keep the key out of the repository.</p>
+            <div class="phase-exit"><strong>Exit:</strong> Tampering is detected; a missing key fails closed; the ledger verifies after an interrupted write; a forged evidence line fails on replay.</div>
+          </div>
+        </div>
+      </div>
+      <div class="phase" onclick="this.classList.toggle('expanded')">
+        <div class="phase-num">6</div>
+        <div class="phase-body">
+          <p class="phase-title">Ingress Layer</p>
+          <p class="phase-summary">One or more surfaces over the same state, review protocol, attribution rules.</p>
+          <div class="phase-detail">
+            <p>This is the phase teams build first, which is why they rebuild it. With state in files and the protocol in procedures, a surface is a renderer. The decisions here are review mode per gate and attribution.</p>
+            <div class="phase-exit"><strong>Exit:</strong> A second surface drives a full cycle; every verdict has a named author and an iteration number.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section: Maturity -->
+  <div class="section" id="sec-maturity">
+    <h2>Harness Maturity Model</h2>
+    <p class="lead">Five levels of capability. Each adds a property that survives a change of model, cockpit, or personnel. A team can install every component and remain at L1 if acceptance criteria are still implicit.</p>
+
+    <div class="maturity">
+      <div class="maturity-level">
+        <div class="maturity-badge">L1</div>
+        <div>
+          <p class="maturity-name">Prompt Library</p>
+          <p class="maturity-desc">Shared prompts. No ordered gates. Acceptance is ad hoc and lives in people's heads.</p>
+          <div class="maturity-bar"><div class="maturity-fill" style="width:20%"></div></div>
+        </div>
+      </div>
+      <div class="maturity-level">
+        <div class="maturity-badge">L2</div>
+        <div>
+          <p class="maturity-name">Versioned Skills</p>
+          <p class="maturity-desc">Procedures packaged and reviewed. Invocation is manual. Evidence is partial.</p>
+          <div class="maturity-bar"><div class="maturity-fill" style="width:40%"></div></div>
+        </div>
+      </div>
+      <div class="maturity-level">
+        <div class="maturity-badge">L3</div>
+        <div>
+          <p class="maturity-name">Gated Harness</p>
+          <p class="maturity-desc">Ordered gates, explicit prerequisites, report state, deterministic entry gate, human verdicts.</p>
+          <div class="maturity-bar"><div class="maturity-fill" style="width:60%"></div></div>
+        </div>
+      </div>
+      <div class="maturity-level">
+        <div class="maturity-badge">L4</div>
+        <div>
+          <p class="maturity-name">Portable, Custodied</p>
+          <p class="maturity-desc">Multi-cockpit projection, sealed inputs, signed ledger, isolation, regression testing.</p>
+          <div class="maturity-bar"><div class="maturity-fill" style="width:80%"></div></div>
+        </div>
+      </div>
+      <div class="maturity-level">
+        <div class="maturity-badge">L5</div>
+        <div>
+          <p class="maturity-name">Continuously Evaluated</p>
+          <p class="maturity-desc">Validator-coverage metrics, methodology regression in CI, upgrade path, externally anchored heads.</p>
+          <div class="maturity-bar"><div class="maturity-fill" style="width:100%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <h3>The Interchangeability Test</h3>
+    <p style="font-size:0.9rem;color:var(--fg-muted)">Move a project to a different cockpit — different vendor, different terminal, different configuration — in one working day, without editing the methodology, the gate order, the report schema, or the validators. If the reports produced after the move are comparable, the harness passes. Four conditions make it work: runtime-agnostic procedures, converged instruction files, declarative tool configuration, and file-based state with relative paths.</p>
+  </div>
+
+  <!-- Section: Paradigm Spectrum -->
+  <div class="section" id="sec-spectrum">
+    <h2>The Paradigm Spectrum</h2>
+    <p class="lead">Five paradigms from lightweight to fully engineered, each with different trade-offs across six dimensions. The question is not which is best — it's where the differentiation lives.</p>
+
+    <div class="spectrum" id="paradigm-spectrum">
+      <div class="spectrum-item active" data-paradigm="prompt" onclick="selectParadigm(this)">
+        <p class="sp-num">01</p>
+        <p class="sp-name">Prompt Engineering</p>
+      </div>
+      <div class="spectrum-item" data-paradigm="context" onclick="selectParadigm(this)">
+        <p class="sp-num">02</p>
+        <p class="sp-name">Context Engineering</p>
+      </div>
+      <div class="spectrum-item" data-paradigm="framework" onclick="selectParadigm(this)">
+        <p class="sp-num">03</p>
+        <p class="sp-name">Agent Framework</p>
+      </div>
+      <div class="spectrum-item" data-paradigm="cockpit" onclick="selectParadigm(this)">
+        <p class="sp-num">04</p>
+        <p class="sp-name">Cockpit</p>
+      </div>
+      <div class="spectrum-item" data-paradigm="harness" onclick="selectParadigm(this)">
+        <p class="sp-num">05</p>
+        <p class="sp-name">Outer Harness</p>
+      </div>
+    </div>
+
+    <div class="spectrum-detail" id="paradigm-detail">
+      <strong>Prompt Engineering</strong> — The model's input is the design surface: system instructions, few-shot examples, output formats, manual iteration in a chat window. Cheapest to start, hardest to audit. Nothing outside the conversation records what was accepted or why. Acceptance criteria remain implicit, so every run is re-litigated.
+    </div>
+
+    <h3>Trade-off Matrix</h3>
+    <div class="matrix-wrap">
+      <table class="matrix">
+        <thead>
+          <tr>
+            <th>Dimension</th>
+            <th>Prompt</th>
+            <th>Context</th>
+            <th>Framework</th>
+            <th>Cockpit</th>
+            <th>Outer Harness</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Time to first loop</td>
+            <td><span class="dot">●●●●●</span></td>
+            <td><span class="dot">●●●●</span><span class="dot-empty">○</span></td>
+            <td><span class="dot">●●●</span><span class="dot-empty">○○</span></td>
+            <td><span class="dot">●●●●</span><span class="dot-empty">○</span></td>
+            <td><span class="dot">●●</span><span class="dot-empty">○○○</span></td>
+          </tr>
+          <tr>
+            <td>Amortized velocity</td>
+            <td><span class="dot">●</span><span class="dot-empty">○○○○</span></td>
+            <td><span class="dot">●●</span><span class="dot-empty">○○○</span></td>
+            <td><span class="dot">●●●</span><span class="dot-empty">○○</span></td>
+            <td><span class="dot">●●●●</span><span class="dot-empty">○</span></td>
+            <td><span class="dot">●●●●●</span></td>
+          </tr>
+          <tr>
+            <td>Cost control</td>
+            <td><span class="dot">●●●</span><span class="dot-empty">○○</span></td>
+            <td><span class="dot">●●</span><span class="dot-empty">○○○</span></td>
+            <td><span class="dot">●●</span><span class="dot-empty">○○○</span></td>
+            <td><span class="dot">●●●</span><span class="dot-empty">○○</span></td>
+            <td><span class="dot">●●●●</span><span class="dot-empty">○</span></td>
+          </tr>
+          <tr>
+            <td>Interface readiness</td>
+            <td><span class="dot">●●</span><span class="dot-empty">○○○</span></td>
+            <td><span class="dot">●●</span><span class="dot-empty">○○○</span></td>
+            <td><span class="dot">●</span><span class="dot-empty">○○○○</span></td>
+            <td><span class="dot">●●●●●</span></td>
+            <td><span class="dot">●●●●●</span></td>
+          </tr>
+          <tr>
+            <td>Deterministic acceptance</td>
+            <td><span class="dot-empty">○○○○○</span></td>
+            <td><span class="dot-empty">○○○○○</span></td>
+            <td><span class="dot">●●</span><span class="dot-empty">○○○</span></td>
+            <td><span class="dot-empty">○○○○○</span></td>
+            <td><span class="dot">●●●●●</span></td>
+          </tr>
+          <tr>
+            <td>Reversibility (low lock-in)</td>
+            <td><span class="dot">●●●●●</span></td>
+            <td><span class="dot">●●●●</span><span class="dot-empty">○</span></td>
+            <td><span class="dot">●</span><span class="dot-empty">○○○○</span></td>
+            <td><span class="dot">●●●</span><span class="dot-empty">○○</span></td>
+            <td><span class="dot">●●●●</span><span class="dot-empty">○</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>The Decision Rule</h3>
+    <p style="font-size:0.9rem;color:var(--fg-muted)">If the differentiation lives in the <strong>loop</strong>, build the loop (framework). If it lives in the <strong>acceptance criteria</strong> — in the field's notion of a correct artefact — then the loop is overhead, and the harness is the product.</p>
+  </div>
+</div>
+
+<script>
+// Tab navigation
+const nav = document.querySelector('.nav');
+const tabs = nav.querySelectorAll('button');
+const sections = document.querySelectorAll('.section');
+
+function activateTab(tabName) {
+  tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tabName));
+  sections.forEach(s => s.classList.toggle('active', s.id === 'sec-' + tabName));
+  try { localStorage.setItem('harness-tab', tabName); } catch(e) {}
+}
+
+tabs.forEach(tab => {
+  tab.addEventListener('click', () => activateTab(tab.dataset.tab));
+});
+
+// Restore tab
+try {
+  const saved = localStorage.getItem('harness-tab');
+  if (saved && document.getElementById('sec-' + saved)) activateTab(saved);
+} catch(e) {}
+
+// Paradigm spectrum
+const paradigmData = {
+  prompt: '<strong>Prompt Engineering</strong> — The model\'s input is the design surface: system instructions, few-shot examples, output formats, manual iteration in a chat window. Cheapest to start, hardest to audit. Nothing outside the conversation records what was accepted or why. Acceptance criteria remain implicit, so every run is re-litigated.',
+  context: '<strong>Context Engineering</strong> — Extends prompt engineering with retrieval: a vector or lexical index selects passages and injects them into the prompt. Agentic variants interleave retrieval with reasoning steps. Improves what the model <em>sees</em>, but does not change what the organization <em>accepts</em>. Retrieval is read-only; a retrieved passage is evidence of relevance, not of conformance.',
+  framework: '<strong>Agent Frameworks</strong> — Graph DSLs, tool dispatchers, role-playing multi-agent runtimes. They buy explicit control flow, but the team now owns the streaming interface, the permission model, the diff renderer, the context compactor, and the session store. Hidden technical debt of glue code that sits on the critical path. The framework spends tokens on work a validator could have decided.',
+  cockpit: '<strong>Cockpits</strong> — Commercial coding agents: Claude Code, Codex CLI, OpenCode, Pi. The interface where a human and a model collaborate. Owns execution, tools, context, and the interface. Rented — improves on the vendor\'s schedule. The parts of the stack a team is worst at maintaining are precisely the parts a vendor amortizes across thousands of customers. Zero deterministic acceptance on its own.',
+  harness: '<strong>Outer Harness</strong> — The deterministic rig that wraps a cockpit. Two layers: methodology harness (skills, gates, reports, verdicts) and domain governance (ground truth, validators, standards, custody). Owned, durable, and the only part that stays valuable when the cockpit is replaced. Highest amortized velocity, but highest upfront investment.'
+};
+
+function selectParadigm(el) {
+  document.querySelectorAll('.spectrum-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('paradigm-detail').innerHTML = paradigmData[el.dataset.paradigm];
+}
+
+// Animate maturity bars on section visible
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.querySelectorAll('.maturity-fill').forEach(bar => {
+        bar.style.width = bar.style.width; // trigger reflow
+      });
+    }
+  });
+}, { threshold: 0.2 });
+
+document.querySelectorAll('.section').forEach(s => observer.observe(s));
+</script>
+
+</body></html>
