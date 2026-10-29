@@ -1,0 +1,1068 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>V-SIL v3 Diagrams</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Visual companion to V-SIL_v3.md: one section per paper diagram, inline SVG, small interactions */
+:root {
+  --bg: #fafaf8;
+  --fg: #1a1a1e;
+  --muted: #6b6b74;
+  --surface: #f0f0ec;
+  --surface-2: #ffffff;
+  --border: #d8d8d2;
+  --line: #64748b;
+  --hl: #2563eb;
+
+  --stage-f: #e0f2fe; --stage-s: #0284c7; --stage-t: #0c4a6e;
+  --gate-f: #dcfce7;  --gate-s: #16a34a;  --gate-t: #14532d;
+  --input-f: #f3f4f6; --input-s: #6b7280; --input-t: #1f2937;
+  --rfd-f: #fee2e2;   --rfd-s: #dc2626;   --rfd-t: #7f1d1d;
+  --amber-f: #fef3c7; --amber-s: #d97706; --amber-t: #78350f;
+  --proc-f: #ede9fe;  --proc-s: #7c3aed;  --proc-t: #3b0764;
+  --stub-f: #f3f4f6;  --stub-s: #9ca3af;  --stub-t: #374151;
+
+  --port-c: #3a7bd5;  /* GNU Radio complex */
+  --port-f: #f08c3a;  /* GNU Radio float */
+  --port-v: #b45309;  /* float vector */
+  --port-m: #8b8b94;  /* python / message */
+  --grc-f: #ffffff;   --grc-head: #eef2f7;
+
+  font-family: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111114; --fg: #e4e4e0; --muted: #8f8f99; --surface: #1c1c20; --surface-2: #17171b; --border: #2e2e34;
+    --line: #8592a6; --hl: #60a5fa;
+    --stage-f: #0c2a3e; --stage-s: #38bdf8; --stage-t: #bae6fd;
+    --gate-f: #0b2e1a;  --gate-s: #4ade80;  --gate-t: #bbf7d0;
+    --input-f: #23232a; --input-s: #8b8b96; --input-t: #e4e4e7;
+    --rfd-f: #3b1010;   --rfd-s: #f87171;   --rfd-t: #fecaca;
+    --amber-f: #3a2606; --amber-s: #fbbf24; --amber-t: #fde68a;
+    --proc-f: #24133f;  --proc-s: #a78bfa;  --proc-t: #ddd6fe;
+    --stub-f: #1f1f25;  --stub-s: #6b7280;  --stub-t: #c4c4cc;
+    --port-c: #60a5fa;  --port-f: #fb9a5b;  --port-v: #f59e0b; --port-m: #8b8b94;
+    --grc-f: #1a1a20;   --grc-head: #24242c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111114; --fg: #e4e4e0; --muted: #8f8f99; --surface: #1c1c20; --surface-2: #17171b; --border: #2e2e34;
+  --line: #8592a6; --hl: #60a5fa;
+  --stage-f: #0c2a3e; --stage-s: #38bdf8; --stage-t: #bae6fd;
+  --gate-f: #0b2e1a;  --gate-s: #4ade80;  --gate-t: #bbf7d0;
+  --input-f: #23232a; --input-s: #8b8b96; --input-t: #e4e4e7;
+  --rfd-f: #3b1010;   --rfd-s: #f87171;   --rfd-t: #fecaca;
+  --amber-f: #3a2606; --amber-s: #fbbf24; --amber-t: #fde68a;
+  --proc-f: #24133f;  --proc-s: #a78bfa;  --proc-t: #ddd6fe;
+  --stub-f: #1f1f25;  --stub-s: #6b7280;  --stub-t: #c4c4cc;
+  --port-c: #60a5fa;  --port-f: #fb9a5b;  --port-v: #f59e0b; --port-m: #8b8b94;
+  --grc-f: #1a1a20;   --grc-head: #24242c;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  margin: 0 auto; max-width: 1060px; line-height: 1.6;
+  padding: 2rem max(16px, env(safe-area-inset-right, 0px)) 4rem max(16px, env(safe-area-inset-left, 0px));
+}
+h1 { font-size: 1.6rem; line-height: 1.25; margin: 0 0 .35rem; }
+h2 { font-size: 1.25rem; margin: 3rem 0 .4rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+h3 { font-size: 1.02rem; margin: 1.8rem 0 .4rem; }
+p { margin: .5rem 0; }
+code, .mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: .88em; }
+a { color: var(--hl); }
+.sub { color: var(--muted); margin: 0; }
+.note { color: var(--muted); font-size: .9rem; }
+.tag { display: inline-block; font-size: .72rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+       padding: .05rem .45rem; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); }
+header { display: flex; gap: 1rem; justify-content: space-between; align-items: flex-start; }
+#theme { flex: none; }
+nav.toc { margin: 1.2rem 0 0; display: flex; flex-wrap: wrap; gap: .35rem; }
+nav.toc a { text-decoration: none; font-size: .82rem; padding: .15rem .55rem; border: 1px solid var(--border);
+            border-radius: 6px; color: var(--fg); background: var(--surface); }
+nav.toc a:hover { border-color: var(--hl); }
+
+figure { margin: 1rem 0; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: .8rem; }
+figcaption { font-size: .85rem; color: var(--muted); margin-top: .4rem; }
+.scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.scroll > svg { min-width: 860px; }
+.scroll.wide > svg { min-width: 1000px; }
+svg { display: block; width: 100%; height: auto; }
+
+button { font: inherit; font-size: .85rem; cursor: pointer; color: var(--fg); background: var(--surface);
+         border: 1px solid var(--border); border-radius: 6px; padding: .3rem .7rem; }
+button:hover { border-color: var(--hl); }
+button[aria-pressed="true"] { border-color: var(--hl); background: color-mix(in srgb, var(--hl) 14%, var(--surface)); }
+.btns { display: flex; flex-wrap: wrap; gap: .4rem; margin: .6rem 0; }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: .7rem .9rem; margin-top: .6rem; }
+.card h4 { margin: 0 0 .25rem; font-size: .95rem; }
+.card dl { display: grid; grid-template-columns: max-content 1fr; gap: .15rem .8rem; margin: .3rem 0 0; font-size: .9rem; }
+.card dt { color: var(--muted); }
+.card dd { margin: 0; }
+.grid { display: grid; gap: .7rem; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+.grid .card { margin: 0; }
+
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { text-align: left; padding: .35rem .55rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; font-size: .8rem; text-transform: uppercase; letter-spacing: .03em; }
+.tablewrap { overflow-x: auto; }
+tr[data-mod] { cursor: pointer; }
+tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
+
+/* ---- SVG vocabulary ---- */
+.t  { font: 500 13px 'IBM Plex Sans', system-ui, sans-serif; fill: var(--fg); }
+.tb { font: 600 13.5px 'IBM Plex Sans', system-ui, sans-serif; fill: var(--fg); }
+.ts { font: 400 11px 'IBM Plex Sans', system-ui, sans-serif; fill: var(--muted); }
+.tm { font: 400 10.5px 'IBM Plex Mono', ui-monospace, monospace; fill: var(--fg); }
+.tl { font: 500 11px 'IBM Plex Sans', system-ui, sans-serif; fill: var(--muted); }
+.mid { text-anchor: middle; }
+.end { text-anchor: end; }
+
+.s { stroke-width: 1.6; }
+.k-stage .s { fill: var(--stage-f); stroke: var(--stage-s); } .k-stage text { fill: var(--stage-t); }
+.k-gate  .s { fill: var(--gate-f);  stroke: var(--gate-s); }  .k-gate text  { fill: var(--gate-t); }
+.k-input .s { fill: var(--input-f); stroke: var(--input-s); } .k-input text { fill: var(--input-t); }
+.k-rfd   .s { fill: var(--rfd-f);   stroke: var(--rfd-s); }   .k-rfd text   { fill: var(--rfd-t); }
+.k-amber .s { fill: var(--amber-f); stroke: var(--amber-s); } .k-amber text { fill: var(--amber-t); }
+.k-proc  .s { fill: var(--proc-f);  stroke: var(--proc-s); }  .k-proc text  { fill: var(--proc-t); }
+.k-stub  .s { fill: var(--stub-f);  stroke: var(--stub-s); stroke-dasharray: 5 3; } .k-stub text { fill: var(--stub-t); }
+.k-term  .s { stroke-width: 3; }
+.k-hal .s { fill: var(--rfd-f); stroke: var(--rfd-s); }     .k-hal text { fill: var(--rfd-t); }
+.k-dsp .s { fill: var(--amber-f); stroke: var(--amber-s); } .k-dsp text { fill: var(--amber-t); }
+.k-dec .s { fill: var(--gate-f); stroke: var(--gate-s); }   .k-dec text { fill: var(--gate-t); }
+.k-out .s { fill: var(--stage-f); stroke: var(--stage-s); } .k-out text { fill: var(--stage-t); }
+
+.e { fill: none; stroke: var(--line); stroke-width: 1.6; marker-end: url(#m-line); }
+.e.dash { stroke-dasharray: 6 4; }
+.e.red { stroke: var(--rfd-s); marker-end: url(#m-red); }
+.e.green { stroke: var(--gate-s); marker-end: url(#m-green); }
+.e.amber { stroke: var(--amber-s); marker-end: url(#m-amber); }
+.e.noarrow { marker-end: none; }
+
+.click { cursor: pointer; }
+.click:hover .s, .click:focus-visible .s { stroke-width: 2.6; }
+.click:focus { outline: none; }
+.sel .s { stroke: var(--hl) !important; stroke-width: 3 !important; }
+.dim { opacity: .25; transition: opacity .2s; }
+.lit { stroke: var(--hl) !important; stroke-width: 3 !important; marker-end: url(#m-hl) !important; }
+.lit-node .s { stroke: var(--hl) !important; stroke-width: 3 !important; }
+
+/* GNU Radio flowgraph */
+.grc .blk { fill: var(--grc-f); stroke: var(--border); stroke-width: 1.2; }
+.grc .head { fill: var(--grc-head); }
+.grc .bt { font: 600 12px 'IBM Plex Sans', system-ui, sans-serif; fill: var(--fg); }
+.grc .bp { font: 400 10.5px 'IBM Plex Mono', ui-monospace, monospace; fill: var(--muted); }
+.grc .w { fill: none; stroke-width: 2; }
+.grc .w.c { stroke: var(--port-c); } .grc .w.f { stroke: var(--port-f); }
+.grc .w.v { stroke: var(--port-v); } .grc .w.m { stroke: var(--port-m); stroke-dasharray: 4 3; }
+.pc { fill: var(--port-c); } .pf { fill: var(--port-f); } .pv { fill: var(--port-v); } .pm { fill: var(--port-m); }
+.zone { stroke-width: 1.4; stroke-dasharray: 7 4; rx: 12; }
+.zone.hal { fill: color-mix(in srgb, var(--rfd-f) 55%, transparent); stroke: var(--rfd-s); }
+.zone.dsp { fill: color-mix(in srgb, var(--amber-f) 55%, transparent); stroke: var(--amber-s); }
+.zone.dec { fill: color-mix(in srgb, var(--gate-f) 55%, transparent); stroke: var(--gate-s); }
+.zone.out { fill: color-mix(in srgb, var(--stage-f) 55%, transparent); stroke: var(--stage-s); }
+.zl { font: 600 12px 'IBM Plex Mono', ui-monospace, monospace; }
+.zone-g { cursor: pointer; }
+.zone-g.hl .zone, [data-mod].hl > .s { stroke: var(--hl) !important; stroke-width: 3 !important; stroke-dasharray: none; }
+.chip rect { fill: var(--surface-2); stroke: var(--border); }
+.chip text { font: 500 10.5px 'IBM Plex Mono', ui-monospace, monospace; fill: var(--fg); }
+.chip.click:hover rect, .chip.sel rect { stroke: var(--hl); stroke-width: 2; }
+
+/* VL matrix */
+.vl-matrix { display: grid; grid-template-columns: minmax(130px, 1.4fr) repeat(3, minmax(56px, 1fr)) minmax(120px, 1.6fr); gap: 4px; font-size: .88rem; align-items: stretch; }
+.vl-matrix .h { color: var(--muted); font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; padding: .2rem .3rem; }
+.vl-matrix .m { font-family: 'IBM Plex Mono', monospace; font-size: .82rem; padding: .35rem .3rem; }
+.vl-matrix .c { border: 1px solid var(--border); border-radius: 6px; min-height: 2rem; position: relative; background: var(--surface); }
+.vl-matrix .c.on0 { background: var(--gate-f); border-color: var(--gate-s); }
+.vl-matrix .c.on1 { background: var(--amber-f); border-color: var(--amber-s); }
+.vl-matrix .c.on2 { background: var(--rfd-f); border-color: var(--rfd-s); }
+.vl-matrix .c.req::after { content: "required"; position: absolute; inset: auto 0 2px 0; text-align: center; font-size: .66rem; font-weight: 600; color: var(--fg); }
+.vl-matrix .c.req { outline: 2px solid var(--fg); outline-offset: -4px; }
+.vl-matrix .st { font-size: .8rem; padding: .35rem .3rem; color: var(--muted); }
+.subgates { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .7rem; }
+.subgates div { border: 1px solid var(--border); border-radius: 8px; padding: .4rem .7rem; font-size: .85rem; background: var(--surface); opacity: .45; }
+.subgates div.on { opacity: 1; border-color: var(--gate-s); background: var(--gate-f); color: var(--gate-t); }
+
+/* Terminal output */
+.evid { display: grid; gap: .5rem; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+.ev { border: 1px solid var(--border); border-left-width: 5px; border-radius: 8px; padding: .5rem .7rem; background: var(--surface); }
+.ev.v0 { border-left-color: var(--gate-s); } .ev.v1 { border-left-color: var(--amber-s); } .ev.v2 { border-left-color: var(--rfd-s); }
+.ev .mono { font-weight: 500; }
+.badge { display: inline-block; font-size: .72rem; font-weight: 700; padding: 0 .4rem; border-radius: 4px; margin-left: .3rem; }
+.b0 { background: var(--gate-f); color: var(--gate-t); } .b1 { background: var(--amber-f); color: var(--amber-t); } .b2 { background: var(--rfd-f); color: var(--rfd-t); }
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; }
+@media (max-width: 620px) { .compare { grid-template-columns: 1fr; } }
+.compare .card { margin: 0; }
+.compare .d { border-top: 4px solid var(--amber-s); }
+.compare .r { border-top: 4px solid var(--rfd-s); }
+.terms { display: grid; grid-template-columns: 1fr auto 1fr; gap: .3rem .6rem; align-items: center; font-size: .9rem; }
+.terms .arrow { color: var(--muted); }
+.terms .std { font-weight: 600; }
+.terms .src { grid-column: 3; color: var(--muted); font-size: .78rem; margin-top: -.25rem; margin-bottom: .35rem; }
+@media (max-width: 620px) { .terms { grid-template-columns: 1fr; } .terms .arrow { display: none; } .terms .src { grid-column: 1; } }
+.principles { display: grid; gap: .6rem; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); margin-top: .8rem; }
+.principles .card { margin: 0; }
+.principles b { display: block; font-size: 1.05rem; color: var(--hl); }
+.legend { display: flex; flex-wrap: wrap; gap: .4rem .9rem; font-size: .8rem; color: var(--muted); margin: .4rem 0 0; }
+.legend span::before { content: ""; display: inline-block; width: .8rem; height: .8rem; border-radius: 3px; margin-right: .3rem; vertical-align: -1px; border: 1.5px solid var(--b); background: var(--f); }
+@media (prefers-reduced-motion: no-preference) {
+  .pulse .s { animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 50% { stroke-width: 4; } }
+}
+</style>
+</head>
+<body>
+
+<!-- shared arrow markers -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="m-line" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--line)"/></marker>
+    <marker id="m-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--rfd-s)"/></marker>
+    <marker id="m-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--gate-s)"/></marker>
+    <marker id="m-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--amber-s)"/></marker>
+    <marker id="m-hl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--hl)"/></marker>
+  </defs>
+</svg>
+
+<header>
+  <div>
+    <span class="tag">Visual companion · V-SIL v3 · 3.0-draft</span>
+    <h1>V-SIL v3: Adaptive Stage-Gate Lifecycle, diagram by diagram</h1>
+    <p class="sub">Every diagram of <code>V-SIL_v3.md</code> redrawn and explained, with the SDR FM receiver carried through as a running example, starting from its GNU Radio flowgraph in Stage S1.</p>
+  </div>
+  <button id="theme" type="button" aria-label="Toggle colour theme">◐ Theme</button>
+</header>
+
+<nav class="toc" aria-label="Sections">
+  <a href="#big">0 Big picture</a><a href="#terms">1 Terminology</a><a href="#overview">2 Stage-gate</a>
+  <a href="#s0">3 S0</a><a href="#g0">4 G0</a><a href="#s1">5 S1 + FM flowgraph</a><a href="#g1">6 G1</a>
+  <a href="#s2">7 S2</a><a href="#g2">8 G2</a><a href="#feedback">9 Feedback</a><a href="#terminal">10 Output</a>
+</nav>
+
+<p class="note" style="margin-top:1rem">Colours follow the paper: <b style="color:var(--stage-s)">blue</b> stages, <b style="color:var(--gate-s)">green</b> gates, grey inputs, <b style="color:var(--rfd-s)">red</b> RFD / HIL, <b style="color:var(--amber-s)">amber</b> defects / optional levels. Solid arrows are the nominal flow; dashed arrows are feedback. The GNU Radio blocks, parameters and contract values in the FM example are <b>illustrative</b>: the paper only gives module names, layers, edge names and required levels.</p>
+
+<!-- ======================================================================= -->
+<h2 id="big">0 · The big picture</h2>
+<p>V-SIL v3 is a function with one input and two possible outputs. It never edits its input: when the Build Package cannot be met on the declared COTS hardware, it returns an RFD and waits.</p>
+<figure>
+  <div class="scroll">
+  <svg viewBox="0 0 900 250" role="img" aria-label="Build Package goes into V-SIL v3, which outputs a Verified Prototype or a Request for Deviation">
+    <g class="k-input"><rect class="s" x="20" y="55" width="210" height="96" rx="10"/>
+      <text class="tb mid" x="125" y="85">Build Package</text>
+      <text class="t mid" x="125" y="107">PRD · COTS envelope</text>
+      <text class="t mid" x="125" y="126">acceptance criteria</text></g>
+    <g class="k-stage"><rect class="s" x="330" y="55" width="240" height="96" rx="10"/>
+      <text class="tb mid" x="450" y="92">V-SIL v3</text>
+      <text class="t mid" x="450" y="116">S0 → G0 → S1 → G1 → S2 → G2</text></g>
+    <g class="k-gate k-term"><rect class="s" x="670" y="20" width="210" height="76" rx="10"/>
+      <text class="tb mid" x="775" y="52">Verified Prototype</text>
+      <text class="t mid" x="775" y="73">per-module VL evidence</text></g>
+    <g class="k-rfd"><rect class="s" x="670" y="118" width="210" height="80" rx="10"/>
+      <text class="tb mid" x="775" y="145">Request for Deviation</text>
+      <text class="t mid" x="775" y="165">infeasibility evidence</text>
+      <text class="t mid" x="775" y="183">+ trade-off options</text></g>
+    <path class="e" d="M230,103 H326"/>
+    <path class="e green" d="M570,90 C620,90 620,58 666,58"/>
+    <text class="tl mid" x="618" y="62">nominal</text>
+    <path class="e red dash" d="M570,118 C620,118 620,158 666,158"/>
+    <text class="tl mid" x="616" y="153">infeasible</text>
+    <path class="e red dash" d="M775,198 V232 H125 V155"/>
+    <text class="tl mid" x="450" y="226">updated Build Package (re-enters at S0)</text>
+  </svg>
+  </div>
+  <figcaption>Abstract diagram. The three principles behind it: work module by module in a layered architecture; verification depth adapts per module above a mandatory floor; every claim names the verification level that produced it.</figcaption>
+</figure>
+
+<!-- ======================================================================= -->
+<h2 id="terms">1 · Terminology: informal → standard</h2>
+<p>v3 replaces in-house words with standard ones, so that every term can be looked up in a named source.</p>
+<div class="card terms" role="table" aria-label="Terminology mapping">
+  <span>Propagation test (base → modules with placeholders)</span><span class="arrow">→</span><span class="std">Top-down integration test with stubs</span><span class="src">IEEE 29119; Pressman [1]</span>
+  <span>Backpropagation test (module → base)</span><span class="arrow">→</span><span class="std">Bottom-up integration test with drivers</span><span class="src">IEEE 29119; Pressman [1]</span>
+  <span>Combined propagation + backpropagation</span><span class="arrow">→</span><span class="std">Sandwich (hybrid) integration testing</span><span class="src">IEEE 29119 [2]</span>
+  <span>Placeholders</span><span class="arrow">→</span><span class="std">Stubs (called by the unit under test)</span><span class="src">Standard SE</span>
+  <span>Test harnesses simulating callers</span><span class="arrow">→</span><span class="std">Drivers (call the unit under test)</span><span class="src">Standard SE</span>
+  <span>Router validation</span><span class="arrow">→</span><span class="std">Interface-contract verification</span><span class="src">Contract testing [3]; Bass et al. [4]</span>
+  <span>Design by layers</span><span class="arrow">→</span><span class="std">Layered architecture + component dependency graph (DAG)</span><span class="src">Bass et al. [4]</span>
+  <span>Levels N0 / N1 / N2</span><span class="arrow">→</span><span class="std">Verification levels VL-0, VL-1, VL-2</span><span class="src">Adapted from ISO 26262 [5]</span>
+  <span>Feedback to Build Package with trade-off</span><span class="arrow">→</span><span class="std">Request for Deviation (RFD)</span><span class="src">ECSS [16]; MIL-HDBK-61A [17]; NASA NPR 7150.2 [18]</span>
+</div>
+
+<!-- ======================================================================= -->
+<h2 id="overview">2 · Stage-gate overview</h2>
+<p>Three stages (<b>S</b>) do work; three gates (<b>G</b>) decide. Each gate can only send work forward on PASS, or back to the stage that can fix it. <b>Click any node</b> to see what it consumes, produces, who decides, and where it routes.</p>
+<div class="btns">
+  <button type="button" id="ov-fb" aria-pressed="true">Show feedback routes</button>
+</div>
+<figure>
+  <div class="scroll wide">
+  <svg id="ov" viewBox="0 0 1080 340" role="img" aria-label="Stage-gate overview: Build Package, S0, G0, S1, G1, S2, G2, Verified Prototype, with failure and RFD routes">
+    <!-- feedback routes -->
+    <g class="fb">
+      <path class="e amber dash" d="M300,88 C300,38 190,38 190,100"/><text class="tl mid" x="245" y="41">FAIL</text>
+      <path class="e amber dash" d="M540,88 C540,44 435,44 435,100"/><text class="tl mid" x="488" y="47">FAIL</text>
+      <path class="e amber dash" d="M780,88 C780,4 410,4 410,100"/><text class="tl mid" x="600" y="17">design defect</text>
+      <path class="e amber dash" d="M759,151 C740,205 662,205 662,160"/><text class="tl mid" x="712" y="214">module defect</text>
+      <path class="e red dash" d="M420,160 C420,288 470,288 521,288"/><text class="tl" x="432" y="252">infeasible</text>
+      <path class="e red dash" d="M780,172 C780,288 730,288 679,288"/><text class="tl end" x="768" y="252">infeasible</text>
+      <path class="e red dash" d="M600,313 V326 H60 V160"/><text class="tl mid" x="330" y="320">updated Build Package</text>
+    </g>
+    <!-- nominal -->
+    <path class="e" d="M110,130 H126"/>
+    <path class="e" d="M230,130 H254"/>
+    <path class="e green" d="M342,130 H366"/><text class="tl mid" x="350" y="194">PASS + Gate H</text>
+    <path class="e" d="M470,130 H494"/>
+    <path class="e green" d="M582,130 H606"/><text class="tl mid" x="590" y="194">PASS</text>
+    <path class="e" d="M710,130 H734"/>
+    <path class="e green" d="M822,130 H861"/><text class="tl mid" x="841" y="122">PASS</text>
+
+    <g class="k-input click" data-node="BP" tabindex="0" role="button"><rect class="s" x="10" y="100" width="100" height="60" rx="8"/><text class="tb mid" x="60" y="126">Build</text><text class="tb mid" x="60" y="143">Package</text></g>
+    <g class="k-stage click" data-node="S0" tabindex="0" role="button"><rect class="s" x="130" y="100" width="100" height="60" rx="8"/><text class="tb mid" x="180" y="124">S0</text><text class="ts mid" x="180" y="142" style="fill:var(--stage-t)">Normalise + GT</text></g>
+    <g class="k-gate click" data-node="G0" tabindex="0" role="button"><polygon class="s" points="300,88 342,130 300,172 258,130"/><text class="tb mid" x="300" y="135">G0</text></g>
+    <g class="k-stage click" data-node="S1" tabindex="0" role="button"><rect class="s" x="370" y="100" width="100" height="60" rx="8"/><text class="tb mid" x="420" y="124">S1</text><text class="ts mid" x="420" y="142" style="fill:var(--stage-t)">Layered design</text></g>
+    <g class="k-gate click" data-node="G1" tabindex="0" role="button"><polygon class="s" points="540,88 582,130 540,172 498,130"/><text class="tb mid" x="540" y="135">G1</text></g>
+    <g class="k-stage click" data-node="S2" tabindex="0" role="button"><rect class="s" x="610" y="100" width="100" height="60" rx="8"/><text class="tb mid" x="660" y="124">S2</text><text class="ts mid" x="660" y="142" style="fill:var(--stage-t)">Module by module</text></g>
+    <g class="k-gate click" data-node="G2" tabindex="0" role="button"><polygon class="s" points="780,88 822,130 780,172 738,130"/><text class="tb mid" x="780" y="135">G2</text></g>
+    <g class="k-stage k-term click" data-node="T" tabindex="0" role="button"><rect class="s" x="865" y="98" width="140" height="64" rx="8"/><text class="tb mid" x="935" y="124">Verified</text><text class="tb mid" x="935" y="142">Prototype</text></g>
+    <g class="k-rfd click" data-node="RFD" tabindex="0" role="button"><rect class="s" x="525" y="263" width="150" height="50" rx="8"/><text class="tb mid" x="600" y="284">RFD</text><text class="ts mid" x="600" y="300" style="fill:var(--rfd-t)">Request for Deviation</text></g>
+  </svg>
+  </div>
+  <div class="card" id="ov-card" aria-live="polite"></div>
+</figure>
+
+<h3>Governing principles</h3>
+<div class="principles">
+  <div class="card"><b>P1</b>HITL is an <i>authorisation</i> barrier; HIL is a <i>validation</i> barrier. A human saying "go" (Gate H) is not evidence; real hardware results (VL-2) are.</div>
+  <div class="card"><b>P2</b>Oracle ≠ generator: the model never approves its own work [7]. Whoever writes the code is not the one who passes it.</div>
+  <div class="card"><b>P3</b>Mechanical rejection beats LLM approval, never the reverse [8]. A failing script cannot be overruled by a model's "looks good".</div>
+  <div class="card"><b>P4</b><i>Verified</i> ≠ <i>validated</i>: every claim names the environment it was produced in [9] (see the honesty declaration in §10).</div>
+</div>
+
+<!-- ======================================================================= -->
+<h2 id="s0">3 · S0: Normalisation and Ground Truth</h2>
+<p>S0 is a <b>casting</b> step, not a review: it pours the Build Package into the IEEE 29148 [12] blueprints and makes no judgement about sufficiency or scope. Any iteration happens later, at G0.</p>
+<figure>
+  <div class="scroll">
+  <svg viewBox="0 0 900 270" role="img" aria-label="Build Package content is cast into StRS and SyRS blueprints">
+    <g class="k-input"><rect class="s" x="20" y="25" width="230" height="220" rx="10"/>
+      <text class="tb mid" x="135" y="52">Build Package</text></g>
+    <g class="k-input"><rect class="s" x="38" y="68" width="194" height="44" rx="6" style="fill:var(--surface-2)"/><text class="t mid" x="135" y="95">Obligations</text></g>
+    <g class="k-input"><rect class="s" x="38" y="124" width="194" height="44" rx="6" style="fill:var(--surface-2)"/><text class="t mid" x="135" y="151">COTS constraints</text></g>
+    <g class="k-input"><rect class="s" x="38" y="180" width="194" height="44" rx="6" style="fill:var(--surface-2)"/><text class="t mid" x="135" y="201">Stakeholder needs /</text><text class="t mid" x="135" y="216">quality attributes</text></g>
+
+    <path class="e" d="M232,90 C290,90 290,135 326,135"/>
+    <path class="e" d="M232,146 H326"/>
+    <path class="e" d="M232,202 C290,202 290,157 326,157"/>
+    <g class="k-proc"><rect class="s" x="330" y="112" width="170" height="68" rx="10"/>
+      <text class="tb mid" x="415" y="140">Fill IEEE 29148</text><text class="t mid" x="415" y="160">blueprints</text></g>
+    <path class="e" d="M500,135 C550,135 550,75 596,75"/>
+    <path class="e" d="M500,157 C550,157 550,200 596,200"/>
+
+    <g class="k-stage"><rect class="s" x="600" y="20" width="280" height="120" rx="8"/>
+      <text class="tb" x="616" y="44">G0_StRS.md</text><text class="ts" x="864" y="44" text-anchor="end">§9.4 stakeholder</text></g>
+    <g class="chip"><rect x="616" y="58" width="80" height="26" rx="5"/><text x="656" y="75" class="mid">NRM-*</text></g>
+    <g class="chip"><rect x="704" y="58" width="80" height="26" rx="5"/><text x="744" y="75" class="mid">HWC-*</text></g>
+    <g class="chip"><rect x="792" y="58" width="72" height="26" rx="5"/><text x="828" y="75" class="mid">STK-*</text></g>
+    <text class="ts" x="672" y="108">normative · COTS hw · stakeholder</text>
+    <text class="ts" x="672" y="124">requirement blocks</text>
+
+    <g class="k-stage"><rect class="s" x="600" y="160" width="280" height="90" rx="8"/>
+      <text class="tb" x="616" y="184">G0_SyRS.md</text><text class="ts" x="864" y="184" text-anchor="end">§9.5 system</text></g>
+    <g class="chip"><rect x="616" y="198" width="80" height="26" rx="5"/><text x="656" y="215" class="mid">SYS-*</text></g>
+    <text class="ts" x="706" y="215">per-measurand system reqs</text>
+    <path class="e dash" d="M656,198 V90"/>
+    <text class="tl" x="662" y="152">traces to</text>
+  </svg>
+  </div>
+  <figcaption>Each Build Package ingredient lands in a typed block; <code>SYS-*</code> blocks must trace back to StRS blocks, which G0 checks mechanically. The obligation → <code>NRM-*</code>, COTS → <code>HWC-*</code>, needs → <code>STK-*</code> pairing is the typical mapping.</figcaption>
+</figure>
+
+<!-- ======================================================================= -->
+<h2 id="g0">4 · G0: Structural validation</h2>
+<p>Deterministic, no AI, binary verdict: <code>g0_validate.py</code> runs four families of checks over both documents and exits 0 or 1. Only after a PASS does the human <b>Gate H</b> ask: <i>requirements complete, bounded, and verifiable?</i></p>
+<div class="btns"><button type="button" id="g0-sim" aria-pressed="false">Simulate a failing block field</button></div>
+<figure>
+  <div class="scroll">
+  <svg id="g0" viewBox="0 0 900 310" role="img" aria-label="G0 script runs four checks and exits 0 for PASS or 1 for FAIL">
+    <g class="k-stage"><rect class="s" x="20" y="70" width="125" height="50" rx="6"/><text class="t mid" x="82" y="100">G0_StRS.md</text></g>
+    <g class="k-stage"><rect class="s" x="20" y="150" width="125" height="50" rx="6"/><text class="t mid" x="82" y="180">G0_SyRS.md</text></g>
+    <path class="e" d="M145,95 C170,95 170,125 186,125"/><path class="e" d="M145,175 C170,175 170,145 186,145"/>
+    <g class="k-gate"><rect class="s" x="190" y="95" width="160" height="80" rx="8"/>
+      <text class="tb mid" x="270" y="122">g0_validate.py</text><text class="ts mid" x="270" y="142" style="fill:var(--gate-t)">deterministic · stdlib-only</text><text class="ts mid" x="270" y="158" style="fill:var(--gate-t)">no AI</text></g>
+    <g id="g0-phases">
+      <path class="e noarrow" d="M350,135 H372 M372,58 V217"/>
+      <path class="e" d="M372,58 H396"/><path class="e" d="M372,113 H396"/><path class="e" d="M372,168 H396"/><path class="e" d="M372,217 H396"/>
+      <g class="k-gate" data-ph="1"><rect class="s" x="400" y="40" width="160" height="36" rx="6"/><text class="t" x="414" y="63">Headings</text><text class="t end ok" x="548" y="63">✓</text></g>
+      <g class="k-gate" data-ph="2"><rect class="s" x="400" y="95" width="160" height="36" rx="6"/><text class="t" x="414" y="118">Metadata</text><text class="t end ok" x="548" y="118">✓</text></g>
+      <g class="k-gate" data-ph="3"><rect class="s" x="400" y="150" width="160" height="36" rx="6"/><text class="t" x="414" y="173">Block fields</text><text class="t end ok" x="548" y="173">✓</text></g>
+      <g class="k-gate" data-ph="4"><rect class="s" x="400" y="199" width="160" height="36" rx="6"/><text class="t" x="414" y="222">Cross-doc G0-X</text><text class="t end ok" x="548" y="222">✓</text></g>
+      <path class="e noarrow" d="M560,58 H582 M560,113 H582 M560,168 H582 M560,217 H582 M582,58 V217"/>
+      <path class="e" d="M582,138 H600"/>
+    </g>
+    <g class="k-gate"><polygon class="s" points="640,98 680,138 640,178 600,138"/><text class="tb mid" x="640" y="143">G0</text></g>
+    <path id="g0-pass" class="e green" d="M670,118 C700,85 700,72 726,72"/><text class="tl" x="706" y="112">exit 0</text>
+    <path id="g0-fail" class="e red" d="M670,158 C700,190 700,204 726,204"/><text class="tl" x="706" y="170">exit 1</text>
+    <g class="k-gate" id="g0-passbox"><rect class="s" x="730" y="45" width="150" height="54" rx="8"/><text class="tb mid" x="805" y="68">PASS</text><text class="ts mid" x="805" y="86" style="fill:var(--gate-t)">→ human Gate H → S1</text></g>
+    <g class="k-rfd" id="g0-failbox"><rect class="s" x="730" y="177" width="150" height="54" rx="8"/><text class="tb mid" x="805" y="200">FAIL</text><text class="ts mid" x="805" y="218" style="fill:var(--rfd-t)">→ edit GT</text></g>
+    <path class="e red dash" d="M805,231 V285 H82 V204"/>
+    <text class="tl mid" x="440" y="279">back to S0: validate against the original Build Package</text>
+  </svg>
+  </div>
+  <div class="card" id="g0-card">All four check families pass, so the script exits 0. Gate H, a human, now authorises the move to S1 (principle P1: authorisation, not evidence).</div>
+</figure>
+
+<!-- ======================================================================= -->
+<h2 id="s1">5 · S1: Layered architecture design</h2>
+<h3>5.1 Layered architecture: the conceptual layers</h3>
+<p>S1 produces three layers, read top to bottom. They are also the order of construction in S2: base layer first, then modules, then the integrated system.</p>
+<figure>
+  <div class="scroll">
+  <svg viewBox="0 0 900 400" role="img" aria-label="S1 produces three layers: base layer, then modules M1 to MN, then integration">
+    <rect x="20" y="16" width="860" height="370" rx="14" style="fill:none;stroke:var(--border);stroke-width:1.4;stroke-dasharray:7 5"/>
+    <text class="tl" x="36" y="38">S1 produces</text>
+
+    <text class="tb" x="40" y="92">1 · Base layer</text>
+    <text class="ts" x="40" y="110">built and tested first</text><text class="ts" x="40" y="125">(S2 step 1)</text>
+    <g class="k-stage"><rect class="s" x="210" y="56" width="650" height="84" rx="10"/>
+      <text class="tb mid" x="535" y="84">Base Layer</text>
+      <text class="t mid" x="535" y="105">Orchestration · HAL · data routing</text>
+      <text class="t mid" x="535" y="124">interface contracts</text></g>
+    <path class="e" d="M535,140 V168"/>
+
+    <text class="tb" x="40" y="214">2 · Modules</text>
+    <text class="ts" x="40" y="232">plug-in units, built one</text><text class="ts" x="40" y="247">by one (S2 step 2)</text>
+    <g class="k-proc"><rect class="s" x="210" y="172" width="650" height="98" rx="10" style="fill:color-mix(in srgb,var(--proc-f) 45%,transparent)"/>
+      <text class="ts" x="224" y="191" style="fill:var(--proc-t)">Modules</text></g>
+    <g class="k-proc"><rect class="s" x="232" y="202" width="120" height="50" rx="8"/><text class="tb mid" x="292" y="232">M1</text></g>
+    <g class="k-proc"><rect class="s" x="382" y="202" width="120" height="50" rx="8"/><text class="tb mid" x="442" y="232">M2</text></g>
+    <g class="k-proc"><rect class="s" x="532" y="202" width="120" height="50" rx="8"/><text class="tb mid" x="592" y="232">M3</text></g>
+    <text class="tb mid" x="687" y="232" style="fill:var(--muted)">…</text>
+    <g class="k-proc"><rect class="s" x="722" y="202" width="120" height="50" rx="8"/><text class="tb mid" x="782" y="232">MN</text></g>
+    <path class="e" d="M535,270 V298"/>
+
+    <text class="tb" x="40" y="330">3 · Integration</text>
+    <text class="ts" x="40" y="348">the assembled system</text><text class="ts" x="40" y="363">that G2 verifies</text>
+    <g class="k-stage"><rect class="s" x="210" y="302" width="650" height="68" rx="10"/>
+      <text class="tb mid" x="535" y="330">Integration</text>
+      <text class="t mid" x="535" y="352">Modules wired through base-layer interfaces</text></g>
+  </svg>
+  </div>
+  <figcaption>Rule that holds across the layers: modules communicate only through the base layer's declared interfaces. There are no direct module-to-module calls.</figcaption>
+</figure>
+
+<h3>5.1b The same three layers in the FM example</h3>
+<p>Each conceptual box filled in. Inside the modules layer, every module also carries a <b>module layer</b> tag (HAL, DSP, Decision, Output) in its verification profile. That tag groups modules by role; it is the <i>Layer</i> column of the table in §5.3, not a fourth architectural layer. <b>Hover a module</b> to find it in the flowgraph, dependency graph and table.</p>
+<figure>
+  <div class="scroll">
+  <svg id="layers" viewBox="0 0 900 500" role="img" aria-label="FM example: base layer contents, modules grouped by HAL, DSP, Decision and Output, and the integrated chain">
+    <text class="tb" x="30" y="70">1 · Base layer</text>
+    <text class="ts" x="30" y="88">shared by every</text><text class="ts" x="30" y="103">module</text>
+    <g class="k-stage"><rect class="s" x="200" y="18" width="680" height="134" rx="10"/>
+      <text class="tb" x="214" y="40">Base layer</text></g>
+    <g class="k-stage"><rect class="s" x="212" y="54" width="157" height="86" rx="7" style="fill:var(--surface-2)"/>
+      <text class="tb" x="224" y="76">Orchestration</text><text class="ts" x="224" y="98">GNU Radio top block</text><text class="ts" x="224" y="114">+ scheduler</text></g>
+    <g class="k-stage"><rect class="s" x="378" y="54" width="157" height="86" rx="7" style="fill:var(--surface-2)"/>
+      <text class="tb" x="390" y="76">HAL</text><text class="ts" x="390" y="98">HackRF access behind</text><text class="ts" x="390" y="114">one complex port</text></g>
+    <g class="k-stage"><rect class="s" x="544" y="54" width="157" height="86" rx="7" style="fill:var(--surface-2)"/>
+      <text class="tb" x="556" y="76">Data routing</text><text class="ts" x="556" y="98">raw_iq fan-out to</text><text class="ts" x="556" y="114">fft_engine, audio_demod</text></g>
+    <g class="k-stage"><rect class="s" x="710" y="54" width="160" height="86" rx="7" style="fill:var(--surface-2)"/>
+      <text class="tb" x="722" y="76">Interface contracts</text><text class="tm" x="722" y="93">raw_iq</text><text class="tm" x="722" y="106">psd_estimate</text><text class="tm" x="722" y="119">channel_features</text><text class="tm" x="722" y="132" style="font-size:9.5px">occupancy_decision</text></g>
+    <path class="e" d="M540,152 V176"/><text class="tl" x="548" y="169">modules plug into these ports</text>
+
+    <text class="tb" x="30" y="240">2 · Modules</text>
+    <text class="ts" x="30" y="258">grouped by their</text><text class="ts" x="30" y="273">module layer tag</text>
+    <g class="k-proc"><rect class="s" x="200" y="180" width="680" height="164" rx="10" style="fill:color-mix(in srgb,var(--proc-f) 45%,transparent)"/>
+      <text class="tb" x="214" y="202" style="fill:var(--proc-t)">Modules</text></g>
+    <rect class="zone hal" x="212" y="212" width="157" height="122"/><text class="zl" x="224" y="231" style="fill:var(--rfd-t)">HAL</text>
+    <rect class="zone dsp" x="378" y="212" width="157" height="122"/><text class="zl" x="390" y="231" style="fill:var(--amber-t)">DSP</text>
+    <rect class="zone dec" x="544" y="212" width="157" height="122"/><text class="zl" x="556" y="231" style="fill:var(--gate-t)">Decision</text>
+    <rect class="zone out" x="710" y="212" width="160" height="122"/><text class="zl" x="722" y="231" style="fill:var(--stage-t)">Output</text>
+    <g class="k-hal" data-mod="iq_acquisition"><rect class="s" x="222" y="242" width="137" height="36" rx="6"/><text class="t mid mono" x="290" y="265" style="font-size:11.5px">iq_acquisition</text></g>
+    <g class="k-dsp" data-mod="fft_engine"><rect class="s" x="388" y="242" width="137" height="36" rx="6"/><text class="t mid mono" x="456" y="265" style="font-size:11.5px">fft_engine</text></g>
+    <g class="k-dsp" data-mod="feature_extractor"><rect class="s" x="388" y="288" width="137" height="36" rx="6"/><text class="t mid mono" x="456" y="311" style="font-size:11px">feature_extractor</text></g>
+    <g class="k-dec" data-mod="classifier"><rect class="s" x="554" y="242" width="137" height="36" rx="6"/><text class="t mid mono" x="622" y="265" style="font-size:11.5px">classifier</text></g>
+    <g class="k-out" data-mod="audio_demod"><rect class="s" x="720" y="242" width="140" height="36" rx="6"/><text class="t mid mono" x="790" y="265" style="font-size:11.5px">audio_demod</text></g>
+    <g class="k-out" data-mod="data_store"><rect class="s" x="720" y="288" width="140" height="36" rx="6"/><text class="t mid mono" x="790" y="311" style="font-size:11.5px">data_store</text></g>
+    <path class="e" d="M540,344 V368"/><text class="tl" x="548" y="361">wired through the base layer</text>
+
+    <text class="tb" x="30" y="420">3 · Integration</text>
+    <text class="ts" x="30" y="438">the FM monitor</text><text class="ts" x="30" y="453">as one system</text>
+    <g class="k-stage"><rect class="s" x="200" y="372" width="680" height="116" rx="10"/>
+      <text class="tb" x="214" y="394">Integration: FM monitor</text></g>
+    <g class="chip"><rect x="214" y="406" width="104" height="24" rx="5"/><text x="266" y="422" class="mid">iq_acquisition</text></g>
+    <g class="chip"><rect x="346" y="406" width="84" height="24" rx="5"/><text x="388" y="422" class="mid">fft_engine</text></g>
+    <g class="chip"><rect x="458" y="406" width="126" height="24" rx="5"/><text x="521" y="422" class="mid">feature_extractor</text></g>
+    <g class="chip"><rect x="612" y="406" width="84" height="24" rx="5"/><text x="654" y="422" class="mid">classifier</text></g>
+    <g class="chip"><rect x="724" y="406" width="84" height="24" rx="5"/><text x="766" y="422" class="mid">data_store</text></g>
+    <g class="chip"><rect x="346" y="446" width="92" height="24" rx="5"/><text x="392" y="462" class="mid">audio_demod</text></g>
+    <path class="e" d="M318,418 H342"/><path class="e" d="M430,418 H454"/><path class="e" d="M584,418 H608"/><path class="e" d="M696,418 H720"/>
+    <path class="e" d="M300,430 C300,458 320,458 342,458"/>
+    <text class="ts" x="460" y="462">each arrow is a contract carried by the base layer,</text>
+    <text class="ts" x="460" y="477">never a direct module → module call</text>
+  </svg>
+  </div>
+</figure>
+
+<h3>5.2 The FM example as a GNU Radio flowgraph</h3>
+<p>Here is what an S1 design for the SDR FM example looks like as a GNU Radio Companion flowgraph. Each shaded zone is one V-SIL <b>module</b> (in GNU Radio terms, a hierarchical block); each wire that crosses a zone border is an <b>interface contract</b>. <b>Hover or tap a zone</b> to find the same module in the dependency graph and table below.</p>
+<figure>
+  <div class="scroll wide">
+  <svg id="fg" class="grc" viewBox="0 0 1180 510" role="img" aria-label="GNU Radio flowgraph of the FM monitor grouped into six modules">
+    <!-- zones -->
+    <g class="zone-g" data-mod="iq_acquisition"><rect class="zone hal" x="14" y="30" width="222" height="466"/><text class="zl" x="26" y="50" style="fill:var(--rfd-t)">iq_acquisition · HAL</text></g>
+    <g class="zone-g" data-mod="fft_engine"><rect class="zone dsp" x="256" y="30" width="910" height="140"/><text class="zl" x="268" y="50" style="fill:var(--amber-t)">fft_engine · DSP</text></g>
+    <g class="zone-g" data-mod="feature_extractor"><rect class="zone dsp" x="256" y="196" width="210" height="140"/><text class="zl" x="268" y="216" style="fill:var(--amber-t)">feature_extractor · DSP</text></g>
+    <g class="zone-g" data-mod="classifier"><rect class="zone dec" x="490" y="196" width="210" height="140"/><text class="zl" x="502" y="216" style="fill:var(--gate-t)">classifier · Decision</text></g>
+    <g class="zone-g" data-mod="data_store"><rect class="zone out" x="724" y="196" width="210" height="140"/><text class="zl" x="736" y="216" style="fill:var(--stage-t)">data_store · Output</text></g>
+    <g class="zone-g" data-mod="audio_demod"><rect class="zone out" x="256" y="362" width="790" height="134"/><text class="zl" x="268" y="382" style="fill:var(--stage-t)">audio_demod · Output</text></g>
+
+    <!-- wires (drawn under blocks) -->
+    <path class="w c" d="M212,270 H232 V110 H275"/>
+    <path class="w c" d="M232,270 V435 H275"/>
+    <path class="w c" d="M425,110 H455"/><path class="w c" d="M605,110 H635"/>
+    <path class="w v" d="M785,110 H815"/><path class="w v" d="M965,110 H995"/>
+    <path class="w v" d="M1145,110 H1158 V182 H250 V270 H275"/>
+    <path class="w m" d="M445,270 H510"/><path class="w m" d="M680,270 H745"/>
+    <path class="w c" d="M435,435 H470"/><path class="w f" d="M630,435 H665"/><path class="w f" d="M825,435 H860"/>
+
+    <!-- iq_acquisition -->
+    <rect class="blk" x="40" y="205" width="172" height="130" rx="6"/><rect class="head" x="40.6" y="205.6" width="170.8" height="22" rx="5"/>
+    <text class="bt" x="50" y="221">Osmocom Source</text>
+    <text class="bp" x="50" y="245">device: hackrf=0</text><text class="bp" x="50" y="261">samp_rate: 20 MS/s</text>
+    <text class="bp" x="50" y="277">center: 98 MHz</text><text class="bp" x="50" y="293">rf/if/bb: 14/24/20 dB</text>
+    <text class="bp" x="50" y="320" style="fill:var(--rfd-s)">▲ HackRF One (COTS)</text>
+    <rect class="pc" x="212" y="264" width="9" height="12" rx="2"/>
+
+    <!-- fft_engine row -->
+    <rect class="blk" x="275" y="70" width="150" height="80" rx="6"/><rect class="head" x="275.6" y="70.6" width="148.8" height="22" rx="5"/>
+    <text class="bt" x="284" y="86">Stream to Vector</text><text class="bp" x="284" y="110">num_items: 4096</text><text class="bp" x="284" y="126">type: complex</text>
+    <rect class="pc" x="266" y="104" width="9" height="12" rx="2"/><rect class="pc" x="425" y="104" width="9" height="12" rx="2"/>
+    <rect class="blk" x="455" y="70" width="150" height="80" rx="6"/><rect class="head" x="455.6" y="70.6" width="148.8" height="22" rx="5"/>
+    <text class="bt" x="464" y="86">FFT</text><text class="bp" x="464" y="110">size: 4096</text><text class="bp" x="464" y="126">window: B-Harris</text><text class="bp" x="464" y="142">shift: yes</text>
+    <rect class="pc" x="446" y="104" width="9" height="12" rx="2"/><rect class="pc" x="605" y="104" width="9" height="12" rx="2"/>
+    <rect class="blk" x="635" y="70" width="150" height="80" rx="6"/><rect class="head" x="635.6" y="70.6" width="148.8" height="22" rx="5"/>
+    <text class="bt" x="644" y="86">Complex to Mag²</text><text class="bp" x="644" y="110">vlen: 4096</text>
+    <rect class="pc" x="626" y="104" width="9" height="12" rx="2"/><rect class="pv" x="785" y="104" width="9" height="12" rx="2"/>
+    <rect class="blk" x="815" y="70" width="150" height="80" rx="6"/><rect class="head" x="815.6" y="70.6" width="148.8" height="22" rx="5"/>
+    <text class="bt" x="824" y="86">Integrate</text><text class="bp" x="824" y="110">decimation: 10</text><text class="bp" x="824" y="126">vlen: 4096</text>
+    <rect class="pv" x="806" y="104" width="9" height="12" rx="2"/><rect class="pv" x="965" y="104" width="9" height="12" rx="2"/>
+    <rect class="blk" x="995" y="70" width="150" height="80" rx="6"/><rect class="head" x="995.6" y="70.6" width="148.8" height="22" rx="5"/>
+    <text class="bt" x="1004" y="86">Log10</text><text class="bp" x="1004" y="110">n: 10 (→ dB)</text><text class="bp" x="1004" y="126">vlen: 4096</text>
+    <rect class="pv" x="986" y="104" width="9" height="12" rx="2"/><rect class="pv" x="1145" y="104" width="9" height="12" rx="2"/>
+
+    <!-- row B -->
+    <rect class="blk" x="275" y="230" width="170" height="90" rx="6"/><rect class="head" x="275.6" y="230.6" width="168.8" height="22" rx="5"/>
+    <text class="bt" x="284" y="246">Python: channel_power</text><text class="bp" x="284" y="270">100 ch × 200 kHz</text><text class="bp" x="284" y="286">88.1 – 107.9 MHz</text><text class="bp" x="284" y="302">floor: 10th pct</text>
+    <rect class="pv" x="266" y="264" width="9" height="12" rx="2"/><rect class="pm" x="445" y="264" width="9" height="12" rx="2"/>
+    <rect class="blk" x="510" y="230" width="170" height="90" rx="6"/><rect class="head" x="510.6" y="230.6" width="168.8" height="22" rx="5"/>
+    <text class="bt" x="519" y="246">Python: occupancy</text><text class="bp" x="519" y="270">SNR ≥ 10 dB</text><text class="bp" x="519" y="286">hysteresis: 2 dB</text>
+    <rect class="pm" x="501" y="264" width="9" height="12" rx="2"/><rect class="pm" x="680" y="264" width="9" height="12" rx="2"/>
+    <rect class="blk" x="745" y="230" width="170" height="90" rx="6"/><rect class="head" x="745.6" y="230.6" width="168.8" height="22" rx="5"/>
+    <text class="bt" x="754" y="246">Python: sqlite_store</text><text class="bp" x="754" y="270">db: occupancy.db</text><text class="bp" x="754" y="286">table: decisions</text>
+    <rect class="pm" x="736" y="264" width="9" height="12" rx="2"/>
+
+    <!-- audio_demod row -->
+    <rect class="blk" x="275" y="395" width="160" height="86" rx="6"/><rect class="head" x="275.6" y="395.6" width="158.8" height="22" rx="5"/>
+    <text class="bt" x="284" y="411">Freq Xlating FIR</text><text class="bp" x="284" y="435">decimation: 80</text><text class="bp" x="284" y="451">offset: f_st − 98 MHz</text><text class="bp" x="284" y="467">LPF: 100 kHz</text>
+    <rect class="pc" x="266" y="429" width="9" height="12" rx="2"/><rect class="pc" x="435" y="429" width="9" height="12" rx="2"/>
+    <rect class="blk" x="470" y="395" width="160" height="86" rx="6"/><rect class="head" x="470.6" y="395.6" width="158.8" height="22" rx="5"/>
+    <text class="bt" x="479" y="411">WBFM Receive</text><text class="bp" x="479" y="435">quad_rate: 250 kHz</text><text class="bp" x="479" y="451">audio_decim: 5</text>
+    <rect class="pc" x="461" y="429" width="9" height="12" rx="2"/><rect class="pf" x="630" y="429" width="9" height="12" rx="2"/>
+    <rect class="blk" x="665" y="395" width="160" height="86" rx="6"/><rect class="head" x="665.6" y="395.6" width="158.8" height="22" rx="5"/>
+    <text class="bt" x="674" y="411">Rational Resampler</text><text class="bp" x="674" y="435">interp 24 / decim 25</text><text class="bp" x="674" y="451">50 → 48 kHz</text>
+    <rect class="pf" x="656" y="429" width="9" height="12" rx="2"/><rect class="pf" x="825" y="429" width="9" height="12" rx="2"/>
+    <rect class="blk" x="860" y="395" width="160" height="86" rx="6"/><rect class="head" x="860.6" y="395.6" width="158.8" height="22" rx="5"/>
+    <text class="bt" x="869" y="411">Audio Sink</text><text class="bp" x="869" y="435">rate: 48 kHz</text><text class="bp" x="869" y="451">host sound card</text>
+    <rect class="pf" x="851" y="429" width="9" height="12" rx="2"/>
+
+    <!-- contract labels on module-crossing wires -->
+    <g class="chip"><rect x="140" y="349" width="88" height="20" rx="4"/><text x="184" y="363" class="mid">raw_iq</text></g>
+    <g class="chip"><rect x="560" y="173" width="110" height="18" rx="4"/><text x="615" y="186" class="mid">psd_estimate</text></g>
+    <g class="chip"><rect x="438" y="243" width="76" height="18" rx="4"/><text x="476" y="256" class="mid" style="font-size:9.5px">ch_features</text></g>
+    <g class="chip"><rect x="672" y="243" width="80" height="18" rx="4"/><text x="712" y="256" class="mid" style="font-size:9.5px">occupancy</text></g>
+  </svg>
+  </div>
+  <div class="legend">
+    <span style="--f:var(--port-c);--b:var(--port-c)">complex stream</span>
+    <span style="--f:var(--port-f);--b:var(--port-f)">float stream</span>
+    <span style="--f:var(--port-v);--b:var(--port-v)">float vector [4096]</span>
+    <span style="--f:var(--port-m);--b:var(--port-m)">Python block records</span>
+  </div>
+  <figcaption>Rates check out: 20 MS/s covers 88–108 MHz around a 98 MHz centre; a 4096-point FFT gives 4.88 kHz bins (≈41 bins per 200 kHz FM channel); 10 integrated FFTs give one PSD every 2.05 ms. Audio path: 20 MS/s ÷ 80 = 250 kHz → ÷ 5 = 50 kHz → × 24/25 = 48 kHz.</figcaption>
+</figure>
+
+<div class="tablewrap card">
+<table>
+  <thead><tr><th>Flowgraph concept</th><th>V-SIL S1 artefact</th></tr></thead>
+  <tbody>
+    <tr><td>Top block + GNU Radio scheduler</td><td>Base layer: orchestration</td></tr>
+    <tr><td>Osmocom Source wrapped behind one output port</td><td>Base layer: HAL (the only place that touches the HackRF)</td></tr>
+    <tr><td>One output port feeding two branches (<code>raw_iq</code> fan-out)</td><td>Base layer: data routing</td></tr>
+    <tr><td>Hierarchical block (a shaded zone)</td><td>Module, with its verification profile</td></tr>
+    <tr><td>Port type, vector length, sample rate on a crossing wire</td><td>Interface contract (type, schema version, units, latency)</td></tr>
+    <tr><td><code>Vector Source</code> / <code>File Source</code> feeding a hier block's input</td><td>Stub or mock used in S2 and VL-1 (see §7 and §8)</td></tr>
+    <tr><td><code>gr_unittest</code> QA test per block</td><td>Unit test (VL-0 floor)</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>5.3 Component dependency graph and contracts</h3>
+<p>The same design reduced to the paper's DAG. Nodes carry a verification profile (<code>module_id</code>, <code>layer</code>, <code>depends_on</code>, <code>provides</code>, <code>hw_dependency</code>, <code>required_vl</code>); edges carry a contract. <b>Click an edge label</b> to read its contract.</p>
+<figure>
+  <div class="scroll">
+  <svg id="dag" viewBox="0 0 1010 270" role="img" aria-label="Dependency graph: HackRF to iq_acquisition to fft_engine and audio_demod; fft_engine to feature_extractor to classifier to data_store">
+    <path class="e" d="M110,125 H156"/><text class="tl mid" x="133" y="117">raw RF</text>
+    <path class="e" d="M300,112 C330,112 330,70 356,70"/>
+    <path class="e" d="M300,138 C330,138 330,200 356,200"/>
+    <path class="e" d="M490,70 H541"/>
+    <path class="e" d="M695,70 H731"/>
+    <path class="e" d="M855,70 H881"/>
+    <g class="k-input"><rect class="s" x="20" y="100" width="90" height="50" rx="8"/><text class="tb mid" x="65" y="130">HackRF</text></g>
+    <g class="k-hal" data-mod="iq_acquisition"><rect class="s" x="160" y="95" width="140" height="60" rx="8"/><text class="t mid mono" x="230" y="120">iq_acquisition</text><text class="ts mid" x="230" y="140" style="fill:var(--rfd-t)">HAL · VL-2</text></g>
+    <g class="k-dsp" data-mod="fft_engine"><rect class="s" x="360" y="40" width="130" height="60" rx="8"/><text class="t mid mono" x="425" y="65">fft_engine</text><text class="ts mid" x="425" y="85" style="fill:var(--amber-t)">DSP · VL-1</text></g>
+    <g class="k-dsp" data-mod="feature_extractor"><rect class="s" x="545" y="40" width="150" height="60" rx="8"/><text class="t mid mono" x="620" y="65">feature_extractor</text><text class="ts mid" x="620" y="85" style="fill:var(--amber-t)">DSP · VL-1</text></g>
+    <g class="k-dec" data-mod="classifier"><rect class="s" x="735" y="40" width="120" height="60" rx="8"/><text class="t mid mono" x="795" y="65">classifier</text><text class="ts mid" x="795" y="85" style="fill:var(--gate-t)">Decision · VL-0</text></g>
+    <g class="k-out" data-mod="data_store"><rect class="s" x="885" y="40" width="110" height="60" rx="8"/><text class="t mid mono" x="940" y="65">data_store</text><text class="ts mid" x="940" y="85" style="fill:var(--stage-t)">Output · VL-0</text></g>
+    <g class="k-out" data-mod="audio_demod"><rect class="s" x="360" y="170" width="130" height="60" rx="8"/><text class="t mid mono" x="425" y="195">audio_demod</text><text class="ts mid" x="425" y="215" style="fill:var(--stage-t)">Output · VL-1</text></g>
+    <g class="chip click" data-contract="raw_iq" tabindex="0" role="button"><rect x="290" y="150" width="62" height="20" rx="4"/><text x="321" y="164" class="mid">raw_iq</text></g>
+    <g class="chip click" data-contract="raw_iq" tabindex="0" role="button"><rect x="270" y="56" width="62" height="20" rx="4"/><text x="301" y="70" class="mid">raw_iq</text></g>
+    <g class="chip click" data-contract="psd_estimate" tabindex="0" role="button"><rect x="472" y="112" width="92" height="20" rx="4"/><text x="518" y="126" class="mid">psd_estimate</text></g>
+    <g class="chip click" data-contract="channel_features" tabindex="0" role="button"><rect x="650" y="112" width="122" height="20" rx="4"/><text x="711" y="126" class="mid">channel_features</text></g>
+    <g class="chip click" data-contract="occupancy_decision" tabindex="0" role="button"><rect x="810" y="112" width="132" height="20" rx="4"/><text x="876" y="126" class="mid">occupancy_decision</text></g>
+  </svg>
+  </div>
+  <div class="card" id="contract-card" aria-live="polite"><span class="note">Click a contract label to see its fields.</span></div>
+</figure>
+
+<div class="tablewrap card">
+<table id="profile">
+  <thead><tr><th>Module</th><th>Layer</th><th>HW dep.</th><th>Required VL</th><th>depends_on → provides</th></tr></thead>
+  <tbody>
+    <tr data-mod="iq_acquisition"><td class="mono">iq_acquisition</td><td>HAL</td><td><b>yes</b></td><td><span class="badge b2">VL-2</span> HIL</td><td class="mono">HackRF → raw_iq</td></tr>
+    <tr data-mod="fft_engine"><td class="mono">fft_engine</td><td>DSP</td><td>no</td><td><span class="badge b1">VL-1</span> SIL</td><td class="mono">raw_iq → psd_estimate</td></tr>
+    <tr data-mod="feature_extractor"><td class="mono">feature_extractor</td><td>DSP</td><td>no</td><td><span class="badge b1">VL-1</span> SIL</td><td class="mono">psd_estimate → channel_features</td></tr>
+    <tr data-mod="classifier"><td class="mono">classifier</td><td>Decision</td><td>no</td><td><span class="badge b0">VL-0</span> unit</td><td class="mono">channel_features → occupancy_decision</td></tr>
+    <tr data-mod="audio_demod"><td class="mono">audio_demod</td><td>Output</td><td>no</td><td><span class="badge b1">VL-1</span> SIL</td><td class="mono">raw_iq → audio</td></tr>
+    <tr data-mod="data_store"><td class="mono">data_store</td><td>Output</td><td>no</td><td><span class="badge b0">VL-0</span> unit</td><td class="mono">occupancy_decision → (stored)</td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ======================================================================= -->
+<h2 id="g1">6 · G1: Dependency-graph and interface-contract validation</h2>
+<p>G1 answers one question: <i>are all implementation-critical design choices resolved?</i> It runs five checks; any failure sends the design back to S1. Each card shows a passing and a failing case, using the FM design.</p>
+<div class="grid">
+  <div class="card"><h4>1 · DAG acyclicity</h4>
+    <svg viewBox="0 0 240 92" role="img" aria-label="A cycle between two modules fails">
+      <g class="k-dsp"><rect class="s" x="10" y="12" width="88" height="28" rx="5"/><text class="ts mid" x="54" y="30" style="fill:var(--amber-t)">fft_engine</text></g>
+      <g class="k-dec"><rect class="s" x="142" y="12" width="88" height="28" rx="5"/><text class="ts mid" x="186" y="30" style="fill:var(--gate-t)">classifier</text></g>
+      <path class="e" d="M98,22 H138"/><path class="e red" d="M186,40 C186,70 54,70 54,44"/>
+      <text class="ts mid" x="120" y="86" style="fill:var(--rfd-s)">✗ cycle: classifier → fft_engine</text>
+    </svg>
+    <p class="note">FM design: all edges point downstream ✓</p></div>
+  <div class="card"><h4>2 · Interface completeness</h4>
+    <svg viewBox="0 0 240 92" role="img" aria-label="An edge without a typed contract fails">
+      <path class="e green" d="M10,24 H228"/><g class="chip"><rect x="62" y="12" width="116" height="22" rx="4"/><text x="120" y="27" class="mid" style="font-size:9.5px">float32[4096] dBFS v1</text></g>
+      <path class="e red" d="M10,68 H228"/><g class="chip"><rect x="98" y="56" width="44" height="22" rx="4" style="stroke:var(--rfd-s)"/><text x="120" y="71" class="mid">?</text></g>
+    </svg>
+    <p class="note">Every edge must carry a typed contract.</p></div>
+  <div class="card"><h4>3 · Coverage</h4>
+    <svg viewBox="0 0 240 92" role="img" aria-label="Every SYS requirement must trace to a module">
+      <g class="chip"><rect x="8" y="8" width="70" height="20" rx="4"/><text x="43" y="22" class="mid">SYS-001</text></g>
+      <g class="chip"><rect x="8" y="36" width="70" height="20" rx="4"/><text x="43" y="50" class="mid">SYS-002</text></g>
+      <g class="chip"><rect x="8" y="64" width="70" height="20" rx="4" style="stroke:var(--rfd-s)"/><text x="43" y="78" class="mid">SYS-003</text></g>
+      <path class="e green" d="M78,18 H140"/><path class="e green" d="M78,46 H140"/>
+      <g class="k-dsp"><rect class="s" x="144" y="8" width="90" height="48" rx="5"/><text class="ts mid" x="189" y="36" style="fill:var(--amber-t)">a module</text></g>
+      <text class="ts" x="88" y="78" style="fill:var(--rfd-s)">✗ traces to nothing</text>
+    </svg>
+    <p class="note">Every <code>SYS-*</code> reaches at least one module.</p></div>
+  <div class="card"><h4>4 · Stub feasibility</h4>
+    <svg viewBox="0 0 240 92" role="img" aria-label="A contract must be complete enough to generate a deterministic stub">
+      <g class="chip"><rect x="6" y="10" width="102" height="72" rx="5"/></g>
+      <text class="tm" x="14" y="28">type: f32[4096]</text><text class="tm" x="14" y="44">units: dBFS</text><text class="tm" x="14" y="60">rate: 488 Hz</text><text class="tm" x="14" y="76">schema: v1</text>
+      <path class="e" d="M108,46 H134"/>
+      <g class="k-stub"><rect class="s" x="138" y="22" width="96" height="48" rx="5"/><text class="ts mid" x="186" y="42" style="fill:var(--stub-t)">Vector Source</text><text class="ts mid" x="186" y="58" style="fill:var(--stub-t)">known PSD</text></g>
+    </svg>
+    <p class="note">If you cannot write a deterministic stub from the contract, it is incomplete.</p></div>
+  <div class="card"><h4>5 · Profile consistency</h4>
+    <svg viewBox="0 0 240 92" role="img" aria-label="hardware dependency true requires VL-2">
+      <text class="tm" x="8" y="22">iq_acquisition</text>
+      <text class="tm" x="8" y="42">hw_dependency: true</text>
+      <text class="tm" x="8" y="62" style="fill:var(--gate-s)">required_vl: VL-2  ✓</text>
+      <text class="tm" x="8" y="82" style="fill:var(--rfd-s)">required_vl: VL-1  ✗</text>
+    </svg>
+    <p class="note">Hardware-dependent modules must be planned for HIL.</p></div>
+  <div class="card" style="display:flex;flex-direction:column;justify-content:center;text-align:center">
+    <p style="margin:0"><b style="color:var(--gate-s)">PASS</b> → S2 &nbsp;·&nbsp; <b style="color:var(--amber-s)">FAIL</b> → S1</p>
+    <p class="note">The paper does not state whether G1 is scripted or reviewed; by P3 a scripted check would take precedence over any model review.</p></div>
+</div>
+
+<!-- ======================================================================= -->
+<h2 id="s2">7 · S2: Module-by-module implementation (sandwich integration)</h2>
+<p>S2 builds the base layer first and proves it <b>top-down</b> against stubs generated from the G1 contracts. Then it replaces stubs one at a time, in DAG order, proving each new module <b>bottom-up</b> with a driver. Top-down + bottom-up = sandwich integration [1][2][13]. <b>Step through it.</b></p>
+<div class="btns">
+  <button type="button" id="s2-prev">◀ Previous</button>
+  <button type="button" id="s2-next">Next ▶</button>
+  <span class="note" id="s2-count" style="align-self:center"></span>
+</div>
+<figure>
+  <div class="scroll">
+  <svg id="s2" viewBox="0 0 900 300" role="img" aria-label="Sandwich integration stepper">
+    <g id="s2-slots"></g>
+    <g class="k-stage" id="s2-base"><rect class="s" x="30" y="222" width="840" height="58" rx="10"/>
+      <text class="tb mid" x="450" y="247">Base layer</text><text class="t mid" x="450" y="266">orchestration · HAL interface · routing (top block)</text></g>
+  </svg>
+  </div>
+  <div class="card" id="s2-card" aria-live="polite"></div>
+</figure>
+<div class="tablewrap card">
+<table>
+  <thead><tr><th>Mandatory floor (VL-0): cannot be skipped</th><th>Always required</th></tr></thead>
+  <tbody>
+    <tr><td><b>Base layer</b></td><td>Unit test + top-down integration with stubs</td></tr>
+    <tr><td><b>Each module</b></td><td>Unit test + bottom-up integration with driver</td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ======================================================================= -->
+<h2 id="g2">8 · G2: Adaptive verification gate</h2>
+<h3>8.1 Verification levels nest</h3>
+<p>Each level contains every test of the levels below it. In the FM flowgraph, moving up a level means swapping what feeds <code>raw_iq</code>: the HAL substitution ladder mock → SIL → HIL [11].</p>
+<figure>
+  <div class="scroll">
+  <svg viewBox="0 0 900 290" role="img" aria-label="VL-2 contains VL-1 which contains VL-0, with the source block used at each level">
+    <rect x="20" y="20" width="560" height="250" rx="14" style="fill:var(--rfd-f);stroke:var(--rfd-s);stroke-width:1.6;stroke-dasharray:6 4"/>
+    <text class="tb" x="38" y="46" style="fill:var(--rfd-t)">VL-2 · HIL</text><text class="ts" x="38" y="64" style="fill:var(--rfd-t)">+ hardware-in-the-loop · real HW · real RF · optional</text>
+    <rect x="50" y="80" width="500" height="170" rx="12" style="fill:var(--amber-f);stroke:var(--amber-s);stroke-width:1.6;stroke-dasharray:6 4"/>
+    <text class="tb" x="68" y="106" style="fill:var(--amber-t)">VL-1 · Mock / SIL</text><text class="ts" x="68" y="124" style="fill:var(--amber-t)">+ mock-based system test · synthetic I/Q · GNU Radio · optional</text>
+    <rect x="80" y="140" width="440" height="90" rx="10" style="fill:var(--gate-f);stroke:var(--gate-s);stroke-width:2"/>
+    <text class="tb" x="98" y="168" style="fill:var(--gate-t)">VL-0 · Logic</text><text class="ts" x="98" y="187" style="fill:var(--gate-t)">unit + sandwich integration · deterministic vectors</text>
+    <text class="tb" x="98" y="212" style="fill:var(--gate-t)">MANDATORY</text>
+
+    <text class="tl" x="610" y="40">What feeds raw_iq at each level</text>
+    <g class="grc">
+      <rect class="blk" x="610" y="54" width="270" height="56" rx="6" style="stroke:var(--rfd-s)"/><text class="bt" x="622" y="76">Osmocom Source</text><text class="bp" x="622" y="96">HackRF One · live 88–108 MHz</text>
+      <rect class="blk" x="610" y="124" width="270" height="56" rx="6" style="stroke:var(--amber-s)"/><text class="bt" x="622" y="146">File Source / FM-mod synth</text><text class="bp" x="622" y="166">golden I/Q at known SNR</text>
+      <rect class="blk" x="610" y="194" width="270" height="56" rx="6" style="stroke:var(--gate-s)"/><text class="bt" x="622" y="216">Vector Source</text><text class="bp" x="622" y="236">short deterministic vectors</text>
+    </g>
+    <path class="e noarrow" d="M580,82 H606" style="stroke:var(--rfd-s)"/><path class="e noarrow" d="M550,152 H606" style="stroke:var(--amber-s)"/><path class="e noarrow" d="M520,222 H606" style="stroke:var(--gate-s)"/>
+  </svg>
+  </div>
+</figure>
+
+<h3>8.2 Adaptive rule: pick a scenario</h3>
+<p>The user chooses a level <b>per module, per cycle</b>, under two constraints: <b>Floor</b> (every module reaches VL-0 every cycle) and <b>Honesty</b> (no claim higher than what was tested). Filled cells show what is declared this cycle; the outlined cell is the module's S1 <code>required_vl</code>.</p>
+<div class="btns" id="scen-btns"></div>
+<figure>
+  <div class="vl-matrix" id="vlm" aria-live="polite"></div>
+  <div class="subgates" id="subgates">
+    <div data-sg="0"><b>G2.0</b> always · unit + sandwich pass</div>
+    <div data-sg="1"><b>G2.1</b> VL-1+ declared · Mock/SIL system tests, metrics within thresholds</div>
+    <div data-sg="2"><b>G2.2</b> VL-2 declared · HIL acceptance on real HW</div>
+  </div>
+  <div class="card" id="scen-card"></div>
+</figure>
+
+<!-- ======================================================================= -->
+<h2 id="feedback">9 · Feedback routing</h2>
+<p>A gate failure is classified before it is routed. A <b>defect</b> (requirements achievable, implementation or design wrong) is fixed inside V-SIL. An <b>RFD</b> (requirements infeasible on the declared COTS platform) leaves V-SIL: it suspends until the Build Package is updated and re-enters at S0. <b>Pick a failure</b> to see its route.</p>
+<div class="btns" id="fb-btns"></div>
+<figure>
+  <div class="scroll">
+  <svg id="fbt" viewBox="0 0 900 350" role="img" aria-label="Decision tree classifying a gate failure as design defect, module defect, or RFD">
+    <path id="e-f-q1" class="e" d="M450,62 V82"/>
+    <path id="e-q1-q2" class="e amber" d="M392,140 H312 V170"/><text class="tl" x="330" y="132">yes: defect</text>
+    <path id="e-q1-rfd" class="e red" d="M508,140 H660 V188"/><text class="tl" x="545" y="132">no: infeasible</text>
+    <path id="e-q2-s1" class="e amber" d="M262,232 H150 V266"/><text class="tl" x="170" y="226">design</text>
+    <path id="e-q2-s2" class="e amber" d="M362,232 H460 V266"/><text class="tl" x="390" y="226">one module</text>
+    <path id="e-rfd-bp" class="e red dash" d="M660,236 V266"/>
+    <g class="k-input" id="n-fail"><rect class="s" x="370" y="16" width="160" height="46" rx="8"/><text class="tb mid" x="450" y="44">Gate failure</text></g>
+    <g class="k-input" id="n-q1"><polygon class="s" points="450,84 508,140 450,196 392,140"/><text class="ts mid" x="450" y="128" style="fill:var(--input-t)">requirements</text><text class="ts mid" x="450" y="142" style="fill:var(--input-t)">achievable on</text><text class="ts mid" x="450" y="156" style="fill:var(--input-t)">this COTS?</text></g>
+    <g class="k-amber" id="n-q2"><polygon class="s" points="312,172 362,232 312,292 262,232"/><text class="ts mid" x="312" y="227" style="fill:var(--amber-t)">where is</text><text class="ts mid" x="312" y="241" style="fill:var(--amber-t)">the fault?</text></g>
+    <g class="k-stage" id="n-s1"><rect class="s" x="70" y="270" width="160" height="62" rx="8"/><text class="tb mid" x="150" y="296">→ S1</text><text class="ts mid" x="150" y="316" style="fill:var(--stage-t)">design defect</text></g>
+    <g class="k-stage" id="n-s2"><rect class="s" x="380" y="270" width="160" height="62" rx="8"/><text class="tb mid" x="460" y="296">→ S2</text><text class="ts mid" x="460" y="316" style="fill:var(--stage-t)">module defect</text></g>
+    <g class="k-rfd" id="n-rfd"><rect class="s" x="580" y="190" width="160" height="46" rx="8"/><text class="tb mid" x="660" y="218">RFD</text></g>
+    <g class="k-input" id="n-bp"><rect class="s" x="580" y="270" width="160" height="62" rx="8"/><text class="tb mid" x="660" y="296">Build Package</text><text class="ts mid" x="660" y="316" style="fill:var(--input-t)">author · re-enter S0</text></g>
+    <text class="tl" x="770" y="214">V-SIL suspends</text>
+  </svg>
+  </div>
+  <div class="card" id="fb-card" aria-live="polite"></div>
+</figure>
+
+<h3>9.3 RFD-001 as a trade-off chart</h3>
+<p>The paper's RFD example: two measured FFT configurations against two requirements. The green box is where both <code>STK-007</code> (latency ≤ 100 ms) and <code>STK-012</code> (P<sub>d</sub> ≥ 0.95 @ 10 dB) hold. Neither measured point is inside it, which is exactly what makes this an RFD and not a defect. <b>Toggle an option</b> to see the relaxed region.</p>
+<div class="btns" id="rfd-btns">
+  <button type="button" data-opt="A" aria-pressed="false">A · relax latency to ≤ 150 ms</button>
+  <button type="button" data-opt="B" aria-pressed="false">B · relax P<sub>d</sub> to ≥ 0.92</button>
+  <button type="button" data-opt="C" aria-pressed="false">C · dual-mode</button>
+</div>
+<figure>
+  <div class="scroll">
+  <svg id="rfd" viewBox="0 0 900 360" role="img" aria-label="Latency versus probability of detection with requirement region and two measured points">
+    <rect id="reg-A" x="70" y="30" width="585" height="90" style="fill:var(--amber-f);stroke:var(--amber-s);stroke-dasharray:5 3;opacity:0"/>
+    <rect id="reg-B" x="70" y="30" width="390" height="144" style="fill:var(--amber-f);stroke:var(--amber-s);stroke-dasharray:5 3;opacity:0"/>
+    <rect x="70" y="30" width="390" height="90" style="fill:color-mix(in srgb,var(--gate-f) 80%,transparent);stroke:var(--gate-s);stroke-width:2"/>
+    <text class="ts" x="80" y="48" style="fill:var(--gate-t)">STK-007 ∧ STK-012 met</text>
+    <!-- axes -->
+    <path d="M70,300 H850 M70,30 V300" style="stroke:var(--line);stroke-width:1.2"/>
+    <g class="ts">
+      <text x="70" y="318" class="mid">0</text><text x="265" y="318" class="mid">50</text><text x="460" y="318" class="mid">100</text><text x="655" y="318" class="mid">150</text><text x="850" y="318" class="mid">200</text>
+      <text x="62" y="34" class="end">1.00</text><text x="62" y="124" class="end">0.95</text><text x="62" y="214" class="end">0.90</text><text x="62" y="304" class="end">0.85</text>
+    </g>
+    <path d="M460,30 V300 M70,120 H850" style="stroke:var(--gate-s);stroke-width:1;stroke-dasharray:3 3"/>
+    <text class="tl mid" x="460" y="340">latency (ms)</text>
+    <text class="tl" x="10" y="20">P_d @ 10 dB</text>
+    <!-- points: x = 70 + 3.9·ms, y = 30 + 1800·(1 − P_d) -->
+    <g id="pt-4096"><circle cx="623.8" cy="102" r="8" style="fill:var(--rfd-s)"/><text class="t" x="636" y="98">FFT 4096</text><text class="ts" x="636" y="114">142 ms · P_d 0.96</text></g>
+    <g id="pt-2048"><circle cx="346.9" cy="192" r="8" style="fill:var(--rfd-s)"/><text class="t" x="360" y="188">FFT 2048</text><text class="ts" x="360" y="204">71 ms · P_d 0.91</text></g>
+    <g id="modeC" style="opacity:0">
+      <path d="M346.9,192 C420,240 560,200 623.8,102" style="fill:none;stroke:var(--proc-s);stroke-width:2;stroke-dasharray:5 4"/>
+      <text class="ts" x="420" y="250" style="fill:var(--proc-s)">fast mode (2048) + deep mode (4096) side by side</text>
+    </g>
+  </svg>
+  </div>
+  <div class="card" id="rfd-card">Measured at G2.1 (VL-1): FFT 4096 meets STK-012 but violates STK-007; FFT 2048 meets STK-007 but violates STK-012. Recommendation in the paper: <b>C</b>.</div>
+</figure>
+
+<h3>9.4 Defect vs RFD</h3>
+<div class="compare">
+  <div class="card d"><h4>Defect</h4>Requirements achievable · implementation or design wrong · <b>fix inside V-SIL</b> (to S1 or S2).<br><span class="note">Self-diagnosis: a module that was <i>not</i> changed fails on re-test → undeclared dependency → design defect → S1.</span></div>
+  <div class="card r"><h4>RFD</h4>Requirements infeasible · the COTS platform cannot deliver both · <b>Build Package must change</b>. Contents: conflicting requirements, evidence with its VL, trade-off options, impact analysis, recommendation (ECSS [16], MIL-HDBK-61A [17], NASA NPR 7150.2 [18]).</div>
+</div>
+
+<!-- ======================================================================= -->
+<h2 id="terminal">10 · Terminal output: the Verified Prototype</h2>
+<p>The deliverable is not "it works" but a per-module evidence list, grouped by what kind of claim each level supports (P4). Cycle <code>pre_release_01</code>, RFDs issued: <b>0</b>.</p>
+<div class="evid">
+  <div class="ev v2"><span class="mono">iq_acquisition</span><span class="badge b2">VL-2 HIL</span><br><span class="note">HackRF One, FM 88–108 MHz</span><br><b style="color:var(--rfd-s)">VALIDATED</b> on real hardware</div>
+  <div class="ev v1"><span class="mono">fft_engine</span><span class="badge b1">VL-1 SIL</span><br><span class="note">GNU Radio mock, golden I/Q</span><br><b style="color:var(--amber-s)">VERIFIED</b> against synthetic data</div>
+  <div class="ev v1"><span class="mono">feature_extractor</span><span class="badge b1">VL-1 SIL</span><br><span class="note">synthetic PSD at known SNR</span><br><b style="color:var(--amber-s)">VERIFIED</b> against synthetic data</div>
+  <div class="ev v1"><span class="mono">audio_demod</span><span class="badge b1">VL-1 SIL</span><br><span class="note">synthetic FM-modulated I/Q</span><br><b style="color:var(--amber-s)">VERIFIED</b> against synthetic data</div>
+  <div class="ev v0"><span class="mono">classifier</span><span class="badge b0">VL-0 logic</span><br><span class="note">unit + sandwich integration</span><br><b style="color:var(--gate-s)">VERIFIED</b> at logic level only</div>
+  <div class="ev v0"><span class="mono">data_store</span><span class="badge b0">VL-0 logic</span><br><span class="note">unit + sandwich integration</span><br><b style="color:var(--gate-s)">VERIFIED</b> at logic level only</div>
+</div>
+<p class="note" style="margin-top:1rem">Source: <code>methodology/V-SIL-v3/V-SIL_v3.md</code> (3.0-draft, October 2026). References [n] refer to that paper's list.</p>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const SVGNS = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs = {}, text) => {
+    const n = document.createElementNS(SVGNS, tag);
+    for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+    if (text != null) n.textContent = text;
+    return n;
+  };
+  const activate = (node, fn) => {
+    node.addEventListener("click", fn);
+    node.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fn(); } });
+  };
+  const press = (group, btn) => $$("button", group).forEach(b => b.setAttribute("aria-pressed", String(b === btn)));
+
+  // ---- theme ----------------------------------------------------------
+  $("#theme").addEventListener("click", () => {
+    const root = document.documentElement;
+    const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    root.dataset.theme = dark ? "light" : "dark";
+  });
+
+  // ---- §2 overview ----------------------------------------------------
+  const INFO = {
+    BP: ["Build Package", "Input, owned outside V-SIL", "PRD with measurable constraints, COTS hardware envelope, acceptance criteria.", "—", "Its author", "→ S0. Receives RFDs and returns an updated Build Package."],
+    S0: ["S0 · Normalisation + GT", "Stage", "Build Package", "G0_StRS.md (§9.4: NRM-*, HWC-*, STK-*) and G0_SyRS.md (§9.5: SYS-*)", "Fills IEEE 29148 blueprints; makes no judgement on sufficiency or scope", "→ G0"],
+    G0: ["G0 · Structural validation", "Gate", "StRS + SyRS", "Exit code 0 or 1", "g0_validate.py (deterministic, stdlib-only, no AI), then human Gate H", "PASS + Gate H → S1 · FAIL → S0 (edit GT)"],
+    S1: ["S1 · Layered architecture design", "Stage", "G0-validated GT", "Base layer + modules, component DAG, interface contracts, verification profiles", "Design work (see §5)", "→ G1 · infeasible → RFD"],
+    G1: ["G1 · DAG + contract validation", "Gate", "The S1 design", "PASS / FAIL on five checks", "Not specified in v3", "PASS → S2 · FAIL → S1"],
+    S2: ["S2 · Module-by-module implementation", "Stage", "G1-validated design", "Base layer, stubs, modules in DAG order, sandwich integration tests", "Implementation work (see §7)", "→ G2"],
+    G2: ["G2 · Adaptive verification", "Gate", "Implemented modules + declared VL per module", "Per-module VL evidence", "Sub-gates G2.0 (always), G2.1 (VL-1+), G2.2 (VL-2)", "PASS → Verified Prototype · design defect → S1 · module defect → S2 · infeasible → RFD"],
+    T: ["Verified Prototype", "Terminal output", "G2 PASS", "Per-module evidence + honesty declaration (see §10)", "—", "Delivered"],
+    RFD: ["Request for Deviation", "External feedback", "Evidence that requirements are infeasible on the declared COTS platform", "Conflicting requirements, evidence with VL, trade-off options, impact analysis, recommendation", "Emitted from any stage; V-SIL suspends", "→ Build Package author → updated Build Package → S0"],
+  };
+  const ovCard = $("#ov-card");
+  const showNode = id => {
+    const [title, kind, input, output, decider, routes] = INFO[id];
+    $$("#ov [data-node]").forEach(n => n.classList.toggle("sel", n.dataset.node === id));
+    ovCard.innerHTML = `<h4>${title} <span class="tag">${kind}</span></h4><dl>
+      <dt>Consumes</dt><dd>${input}</dd><dt>Produces</dt><dd>${output}</dd>
+      <dt>Who decides</dt><dd>${decider}</dd><dt>Routes</dt><dd>${routes}</dd></dl>`;
+  };
+  $$("#ov [data-node]").forEach(n => activate(n, () => showNode(n.dataset.node)));
+  showNode("G2");
+  $("#ov-fb").addEventListener("click", e => {
+    const on = e.currentTarget.getAttribute("aria-pressed") !== "true";
+    e.currentTarget.setAttribute("aria-pressed", String(on));
+    $("#ov .fb").style.display = on ? "" : "none";
+  });
+
+  // ---- §4 G0 simulation ----------------------------------------------
+  $("#g0-sim").addEventListener("click", e => {
+    const fail = e.currentTarget.getAttribute("aria-pressed") !== "true";
+    e.currentTarget.setAttribute("aria-pressed", String(fail));
+    const ph = $('#g0 [data-ph="3"]');
+    ph.classList.toggle("k-gate", !fail); ph.classList.toggle("k-rfd", fail);
+    $(".ok", ph).textContent = fail ? "✗" : "✓";
+    $("#g0-pass").classList.toggle("dim", fail); $("#g0-passbox").classList.toggle("dim", fail);
+    $("#g0-fail").classList.toggle("dim", !fail); $("#g0-failbox").classList.toggle("dim", !fail);
+    $("#g0-card").textContent = fail
+      ? "A required field is missing in one SYS-* block, so the script exits 1. There is nothing to argue with (P3): the GT is edited in S0, checked against the original Build Package, and G0 runs again."
+      : "All four check families pass, so the script exits 0. Gate H, a human, now authorises the move to S1 (principle P1: authorisation, not evidence).";
+  });
+  $("#g0-fail").classList.add("dim"); $("#g0-failbox").classList.add("dim");
+
+  // ---- §5 module highlight across flowgraph, DAG and table -------------
+  const highlight = mod => $$("[data-mod]").forEach(n => n.classList.toggle("hl", n.dataset.mod === mod));
+  $$("#fg .zone-g, #profile tr[data-mod], #dag [data-mod], #layers [data-mod]").forEach(n => {
+    n.addEventListener("mouseenter", () => highlight(n.dataset.mod));
+    n.addEventListener("mouseleave", () => highlight(null));
+    n.addEventListener("click", () => highlight(n.dataset.mod));
+  });
+
+  const CONTRACTS = {
+    raw_iq: ["iq_acquisition → fft_engine, audio_demod", "complex64 (interleaved I/Q)", "v1", "normalised full scale (±1); 20 MS/s; centre 98 MHz", "≤ 5 ms buffer"],
+    psd_estimate: ["fft_engine → feature_extractor", "float32[4096]", "v1", "dBFS per bin; bin width 4.883 kHz; one frame per 2.048 ms (10 averaged FFTs)", "≤ 10 ms"],
+    channel_features: ["feature_extractor → classifier", "record[100] {f_c, power, snr}", "v1", "MHz, dBFS, dB; 200 kHz channels 88.1–107.9 MHz", "≤ 20 ms"],
+    occupancy_decision: ["classifier → data_store", "record[100] {f_c, occupied, timestamp}", "v1", "MHz, bool, ISO 8601 UTC", "≤ 50 ms"],
+  };
+  const cc = $("#contract-card");
+  $$("#dag [data-contract]").forEach(n => activate(n, () => {
+    const id = n.dataset.contract, [edge, type, schema, units, lat] = CONTRACTS[id];
+    $$("#dag [data-contract]").forEach(m => m.classList.toggle("sel", m.dataset.contract === id));
+    cc.innerHTML = `<h4 class="mono">${id}</h4><dl><dt>Edge</dt><dd>${edge}</dd><dt>Data type</dt><dd class="mono">${type}</dd>
+      <dt>Schema</dt><dd>${schema}</dd><dt>Units</dt><dd>${units}</dd><dt>Latency</dt><dd>${lat}</dd></dl>
+      <p class="note">Illustrative values; the paper requires these four fields on every edge but does not give them for the example.</p>`;
+  }));
+
+  // ---- §7 S2 stepper --------------------------------------------------
+  const MODS = [
+    ["iq_acquisition", "k-hal"], ["fft_engine", "k-dsp"], ["audio_demod", "k-out"],
+    ["feature_extractor", "k-dsp"], ["classifier", "k-dec"], ["data_store", "k-out"],
+  ];
+  const STEPS = [
+    "<b>Step 1 · base layer first.</b> Implement orchestration, the HAL interface and routing. Every module is a <b>stub</b> generated from its G1 contract (e.g. a <code>Vector Source</code> emitting a known PSD). Run unit tests on the base, then <b>top-down integration</b>: base + all stubs.",
+    ...MODS.map(([m], i) => `<b>Step 2.${i + 1} · <span class="mono">${m}</span>.</b> Implement it against its contract and <b>unit-test</b> it in isolation. Then a <b>driver</b> calls it through the base-layer interface (<b>bottom-up integration</b>) and the stub it replaces is removed.${i === 0 ? " DAG order starts at the source, so downstream stubs keep receiving realistic inputs." : ""}`),
+    "<b>Done · mandatory floor met.</b> Base layer: unit + top-down with stubs. Every module: unit + bottom-up with driver. This is VL-0 for the whole system, the floor G2.0 always checks.",
+  ];
+  let step = 0;
+  const slots = $("#s2-slots");
+  const drawS2 = () => {
+    slots.replaceChildren();
+    MODS.forEach(([m, kind], i) => {
+      const x = 30 + i * 142, state = step === 0 ? "stub" : i + 1 < step || step === STEPS.length - 1 ? "done" : i + 1 === step ? "active" : "stub";
+      const g = el("g", { class: state === "stub" ? "k-stub" : `${kind}${state === "active" ? " pulse" : ""}` });
+      g.append(el("rect", { class: "s", x, y: 104, width: 132, height: 58, rx: 8 }));
+      g.append(el("text", { class: "t mid mono", x: x + 66, y: 129, style: "font-size:11.5px" }, m));
+      g.append(el("text", { class: "ts mid", x: x + 66, y: 148 }, state === "stub" ? "stub" : state === "active" ? "unit ✓ · driver ✓" : "integrated"));
+      slots.append(g);
+      slots.append(el("path", { class: `e${state === "stub" ? " dash" : ""}`, d: `M${x + 66},162 V218` }));
+      if (state === "active") {
+        const d = el("g", { class: "k-proc" });
+        d.append(el("rect", { class: "s", x: x + 16, y: 24, width: 100, height: 40, rx: 6 }));
+        d.append(el("text", { class: "ts mid", x: x + 66, y: 48, style: "fill:var(--proc-t)" }, "driver"));
+        slots.append(d, el("path", { class: "e", d: `M${x + 66},64 V100` }));
+      }
+    });
+    const lbl = step === 0 ? "top-down integration: base + all stubs" : step === STEPS.length - 1 ? "sandwich integration complete" : "bottom-up integration: driver → module → base";
+    slots.append(el("text", { class: "tl", x: 30, y: 14 }, lbl));
+    $("#s2-card").innerHTML = STEPS[step];
+    $("#s2-count").textContent = `${step + 1} / ${STEPS.length}`;
+    $("#s2-prev").disabled = step === 0; $("#s2-next").disabled = step === STEPS.length - 1;
+  };
+  $("#s2-prev").addEventListener("click", () => { step = Math.max(0, step - 1); drawS2(); });
+  $("#s2-next").addEventListener("click", () => { step = Math.min(STEPS.length - 1, step + 1); drawS2(); });
+  drawS2();
+
+  // ---- §8 scenarios ----------------------------------------------------
+  const REQ = { iq_acquisition: 2, fft_engine: 1, feature_extractor: 1, classifier: 0, audio_demod: 1, data_store: 0 };
+  const ORDER = Object.keys(REQ);
+  const SCEN = {
+    "Fast iteration": [{}, "VL-0 for every module: unit + sandwich only. Fast, but nothing above logic level can be claimed."],
+    "DSP validation": [{ fft_engine: 1, feature_extractor: 1 }, "Mock/SIL for the DSP layer, unit level for the rest. G2.1 fires for the two DSP modules."],
+    "Pre-release": [Object.fromEntries(ORDER.map(m => [m, m === "iq_acquisition" ? 2 : 1])), "VL-1 everywhere and HIL for iq_acquisition: all three sub-gates fire. classifier and data_store go beyond their requirement, which is allowed."],
+    "Full release": [{ ...REQ }, "Every module exactly at its S1 required_vl: the release condition."],
+  };
+  const vlm = $("#vlm"), sb = $("#scen-btns");
+  const drawScen = name => {
+    const [over, text] = SCEN[name], decl = Object.fromEntries(ORDER.map(m => [m, over[m] ?? 0]));
+    vlm.innerHTML = `<div class="h">Module</div><div class="h">VL-0</div><div class="h">VL-1</div><div class="h">VL-2</div><div class="h">vs required</div>` +
+      ORDER.map(m => {
+        const cells = [0, 1, 2].map(l => `<div class="c${l <= decl[m] ? ` on${decl[m]}` : ""}${l === REQ[m] ? " req" : ""}" aria-label="VL-${l}${l <= decl[m] ? " declared" : ""}${l === REQ[m] ? ", required" : ""}"></div>`).join("");
+        const gap = decl[m] < REQ[m] ? `below required (VL-${REQ[m]}): not release-ready` : decl[m] > REQ[m] ? "above required" : "at required";
+        return `<div class="m">${m}</div>${cells}<div class="st">${gap}</div>`;
+      }).join("");
+    const max = Math.max(...Object.values(decl));
+    $$("#subgates [data-sg]").forEach(d => d.classList.toggle("on", Number(d.dataset.sg) <= max));
+    $("#scen-card").innerHTML = `<b>${name}.</b> ${text}`;
+  };
+  Object.keys(SCEN).forEach((name, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = name; b.setAttribute("aria-pressed", String(i === 0));
+    b.addEventListener("click", () => { press(sb, b); drawScen(name); });
+    sb.append(b);
+  });
+  drawScen("Fast iteration");
+
+  // ---- §9 feedback cases ----------------------------------------------
+  const PATHS = {
+    S1: ["e-f-q1", "e-q1-q2", "e-q2-s1", "n-q1", "n-q2", "n-s1"],
+    S2: ["e-f-q1", "e-q1-q2", "e-q2-s2", "n-q1", "n-q2", "n-s2"],
+    RFD: ["e-f-q1", "e-q1-rfd", "e-rfd-bp", "n-q1", "n-rfd", "n-bp"],
+  };
+  const CASES = [
+    ["FFT outputs wrong normalisation", "S2", "Module defect: the requirement is achievable; one module's code is wrong. Fix it in S2 and re-run its tests."],
+    ["Classifier logic error", "S2", "Module defect, fixed in S2."],
+    ["DAG has an undeclared dependency", "S1", "Design defect: the architecture is wrong, not the code. Back to S1, then G1 again."],
+    ["Interface contract incomplete", "S1", "Design defect, fixed in S1 (G1 check 4 should have caught it)."],
+    ["Unchanged module fails on re-test", "S1", "Self-diagnosis: something it depends on changed without a declared edge, so it is an undeclared dependency, i.e. a design defect → S1."],
+    ["S1: latency exceeds requirement on any partitioning", "RFD", "No design on this hardware can meet the requirement: RFD from S1."],
+    ["G2.0: two normative requirements conflict", "RFD", "Unit tests show the requirements contradict each other mathematically: RFD from G2.0."],
+    ["G2.1: P_d and P_fa cannot both meet thresholds", "RFD", "SIL metrics show the trade-off is impossible: RFD from G2.1 (see RFD-001 below)."],
+    ["G2.2: real noise floor exceeds budget", "RFD", "HIL shows the real hardware is worse than assumed: RFD from G2.2."],
+  ];
+  const fbb = $("#fb-btns"), fbCard = $("#fb-card");
+  const allIds = [...new Set(Object.values(PATHS).flat())];
+  const showCase = ([label, route, text]) => {
+    const on = new Set(PATHS[route]);
+    allIds.forEach(id => {
+      const n = document.getElementById(id);
+      if (id.startsWith("e-")) n.classList.toggle("lit", on.has(id)); else n.classList.toggle("lit-node", on.has(id));
+    });
+    ["n-s1", "n-s2", "n-rfd", "n-bp", "n-q2"].forEach(id => document.getElementById(id).classList.toggle("dim", !on.has(id)));
+    fbCard.innerHTML = `<b>${label}</b> → <b>${route === "RFD" ? "RFD (external)" : route + " (internal)"}</b><br>${text}`;
+  };
+  CASES.forEach((c, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = c[0]; b.setAttribute("aria-pressed", String(i === 0));
+    b.addEventListener("click", () => { press(fbb, b); showCase(c); });
+    fbb.append(b);
+  });
+  showCase(CASES[0]);
+
+  // ---- §9.3 RFD options ------------------------------------------------
+  const RFD_TEXT = {
+    A: "<b>Option A · latency ≤ 150 ms.</b> The region widens to 150 ms and FFT 4096 (142 ms, 0.96) falls inside: both met. Impact: needs a normative waiver from ITU-R SM.1880 §4.3.",
+    B: "<b>Option B · P<sub>d</sub> ≥ 0.92.</b> The region drops to 0.92. Note that neither measured point lands inside it: FFT 2048 gives 0.91 &lt; 0.92, and FFT 4096 still violates latency. As written, B needs a configuration that was not measured. Impact: screening-grade only, not compliance-grade.",
+    C: "<b>Option C · dual-mode.</b> Run fast (2048) and deep (4096) together: each requirement is met by one of the modes. Impact: a new module and a new interface contract, so S1 rework. This is the paper's recommendation.",
+  };
+  const rb = $("#rfd-btns");
+  $$("button", rb).forEach(b => b.addEventListener("click", () => {
+    const was = b.getAttribute("aria-pressed") === "true";
+    press(rb, was ? null : b);
+    const opt = was ? null : b.dataset.opt;
+    $("#reg-A").style.opacity = opt === "A" ? .9 : 0;
+    $("#reg-B").style.opacity = opt === "B" ? .9 : 0;
+    $("#modeC").style.opacity = opt === "C" ? 1 : 0;
+    $("#rfd-card").innerHTML = opt ? RFD_TEXT[opt]
+      : "Measured at G2.1 (VL-1): FFT 4096 meets STK-012 but violates STK-007; FFT 2048 meets STK-007 but violates STK-012. Recommendation in the paper: <b>C</b>.";
+  }));
+})();
+</script>
+</body>
+</html>
