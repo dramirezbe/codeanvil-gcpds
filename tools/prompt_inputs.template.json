@@ -1,0 +1,83 @@
+{
+  "$help": "Copy this file into tools/inputs/, fill it, then load it in the app sidebar. Every field is described in tools/README.md.",
+  "context": {
+    "title": "",
+    "domain": "",
+    "problem": "",
+    "idea": "",
+    "constraints": "",
+    "assumptions": "",
+    "prior": ""
+  },
+  "stages": {
+    "Decomposition": true,
+    "Novelty and prior-art check": true,
+    "Gap matrix": true,
+    "Matrix scoring": true,
+    "Failure-mode analysis": true,
+    "Recommendation": true
+  },
+  "scale": 5,
+  "dimensions": [
+    {
+      "name": "Technical feasibility",
+      "weight": 3.0,
+      "definition": "Can this be built with known methods, available parts, and the stated budget and schedule?",
+      "low": "Depends on unproven physics or technology.",
+      "mid": "Feasible with known methods, but significant risks remain unresolved.",
+      "high": "Proven methods, parts available, risks identified and bounded."
+    },
+    {
+      "name": "Novelty",
+      "weight": 2.0,
+      "definition": "How different is this from existing solutions? Judge only after the prior-art check.",
+      "low": "Already exists, or differs trivially.",
+      "mid": "Known combination with a meaningful twist.",
+      "high": "Clear, verified difference with a defensible advantage."
+    },
+    {
+      "name": "Impact",
+      "weight": 2.0,
+      "definition": "Size and importance of the problem solved, and for whom.",
+      "low": "Marginal benefit; few users affected.",
+      "mid": "Clear benefit for a defined group.",
+      "high": "Large, measurable benefit addressing a critical need."
+    },
+    {
+      "name": "Groundedness",
+      "weight": 2.0,
+      "definition": "Are the claims traceable to evidence, measurements, or named prior work?",
+      "low": "Claims are unsupported.",
+      "mid": "Some claims sourced; key assumptions untested.",
+      "high": "Core claims traced to specific sources or measurements."
+    },
+    {
+      "name": "Clarity",
+      "weight": 1.0,
+      "definition": "Is the idea specified precisely enough to build or test as written?",
+      "low": "Vague; cannot be built or tested as written.",
+      "mid": "Mostly specified; some interfaces undefined.",
+      "high": "Precise and testable, with defined interfaces and success criteria."
+    }
+  ],
+  "audit": {
+    "enabled": true,
+    "checks": [
+      "Structural: required sections are present and the template is followed.",
+      "Internal consistency: numbers in the text match tables and figures; claims do not contradict each other.",
+      "Cross-document: the spec aligns with the requirements, test plan and design-review notes.",
+      "Terminology: terms and acronyms are defined once and used uniformly.",
+      "Traceability: every requirement maps to a test; every design decision has a stated rationale."
+    ],
+    "documents": ""
+  },
+  "rules": {
+    "two_pass": true,
+    "evidence": true,
+    "disagree": "report both values and flag for human arbitration"
+  },
+  "output": {
+    "format": "Markdown",
+    "language": "English"
+  }
+}
