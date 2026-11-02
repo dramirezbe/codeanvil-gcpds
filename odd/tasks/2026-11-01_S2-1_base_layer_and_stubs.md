@@ -35,16 +35,30 @@ the LLM interprets results but never claims a pass without pasted evidence.
 1. **Implementation plan** — file tree for the project (e.g. `base/contracts.py`,
    `base/hal.py`, `base/router.py`, `base/orchestrator.py`, `stubs/…`, `tests/…`).
 2. **Contract types** — one typed definition per §3 contract (dataclass / numpy dtype /
-   GNU Radio port signature) incl. schema version and units in docstring-free names.
-3. **Base layer code** — orchestrator, HAL interface (abstract + real adapter skeleton
-   that is *not exercised* at VL-0), router.
+   GNU Radio port signature). Each type carries its `schema_version` as a constant, and
+   units are part of field names (e.g. `power_dbfs`, `freq_mhz`), so tests can assert them
+   without reading comments (m8).
+3. **Base layer code** — orchestrator, router, and the **HAL port** only: the abstract
+   hardware interface plus its deterministic stub (C8). The real device adapter is a module
+   written by S2-2, not here.
 4. **Stubs** — one per contract, generated literally from the stub recipe (seeded RNG,
    fixed vectors), each emitting the reference vectors of §3.
 5. **Unit tests (base)** and **top-down integration test** (orchestrator + router + HAL
    stub + module stubs: data flows end-to-end along every DAG edge, schema/units/rate checks).
 6. **Run instructions** — exact commands for the user (`python -m pytest -q tests/base`).
-7. **S2-1 evidence record** after the user pastes results:
-   `BASE LAYER — VL-0 evidence: unit N/N pass, top-down M/M pass, env: <pasted>`.
+7. **Test manifest** — the exact list of test names the skill wrote, emitted before the
+   run instructions (C4 compares the paste against it).
+8. **S2-1 evidence record** after the user pastes results — the first rows of the
+   `MODULE LEDGER` (C3) for `base`:
+   `| <cycle> | 0 | base | <g1_version> | N/N | — | M/M top-down | <command + env> | VALID |`.
+
+## Activation Contract (C1)
+
+**Load when:** a G1 RECORD with PASS is pasted with the S1 design and the user asks for S2,
+base layer, stubs, or the top-down integration test; or a new G1 RECORD voids base evidence (C9).
+**Do NOT load when:** no G1 PASS (→ S1-2); the user asks for a specific module (→ S2-2);
+the user asks for G2 (→ S2-3).
+**Context pack (C7):** S1 design §1–§3 + G1 RECORD + user environment.
 
 ## Prompt template (resumido)
 
@@ -55,15 +69,21 @@ Step 2  Contracts module (types). pause.
 Step 3  Base layer: HAL interface + orchestrator + router. pause.
 Step 4  Stubs (one per contract; deterministic). pause.
 Step 5  Tests: base unit tests + top-down integration test + run commands. pause.
-Step 6  EVIDENCE: "Run the commands and paste the full output."
-        - all green → evidence record → "Proceed to S2-2 with module #1 of the topological order."
-        - red → classify: code defect (fix here, re-run) | contract cannot be honoured
-          → design defect → S1-1 rework (via S1-2 FAIL path) | infeasible → SX-1.
+Step 6  EVIDENCE (C4): "Run exactly these commands and paste the full output."
+        - command + test names match the manifest, all green → ledger rows → "Proceed to
+          S2-2 with module #1 of the topological order (the device adapter, C8)."
+        - mismatch (missing/skipped/extra tests, other command) → NOT EVIDENCED → re-run.
+        - red → classify: code defect (fix here, re-run) | contract cannot be honoured →
+          `DESIGN DEFECT NOTE` (C3) → S1-1 | infeasible per C12 → `RFD SEED` → SX-1.
+Re-entry: when a new G1 RECORD changes a base-layer contract's schema_version, S2-1 is
+re-run for the changed contracts and the base rows become VOID until re-evidenced (C9).
 ```
 
 Rules:
 - Implement **only** what S1 declared; any needed new interface ⇒ stop, design defect → S1.
 - Stubs must be deterministic (fixed seed, fixed vectors) — VL-0 depends on it.
+- Expected values in every assertion are copied verbatim from the §3 reference vectors
+  (C5); the skill never computes its own "expected" numbers.
 - No module business logic in the base layer.
 - Never write "tests pass" without the user's pasted output (P2/P4).
 - Keep each code message under a size the chat can hold; split files across messages.
@@ -74,8 +94,11 @@ Rules:
    reference vectors.
 2. The top-down test exercises every DAG edge at least once with stubs.
 3. HAL is the only code that would touch hardware; at VL-0 it is replaced by its stub.
-4. The evidence record quotes the pasted run output (counts + environment).
-5. Failures are routed with the v3 defect classes (module/code → stay; design → S1; infeasible → SX-1).
+4. The evidence record quotes the pasted run output (command, counts, names, environment)
+   and matches the test manifest (C4).
+5. Failures are routed with the v3 defect classes (module/code → stay; design → S1 via
+   DESIGN DEFECT NOTE; infeasible → SX-1 via RFD SEED).
+6. The base layer contains no device-adapter code (C8).
 
 ## Dependencias
 

@@ -29,7 +29,18 @@ crystallisation"). Any judgement happens later at G0 (structural) and Gate H (hu
 | COTS hardware list with datasheet values | Build Package or user | yes (an HWC- block needs a source) |
 | Normative sources (standards + clauses) | Build Package or user | yes for NRM-/SYS- |
 | Previous G0 FAIL report (re-entry) | S0-2 output | optional |
-| Approved RFD outcome (re-entry after deviation) | SX-1 output + updated BP | optional |
+| Gate H return reasons (re-entry) | S0-2 `GATE H: RETURNED` block | optional — each reason must be answered by the BP author before re-normalising (m1) |
+| `GT GAP NOTE` (re-entry) | S1-1 / S2-3 (C3) | optional — the BP author supplies the missing value; S0-1 adds it and bumps the GT version |
+| Approved RFD outcome (re-entry after deviation) | SX-1 disposition + BP delta | optional |
+
+## Activation Contract (C1)
+
+**Load when:** the user pastes a Build Package (or BP delta, Gate H return, GT gap answer)
+and asks for normalisation, GT authoring, StRS/SyRS drafting, or "S0".
+**Do NOT load when:** the user already has a StRS + SyRS and wants them checked (→ S0-2);
+asks for design (→ S1-1); asks whether a requirement is achievable (→ Gate H / SX-1).
+**Context pack (C7):** Build Package + any re-entry note. Same chat as S0-2 is not allowed —
+S0-2 runs in a new chat (P2).
 
 ## Outputs
 
@@ -63,8 +74,16 @@ Step 5  Trace + handoff  BP→block table; "S0 COMPLETE — run S0-2".
 
 Behaviour rules for the prompt:
 - Verbatim preservation: BP numbers/units/standards are copied, never "improved".
-- No invention: a missing value is asked; if the user cannot supply it, emit the
-  explicit marker (`PRELIMINARY`, `PENDING`) and list it — never a plausible guess.
+- No silent invention (B2): StRS values (STK/HWC/NRM) come only from the BP or a user
+  answer. SyRS methods and parameters (e.g. FFT size, window, averaging, DC mitigation,
+  correction chains, uncertainty terms) may be **proposed** by the LLM because the SyRS
+  derives the system view, but each proposal is shown as
+  `PROPOSAL Pn: <field> = <value> — rationale — traces to <STK/HWC/NRM>` and enters the
+  document only after the user answers `accept | edit <value> | reject` (C2). Accepted
+  proposals are recorded in the trace as `user-confirmed derivation (Pn)`. A missing value
+  the user cannot supply stays as an explicit marker (`PRELIMINARY`, `PENDING`) and is listed.
+- Step 4 is split: 4a list all SyRS proposals as one numbered table → wait for decisions;
+  4b emit the SyRS with only accepted/edited values.
 - No scope judgement: S0 never says "this requirement is unrealistic" — that is Gate H / RFD.
 - Output in chunks (one document per message) to avoid truncation (v2 convention).
 
@@ -77,8 +96,8 @@ Behaviour rules for the prompt:
    Standard + Clause; HWC: Component/Parameter/Limit type/Value(s)/Source/Source ref/
    Impact/Status; SYS: Type/Parameter/Method/Traces to/concrete Standard/Acceptance).
 4. Every STK- is named by ≥ 1 SYS- `Traces to`; every `Traces to` token resolves.
-5. No field value is invented: each value is traceable to a BP line or to a user answer
-   in the conversation (normalisation trace proves it).
+5. Every field value traces to a BP line, a user answer, or a `user-confirmed derivation
+   (Pn)`; the normalisation trace lists which (no unlabelled value).
 6. The skill never emits a PASS/FAIL verdict on its own documents.
 
 ## Dependencias
@@ -92,5 +111,7 @@ Behaviour rules for the prompt:
 
 - v2 had no S0 skill (G0 assumed hand-authored GT). v3 adds S0 explicitly (paper §3).
 - Companion Documents rows point to the S1 design document instead of the v2 SRS.
-- Test vector: `test-inputs/build_package.md` → expected output equivalent to
-  `test-inputs/G0_StRS.md` + `test-inputs/G0_SyRS.md`.
+- Test vector: `test-inputs/build_package.md` → "equivalent" output means: passes S0-2,
+  has the same STK/HWC/NRM ID set as `test-inputs/G0_StRS.md`, and every SYS- traces to
+  existing StRS blocks. Design parameters such as N = 2048 or K = 16 match the reference
+  SyRS only if the tester accepts the same proposals.

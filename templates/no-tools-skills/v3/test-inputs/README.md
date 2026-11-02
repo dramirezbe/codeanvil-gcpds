@@ -15,7 +15,7 @@ HackRF One, in Python with GNU Radio 3.10 or libhackrf.
 |-------|------|-------------------|
 | S1 / G1 | DC spike at 98.0 MHz masks ±19.5 kHz (`SYS-PSD-002`) | Risk RSK in S1 §6, accepted limitation |
 | S1 / G2.2 | Driver default baseband filter (≈ 0.75·fs) cuts the band edges (`SYS-ACQ-001`) | Contract on the HAL; HIL check of edge level |
-| G2.2 | 20 MS/s is the USB 2.0 sustained ceiling (`HWC-BUS-001` PRELIMINARY) | If overflows exceed `STK-OPS-001`: classify defect vs infeasibility → possible `SX-1` RFD (options: two-half sweep, relax coverage, change host USB controller) |
+| G2.2 | 20 MS/s is the USB 2.0 sustained ceiling (`HWC-BUS-001` PRELIMINARY) | If overflows exceed `STK-OPS-001`, `SX-1` classifies first: a two-half sweep on the same HackRF is a design defect (→ S1) unless evidence shows it breaks the line rate in `STK-SPEC-002`; only then an RFD is raised (options: different host USB controller, relax line rate, relax coverage) |
 | G2.1 | dBFS normalisation (`SYS-PSD-001`: 0.1-amplitude tone → −20 ± 0.5 dBFS) | Golden-vector SIL test |
 
 ## Caveats

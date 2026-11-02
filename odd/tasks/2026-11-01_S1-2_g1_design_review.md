@@ -44,32 +44,61 @@ first (they override any judgement — P3), then design-judgement checks; emit
 - Mechanical-findings list (`[M-NNN]`) and judgement-findings list (`[J-NNN]`), each
   pointing to a section of the S1 document.
 - `G1 VERDICT: PASS | FAIL | RFD`.
-- FAIL → **Rework list**: section → concrete defect → what would make it pass, plus the
-  S1-1 jobs to re-run (e.g. "Job 5 contracts c_psd_frame; downstream Jobs 6–7").
-- RFD → **RFD seed**: conflicting requirement IDs + evidence + candidate options, to be
-  pasted into SX-1.
-- PASS → **G1 Record** (design doc version/date, reviewer, verdict) for S2-1.
+- FAIL → **Rework list** as one `DESIGN DEFECT NOTE` (C3): section → concrete defect →
+  what would make it pass, plus the S1-1 jobs to re-run (e.g. "Job 5 contracts
+  c_psd_frame; downstream Jobs 6–7").
+- RFD → `RFD SEED` (C3): conflicting requirement IDs + evidence (`ANALYSIS (no VL)`) +
+  candidate options, to be pasted into SX-1.
+- PASS → `G1 RECORD` (C3): design doc version/date, reviewer, verdict, contract list
+  `contract_id@schema_version`, module list `module@required_vl` — used by S2-x and for
+  evidence invalidation (C9).
+
+## Activation Contract (C1)
+
+**Load when:** an S1 design document is pasted with the SyRS/StRS and the user asks for G1,
+design review, or approval of S1.
+**Do NOT load when:** the design was produced in this conversation (C5 — refuse); the user
+wants the design written or fixed (→ S1-1); no G0 RECORD exists (→ S0-2).
+**Context pack (C7):** new chat; S1 design + SyRS + StRS §3 (blocks only). Disclaimer C6.
 
 ## Prompt template (resumido)
 
 ```
-Step 0  INDEPENDENCE CHECK
-        "G1 must be reviewed by someone other than the S1 author (P2).
+Step 0  INDEPENDENCE CHECK (C5, C2)
+        If the design appears earlier in this conversation as the assistant's own output
+        → refuse without asking.
+        Otherwise: "G1 must be reviewed by someone other than the S1 author (P2).
          Was S1_design.md produced in THIS conversation? [y/n]"
          y → refuse: "Open a new chat (or hand to a different reviewer) and load S1-2 there."
          n → record reviewer name/role and continue.
+         anything else → re-ask (a question about P2 is answered, then re-ask).
 Step 1  Inventory: list modules, contracts, DAG edges, DECs, RSKs parsed from the document.
 Step 2–6  Mechanical sections (G1.1, G1.2 presence, G1.3, G1.5) — FAIL here is final (P3).
 Step 5,7–9  Judgement sections (G1.2 sufficiency, G1.4, G1.6, G1.7, G1.8).
 Step 10 Verdict + rework list / RFD seed / G1 Record.
 ```
 
-Verdict rules:
-- Any mechanical failure ⇒ FAIL (cannot be argued away).
-- Any contract judged "insuficiente" for a deterministic stub ⇒ FAIL.
-- A risk whose evidence shows infeasibility under every partitioning on the declared
-  COTS ⇒ RFD (not FAIL — a redesign cannot fix it).
-- Otherwise PASS. Judgement observations that do not block are listed as advisories.
+Verdict rules (M7 — every row outcome is fixed in advance):
+
+| Row | Negative outcome | Effect |
+|-----|------------------|--------|
+| G1.1 DAG acyclic | cycle found | BLOCKING |
+| G1.2 contract exists / fields complete / stub recipe present | any "no" | BLOCKING |
+| G1.2 sufficiency question | implementer would need to ask the designer | BLOCKING |
+| G1.3 SYS without module · NRM without contract | any listed | BLOCKING |
+| G1.3 module without SYS (orphan) | any listed | ADVISORY (question it) |
+| G1.4 stub recipe "insuficiente" | any | BLOCKING |
+| G1.5 `hw_dependency: true` with VL ≠ VL-2 | any | BLOCKING |
+| G1.6 DEC context unclear / no real alternatives (< 2 genuine) / consequences hide downsides | DEC-001 | BLOCKING |
+| G1.6 same, other DECs | any | ADVISORY |
+| G1.7 rows 1–3 (topology vs inventory, PHY coverage, budgets vs PHY) | contradiction | BLOCKING |
+| G1.7 row 4 (HAL only HW contact point, C8) | module touches HW outside HAL | BLOCKING |
+| G1.8 evidence not credible / mitigation not viable | any | ADVISORY, unless the risk is MUST-priority → BLOCKING |
+| G1.8 "escalate to RFD" | infeasible per C12 | → verdict RFD |
+
+- Any BLOCKING row ⇒ FAIL (P3 — cannot be argued away), unless an RFD row applies to the same
+  requirement, in which case RFD.
+- No BLOCKING row and no RFD ⇒ PASS; ADVISORY rows listed.
 
 ## Criterios de aceptación
 
@@ -80,6 +109,10 @@ Verdict rules:
 4. The skill refuses to review a design produced in the same conversation.
 5. FAIL output names S1-1 jobs to re-run; RFD output names conflicting requirement IDs.
 6. The skill never fixes the design itself (reviewer, not author).
+7. The same design yields the same verdict class across runs: each row's effect is taken
+   from the BLOCKING/ADVISORY table, not decided ad hoc.
+8. Non-determinism disclaimer (C6) present; PASS emits a complete G1 RECORD.
+9. Test: fixture `F2_S1_design_defective.md` (T2b) → FAIL listing the 4 seeded defects.
 
 ## Dependencias
 

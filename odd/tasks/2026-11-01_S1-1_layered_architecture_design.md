@@ -32,11 +32,20 @@ G1 to answer "Are all implementation-critical design choices resolved?".
 | Input | Source | Required |
 |-------|--------|----------|
 | G0_StRS.md + G0_SyRS.md | S0-1 / user | yes |
-| G0 Record (verdict PASS + Gate H AUTHORISED) | S0-2 | yes — refuse without it (ask the user to confirm otherwise) |
-| Cycle identifier (e.g. `cycle_01`) | user | yes (asked at Job 0) |
+| `G0 RECORD` (verdict PASS + Gate H AUTHORISED + block inventory) | S0-2 | yes — without it S1-1 stops and sends the user to S0-2 (no "confirm otherwise" path, m5) |
+| Cycle identifier (e.g. `cycle_01`) | user | yes (asked at Job 0; carried in every record, C10) |
 | Preferred stack hints inside the GT (e.g. "GNU Radio or libhackrf") | GT | used as constraint, not decided here |
-| G1 FAIL report (rework) | S1-2 | optional → re-run named jobs + downstream |
-| Design-defect routing from G2 | S2-3 | optional → same rework procedure |
+| G1 FAIL rework list | S1-2 | optional → re-run named jobs + downstream |
+| `DESIGN DEFECT NOTE` (C3) | S1-2, S2-1, S2-2, S2-3 | optional → the note names the S1 sections; S1-1 maps them to jobs (§0→Job 1, DEC-001→Job 2, §1→Job 3, §2→Job 4, §3→Job 5, §4→Job 6, §5/§6→Job 7) and re-runs those + downstream |
+
+## Activation Contract (C1)
+
+**Load when:** G0 RECORD with PASS + Gate H AUTHORISED is pasted with the GT, and the user
+asks for S1, architecture, layered design, or rework of an S1 design.
+**Do NOT load when:** no G0 RECORD (→ S0-2); the user wants the design reviewed (→ S1-2 in a
+new chat); the user wants code (→ S2-1).
+**Context pack (C7):** StRS + SyRS + G0 RECORD (+ previous S1 design and the rework note on
+rework).
 
 ## Outputs
 
@@ -64,8 +73,11 @@ One Markdown document `S1_design.md` (user copies it from the chat) with section
 ## Prompt template (resumido)
 
 ```
-Job 0  GT LOCK      Present: StRS id/version, SyRS id/version, G0 verdict, Gate H.
-                    "Do you confirm this GT as the locked S1 design basis? [y/N/x]" + cycle id.
+Job 0  G0 RECORD CHECK (verify, do not re-authorise — Gate H already did, m5)
+                    Compare pasted GT vs G0 RECORD: doc IDs/versions equal, block inventory
+                    equal (same IDs, same Status). Mismatch → stop: "GT differs from the
+                    G0-passed GT: <diff>. Re-run S0-2." Match → ask cycle id, then
+                    "Start S1 design on this GT? [y/N/x]" (C2; y = start, N = wait, x = abort).
 Job 1  COTS envelope    §0 → pause "continue?"
 Job 2  Partitioning     ASRs → condition groups → ≥3 candidates (no strawmen; HWC HARD
                         violation = disqualify + replace) → QA matrix 0–5, weights MUST3/
@@ -82,7 +94,13 @@ Job 7  Decisions+Risks  §5 DEC-002.., §6 RSK, self-check, assembled-document i
 
 Rules carried from v2: one job per message, wait for "continue"; justify every choice in
 writing; stay inside the HWC envelope; do not implement (no source code beyond an
-interface signature); do not invent requirements — gaps go to a Gap List.
+interface signature); do not invent requirements — a gap is emitted as a `GT GAP NOTE`
+(C3) routed to the BP author → S0-1; design continues only for unaffected requirements.
+HAL rule (C8): Job 3 declares the base-layer **HAL port** (interface + stub) and one
+**device-adapter module** per COTS device the software drives (layer `HAL`,
+`hw_dependency: true`, `required_vl: VL-2`), first in the Job 4 topological order.
+Rework: every rework increments the S1 design version; Job 7 lists which contracts changed
+`schema_version` so S1-2's new G1 RECORD can void affected evidence (C9).
 New v3 rules: modules only talk through base-layer interfaces; every contract must be
 stub-able without asking the designer; `hw_dependency: true ⇒ required_vl: VL-2`;
 an "under any partitioning on this COTS" infeasibility is an **RFD candidate**, not a
@@ -98,17 +116,22 @@ design defect → recommend SX-1 and stop design for the affected requirements.
    reference vectors (nominal + edge).
 4. Every SYS- traces to ≥ 1 module; every module traces to ≥ 1 SYS- (else flagged orphan).
 5. Every module with `hw_dependency: true` has `required_vl: VL-2`; every VL choice justified.
-6. Exactly one HAL; no module touches HW except via HAL.
+6. Exactly one HAL port in the base layer; each driven COTS device has exactly one
+   device-adapter module (layer HAL, VL-2); no other module touches HW (C8).
 7. DEC-001 cites ≥ 3 real alternatives and the weighted QA scores.
 8. The skill never declares G1 PASS (P2) — it hands off to S1-2 in a fresh context.
 9. Test: from the FM test GT it yields a design with e.g. `hackrf_source (HAL, VL-2)`,
    `psd_engine (DSP, VL-1)`, `waterfall_buffer`, `waterfall_view`, `gain_control` …
    (exact names are the agent's choice; the checks above are what count).
+10. Job 0 refuses to start when the pasted GT's block inventory differs from the G0 RECORD.
+11. Every contract carries a `schema_version`; rework output lists changed contracts.
+12. A requirement the GT cannot support yields a GT GAP NOTE, never an invented value.
 
 ## Dependencias
 
-- Upstream: S0-2 (PASS + Gate H). Rework entries: S1-2 FAIL, S2-3 design-defect routing.
-- Downstream: S1-2. Possible exit: SX-1.
+- Upstream: S0-2 (PASS + Gate H). Rework entries: S1-2 FAIL, DESIGN DEFECT NOTE from
+  S2-1 / S2-2 / S2-3.
+- Downstream: S1-2. Possible exits: SX-1 (infeasible, C12), S0-1 via GT GAP NOTE.
 
 ## Design notes
 

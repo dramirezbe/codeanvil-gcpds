@@ -36,10 +36,25 @@ before S1 may start.
 4. FAIL → Fix List (Block ID → what is wrong → valid values) + routing line
    `→ S0 (S0-1): correct the GT against the original Build Package`.
 5. PASS → **Gate H prompt** (exact text) and its recorded outcome:
-   `GATE H: AUTHORISED` (→ S1-1) / `GATE H: RETURNED` (→ S0-1 with reasons) /
+   `GATE H: AUTHORISED` (→ S1-1) / `GATE H: RETURNED` (→ S0-1) /
    `GATE H: RFD` (→ SX-1 when the human already sees infeasibility).
-6. On authorisation: a **G0 Record** block (doc IDs, versions, date, who authorised)
-   to be pasted into S1-1 as the "G0 aprobado / Gate H aprobado" meta rows.
+   RETURNED asks the human for numbered reasons, each tagged with block ID(s) and
+   `needs BP author answer: yes|no`; the block is pasted into S0-1 (m1).
+   RFD emits an `RFD SEED` with evidence `ANALYSIS (no VL)` (C3).
+6. On authorisation: the **`G0 RECORD`** block (C3): doc IDs + versions, G0 verdict,
+   Gate H outcome/date/authoriser, and the **block inventory** (every NRM/HWC/STK/SYS ID
+   with its Status). S1-1 compares the GT pasted later against this inventory (m6),
+   since chat cannot hash files.
+
+## Activation Contract (C1)
+
+**Load when:** the user pastes a StRS + SyRS pair and asks for G0, structural validation,
+or GT review.
+**Do NOT load when:** the user asks to write/fix the GT (→ S0-1), asks about requirement
+quality or metrology (later gates), or pastes only one document (ask for the other; refuse a
+partial G0 — v2 rule).
+**Context pack (C7):** StRS + SyRS only, new chat (the author of the GT must not be its
+checker — P2). Disclaimer C6 included.
 
 ## Prompt template (resumido)
 
@@ -69,9 +84,12 @@ prompt re-presented; "go ahead"/"continue" is not `y`; ambiguous input → re-as
 2. Non-determinism disclaimer present (v2 convention).
 3. Verdict rules: zero errors → PASS; any error → FAIL; UNDETECTABLE → FAIL and stop.
 4. The skill never edits the GT and never suggests rewording (v2 rule kept).
-5. Gate H is shown only after PASS and needs an explicit `y`.
-6. Test: `test-inputs/G0_StRS.md` + `G0_SyRS.md` → `G0 GATE VERDICT: PASS`
+5. Gate H is shown only after PASS and needs an explicit `y` (closed domain, C2).
+6. The G0 RECORD inventory lists exactly the block IDs found in Phase 3, with Status.
+7. Test: `test-inputs/G0_StRS.md` + `G0_SyRS.md` → `G0 GATE VERDICT: PASS`
    (expected 0 errors; warnings allowed).
+8. Test: fixture `F1_G0_fail_StRS.md` (T2b) + the valid SyRS → `G0 GATE VERDICT: FAIL`
+   with a Fix List naming each of the 5 seeded errors, and no Gate H prompt.
 
 ## Dependencias
 
