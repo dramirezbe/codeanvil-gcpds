@@ -26,7 +26,7 @@ before S1 may start.
 |-------|--------|----------|
 | `G0_StRS.md` | S0-1 or user | yes |
 | `G0_SyRS.md` | S0-1 or user | yes (G0 is the pair — refuse partial run) |
-| Original Build Package | S0-1 / user | optional (only used on FAIL to hint the route) |
+| Original Build Package | S0-1 / user | optional — not used by the checks (G0 is structural only) |
 
 ## Outputs
 
@@ -36,11 +36,10 @@ before S1 may start.
 4. FAIL → Fix List (Block ID → what is wrong → valid values) + routing line
    `→ S0 (S0-1): correct the GT against the original Build Package`.
 5. PASS → **Gate H prompt** (exact text) and its recorded outcome:
-   `GATE H: AUTHORISED` (→ S1-1) / `GATE H: RETURNED` (→ S0-1) /
-   `GATE H: RFD` (→ SX-1 when the human already sees infeasibility).
-   RETURNED asks the human for numbered reasons, each tagged with block ID(s) and
-   `needs BP author answer: yes|no`; the block is pasted into S0-1 (m1).
-   RFD emits an `RFD SEED` with evidence `ANALYSIS (no VL)` (C3).
+   `GATE H: AUTHORISED` (paper §2 "G0 PASS + Gate H → S1" → S1-1) /
+   `GATE H: NOT AUTHORISED` (no S1 entry; the only back-edge from G0 is to S0, paper §4).
+   NOT AUTHORISED asks the human for numbered reasons, each tagged with block ID(s); the
+   block is pasted into S0-1 together with the Build Package.
 6. On authorisation: the **`G0 RECORD`** block (C3): doc IDs + versions, G0 verdict,
    Gate H outcome/date/authoriser, and the **block inventory** (every NRM/HWC/STK/SYS ID
    with its Status). S1-1 compares the GT pasted later against this inventory (m6),
@@ -69,9 +68,8 @@ Step 7  Gate H (only on PASS):
         GATE H — HUMAN AUTHORISATION
         Are the requirements complete, bounded, and verifiable?
           y — Authorise. GT is frozen as the S1 design basis.
-          N — Return to S0 with reasons. (default)
-          r — Raise a Request for Deviation now (known infeasibility).
-        [y/N/r]:
+          N — Not authorised; return to S0 with reasons. (default)
+        [y/N]:
 ```
 
 Gate H answer handling mirrors v2's GT approval prompt: questions are answered and the
@@ -94,7 +92,8 @@ prompt re-presented; "go ahead"/"continue" is not `y`; ambiguous input → re-as
 ## Dependencias
 
 - Upstream: S0-1 (or hand-authored GT).
-- Downstream: S1-1 (needs PASS + Gate H AUTHORISED + G0 Record); S0-1 on FAIL; SX-1 on `r`.
+- Downstream: S1-1 (needs PASS + Gate H AUTHORISED + G0 RECORD); S0-1 on FAIL or Gate H
+  NOT AUTHORISED.
 
 ## Design notes
 

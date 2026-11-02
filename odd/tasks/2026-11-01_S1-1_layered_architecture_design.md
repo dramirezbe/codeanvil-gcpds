@@ -94,8 +94,10 @@ Job 7  Decisions+Risks  §5 DEC-002.., §6 RSK, self-check, assembled-document i
 
 Rules carried from v2: one job per message, wait for "continue"; justify every choice in
 writing; stay inside the HWC envelope; do not implement (no source code beyond an
-interface signature); do not invent requirements — a gap is emitted as a `GT GAP NOTE`
-(C3) routed to the BP author → S0-1; design continues only for unaffected requirements.
+interface signature); do not invent requirements — a requirement the GT does not bound
+well enough to design or test is recorded in §6 as an `RSK-NNN` with "¿RFD potencial?"
+answered (S1_G1_template §6), and G1.8 decides whether it escalates to RFD (paper §9.2:
+an RFD can be emitted from S1). No other route.
 HAL rule (C8): Job 3 declares the base-layer **HAL port** (interface + stub) and one
 **device-adapter module** per COTS device the software drives (layer `HAL`,
 `hw_dependency: true`, `required_vl: VL-2`), first in the Job 4 topological order.
@@ -125,17 +127,17 @@ design defect → recommend SX-1 and stop design for the affected requirements.
    (exact names are the agent's choice; the checks above are what count).
 10. Job 0 refuses to start when the pasted GT's block inventory differs from the G0 RECORD.
 11. Every contract carries a `schema_version`; rework output lists changed contracts.
-12. A requirement the GT cannot support yields a GT GAP NOTE, never an invented value.
+12. A requirement the GT does not bound yields an RSK row in §6, never an invented value.
 
 ## Dependencias
 
 - Upstream: S0-2 (PASS + Gate H). Rework entries: S1-2 FAIL, DESIGN DEFECT NOTE from
   S2-1 / S2-2 / S2-3.
-- Downstream: S1-2. Possible exits: SX-1 (infeasible, C12), S0-1 via GT GAP NOTE.
+- Downstream: S1-2. Possible exit: SX-1 (infeasible on the declared COTS, paper §9.2 / C12).
 
 ## Design notes
 
 - v2 G1 jobs 1–5 compressed into Job 2 + Annex A; v2 SRS authoring (Jobs 6–7) removed —
   V-SIL v3 S1 output is the layered design, not an SRS.
 - Rework procedure kept from v2 (rework named job + every downstream job; GT stays locked;
-  a GT change ⇒ back to S0 or RFD, never silently).
+  a needed GT change ⇒ RFD, the paper's only route from S1 back to the Build Package, §9.2).

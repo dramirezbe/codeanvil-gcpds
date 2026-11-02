@@ -89,12 +89,13 @@ Verdict rules (M7 — every row outcome is fixed in advance):
 | G1.3 module without SYS (orphan) | any listed | ADVISORY (question it) |
 | G1.4 stub recipe "insuficiente" | any | BLOCKING |
 | G1.5 `hw_dependency: true` with VL ≠ VL-2 | any | BLOCKING |
-| G1.6 DEC context unclear / no real alternatives (< 2 genuine) / consequences hide downsides | DEC-001 | BLOCKING |
-| G1.6 same, other DECs | any | ADVISORY |
-| G1.7 rows 1–3 (topology vs inventory, PHY coverage, budgets vs PHY) | contradiction | BLOCKING |
-| G1.7 row 4 (HAL only HW contact point, C8) | module touches HW outside HAL | BLOCKING |
-| G1.8 evidence not credible / mitigation not viable | any | ADVISORY, unless the risk is MUST-priority → BLOCKING |
-| G1.8 "escalate to RFD" | infeasible per C12 | → verdict RFD |
+| G1.6 / G1.7 rows 1–3 / G1.8 (template judgement rows) | the reviewer names an implementation-critical design choice that is left unresolved | BLOCKING — paper §6 G1 question "Are all implementation-critical design choices resolved?" |
+| same rows | observation that leaves no implementation-critical choice open | ADVISORY |
+| G1.7 row 4 (HAL only HW contact point, C8) | module touches HW outside HAL | BLOCKING — paper §5.1 "communicating only through the base layer's declared interfaces" |
+| G1.8 "escalate to RFD" | infeasible on the declared COTS (paper §9.2, C12) | → verdict RFD (template "RFD → RFD formal") |
+
+Grounding of the other rows: G1.1–G1.5 BLOCKING = paper §6 rules 1–5; G1.3 orphan module
+ADVISORY = template "Un módulo sin SYS-* = código huérfano (cuestionar)".
 
 - Any BLOCKING row ⇒ FAIL (P3 — cannot be argued away), unless an RFD row applies to the same
   requirement, in which case RFD.

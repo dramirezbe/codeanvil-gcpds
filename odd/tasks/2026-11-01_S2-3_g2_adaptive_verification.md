@@ -12,7 +12,7 @@ Run the **G2 adaptive verification gate** for one cycle, as an **independent ver
 a fresh full-suite run) and honesty (no claim above what was tested); it designs the G2.1
 Mock/SIL system tests and the G2.2 HIL acceptance procedure for the declared modules,
 evaluates pasted evidence against thresholds from the SyRS/contracts, routes failures
-(module → S2-2 REWORK, design → S1-1, GT gap → S0-1, infeasible → SX-1), and on PASS emits
+(module → S2-2 REWORK, design → S1-1, infeasible → SX-1 — paper §2/§9), and on PASS emits
 the **Verified Prototype** report with its honesty declaration.
 
 ## Mapeo V-SIL-v3
@@ -64,7 +64,7 @@ MODULE LEDGER + G1 RECORD. Disclaimer C6.
    typed by the user from instruments or screens are labelled `USER-ATTESTED` (C4).
 6. **G2 VERIFICATION REPORT** — per sub-gate PASS/FAIL, per module achieved VL, findings.
 7. **Routing** on failure: `MODULE DEFECT → S2-2 REWORK <module>` (with evidence),
-   `DESIGN DEFECT NOTE → S1-1`, `GT GAP NOTE → S0-1`, `RFD SEED → SX-1`.
+   `DESIGN DEFECT NOTE → S1-1`, `RFD SEED → SX-1`.
 8. **Verified Prototype** report on PASS (paper §10 format): cycle, per-module achieved VL
    with environment, honesty declaration, RFDs issued, and modules below their
    `required_vl` ("not yet at release level").
@@ -90,12 +90,13 @@ Step 5  Honesty audit: achieved VL = highest level with matching passing evidenc
 Step 6  Verdict + routing, or Verified Prototype report.
 ```
 
-Threshold rule (M6):
-- Threshold present in the SyRS but missing or different in the S1 contract → DESIGN
-  DEFECT NOTE → S1-1.
-- Threshold absent from the SyRS altogether → GT GAP NOTE → S0-1 (BP author must supply it);
-  the module is reported at the highest VL whose thresholds exist.
-- Metrics that cannot all be met under any tested parameter → apply C12 → DEFECT or RFD SEED.
+Threshold rule (paper routes only):
+- A G2.1/G2.2 threshold the S1 design does not carry (missing or different from the SyRS, or
+  not bounded by the GT) → design defect → S1 ("interface contract incomplete", §9.1);
+  S1-1 records any GT-side cause as an RSK in §6 and G1.8 decides RFD escalation.
+  Until then the module is reported at the highest VL whose thresholds exist (Honesty, §8.2).
+- Metrics that cannot all be met → classify per C12 (paper §9): defect → S1/S2, or
+  infeasible on the declared COTS → RFD SEED → SX-1.
 
 Rules: the LLM never simulates a measurement (C4); VL-1 and VL-0 results are "VERIFIED", VL-2
 results "VALIDATED" (P4).
@@ -108,12 +109,14 @@ results "VALIDATED" (P4).
 3. Sub-gates fire exactly per §8.3; every threshold cites its SyRS block or contract.
 4. Final report distinguishes VERIFIED (VL-0/VL-1) from VALIDATED (VL-2) and labels
    USER-ATTESTED evidence.
-5. Failures routed with the four outcomes (S2-2 REWORK, S1-1, S0-1, SX-1), each with its record.
+5. Failures routed with the paper's three outcomes (module → S2-2 REWORK, design → S1-1,
+   infeasible → SX-1), each with its record.
 6. PASS is possible with declared < required VL (adaptive), but the report lists the gap.
 7. Test: fixture `F3_pastes.md` (T2b) — soak log with 7 overflows in 30 min (> 3 allowed by
-   `STK-OPS-001`) → C12 classification → RFD SEED to SX-1; SIL metric table → G2.1 verdict.
+   `STK-OPS-001`) at 20 MS/s plus a 16 MS/s run that meets it but covers only 90–106 MHz
+   (`STK-SPEC-001`) → not met simultaneously → RFD SEED to SX-1; SIL metric table → G2.1 verdict.
 
 ## Dependencias
 
 - Upstream: S2-2 (INTEGRATION done), S1-1 profiles, S1-2 G1 RECORD.
-- Downstream: terminal (Verified Prototype) or S2-2 REWORK / S1-1 / S0-1 / SX-1.
+- Downstream: terminal (Verified Prototype) or S2-2 REWORK / S1-1 / SX-1.
