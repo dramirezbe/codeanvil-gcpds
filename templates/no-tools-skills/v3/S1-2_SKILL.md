@@ -56,7 +56,8 @@ from the design chat.
 
 ## Preconditions
 
-- Inputs are pasted as text (no tools, no files, no links).
+- Inputs are pasted or attached (e.g. `S1_design.md`, `G0_SyRS.md`, `G0_StRS.md`); no tools,
+  no paths, no links.
 - The S1 design document is complete (all sections present, or the user knowingly submits a
   partial one — missing sections are then findings).
 - This conversation did not author the design (Step 0).
@@ -76,6 +77,24 @@ from the design chat.
 **Prompt discipline.** Step 0 is the only choice prompt: `[y/n]`, no default — an empty or
 ambiguous answer re-asks; a question about P2 is answered and the prompt shown again. Pauses
 between steps are `[c/r]`; "continue" counts as `c` there.
+
+---
+
+## Output files
+
+Reports and records are delivered as **files**, not as in-chat text. In Claude, create each one
+as a separate downloadable file (artifact) with exactly this name and its complete content; if
+the interface cannot create files, emit one fenced block per file, headed by its file name.
+
+| File | Content | When |
+|------|---------|------|
+| `G1_report.md` | Inventory (Step 1), the tables of Steps 2–9, the verdict table and the `G1 REVIEW REPORT` | always |
+| `G1_RECORD.md` | The `G1 RECORD` block | PASS |
+| `DESIGN_DEFECT_NOTE.md` | The `DESIGN DEFECT NOTE` block | FAIL |
+| `RFD_SEED.md` | The `RFD SEED` block | RFD |
+
+The chat shows only the independence prompt, short status lines, the verdict line and the list
+of delivered files.
 
 ---
 
@@ -294,7 +313,9 @@ Advisories: <list, or none>
 
 ## Ground rules
 
-- **Chat-only.** No tools, no file reads, no code execution.
+- **Chat-only.** No tools, no code execution; inputs are pasted or attached.
+- **Files out.** `G1_report.md` always, plus `G1_RECORD.md`, `DESIGN_DEFECT_NOTE.md` or
+  `RFD_SEED.md` by verdict.
 - **Independent.** Never review a design produced in this conversation (P2).
 - **Show the mechanics.** Kahn trace and coverage sets are written out, never asserted.
 - **P3.** A BLOCKING row cannot be outvoted by a judgement that "it looks fine".

@@ -66,7 +66,8 @@ during Step 2.
 
 ## Preconditions
 
-- Pasted text only; you cannot run anything.
+- Inputs pasted or attached (e.g. `S1_design.md`, `G1_RECORD.md`, `MODULE_LEDGER.md`,
+  `G0_SyRS.md`); you cannot run anything.
 - Ledger rows all `VALID` and built on the G1 RECORD's design version.
 - Thresholds for G2.1 / G2.2 exist in the S1 contracts or the SyRS acceptance criteria.
 
@@ -89,6 +90,26 @@ during Step 2.
 **Prompt discipline.** Step 0 `[y/n]` (no default). Step 1 per-module answers `VL-0|VL-1|VL-2`
 or a scenario `fast|dsp|pre|full`. Pauses `[c/r]`. A question is answered, then the prompt is
 shown again; anything outside the domain re-asks.
+
+---
+
+## Output files
+
+Code, procedures, reports and records are delivered as **files**, not as in-chat text. In
+Claude, create each one as a separate downloadable file (artifact) with exactly this name
+(project-relative path for code); if the interface cannot create files, emit one fenced block
+per file, headed by its name.
+
+| File | Content | When |
+|------|---------|------|
+| `tests/sil/test_<module>_sil.py` (+ `tests/sil/signals.py` for synthetic inputs) | G2.1 Mock/SIL system test code — complete, runnable | Step 3 |
+| `G2.2_HIL_<module>.md` | HIL procedure + measurement sheet for the user to fill | Step 4 |
+| `G2_report.md` | VL declaration table, G2.0/G2.1/G2.2 results, honesty audit, `G2 VERIFICATION REPORT` | Step 6 |
+| `Verified_Prototype.md` | The Verified Prototype report (paper §10) | PASS |
+| `DESIGN_DEFECT_NOTE.md` / `RFD_SEED.md` | Routing records | FAIL, when they apply |
+
+The chat shows the prompts, the G2.0 manifest with the run command, short status lines and the
+list of delivered files.
 
 ---
 
@@ -272,6 +293,8 @@ Verified Prototype — V-SIL v3
 
 ## Ground rules
 
+- **Files out.** SIL test code as complete `.py` files; HIL procedures, `G2_report.md`,
+  `Verified_Prototype.md` and routing records as `.md` files.
 - **Independent.** Never verify code written in this conversation (P2).
 - **Floor.** Every module reaches VL-0 in this cycle through one fresh full-suite run.
 - **Honesty.** achieved_vl is what the evidence shows; nothing higher (P4).

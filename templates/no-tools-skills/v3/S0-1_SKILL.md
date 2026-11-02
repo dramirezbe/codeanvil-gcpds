@@ -69,11 +69,11 @@ its checker (P2, oracle ≠ generator).
 
 ## Preconditions
 
-- The Build Package is **pasted as text in this chat**. This variant has no tools: it cannot
-  open a file, a path, a URL, a repository or an attachment. If the user offers one, ask for
-  the text to be pasted instead.
-- The user has confirmed that the paste is complete (Step 0, answer `s`). A partial paste is
-  never normalised: a missing section would silently become a placeholder.
+- The Build Package is **pasted or attached in this chat** (an attached `.md`/`.txt` file is
+  part of the conversation). This variant has no tools: it cannot open a path, a URL or a
+  repository. If the user offers one, ask for the text or the file to be attached instead.
+- The paste is complete. A paste that visibly stops mid-table or mid-sentence is never
+  normalised: a missing section would silently become a placeholder.
 - On re-entry, **both** the report/reasons **and** the Build Package are present.
 - The user wants normalisation, not a verdict. If they ask for approval, they are in the wrong
   skill (Gate H belongs to S0-2).
@@ -84,7 +84,7 @@ its checker (P2, oracle ≠ generator).
 | Situation | Action |
 |-----------|--------|
 | No Build Package pasted | Ask for it (Step 0). Do not begin the inventory. |
-| BP arrives in several messages, or looks truncated | Wait and ask for the remainder. Begin only after an explicit `s`. |
+| BP visibly truncated (stops mid-table or mid-sentence) | Ask once for the remainder; start when it arrives. |
 | A BP statement fits exactly one class (Step 1 rules) | Assign that class. No question to the user. |
 | A BP statement could fit two classes | Apply the precedence rule in Step 1 (normative source → `NRM`, then hardware limit → `HWC`, then need → `STK`, then technical specification → `SYS`). |
 | A BP statement fits no class | Class `not mapped`; target = the section or metadata field that receives it, else `—`. |
@@ -98,44 +98,45 @@ its checker (P2, oracle ≠ generator).
 | A G0 FAIL report or Gate H reasons are pasted | Enter **Step R** (re-entry). |
 | The BP is an update after an accepted RFD | Fresh Step 0. The updated BP is the only source; earlier block IDs it no longer supports simply disappear from the inventory. |
 
-**Prompt discipline.** Every prompt shows its closed answer domain and its default. A question
-about a prompt is answered from this skill, then the same prompt is shown again. An answer
-outside the domain, or an empty answer, re-asks the same prompt. At a **step pause** the domain
-is forward/stay, so the word "continue" is accepted as `c`; at every choice prompt in this skill
-set, "go ahead" / "continue" is **not** an answer.
+**One pass, no pauses.** S0 asks nothing and waits for nothing between steps: once the Build
+Package is in the chat, Steps 1–5 run in a single pass and end with the output files and the
+`S0 COMPLETE` block. The only question S0 may ask is the one-time request for a truncated
+remainder (Decision Gates). A user question during the run is answered after the files.
+
+## Output files
+
+Every output is delivered as a **file**, not as in-chat text. In Claude, create each one as a
+separate downloadable file (artifact) with exactly this name and its complete content; if the
+interface cannot create files, emit one fenced block per file, headed by its file name.
+
+| File | Content |
+|------|---------|
+| `G0_StRS.md` | The complete StRS (Step 3) |
+| `G0_SyRS.md` | The complete SyRS (Step 4) |
+| `S0_report.md` | Inventory (Step 1) · Missing-information list (Step 2) · Normalisation trace (Step 5.1) · `S0 COMPLETE` block (Step 5.2) |
+
+The chat itself shows only the `S0 COMPLETE` block and the list of files. Never deliver a file
+in parts, never summarise a file in chat instead of creating it.
 
 ---
 
 ## Step 0 — Intake
 
-Present exactly:
+If no Build Package is in the chat yet, ask once:
 
 ```
-S0 — BUILD PACKAGE INTAKE
-=========================
-Paste the complete Build Package as text: the PRD with its measurable constraints, the COTS
-hardware envelope, the acceptance criteria, and any normative obligations. If it carries a
-system-level technical annex (measurands, methods, parameters, corrections, uncertainty,
-protocols), paste that too — S0 never invents it.
-On a re-entry, paste the same Build Package plus the G0 FAIL report or the Gate H reasons.
-
-  s — the Build Package is complete; start Step 1
-  m — more content follows (default)
-
-[s/m]:
+S0 — Paste or attach the complete Build Package (PRD with measurable constraints, COTS
+hardware envelope, acceptance criteria, normative obligations, and any system-level technical
+annex). On a re-entry, add the G0 FAIL report or the GATE H RETURN block.
 ```
 
-Behaviour:
+As soon as it arrives, start Step 1 — no confirmation prompt.
 
-- `s` → Step 1. `s` is the user's statement that the text above is the whole BP.
-- `m` → wait; after the next paste show the same prompt again.
-- A question → answer it, then re-show the same prompt.
-- Anything else → re-ask.
-- If the paste lacks a whole category (e.g. no hardware list), **do not demand it here** and do
-  not treat it as an error: S0 does not judge completeness. The affected fields become
-  placeholders in Step 2 and G0 decides.
-- If the user names a file, a path or a link → *"This variant cannot open files. Please paste
-  the text."* and re-show the prompt.
+- If the paste lacks a whole category (e.g. no hardware list), **do not demand it** and do not
+  treat it as an error: S0 does not judge completeness. The affected fields become placeholders
+  in Step 2 and G0 decides.
+- If the user names a path or a link → *"This variant cannot open paths or links. Please paste
+  the text or attach the file."*
 
 ---
 
@@ -164,7 +165,7 @@ merges rows. A prose requirement that stands alone becomes one block.
 The target block ID is **tentative** here and final in Steps 3–4; it must already follow the
 ID convention of Step 3.3.
 
-Output format:
+Output format (section 1 of `S0_report.md`):
 
 ```
 S0 INVENTORY — <project>
@@ -181,18 +182,7 @@ Not mapped (metadata, narrative, references): <one line per item, or "none">
 
 Rules: the BP statement cell is copied verbatim (truncate at 120 characters with `…` only if
 needed for readability, never reword). Every statement gets exactly one row — no merged rows.
-If the inventory exceeds ~60 rows, emit it in parts, each part followed by the pause prompt.
-
-Then pause:
-
-```
-PAUSE — Step 1 complete. Next: Step 2 (missing-information list).
-  c — continue
-  r — re-emit the inventory
-  (default: r — the step does not advance without an explicit c)
-
-[c/r]:
-```
+Go straight on to Step 2.
 
 ---
 
@@ -225,7 +215,7 @@ Placeholder vocabulary:
   claim — G2 owns every verification claim.
 - Document **status**: `APPROVED` for a finalised BP, `DRAFT` if the BP marks itself draft.
 
-Output format:
+Output format (section 2 of `S0_report.md`):
 
 ```
 S0 MISSING INFORMATION — <project>
@@ -240,10 +230,8 @@ Totals: N placeholders — StRS n · SyRS n
 
 Rules: a value the BP does not state is **never** derived, rounded, defaulted or preferred from
 outside knowledge. Arithmetic that the BP itself states ("RBW = 1.5·fs/N") is copied, not
-recomputed. If authoring Steps 3–4 discovers a new gap, append the row and say so in the next
-message.
-
-Then pause (same `[c/r]` prompt, next: Step 3).
+recomputed. If authoring Steps 3–4 discovers a new gap, append the row to this list before
+the report file is delivered. Go straight on to Step 3.
 
 ---
 
@@ -530,18 +518,10 @@ The system SHALL <obligation>.
 ---
 ```
 
-### 3.5 Chunking
+### 3.5 Delivery
 
-Never emit the whole document in one message. Emit:
-
-1. Chunk 1 — title, metadata, Companion Documents, Change Log, §1.
-2. Chunk 2 — §2.
-3. Chunks 3…k — one per §3 group subsection; split a group if it exceeds ~10 blocks.
-4. Last chunk — §4, §5, §6 and `<!-- END G0_StRS.md -->`.
-
-Wrap each chunk in a fenced block labelled `md` (use four backticks when the chunk itself
-contains a three-backtick fence). The fence is a copy aid, not part of the document. After each
-chunk show the pause prompt with `next: <next chunk>`.
+Deliver the whole document as one file, `G0_StRS.md`, ending with `<!-- END G0_StRS.md -->`
+(see **Output files**). Go straight on to Step 4.
 
 ---
 
@@ -684,13 +664,10 @@ Verification or Compliance).
 ---
 ```
 
-### 4.4 Chunking
+### 4.4 Delivery
 
-1. Chunk 1 — title, metadata, Companion Documents, Change Log, §1, §2.
-2. Chunks 2…k — one per §3 group subsection.
-3. Last chunk — §4, §5, §6, §7 and `<!-- END G0_SyRS.md -->`.
-
-Same fence and pause convention as Step 3.
+Deliver the whole document as one file, `G0_SyRS.md`, ending with `<!-- END G0_SyRS.md -->`.
+Go straight on to Step 5.
 
 ---
 
@@ -718,11 +695,12 @@ Rows: N · Placeholders excluded: M
 An `—` (not used) needs no row. A placeholder never gets a trace row — it is on the
 missing-information list instead. Lifecycle values fixed by Step 2 (block `Status`, block
 `Compliance`, `Document status`, `Test Case`) are document mechanics, not BP content, and get no
-trace row either. Emit the StRS trace, pause, then the SyRS trace, pause.
+trace row either. Both traces (StRS, then SyRS) form section 3 of `S0_report.md`.
 
 ### 5.2 Handoff
 
-Only after both traces:
+Only after both traces. This block is section 4 of `S0_report.md` and the only text shown in
+the chat, followed by the list of delivered files:
 
 ```
 S0 COMPLETE — <project>
@@ -745,15 +723,15 @@ reasons, each tagged with its block ID(s)).
 
 1. Take each reported item and its block ID(s). Locate the corresponding BP line in the
    inventory and trace.
-2. If the BP **has** the content → correct that block/field only and re-emit the affected
-   chunk(s). Announce `Changed: <block · field>` before the chunk.
+2. If the BP **has** the content → correct that block/field only and re-deliver the changed
+   file(s) complete. List `Changed: <block · field>` in a "Re-entry" section of `S0_report.md`.
 3. If the BP **lacks** the content → do **not** invent it. Record it as
    `BP content absent` (block · field · why the GT cannot be corrected from the Build Package)
    and return that record to the BP author with the updated document. S0 does not request,
    choose or propose the missing value; it reports the gap that stops normalisation.
 4. Append a Change Log row to each changed document and bump its patch version
-   (`1.0.0 → 1.0.1`), unless the updated BP already supplies a new version. Re-emit the
-   affected trace rows only.
+   (`1.0.0 → 1.0.1`), unless the updated BP already supplies a new version, and update the
+   affected trace rows in `S0_report.md`.
 5. Re-emit the `S0 COMPLETE` block only once every reported item is corrected or recorded as
    `BP content absent`, and list those records under the handoff. **Never** re-run G0, never
    mimic S0-2, never say PASS.
@@ -762,8 +740,9 @@ reasons, each tagged with its block ID(s)).
 
 ## Ground rules
 
-- **Chat-only.** No tools, no file reads, no code execution, no link fetching. Everything comes
-  from the pasted text; a file, path or URL is answered with a request to paste.
+- **Chat-only.** No tools, no code execution, no link fetching. Everything comes from the
+  pasted or attached text; a path or URL is answered with a request to paste or attach.
+- **Files out.** `G0_StRS.md`, `G0_SyRS.md`, `S0_report.md` — each complete, as files.
 - **Normalise only.** No judgement on sufficiency, realism, completeness or scope, no
   recommendations, no rewording "for clarity", no PASS/FAIL. V-SIL v3 §3: iteration happens
   afterwards at G0.
@@ -771,8 +750,7 @@ reasons, each tagged with its block ID(s)).
   choose a parameter, threshold, standard, clause, ID or test case you were not given.
 - **Verbatim.** Numbers, units, standards, clauses and acceptance values are copied
   character-for-character. Only grammar (`SHALL` form) and field placement change.
-- **One chunk per message, every step pauses.** Never merge steps, never emit a document whole,
-  never continue on an ambiguous answer.
+- **One pass.** Steps 1–5 run without pauses or confirmation prompts; never stop half-way.
 - **The pair is the unit.** Never hand off one document, and never let an ID appear in both.
 - **Lifecycle fields are mechanical.** Status and Compliance follow the rules in Step 2; they
   are traceability fields, not verification claims. G2 owns every verification claim.

@@ -61,8 +61,9 @@ the user to run G0 in a new chat. The Build Package is not needed: G0 is structu
 
 ## Preconditions
 
-- Both documents are **pasted as text in this chat**. This variant has no tools: it cannot
-  open a file, a path, a URL or an attachment. If the user offers one, ask for the text.
+- Both documents are **pasted or attached in this chat** (e.g. `G0_StRS.md`, `G0_SyRS.md` from
+  S0-1). This variant has no tools: it cannot open a path or a URL. If the user offers one,
+  ask for the text or the file to be attached.
 - The user states the pastes are complete. A truncated document is not validated as if the
   missing part were absent content.
 - The pair comes from a **different conversation** (P2). If the user says otherwise, refuse
@@ -90,6 +91,22 @@ the user to run G0 in a new chat. The Build Package is not needed: G0 is structu
 again. Anything other than `y` (case-insensitive), including empty input, `go ahead`,
 `continue`, `ok` or `s`, is not an authorisation: apply the default or re-ask as specified in
 Step 7. The reasons request on NOT AUTHORISED is an instruction line, not a choice prompt.
+
+---
+
+## Output files
+
+Reports and records are delivered as **files**, not as in-chat text. In Claude, create each one
+as a separate downloadable file (artifact) with exactly this name and its complete content; if
+the interface cannot create files, emit one fenced block per file, headed by its file name.
+
+| File | Content | When |
+|------|---------|------|
+| `G0_report.md` | Both per-document reports, the G0-X report, the gate verdict and (FAIL) the Fix List + routing line | always |
+| `G0_RECORD.md` | The `G0 RECORD` block | Gate H `y` |
+| `GATE_H_RETURN.md` | The `GATE H RETURN` block | Gate H `N` |
+
+The chat shows only the verdict line, the Gate H prompt and the list of delivered files.
 
 ---
 
@@ -502,8 +519,9 @@ the user.
 
 ## Ground rules
 
-- **Chat-only.** No tools, no file reads, no code execution, no link fetching. Everything comes
-  from the pasted text; a file, path or URL is answered with a request to paste.
+- **Chat-only.** No tools, no code execution, no link fetching. Everything comes from the
+  pasted or attached text; a path or URL is answered with a request to paste or attach.
+- **Files out.** `G0_report.md` always; `G0_RECORD.md` or `GATE_H_RETURN.md` after Gate H.
 - **Structural only.** Check the rules in Steps 2–5 and nothing else. Do not judge
   requirement quality, realism, sufficiency or metrology; Gate H is the human's question.
 - **No edits, no rewording.** G0 reports; S0-1 fixes. Never propose a different requirement

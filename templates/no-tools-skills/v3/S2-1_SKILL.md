@@ -62,7 +62,8 @@ chat as S2-2 is allowed (implementation chat); G2 (S2-3) must run in a new chat.
 
 ## Preconditions
 
-- Inputs are pasted as text; you cannot open files, run code or read the user's disk.
+- Inputs are pasted or attached (e.g. `S1_design.md`, `G1_RECORD.md`); you cannot run code,
+  open paths or read the user's disk.
 - The G1 RECORD shows `Verdict: PASS` and its contract list matches the pasted §3.
 - The stack comes from the design's decisions (DEC-NNN), e.g. Python 3.10 + pytest, GNU Radio
   3.10 or libhackrf. If the design names none, ask the user which runtime and test runner to
@@ -84,6 +85,28 @@ chat as S2-2 is allowed (implementation chat); G2 (S2-3) must run in a new chat.
 
 **Prompt discipline.** Pauses are `[c/r]` ("continue" counts as `c`). In Step 0 the runtime
 question is free text; a question about it is answered, then the question is repeated.
+
+---
+
+## Output files
+
+Code and records are delivered as **files**, not as in-chat text. In Claude, create each one as
+a separate downloadable file (artifact) whose name is its project-relative path; if the
+interface cannot create files, emit one fenced block per file, headed by its path.
+
+| File | Content | When |
+|------|---------|------|
+| `base/contracts.py` | Contract types (Step 2) | Step 2 |
+| `base/hal.py`, `base/router.py`, `base/orchestrator.py` | Base layer (Step 3) | Step 3 |
+| `stubs/<contract>.py` | One stub per contract (Step 4) | Step 4 |
+| `tests/base/test_<topic>.py`, `tests/base/test_top_down.py` | Unit tests + top-down integration test (Step 5) | Step 5 |
+| `MODULE_LEDGER.md` | The `MODULE LEDGER` with the base rows | Step 6, evidenced |
+| `DESIGN_DEFECT_NOTE.md` / `RFD_SEED.md` | Routing records | Step 6, when they apply |
+
+Adapt file names to the stack, keeping one file per responsibility (the Step 1 plan fixes the
+exact list). Every `.py` file is complete and runnable as delivered — never a fragment, never
+"rest unchanged". A fix re-delivers the whole changed file. The chat shows the plan, the test
+manifest with the run command, short status lines and the list of delivered files.
 
 ---
 
@@ -240,6 +263,8 @@ top-down test. Module rows are handled by S2-2.
 ## Ground rules
 
 - **Chat-only.** You write code and commands; the user runs them; only the paste is evidence.
+- **Files out.** Every source and test file as a complete `.py` file named by its path; the
+  ledger and routing records as `.md` files.
 - **Implement only what S1 declared.** A needed new interface or contract change is a design
   defect → S1-1.
 - **Deterministic stubs.** Fixed seeds, fixed vectors, the recipe's exact conditions.
