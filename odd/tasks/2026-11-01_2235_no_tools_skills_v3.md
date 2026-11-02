@@ -79,4 +79,36 @@ Route evidence: units share one output contract chain (S1-1's document format is
 - **L6** T1v verdict: SX-1 UNSOUND; other 7 SOUND WITH FIXES. BLOCKERs: B1 SX-1 defect-vs-RFD test contradicts its own FM case (dual-tune sweep on same COTS ⇒ defect, not RFD; paper RFD-001 option C has the same tension) → RFD needs "violates another BP constraint" clause; B2 S0-1 no-invention rule vs test SyRS design parameters (N=2048, K=16, 5-bin DC) → user-confirmed derivations. MAJORs: M1 no P2 independence in S2-3; M2 G2.0 must be a fresh full-suite run per cycle; M3 HAL vs device-adapter ownership; M4 S2-2 rework mode; M5 shared Design Defect Note + evidence invalidation; M6 GT-gap path (missing SyRS threshold ≠ S1 defect); M7 G1.x blocking/advisory table; M8 evidence must match emitted test list; M9 FAIL-path fixtures; M10 Activation/Definitions sections. Minors m1–m10 incl. naming confirmation.
 - **L7** (2026-11-01, user, verbatim): "Fix" → T1f: shared contracts C1–C12 added above; every plan edited (B1→C12 in SX-1; B2 user-confirmed derivations in S0-1; M1/m4→C5; M2/C10 in S2-3; M3→C8; M4 rework mode S2-2; M5→C3 Design Defect Note + C9; M6→C3 GT Gap Note; M7 blocking table S1-2; M8→C4; M9→T2b; M10→C1; m1–m9 per plan). m10: naming unchanged (user did not change it); README lookup table added to T6. Skills still not written.
 - **L8** (2026-11-01, user, verbatim): "NO deviation for @methodology/V-SIL-v3/V-SIL_v3.md" → C0 added; removed every addition not grounded in the paper: GT GAP NOTE route to S0 (a SyRS gap now goes through the paper's routes: S1 risk §6 / G1.8 → RFD, or design defect → S1), the extra RFD criterion in C12 (now paper §9 verbatim; RFD-001 option C-style design options are valid RFD options), S0-1 SyRS proposals (S0 "normalises only"; missing BP content → placeholder → G0 FAIL → S0, so the test Build Package now carries the system-level technical annex), the Gate H `r` (RFD) answer, SX-1 outcomes `MORE EVIDENCE` / `REJECT` and the "≥ 1 option changes COTS" rule. Reviewer findings B1/B2/M6 are thus resolved by the paper's own rules.
+- **L9** (2026-11-01, user, verbatim): "Perfect. Now start a mode step-by-step. Im gonna call another subagent, not in claude code to di the code skill by skill. You are just gonnna verify and then see if plan approaches skill. Do not test it, just read it and see plan." → T3–T6 route: written by an external agent, one skill at a time; this session only reads each skill and checks it against its plan, C0–C12 and the paper (no tests, no edits).
+- **L10** S0-1 review (rev 0, 783 lines): MATCHES WITH GAPS — plan outputs, steps, Step R, acceptance 1–5 covered; 4 corrections sent, all "normalise only" (paper §3): Compliance/Status inferred instead of BP-copied (→ PENDING / PROPOSED markers), STK Standard(s) inherited from NRM dependencies, §5.x filled by vocabulary heuristic. Agent open points 1, 2, 4 accepted; 3 answered by correction 2.
+- **L11** (2026-11-01, user, verbatim): "next skill, pass. await" → S0-1 passed by the user; build_package.md left unchanged (verify-only mode). Awaiting S0-2.
+- **L12** S0-2 review (rev 0, 504 lines): MATCHES WITH GAPS — all v2 G0 rules, verdict rules, disclaimer (C6), P2/new chat (C7), Gate H `[y/N]`, G0 RECORD with block inventory (C3) and routes (C0) match the plan. 1 correction: on `N` the skill tells the human to carry reasons to S0-1 instead of collecting them (plan Output 5) — S0-1 Step R expects S0-2 to hand back numbered reasons tagged with block IDs.
+- **L13** (2026-11-01, user, verbatim correction for S0-2 rev 1; applied to `templates/no-tools-skills/v3/S0-2_SKILL.md` Step 7 only):
+
+  ````
+  Correction for S0-2 (Revision 1). Apply only this; everything else is approved.
+
+  Step 7 "On `N` — not authorised" contradicts the plan (Output 5) and breaks the handoff to
+  S0-1 Step R, which expects "numbered reasons, each tagged with its block ID(s)" handed back
+  by S0-2. Replace the "Do not ask for the reasons inside this run" paragraph with:
+
+  1. After `GATE H: NOT AUTHORISED`, ask (instruction line, not a choice prompt):
+     "List your reasons, one per line, each starting with the block ID(s) it concerns
+     (e.g. `STK-SPEC-002: latency bound not verifiable`). Type `done` when finished."
+  2. Check each tagged ID against the Phase 3 block inventory; an unknown ID → ask the user to
+     correct that line (never drop or rewrite a reason).
+  3. Emit the handoff block, verbatim reasons, no G0 RECORD:
+     ```
+     GATE H RETURN
+     =====================================================================
+     StRS: <ID> v<X.Y.Z> · SyRS: <ID> v<X.Y.Z> · G0 verdict: PASS
+     Gate H: NOT AUTHORISED — <YYYY-MM-DD> — <authoriser>
+     | # | Block ID(s) | Reason (verbatim) |
+     |---|-------------|-------------------|
+     =====================================================================
+     → S0 (S0-1), new chat: paste this block together with the Build Package.
+     ```
+  The skill never suggests, words or completes the reasons for the user.
+  ````
+- **L14** (2026-11-01, user, verbatim): "Verify. After verify, yourself implement the rest of skills please" → S0-2 rev 1 verified: PASS (Step 7 `N` path collects tagged reasons, checks IDs against the inventory, emits `GATE H RETURN`). T4–T6 route changed: written inline by this session from the plans (S1-1, S1-2, S2-1, S2-2, S2-3, SX-1 + v3 README), following the conventions of the approved S0-1/S0-2.
 - **L4** Pre-existing user working-tree changes (v2 move, `.atl/` registry) left unstaged and untouched.
