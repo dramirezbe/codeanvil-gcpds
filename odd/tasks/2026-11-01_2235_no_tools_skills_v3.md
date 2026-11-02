@@ -21,10 +21,10 @@ Branch: `feat/no-tools-skills-v3` · Delivery: `ask-on-risk` · Test runner: non
 | T1v | S5 | Independent logic verification of the plans (skill-creator + skill-improver lens) | delegated (fresh agent) | done — 2 BLOCKER, 10 MAJOR, 10 MINOR (L6) | — |
 | T1f | S5 | Apply T1v findings to the plans (C1–C12 + per-plan fixes, L7) | inline | done | see Log |
 | T2b | S4 | FAIL-path fixtures in `test-inputs/fixtures/`: `F1_G0_fail_StRS.md` (seeded errors: missing §2.7, bad SemVer, STK without Verification, HWC orphan component, duplicate ID) + `F1_expected.md`; `F2_S1_design_defective.md` (cycle in DAG, contract without stub recipe, HW module at VL-1, module touching HW outside HAL) + `F2_expected.md`; `F3_pastes.md` (green/red pytest outputs, a skipped-test output for C4, SIL metric table, 30-min soak log with 7 overflows at 20 MS/s plus a 16 MS/s run with 0 overflows but 90–106 MHz coverage → SX-1 RFD, a module bug paste → module defect, an unchanged-module failure → self-diagnosis) | inline | planned (on hold with T3–T6) | — |
-| T3 | S1, S2, S6 | S0-1 normalisation + S0-2 G0/Gate H skills | inline | on hold (L5) | — |
-| T4 | S1, S2, S6 | S1-1 layered architecture + S1-2 G1 review skills | inline | on hold (L5) | — |
-| T5 | S1, S2, S6 | S2-1 base layer, S2-2 modules, S2-3 G2 skills | inline | on hold (L5) | — |
-| T6 | S1, S2, S6 | SX-1 RFD skill + v3 README index (lookup table skill → stage/gate → plan, record formats C3, flow diagram) | inline | on hold (L5) | — |
+| T3 | S1, S2, S6 | S0-1 normalisation + S0-2 G0/Gate H skills | external agent, verified here (L10–L14) | done | `ce19c91` |
+| T4 | S1, S2, S6 | S1-1 layered architecture + S1-2 G1 review skills | inline (L14) | done — structural readback only | `ce19c91` |
+| T5 | S1, S2, S6 | S2-1 base layer, S2-2 modules, S2-3 G2 skills | inline (L14) | done — structural readback only | see Log L15 |
+| T6 | S1, S2, S6 | SX-1 RFD skill + v3 README index (lookup table skill → stage/gate → plan, record formats C3, flow diagram) | inline (L14) | done — structural readback only | see Log L15 |
 
 Route evidence: units share one output contract chain (S1-1's document format is S1-2's and S2-x's input), so they are not independent → no Writer trigger; all inline.
 
@@ -111,4 +111,5 @@ Route evidence: units share one output contract chain (S1-1's document format is
   The skill never suggests, words or completes the reasons for the user.
   ````
 - **L14** (2026-11-01, user, verbatim): "Verify. After verify, yourself implement the rest of skills please" → S0-2 rev 1 verified: PASS (Step 7 `N` path collects tagged reasons, checks IDs against the inventory, emits `GATE H RETURN`). T4–T6 route changed: written inline by this session from the plans (S1-1, S1-2, S2-1, S2-2, S2-3, SX-1 + v3 README), following the conventions of the approved S0-1/S0-2.
+- **L15** T4–T6 written inline: S1-1 (447 lines), S1-2 (304), S2-1 (250), S2-2 (239), S2-3 (282), SX-1 (197), README. Structural readback: every C1 section present, fences balanced, C6 disclaimer exactly in S0-2/S1-2/S2-3. Routes limited to C0. Not done: independent review of T4–T6 (no reviewer run), T2b FAIL-path fixtures (still planned), end-to-end chat run of the skills.
 - **L4** Pre-existing user working-tree changes (v2 move, `.atl/` registry) left unstaged and untouched.
