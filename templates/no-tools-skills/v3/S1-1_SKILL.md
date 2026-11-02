@@ -71,7 +71,8 @@ S1-2**: the reviewer must be another chat or person.
 
 ## Preconditions
 
-- All inputs are **pasted as text**. No tools: no file, path, URL or attachment can be opened.
+- All inputs are **pasted or attached** (e.g. `G0_StRS.md`, `G0_SyRS.md`, `G0_RECORD.md`). No
+  tools: no path or URL can be opened.
 - The G0 RECORD shows `G0 verdict: PASS` and `Gate H: AUTHORISED`. Without it, stop and send
   the user to S0-2. There is no "confirm otherwise" path.
 - The pasted GT matches the G0 RECORD (checked in Job 0).
@@ -96,6 +97,22 @@ S1-2**: the reviewer must be another chat or person.
 `[c/r]`. A question about a prompt is answered from this skill, then the same prompt is shown
 again. Anything outside the domain, or empty input, re-asks. At a pause, "continue" counts as
 `c`; at Job 0, "go ahead" / "continue" / "yes" are **not** `y`.
+
+---
+
+## Output files
+
+The design is delivered as a **file**, not as in-chat text. In Claude, create it as a
+downloadable file (artifact) with exactly this name; if the interface cannot create files, emit
+one fenced block per file, headed by its file name.
+
+| File | Content | When |
+|------|---------|------|
+| `S1_design.md` | The S1 design document. Created at Job 1 and **re-delivered complete after every job** with that job's sections added, in final order (Meta → §0 → §1 → §2 → §3 → §4 → §5 → §6 → Annex A → author self-check). | Jobs 1–7, rework |
+| `RFD_SEED.md` | The `RFD SEED` block | infeasibility (Job 7) |
+
+The chat shows only a short status line per job ("Job n done — added §x"), the pause prompt and
+the file. At the end, `S1_design.md` is the whole document: nothing to assemble by hand.
 
 ---
 
@@ -137,7 +154,7 @@ Design document: S1-<ACRONYM>-<NNN> v0.1.0
 
 ## Job 1 — COTS envelope (§0)
 
-Emit §Meta and §0 of the design document.
+Create `S1_design.md` with §Meta and §0.
 
 ```
 # S1 — Layered Architecture Design — <project>
@@ -398,8 +415,8 @@ Pause (`[c/r]`, next: Job 7).
    G1.2 every edge has a §3 contract with all fields and a stub recipe, G1.3 SYS without module /
    module without SYS / NRM without contract, G1.5 `hw_dependency` vs `required_vl`. Fix your own
    drafting defects before handoff (re-emit the affected job); never declare PASS.
-4. **Assembly index** — the order in which the user pastes the job outputs into one file:
-   Meta → §0 → §1 → §2 → §3 → §4 → §5 (DEC-001 first) → §6 → Annex A.
+4. **Final file** — re-deliver `S1_design.md` complete, in order Meta → §0 → §1 → §2 → §3 →
+   §4 → §5 (DEC-001 first) → §6 → Annex A → author self-check.
 5. Handoff:
 
 ```
@@ -407,7 +424,7 @@ S1 COMPLETE — S1-<ACRONYM>-<NNN> v<X.Y.Z> (cycle <cycle>)
   Modules: n (device adapters: n) · Contracts: n (HW→SW n · SW→SW n · SW→HW n)
   Decisions: n · Risks: n (RFD potential: n)
   Contracts changed since previous version: <id@old→new schema_version, or "first version">
-Submit the assembled S1 design document + SyRS + StRS §3 to S1-2 (G1) in a NEW chat.
+Attach S1_design.md + G0_SyRS.md + G0_StRS.md to S1-2 (G1) in a NEW chat.
 This chat must not review it (P2).
 ```
 
@@ -432,7 +449,8 @@ Inputs: the previous S1 design document plus a G1 FAIL rework list or a DESIGN D
 
 ## Ground rules
 
-- **Chat-only.** No tools, no file reads, no code execution. Everything comes from the pastes.
+- **Chat-only.** No tools, no code execution. Everything comes from pasted or attached text.
+- **Files out.** `S1_design.md`, re-delivered complete after every job; `RFD_SEED.md` if needed.
 - **One job per message.** Pause after each; never run several jobs in one message.
 - **Multi-hypothesis is mandatory.** DEC-001 compares ≥ 3 genuine candidates with scores.
 - **Justify in writing.** Every choice cites scores, trade-offs, or GT blocks.

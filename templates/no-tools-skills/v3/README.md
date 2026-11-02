@@ -33,16 +33,30 @@ Build Package
 Naming: `S<stage>-<n>` = V-SIL v3 stage (its gate included) + skill number inside it; `SX` =
 cross-stage (an RFD can be raised from any stage).
 
-## Records (handoff blocks)
+## Output files
 
-| Record | Emitted by | Pasted into |
-|--------|-----------|-------------|
-| `GATE H RETURN` | S0-2 (Gate H not authorised) | S0-1 |
-| `G0 RECORD` | S0-2 (G0 PASS + Gate H authorised) | S1-1 |
-| `G1 RECORD` | S1-2 (G1 PASS) | S2-1, S2-2, S2-3 |
-| `MODULE LEDGER` | S2-1, S2-2 | S2-2, S2-3 |
-| `DESIGN DEFECT NOTE` | S1-2, S2-1, S2-2, S2-3, SX-1 | S1-1 (rework mode) |
-| `RFD SEED` | S1-1, S1-2, S2-1, S2-2, S2-3 | SX-1 |
+Every skill delivers its outputs as **files** (in Claude: downloadable files / artifacts) —
+documents, reports and records as `.md`, code as complete `.py` files named by their project
+path. Attach the files to the next skill's chat. S0-1 runs in one pass with no pauses.
+
+| File | Produced by | Attach to |
+|------|-------------|-----------|
+| `G0_StRS.md`, `G0_SyRS.md`, `S0_report.md` | S0-1 | S0-2 (StRS + SyRS) |
+| `G0_report.md` | S0-2 | S0-1 on FAIL |
+| `GATE_H_RETURN.md` | S0-2 (Gate H not authorised) | S0-1 |
+| `G0_RECORD.md` | S0-2 (G0 PASS + Gate H authorised) | S1-1 |
+| `S1_design.md` | S1-1 | S1-2, S2-1, S2-2, S2-3 |
+| `G1_report.md`, `G1_RECORD.md` | S1-2 (PASS) | S2-1, S2-2, S2-3 |
+| `base/*.py`, `stubs/*.py`, `tests/base/*.py` | S2-1 | your project; S2-2 |
+| `modules/*.py`, `tests/<module>/*.py`, `tests/test_integration.py` | S2-2 | your project |
+| `MODULE_LEDGER.md` | S2-1, S2-2 | S2-2, S2-3 |
+| `tests/sil/*.py`, `G2.2_HIL_<module>.md`, `G2_report.md`, `Verified_Prototype.md` | S2-3 | your project / final deliverable |
+| `DESIGN_DEFECT_NOTE.md` | S1-2, S2-1, S2-2, S2-3, SX-1 | S1-1 (rework mode) |
+| `RFD_SEED.md` | S1-1, S1-2, S2-1, S2-2, S2-3 | SX-1 |
+| `RFD-<NNN>.md` | SX-1 | Build Package author |
+
+If an interface cannot create files, each skill falls back to one fenced block per file,
+headed by its file name.
 
 ## Principles enforced (paper §2)
 

@@ -66,7 +66,8 @@ evidence; INTEGRATION needs the list of all module files.
 
 ## Preconditions
 
-- Pasted text only; no file access, no execution.
+- Inputs pasted or attached (e.g. `S1_design.md`, `G1_RECORD.md`, `MODULE_LEDGER.md`, base
+  `.py` files); no path access, no execution.
 - The ledger's `g1_version` equals the G1 RECORD's design version (otherwise Step 0 voids rows).
 - The mode and module are stated (`NEXT`, `REWORK <id>`, `INTEGRATION`).
 
@@ -88,6 +89,28 @@ evidence; INTEGRATION needs the list of all module files.
 
 **Prompt discipline.** Out-of-order prompt `[k/o/x]`, default `k`. Pauses `[c/r]` ("continue" =
 `c` at pauses only). A question about a prompt is answered, then the prompt is shown again.
+
+---
+
+## Output files
+
+Code and records are delivered as **files**, not as in-chat text. In Claude, create each one as
+a separate downloadable file (artifact) whose name is its project-relative path; if the
+interface cannot create files, emit one fenced block per file, headed by its path.
+
+| File | Content | When |
+|------|---------|------|
+| `modules/<module>.py` (more files if the module needs them) | Module implementation (Step 2) | Step 2 |
+| `tests/<module>/test_unit.py` | Unit tests in isolation (Step 3) | Step 3 |
+| `tests/<module>/driver.py`, `tests/<module>/test_bottom_up.py` | Driver + bottom-up integration test (Step 4) | Step 4 |
+| `tests/test_integration.py` | All-real integration test | INTEGRATION mode |
+| `MODULE_LEDGER.md` | The updated `MODULE LEDGER` | Step 0 (invalidations), Step 5 |
+| `DESIGN_DEFECT_NOTE.md` / `RFD_SEED.md` | Routing records | Step 5, when they apply |
+
+Paths follow the project tree fixed by S2-1. Every `.py` file is complete and runnable as
+delivered — never a fragment, never "rest unchanged". A fix batch re-delivers each changed file
+whole. The chat shows the module card, the test manifest with the run command, short status
+lines and the list of delivered files.
 
 ---
 
@@ -228,6 +251,8 @@ Evidence (VL-0): <pasted results, verbatim>
 
 ## Ground rules
 
+- **Files out.** Module, test and driver code as complete `.py` files named by their path;
+  `MODULE_LEDGER.md` and routing records as `.md` files.
 - **One module per run** (or one integration run). Topological order unless the user picks `o`.
 - **Contracts are fixed.** No edits to other modules or to base-layer contracts; a needed change
   is a design defect → S1-1.

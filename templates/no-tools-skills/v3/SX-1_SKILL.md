@@ -59,7 +59,7 @@ evidence pastes the seed refers to.
 
 ## Preconditions
 
-- Pasted text only; no tools.
+- Inputs pasted or attached (e.g. `RFD_SEED.md`, `G0_StRS.md`, `G0_SyRS.md`); no tools.
 - The seed names the stage, the requirement IDs and the evidence with its level.
 - The cited blocks are pasted, so each requirement can be quoted with its value and source.
 
@@ -77,6 +77,23 @@ evidence pastes the seed refers to.
 
 **Prompt discipline.** Pauses `[c/r]` ("continue" = `c`). Questions are answered, then the
 pause is shown again.
+
+---
+
+## Output files
+
+The RFD and routing records are delivered as **files**, not as in-chat text. In Claude, create
+each one as a separate downloadable file (artifact) with exactly this name and its complete
+content; if the interface cannot create files, emit one fenced block per file, headed by its
+file name.
+
+| File | Content | When |
+|------|---------|------|
+| `RFD-<NNN>.md` | Steps 3–5: the complete Request for Deviation, ending with the suspension / re-entry statement | INFEASIBLE |
+| `DESIGN_DEFECT_NOTE.md` | The `DESIGN DEFECT NOTE` block | DEFECT → S1-1 |
+
+The chat shows the intake table, the classification line, the pauses and the list of delivered
+files. `RFD-<NNN>.md` is built across Steps 3–5 and re-delivered complete after each step.
 
 ---
 
@@ -194,4 +211,5 @@ Stop.
 - **Recommend, never decide.** The Build Package author decides (P1); you never approve your
   own RFD (P2).
 - **Never edit the Build Package or the GT.** Re-entry is always S0 with the updated BP.
-- **Chat-only.** No tools, no file access, no execution.
+- **Chat-only.** No tools, no execution; inputs are pasted or attached.
+- **Files out.** `RFD-<NNN>.md` or `DESIGN_DEFECT_NOTE.md`, complete.
