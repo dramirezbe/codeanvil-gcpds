@@ -3,11 +3,12 @@
 import re
 import sys
 from pathlib import Path
+from typing import NamedTuple
 
 import yaml
 
 from codeanvil.config.logger import get_logger
-from codeanvil.config.paths import DB_PATH, PROJECT_REPORT, find_manifest
+from codeanvil.config.paths import CONFIG, DB_PATH, PROJECT_REPORT, find_manifest
 from codeanvil.db.projects import get_project_by_id, get_project_by_name, sync_project
 from codeanvil.db.schema import db_exists
 from codeanvil.db.utils import connect_db
@@ -26,32 +27,76 @@ _ITERATION_RE = re.compile(r"^## Iteration (\d+)\s*$", re.MULTILINE)
 _HITL_RE = re.compile(r"^\|\s*HITL\s*\|\s*(PASS|FEEDBACK)\s*\|\s*$", re.MULTILINE)
 
 
-def _report_state(report_file: Path) -> tuple[int | None, str | None]:
-    """Latest iteration number and HITL verdict in one gate report."""
+# Chain links, read only from the latest iteration of a report.
+_BASED_ON_RE = re.compile(r"^Based on: (\S+) iteration (\d+)\s*$", re.MULTILINE)
+_SUPERSEDED_RE = re.compile(r"^Superseded by cycle: (\S+)\s*$", re.MULTILINE)
+
+
+class ReportState(NamedTuple):
+    iteration: int | None
+    hitl: str | None
+    based_on: tuple[str, int] | None = None
+    superseded_by: str | None = None
+
+
+def _report_state(report_file: Path) -> ReportState:
+    """Latest iteration number, HITL verdict and chain links in one report."""
     try:
         text = report_file.read_text(encoding="utf-8")
     except OSError as exc:
         log.warning("cannot read %s: %s", report_file, exc)
-        return None, None
-    iterations = [int(number) for number in _ITERATION_RE.findall(text)]
+        return ReportState(None, None)
+    headings = list(_ITERATION_RE.finditer(text))
     verdicts = _HITL_RE.findall(text)
-    return (
-        max(iterations) if iterations else None,
+    latest = text[headings[-1].end():] if headings else ""
+    based_on = _BASED_ON_RE.search(latest)
+    superseded = _SUPERSEDED_RE.search(latest)
+    return ReportState(
+        max(int(match.group(1)) for match in headings) if headings else None,
         verdicts[-1] if verdicts else None,
+        (based_on.group(1), int(based_on.group(2))) if based_on else None,
+        superseded.group(1) if superseded else None,
     )
 
 
-def _cycle_reports(
-    report_dir: Path,
-) -> dict[str, dict[str, tuple[int | None, str | None]]]:
-    """Cycle -> gate -> (latest iteration, HITL) for the cycle-scoped layout."""
-    cycles: dict[str, dict[str, tuple[int | None, str | None]]] = {}
+def _gate_order(gate: str) -> tuple[int, int, str]:
+    """Chain gates first, in flow order; any other id follows alphabetically."""
+    order = CONFIG.get("report_order", [])
+    if gate in order:
+        return (0, order.index(gate), gate)
+    return (1, 0, gate)
+
+
+def _stale_reason(
+    gate: str, gates: dict[str, ReportState], seen: tuple[str, ...] = ()
+) -> str | None:
+    """Why a report no longer reflects its predecessor, or None.
+
+    A missing `Based on` line or a predecessor absent from the cycle is never
+    stale, so old cycles and partial reports raise no false warning."""
+    based_on = gates[gate].based_on
+    if based_on is None:
+        return None
+    predecessor, number = based_on
+    if predecessor not in gates or predecessor == gate or predecessor in seen:
+        return None
+    latest = gates[predecessor].iteration
+    if latest is not None and number < latest:
+        return f"based on {predecessor} iteration {number}, {predecessor} is at {latest}"
+    if _stale_reason(predecessor, gates, seen + (gate,)):
+        return f"{predecessor} is stale"
+    return None
+
+
+def _cycle_reports(report_dir: Path) -> dict[str, dict[str, ReportState]]:
+    """Cycle -> gate -> report state for the cycle-scoped layout."""
+    cycles: dict[str, dict[str, ReportState]] = {}
     if not report_dir.is_dir():
         return cycles
     for cycle_dir in sorted(path for path in report_dir.iterdir() if path.is_dir()):
         gates = {
             report.stem: _report_state(report)
-            for report in sorted(cycle_dir.glob("*.md"))
+            for report in sorted(cycle_dir.glob("*.md"), key=lambda p: _gate_order(p.stem))
         }
         if gates:
             cycles[cycle_dir.name] = gates
@@ -139,14 +184,27 @@ def cmd_status(name: str | None = None) -> None:
 
         active_cycle = identity.get("cycle")
         if cycles:
+            # An RFD re-entry switches to a cycle that has no report yet.
+            if active_cycle and active_cycle not in cycles:
+                cycles[active_cycle] = {}
+            stages = CONFIG.get("stage_reports", [])
             print("Cycles:")
-            for cycle, gates in cycles.items():
-                marker = " (active)" if cycle == active_cycle else ""
-                print(f"  {cycle}{marker}")
-                for gate, (iteration, hitl) in gates.items():
-                    state = hitl or "UNKNOWN"
-                    if iteration is not None:
-                        state += f" (iteration {iteration})"
+            for cycle in sorted(cycles):
+                gates = cycles[cycle]
+                suffix = " (active)" if cycle == active_cycle else ""
+                rfd = gates.get("RFD")
+                if rfd is not None and rfd.superseded_by:
+                    suffix += f" (closed: superseded by {rfd.superseded_by})"
+                print(f"  {cycle}{suffix}")
+                for gate, report in gates.items():
+                    state = report.hitl or "UNKNOWN"
+                    if state == "PASS" and gate in stages:
+                        state = "delivered"
+                    if report.iteration is not None:
+                        state += f" (iteration {report.iteration})"
+                    stale = _stale_reason(gate, gates)
+                    if stale:
+                        state += f" [stale: {stale}]"
                     print(f"    {gate}: {state}")
 
         if legacy:

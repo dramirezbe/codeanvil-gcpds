@@ -21,6 +21,12 @@ skills:
     template_dir: "templates/skills/G1_start_design"
     prerequisite: "CC"
 
+# Flow order of the chain reports, used by `codeanvil status` to print gates
+# in order. Any other report id (RFD, old CC) follows alphabetically.
+report_order: ["S0", "G0", "S1", "G1", "S2", "G2"]
+# Stages finish in one pass: their PASS means "delivered", not a human verdict.
+stage_reports: ["S0", "S1", "S2"]
+
 # Skill directory symlinks — agent runtimes that discover skills
 # via a directory convention.
 agent_skill_links:

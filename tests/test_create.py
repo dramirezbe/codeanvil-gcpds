@@ -438,11 +438,15 @@ def test_scaffolded_g1_skill_writes_artifacts_to_g1_artifacts_dir(tmp_path, db_p
 
 # --- status reads cycle-scoped reports (T7) ---------------------------------
 
-def _write_report(project, cycle: str, gate: str, iterations: list[tuple[int, str]]) -> None:
+def _write_report(
+    project, cycle: str, gate: str, iterations: list[tuple],
+) -> None:
+    """Each iteration is (number, hitl) or (number, hitl, description)."""
     report_dir = project / ".codeanvil" / "report" / cycle
     report_dir.mkdir(parents=True, exist_ok=True)
     sections = []
-    for number, hitl in iterations:
+    for number, hitl, *rest in iterations:
+        description = rest[0] if rest else "N/A"
         sections.append(
             f"## Iteration {number}\n\n"
             "| Field       | Value |\n"
@@ -452,7 +456,7 @@ def _write_report(project, cycle: str, gate: str, iterations: list[tuple[int, st
             f"| Iteration   | {number} |\n"
             f"| Cycle       | {cycle} |\n"
             f"| HITL        | {hitl} |\n\n"
-            "### Description\n\nN/A\n"
+            f"### Description\n\n{description}\n"
         )
     (report_dir / f"{gate}.md").write_text(
         f"# {gate}\n\n" + "\n---\n\n".join(sections), encoding="utf-8"
@@ -542,6 +546,116 @@ def test_status_reports_latest_hitl_not_first(tmp_path, db_path, capsys):
     out = capsys.readouterr().out
     assert "G0: FEEDBACK (iteration 2)" in out
     assert "G0: PASS" not in out
+
+
+# --- status: chain order, delivered stages, stale reports, closed cycles (T10) --
+
+def _status_out(tmp_path, capsys, reports, cycle="01_c"):
+    """reports: (gate, iterations) pairs written into one active cycle."""
+    cmd_create(None, tmp_path, project_name="Proj")
+    project = tmp_path / "proj"
+    _set_cycle(project, cycle)
+    for gate, iterations in reports:
+        _write_report(project, cycle, gate, iterations)
+    cmd_status("Proj")
+    return capsys.readouterr().out
+
+
+def test_status_orders_gates_by_the_chain_then_unknown_ids(tmp_path, db_path, capsys):
+    out = _status_out(tmp_path, capsys, [
+        ("RFD", [(1, "FEEDBACK")]), ("CC", [(1, "PASS")]), ("S1", [(1, "PASS")]),
+        ("G0", [(1, "PASS")]), ("S0", [(1, "PASS")]),
+    ])
+    positions = [out.index(f"    {gate}:") for gate in ("S0", "G0", "S1", "CC", "RFD")]
+    assert positions == sorted(positions)
+
+
+def test_status_prints_a_passing_stage_as_delivered(tmp_path, db_path, capsys):
+    out = _status_out(tmp_path, capsys, [
+        ("S1", [(1, "PASS")]), ("G1", [(1, "PASS")]), ("S0", [(1, "FEEDBACK")]),
+    ])
+    assert "S1: delivered (iteration 1)" in out
+    assert "G1: PASS (iteration 1)" in out
+    assert "S0: FEEDBACK (iteration 1)" in out
+
+
+def test_status_marks_a_report_stale_when_its_predecessor_moved_on(tmp_path, db_path, capsys):
+    out = _status_out(tmp_path, capsys, [
+        ("S1", [(1, "PASS"), (2, "PASS")]),
+        ("G1", [(1, "PASS", "Based on: S1 iteration 1")]),
+    ])
+    assert "G1: PASS (iteration 1) [stale: based on S1 iteration 1, S1 is at 2]" in out
+
+
+def test_status_propagates_staleness_down_the_chain(tmp_path, db_path, capsys):
+    out = _status_out(tmp_path, capsys, [
+        ("S1", [(1, "PASS"), (2, "PASS")]),
+        ("G1", [(1, "PASS", "Based on: S1 iteration 1")]),
+        ("S2", [(1, "PASS", "Based on: G1 iteration 1")]),
+    ])
+    assert "S2: delivered (iteration 1) [stale: G1 is stale]" in out
+
+
+def test_status_shows_no_suffix_for_an_up_to_date_report(tmp_path, db_path, capsys):
+    out = _status_out(tmp_path, capsys, [
+        ("S1", [(1, "PASS"), (2, "PASS")]),
+        ("G1", [(1, "PASS", "Based on: S1 iteration 2")]),
+    ])
+    assert "G1: PASS (iteration 1)\n" in out
+    assert "stale" not in out
+
+
+def test_status_ignores_based_on_in_earlier_iterations(tmp_path, db_path, capsys):
+    out = _status_out(tmp_path, capsys, [
+        ("S1", [(1, "PASS"), (2, "PASS")]),
+        ("G1", [(1, "FEEDBACK", "Based on: S1 iteration 1"), (2, "PASS", "no marker")]),
+    ])
+    assert "stale" not in out
+
+
+def test_status_ignores_a_based_on_naming_a_missing_report(tmp_path, db_path, capsys):
+    out = _status_out(tmp_path, capsys, [("G1", [(1, "PASS", "Based on: S1 iteration 1")])])
+    assert "stale" not in out
+
+
+def test_status_stops_on_a_based_on_loop(tmp_path, db_path, capsys):
+    out = _status_out(tmp_path, capsys, [
+        ("S1", [(1, "PASS", "Based on: G1 iteration 1")]),
+        ("G1", [(1, "PASS", "Based on: S1 iteration 1")]),
+    ])
+    assert "S1: delivered (iteration 1)" in out
+    assert "G1: PASS (iteration 1)" in out
+
+
+def test_status_marks_a_cycle_closed_by_the_latest_rfd_iteration(tmp_path, db_path, capsys):
+    cmd_create(None, tmp_path, project_name="Proj")
+    project = tmp_path / "proj"
+    _set_cycle(project, "02_x")
+    _write_report(project, "01_c", "RFD", [
+        (1, "FEEDBACK", "Superseded by cycle: 00_old"),
+        (2, "PASS", "Superseded by cycle: 02_x"),
+    ])
+    _write_report(project, "03_c", "RFD", [
+        (1, "PASS", "Superseded by cycle: 02_x"), (2, "PASS", "decided again"),
+    ])
+
+    cmd_status("Proj")
+
+    out = capsys.readouterr().out
+    assert "01_c (closed: superseded by 02_x)" in out
+    assert "03_c\n" in out
+
+
+def test_status_always_prints_the_active_cycle_even_without_reports(tmp_path, db_path, capsys):
+    cmd_create(None, tmp_path, project_name="Proj")
+    project = tmp_path / "proj"
+    _set_cycle(project, "02_new")
+    _write_report(project, "01_old", "G0", [(1, "PASS")])
+
+    cmd_status("Proj")
+
+    out = capsys.readouterr().out
+    assert "02_new (active)" in out
 
 
 def test_g0_validator_is_side_effect_free_and_maps_exit_codes(tmp_path):
