@@ -19,7 +19,9 @@ materials from which GT files would be authored.
 ## End-to-End Manual Test Procedure
 
 This procedure validates the full CodeAnvil flow from a clean install through
-GT → G0 → custody-chain, using T0 as the test input.
+the Build Package → S0 → G0 → S1 → G1, using the FM Build Package under
+`templates/no-tools-skills/v3/test-inputs/` as the test input. T0 stays usable as a
+hand-written GT pair (S0 passes it through as normalised input).
 
 ### Prerequisites
 
@@ -89,11 +91,10 @@ Verify:
 # Project structure
 ls /tmp/smoke-test/AGENTS.md          # generated
 ls /tmp/smoke-test/CLAUDE.md          # symlink → AGENTS.md
-ls /tmp/smoke-test/.agents/skills/    # G0, G1, custody-chain
+ls /tmp/smoke-test/.agents/skills/    # S0, G0, S1, G1, RFD
 
 # .codeanvil/ machine-generated dir
 ls /tmp/smoke-test/.codeanvil/project.yaml   # UUIDv7 identity manifest
-ls /tmp/smoke-test/.codeanvil/custody/       # empty — populated after G0
 ls /tmp/smoke-test/.codeanvil/report/        # empty — populated by gate reports
 
 # GT dir — user-authored, outside .codeanvil/
@@ -136,18 +137,18 @@ Verify:
 - `codeanvil list` shows the project registered at the new location.
 - Cleanup: `rm -rf /tmp/smoke-test-clone`
 
-### 3. Copy T0 Ground Truth files into the project
+### 3. Copy the Build Package into the project
 
 ```bash
 # From the codeanvil repo:
-cp methodology/test/T0_ANE-Lap2/just-edge/StRS.md /tmp/smoke-test/GT/G0_StRS.md
-cp methodology/test/T0_ANE-Lap2/just-edge/SyRS.md /tmp/smoke-test/GT/G0_SyRS.md
+cp templates/no-tools-skills/v3/test-inputs/build_package.md /tmp/smoke-test/GT/build_package.md
 ```
 
-Verify:
+Alternative (hand-written pair, S0 runs as a no-op): copy the T0 pair instead.
+
 ```bash
-head -1 /tmp/smoke-test/GT/G0_StRS.md  # "# PROJECT: Edge Sensor ..."
-head -1 /tmp/smoke-test/GT/G0_SyRS.md  # "# PROJECT: Edge Sensor ..."
+cp methodology/test/T0_ANE-Lap2/just-edge/StRS.md /tmp/smoke-test/GT/G0_StRS.md
+cp methodology/test/T0_ANE-Lap2/just-edge/SyRS.md /tmp/smoke-test/GT/G0_SyRS.md
 ```
 
 ### 4. Enter sandboxed Claude session in the project
@@ -227,94 +228,85 @@ verify the expected outcome before proceeding.
 What project is this? What skills are available? What should you do first?
 ```
 
-**Expected:** Claude reads `AGENTS.md`, identifies this as a V-SIL scaffolded
-project (not the CodeAnvil repo), lists G0 + custody-chain (CC) + G1 with their
-prerequisite chain in the skill table, and asks for a **cycle name** before any
-gate work. Answer, for example, `Smoke Test` → it should normalize it to
-`01_smoke_test`, write `cycle:` into `.codeanvil/project.yaml`, and say the first
-gate is G0 validation of the GT files.
+**Expected:** the agent runs `codeanvil status`, reads `AGENTS.md`, identifies a V-SIL
+scaffolded project, lists S0 → G0 → S1 → G1 with their prerequisite chain and RFD with
+`-`, and asks for a **cycle name** before any work. Answer `Smoke Test` → it writes
+`cycle: 01_smoke_test` into `.codeanvil/project.yaml`.
 
-#### Prompt 2 — Run G0
+#### Prompt 2 — Order is enforced
 
 ```
-start
+Run G1
 ```
 
-**Expected:** Claude loads `.agents/skills/G0_valid_req_and_GT/SKILL.md`, runs
-`python .agents/skills/G0_valid_req_and_GT/scripts/g0_validate.py GT/G0_StRS.md GT/G0_SyRS.md`,
-reports the exit code, verdict, and the full validation output (per-document
-reports + G0-X cross-document report), then writes
-`.codeanvil/report/<cycle>/G0.md` with the script output and asks **PASS** or
-**FEEDBACK**. Answer `PASS` → iteration 1 records `HITL: PASS`.
+**Expected:** `S1 must pass first. Run the S1 skill.` No report is written.
 
-#### Prompt 3 — Seal GT with custody-chain
+#### Prompt 3 — Run S0
 
 ```
-G0 passed. Now seal the GT files using the custody-chain skill so any tampering is detected going forward.
+Run S0
 ```
 
-**Expected:** Claude loads `.agents/skills/custody-chain/SKILL.md`, checks that
-`.codeanvil/report/<cycle>/G0.md`'s latest iteration is `HITL: PASS` (and stops
-otherwise), then:
-1. Checks `PROVENANCE_HMAC_KEY` — will report it's unset and ask for it.
-   Respond with: `export PROVENANCE_HMAC_KEY="smoke-test-key-2026"` (or tell
-   Claude to set it).
-2. Runs `source_snapshot.py snapshot --root . --include 'GT/**' --out .codeanvil/custody/snapshot.json`
-   → SEALED, 2 files, manifest digest.
-3. Records custody: `custody_ledger.py record --ledger .codeanvil/custody/custody.jsonl
-   --doc GT/G0_StRS.md --action created --actor "tester" ...` (for both files).
-4. Runs `custody_ledger.py verify` → PASS.
-5. Reports the provenance report with all statuses.
+**Expected:** one pass, no questions. Writes `GT/G0_StRS.md`, `GT/G0_SyRS.md` and
+`.codeanvil/report/<cycle>/S0.md` with `| HITL | PASS |`, the inventory and the missing
+list. Returns `S0 complete. Run the G0 skill.`
 
-#### Prompt 4 — Tamper detection
+#### Prompt 4 — Run G0 and answer Gate H
 
 ```
-I secretly edited GT/G0_StRS.md. Verify the GT files are still intact.
+Run G0
 ```
 
-**Expected:** Claude runs `source_snapshot.py verify --strict` → FAIL with
-`DIGEST_CHANGED` and/or `LENGTH_CHANGED` findings showing expected vs. actual
-hashes. Claude does NOT fix the file — reports the finding per the skill's
-hard rules.
+**Expected:** runs `g0_validate.py`, shows exit `0`, the output and S0's missing list, then
+asks *Requirements complete, bounded, and verifiable?* Answer `PASS` and a name → `G0.md`
+records the answer, the date and `Decided by:`.
 
-*(Note: you must actually edit the file before this prompt for it to fail.
-If you don't edit it, it should PASS — that's also a valid test.)*
-
-#### Prompt 5 — Custody history
+#### Prompt 5 — Run S1
 
 ```
-Show the full custody history for GT/G0_StRS.md.
+Run S1
 ```
 
-**Expected:** Claude runs `custody_ledger.py history --doc GT/G0_StRS.md` and
-displays the timeline of actions (seq, timestamp, action, actor, hash prefix).
+**Expected:** writes `S1_artifacts/S1_design.md` (GT digests in Meta) and
+`S1_artifacts/S1_graph.html`, then `S1.md` with `| HITL | PASS |` naming the graph path.
+Open the graph: spiders, one per service, with the manifest text and no network needed.
 
-#### Prompt 6 — Run G1 (design synthesis)
+#### Prompt 6 — Run G1 (human review)
 
 ```
-Run G1: design the architecture from the sealed GT.
+Run G1
 ```
 
-**Expected:** Claude loads `.agents/skills/G1_start_design/SKILL.md`, checks that
-`.codeanvil/report/<cycle>/CC.md`'s latest iteration is `HITL: PASS`, runs the GT
-integrity check (Job 0), extracts the ASRs, then asks how many architecture
-candidates to generate (minimum 3, default 4). It works the nine jobs in order,
-pausing for **PASS** or **FEEDBACK** after each, writes `GT/G1_SRS.md`, validates
-it structurally, and appends iterations to `.codeanvil/report/<cycle>/G1.md`.
+**Expected:** the agent shows the graph path, the filled checklist (`open` findings first), the
+digest match and a recommendation, then **waits**. Answer `PASS` and a name → `G1.md`
+records it with `Based on: S1 iteration 1`. The agent says S2 is not available yet.
 
-After G1 runs, verify the design artifacts exist — one file per job:
+Expected `codeanvil status` afterwards:
 
-```bash
-ls /tmp/smoke-test/.codeanvil/report/<cycle>/G1_artifacts/
-# ASR.md  Arch_01.md  Arch_02.md  Arch_03.md ...  QA_matrix.md  ATAM.md  ADD.md  review_package.md
+```
+Cycles:
+  01_smoke_test (active)
+    S0: delivered (iteration 1)
+    G0: PASS (iteration 1)
+    S1: delivered (iteration 1)
+    G1: PASS (iteration 1)
 ```
 
-- `Arch_NN.md` files are zero-padded and match the number of candidates requested.
-- `FEEDBACK` rework **overwrites** the artifact file — it never appends.
-- `G1.md` still holds only iterations and verdicts, no design content.
+#### Failure paths to try
 
-*(If you ran Prompt 4's tampering test, restore `GT/G0_StRS.md` from the repo and
-re-seal before G1 — Job 0 fails on a tampered GT.)*
+| Case | How | Expected |
+|------|-----|----------|
+| G0 FAIL → S0 | Remove Part B from `build_package.md` before S0 | Placeholders, exit 1, `G0: FEEDBACK`; S0 re-run reports "needs Build Package content" |
+| Gate H refused | Answer FEEDBACK with `STK-SPEC-002: ...` | Reason stored verbatim; S0 re-entry reads it |
+| GT edited after S1 | Change one byte, run G1 | Digest mismatch shown to the human; nothing blocks |
+| G1 FEEDBACK → S1 | Remove a stub recipe in the design | Finding marked `open`; S1 re-run reads the FEEDBACK |
+| Rework routed from reports | Answer FEEDBACK at G1, run G1 again without S1 | `S1 must rework first. Run the S1 skill.`; no iteration written |
+| Stale PASS | After G1 PASS, re-run S1, then `codeanvil status` | `G1: PASS (iteration 1) [stale: based on S1 iteration 1, S1 is at 2]` |
+| Reports drive the chain | Delete `S1_graph.html`, run G1 | Prerequisite still passes; finding marked `advisory` |
+| Graph differs from design | Remove a module from the graph's `DATA`, run G1 | Finding marked `open` |
+| RFD closes the cycle | Answer RFD at G1, decide it, name a new cycle | Old cycle shows `(closed: superseded by <name>)`; G1 before the decision returns `Cycle suspended by RFD. Run the RFD skill.` |
+
+The flow is **not** end to end until S2 and G2 exist; nothing after G1 is covered here.
 
 ### 6. Cleanup
 
@@ -329,23 +321,16 @@ rm -rf /tmp/smoke-test
 
 After running the full flow, note:
 
-- [ ] Did `codeanvil create` scaffold all skills including custody-chain?
-- [ ] Did the AGENTS.md skill table list all three skills (G0, custody-chain, G1)
-      with the prerequisite chain?
-- [ ] Did Claude ask for a cycle name on project open and normalize it
-      (`01_smoke_test`)?
-- [ ] Did `.codeanvil/` contain `project.yaml` (with `cycle:`), `custody/`, and
-      an empty `report/` (no GT)?
-- [ ] Did each gate write one iterative `<cycle>/<gate>.md` report and ask
-      PASS/FEEDBACK?
-- [ ] Did G1 write design artifacts to `.codeanvil/report/<cycle>/G1_artifacts/`?
-- [ ] Did `codeanvil status` correctly read identity from the manifest?
+- [ ] Did `codeanvil create` scaffold S0, G0, S1, G1 and RFD (and no custody-chain)?
+- [ ] Did the AGENTS.md skill table list the chain S0 → G0 → S1 → G1 with RFD as `-`?
+- [ ] Did the agent ask for a cycle name on project open and normalize it (`01_smoke_test`)?
+- [ ] Did `.codeanvil/` contain `project.yaml` (with `cycle:`) and an empty `report/`?
+- [ ] Did each step write one iterative `<cycle>/<id>.md` report, and did G0 and G1 wait for
+      the human's answer?
+- [ ] Did S1 write the design and graph to `.codeanvil/report/<cycle>/S1_artifacts/`?
+- [ ] Did `codeanvil status` show stages as `delivered` and mark a reworked chain `stale`?
 - [ ] Did `codeanvil sync` register a cloned project without re-scaffolding?
-- [ ] Did Claude in the sandboxed session correctly identify it's in a user project?
 - [ ] Did G0 run with the correct project-relative path (`.agents/skills/...`)?
-- [ ] Did custody-chain scripts write to `.codeanvil/custody/` (not `.provenance/`)?
-- [ ] Did the provenance report format match the output contract in SKILL.md?
-- [ ] Did Claude refuse to fix a tampered GT file (hard rule: originals are read-only)?
 - [ ] Any path errors, missing files, or confusing agent behavior?
 
 Record findings and report back to improve the methodology and tooling.

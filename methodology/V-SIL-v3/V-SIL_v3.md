@@ -60,7 +60,7 @@ flowchart TD
     S0["S0 — Normalisation + GT"]:::stage
     G0{"G0 — Structural validation"}:::gate
     S1["S1 — Service topology + layered design"]:::stage
-    G1{"G1 — DAG + contract validation"}:::gate
+    G1{"G1 — Design review (HITL)"}:::gate
     S2["S2 — Per-service implementation + integration"]:::stage
     G2{"G2 — Adaptive verification"}:::gate
     T["Verified Prototype<br/>module + system-path VL evidence"]:::terminal
@@ -80,6 +80,7 @@ flowchart TD
     G2 -.->|module| S2
 
     S1 -.->|infeasible| RFD
+    G1 -.->|infeasible| RFD
     G2 -.->|infeasible| RFD
     RFD -.->|updated| BP
 ```
@@ -87,7 +88,7 @@ flowchart TD
 **Governing principles.**
 **P1.** HITL is an authorisation barrier; HIL is a validation barrier.
 **P2.** Oracle ≠ generator — the model never approves its own work [7].
-**P3.** Mechanical rejection beats LLM approval, never the reverse [8].
+**P3.** G0 is the only deterministic gate: its mechanical rejection beats any approval [8]. Every other gate verdict is human (HITL).
 **P4.** *Verified* ≠ *validated* — claims name the environment [9].
 
 ---
@@ -249,6 +250,8 @@ Supplied performance metadata is prior evidence, not a G2 verdict. If S1 chooses
 
 G1 answers: *Are all implementation-critical design choices resolved?*
 
+G1 is a human (HITL) design review, not a deterministic gate. An agent may prepare the review and recommend a verdict, including an RFD; the human decides.
+
 1. **Service topology.** Every service has one responsibility, deployment target, owner of state, and declared external ports; the network and COTS envelope support the topology.
 2. **Implementation DAG acyclicity.** No dependency cycle within or between service build units. Runtime message loops are reviewed separately for bounded behavior.
 3. **Interface completeness.** Every internal edge has a typed contract; every cross-service exchange has a versioned contract and failure behavior.
@@ -257,7 +260,7 @@ G1 answers: *Are all implementation-critical design choices resolved?*
 6. **Verification-profile consistency.** `hw_dependency: true` → `required_vl: VL-2`; system paths have a declared verification level and environment.
 7. **Supplied ML model, when used.** The weights and metadata are identified, the inference contract is implementable, and the COTS budget is credible. This check is omitted when the design has no ML model.
 
-**PASS** → S2. **FAIL** → S1.
+**PASS** → S2. **FAIL** → S1. **RFD** → §9.2, when the requirements are infeasible on the declared COTS platform.
 
 The [S1/G1 design template](S1_G1_template.md) expands these check families into ten general review items and one conditional ML item, including design decisions, COTS coherence, and risk assessment.
 
@@ -400,14 +403,17 @@ A **defect** means V-SIL can fix it internally. The implementation or the design
 
 An **RFD** means the Build Package requirements are **infeasible on the declared COTS platform**. V-SIL cannot fix it internally — the constraints themselves must change. V-SIL **suspends** until the Build Package is updated and re-enters at S0.
 
-An RFD can be emitted from **any stage**:
+An RFD can be emitted from **S1, G1, or any G2 sub-gate**. S0 and G0 do not emit one: S0 makes no judgement about feasibility and G0 checks structure only. Infeasibility discovered while implementing in S2 is reported through G2.
 
 | Discovered at | Example |
 |---|---|
 | S1 | Pipeline latency exceeds requirement under any partitioning on this HW |
+| G1 | Design review concludes that a latency budget cannot be met on this HW, by the reviewed design or by any other partitioning |
 | G2.0 | Unit tests reveal that two normative requirements conflict mathematically |
 | G2.1 | SIL metrics show P_d and P_fa cannot simultaneously meet thresholds |
 | G2.2 | HIL shows real hardware noise floor exceeds assumed budget |
+
+At S1 and G1 nothing has been measured yet, so the evidence is analysis and names no verification level (P4).
 
 ### 9.3 RFD contents
 

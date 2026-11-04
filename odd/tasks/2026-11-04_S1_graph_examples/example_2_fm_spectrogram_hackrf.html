@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>S1 dependency graph</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.9/dist/vis-network.min.js"></script>
+<style>
+  body{margin:0;font-family:system-ui}
+  #graph{width:100%;height:calc(100vh - 100px)}
+  #meta{width:fit-content;margin:10px;background:#e5e7eb;border:1px solid #9ca3af;box-shadow:0 2px 8px rgba(0,0,0,.25);padding:8px 10px;border-radius:6px;font:12px monospace}
+</style>
+</head><body>
+<pre id="meta"></pre>
+<div id="graph"></div>
+<script>
+// === DATA: this is all the agent needs to change ===
+const manifest = {
+  "id": "019a51c2-0002-7000-8000-000000000002",
+  "name": "FM spectrogram with HackRF One (illustrative)",
+  "gt": {
+    "strs": "GT/G0_StRS.md",
+    "syrs": "GT/G0_SyRS.md"
+  },
+  "cycle": "01_fm_spectrogram"
+};
+const services = [
+  {
+    "id": "SVC-SPECTRO",
+    "label": "SVC-SPECTRO\nSPECTRO base\nHAL port, routing",
+    "modules": [
+      {
+        "id": "hackrf_source",
+        "label": "hackrf_source\nVL-2",
+        "color": "#378ADD"
+      },
+      {
+        "id": "gain_control",
+        "label": "gain_control\nVL-2",
+        "color": "#378ADD"
+      },
+      {
+        "id": "iq_convert",
+        "label": "iq_convert\nVL-1",
+        "color": "#1D9E75"
+      },
+      {
+        "id": "psd_estimator",
+        "label": "psd_estimator\nVL-1",
+        "color": "#1D9E75"
+      },
+      {
+        "id": "dc_fix",
+        "label": "dc_fix\nVL-1",
+        "color": "#1D9E75"
+      },
+      {
+        "id": "freq_axis",
+        "label": "freq_axis\nVL-0",
+        "color": "#1D9E75"
+      },
+      {
+        "id": "waterfall_buffer",
+        "label": "waterfall_buffer\nVL-0",
+        "color": "#888780"
+      },
+      {
+        "id": "waterfall_view",
+        "label": "waterfall_view\nVL-1",
+        "color": "#888780"
+      }
+    ]
+  }
+];
+const hardware = [
+  {
+    "id": "HWC-RF-001",
+    "label": "HWC-RF-001\nHackRF One",
+    "to": [
+      "SVC-SPECTRO/hackrf_source",
+      "SVC-SPECTRO/gain_control"
+    ]
+  },
+  {
+    "id": "HWC-ANT-001",
+    "label": "HWC-ANT-001\nANT500",
+    "to": [
+      "SVC-SPECTRO/hackrf_source"
+    ]
+  }
+];
+const serviceContracts = [];
+// ===================================================
+
+const RED = '#D85A30', GREY = '#B4B2A9', BASE = '#7F77DD';
+const box = (n) => ({ ...n, shape: 'box', font: { color: '#fff', size: 12 } });
+
+document.title = `S1 dependency graph - ${manifest.name}`;
+document.getElementById('meta').textContent =
+  `id:    ${manifest.id}\nname:  ${manifest.name}\ncycle: ${manifest.cycle}\ngt:    ${manifest.gt.strs}, ${manifest.gt.syrs}`;
+
+const graph = document.getElementById('graph');
+if (typeof vis === 'undefined') {
+  graph.textContent = 'vis-network could not load: this page needs network access.';
+} else {
+  // Each service is a spider: base at the center, modules on the spokes.
+  // Module ids are prefixed by service, so two services may reuse a module name.
+  const nodes = [
+    ...services.map((s) => ({ id: s.id, label: s.label, color: BASE, shape: 'circle', font: { color: '#fff', size: 13 } })),
+    ...services.flatMap((s) => s.modules.map((m) => box({ ...m, id: `${s.id}/${m.id}` }))),
+    ...hardware.map((h) => box({ id: h.id, label: h.label, color: RED })),
+    ...serviceContracts.map((c) => box({ id: `c:${c.id}`, label: c.id, color: RED })),
+  ];
+  const edges = [
+    ...services.flatMap((s) => s.modules.map((m) => ({ from: s.id, to: `${s.id}/${m.id}`, color: { color: GREY } }))),
+    ...hardware.flatMap((h) => h.to.map((to) => ({ from: h.id, to, arrows: 'to', dashes: true, color: { color: RED } }))),
+    ...serviceContracts.flatMap((c) => [
+      ...c.from.map((from) => ({ from, to: `c:${c.id}`, arrows: 'to', color: { color: RED } })),
+      ...c.to.map((to) => ({ from: `c:${c.id}`, to, arrows: 'to', color: { color: RED } })),
+    ]),
+  ];
+  new vis.Network(graph, { nodes, edges }, {
+    layout: { randomSeed: 1 },
+    physics: { solver: 'repulsion', repulsion: { nodeDistance: 180 } },
+    nodes: { borderWidth: 0, shadow: { enabled: true, size: 6, color: 'rgba(0,0,0,0.1)' } },
+    edges: { width: 1.5, smooth: { type: 'continuous' } },
+    interaction: { hover: true, tooltipDelay: 100 },
+  });
+}
+</script>
+</body></html>

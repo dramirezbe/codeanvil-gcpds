@@ -68,11 +68,10 @@ def _copy_skills(project_dir: Path) -> None:
 def _copy_gt_reference_templates(project_dir: Path) -> None:
     """GT templates are locked reference artifacts inside their gate skill,
     not user-editable project files."""
-    for skill_key, list_key in (("g0_skill", "gt_reference_templates"),
-                                ("g1_skill", "g1_reference_templates")):
+    for skill_key in ("s0_skill", "g0_skill"):
         dest_dir = project_dir / SKILLS_DIRNAME / CONFIG[skill_key] / "templates"
         dest_dir.mkdir(parents=True, exist_ok=True)
-        for template_name in CONFIG[list_key]:
+        for template_name in CONFIG["gt_reference_templates"]:
             src = TEMPLATES_DIR / "GT" / template_name
             if not src.exists():
                 log.warning("GT reference template %s not found", src)

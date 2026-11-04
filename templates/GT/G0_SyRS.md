@@ -29,7 +29,7 @@
 | Document ID             | Title                                    | Relationship                      |
 |-------------------------|------------------------------------------|-----------------------------------|
 | `STRS-_ACRONYM_-_NNN_`  | _Stakeholder Requirements Specification_ | Upstream contract (G0 pair)       |
-| `SRS-_ACRONYM_-_NNN_`   | _Software Requirements Specification_    | Software design output (G1)       |
+| `S1-_ACRONYM_-_NNN_`    | _S1 design document_                     | Software design output (S1)       |
 
 > **Note:** The SyRS is the detailed per-measurand technical specification derived
 > from the G0-validated StRS. Every SYS- block carries a `Traces to` field pointing

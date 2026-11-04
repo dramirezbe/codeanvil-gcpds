@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Spider — vis-network</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.9/dist/vis-network.min.js"></script>
+<style>body{margin:0;font-family:system-ui}#graph{width:100%;height:100vh}</style>
+</head><body>
+<div id="graph"></div>
+<script>
+// === DATA: this is all the agent needs to change ===
+const hub = { id: 'base', label: 'EDGE base\nHAL, routing', color: '#7F77DD', font: {color:'#fff'} };
+const modules = [
+  { id: 'm1', label: 'iq_acquisition\nVL-2',       color: '#378ADD' },
+  { id: 'm2', label: 'fft_engine\nVL-1',           color: '#378ADD' },
+  { id: 'm3', label: 'feature_extractor\nVL-1',    color: '#1D9E75' },
+  { id: 'm4', label: 'classifier\nVL-0',           color: '#1D9E75' },
+  { id: 'm5', label: 'audio_demod\nVL-1',          color: '#378ADD' },
+  { id: 'm6', label: 'data_store\nVL-0',           color: '#888780' },
+];
+const external = [
+  { id: 'hwc', label: 'HWC-001\nHackRF', color: '#D85A30', font:{color:'#fff'} },
+  { id: 'occ', label: 'occupancy.v1\nout',  color: '#D85A30', font:{color:'#fff'}, shape:'box' },
+  { id: 'cfg', label: 'configure.v1\nin',   color: '#1D9E75', font:{color:'#fff'}, shape:'box' },
+];
+// ===================================================
+
+const nodes = new vis.DataSet([
+  { ...hub, shape:'circle', size:45, font:{...hub.font, size:13, multi:'html'} },
+  ...modules.map(m => ({ ...m, shape:'box', font:{color:'#fff', size:12} })),
+  ...external.map(e => ({ ...e, font:{...e.font, size:11} })),
+]);
+const edges = new vis.DataSet([
+  ...modules.map(m => ({ from: 'base', to: m.id, color:{color:'#B4B2A9'} })),
+  { from: 'hwc', to: 'm1', arrows:'to', color:{color:'#D85A30'}, dashes:true },
+  { from: 'base', to: 'occ', arrows:'to', color:{color:'#D85A30'} },
+  { from: 'cfg', to: 'base', arrows:'to', color:{color:'#1D9E75'} },
+]);
+
+new vis.Network(document.getElementById('graph'), { nodes, edges }, {
+  physics: { solver:'repulsion', repulsion:{ nodeDistance:180 } },
+  nodes: { borderWidth:0, shadow:{ enabled:true, size:6, color:'rgba(0,0,0,0.1)' } },
+  edges: { width:1.5, smooth:{ type:'continuous' } },
+  interaction: { hover:true, tooltipDelay:100 },
+});
+</script>
+</body></html>

@@ -60,7 +60,7 @@ flowchart TD
     S0["S0 — Normalización + GT"]:::stage
     G0{"G0 — Validación estructural"}:::gate
     S1["S1 — Topología de servicios + diseño en capas"]:::stage
-    G1{"G1 — Validación de DAG + contratos"}:::gate
+    G1{"G1 — Revisión de diseño (HITL)"}:::gate
     S2["S2 — Implementación por servicio + integración"]:::stage
     G2{"G2 — Verificación adaptativa"}:::gate
     T["Prototipo Verificado<br/>evidencia VL por módulo y ruta"]:::terminal
@@ -80,6 +80,7 @@ flowchart TD
     G2 -.->|módulo| S2
 
     S1 -.->|inviable| RFD
+    G1 -.->|inviable| RFD
     G2 -.->|inviable| RFD
     RFD -.->|actualizado| BP
 ```
@@ -87,7 +88,7 @@ flowchart TD
 **Principios rectores.**
 **P1.** HITL es una barrera de autorización; HIL es una barrera de validación.
 **P2.** Oráculo ≠ generador — el modelo nunca aprueba su propio trabajo [7].
-**P3.** El rechazo mecánico prevalece sobre la aprobación del LLM, nunca al revés [8].
+**P3.** G0 es la única compuerta determinista: su rechazo mecánico prevalece sobre cualquier aprobación [8]. Todos los demás veredictos de compuerta son humanos (HITL).
 **P4.** *Verificado* ≠ *validado* — las afirmaciones nombran el entorno [9].
 
 ---
@@ -249,6 +250,8 @@ La metadata de rendimiento recibida es evidencia previa, no un veredicto de G2. 
 
 G1 responde: *¿Están resueltas todas las decisiones de diseño críticas para la implementación?*
 
+G1 es una revisión de diseño humana (HITL), no una compuerta determinista. Un agente puede preparar la revisión y recomendar un veredicto, incluida una RFD; decide el humano.
+
 1. **Topología de servicios.** Cada servicio tiene responsabilidad, destino de despliegue, dueño del estado y puertos externos; la red y la envolvente COTS sustentan la topología.
 2. **Aciclicidad del DAG de implementación.** Sin ciclos dentro de los servicios ni entre unidades de construcción. Los bucles de mensajes en ejecución se revisan aparte.
 3. **Completitud de interfaces.** Cada arista interna tiene contrato tipado; cada intercambio entre servicios tiene contrato versionado y comportamiento ante fallos.
@@ -257,7 +260,7 @@ G1 responde: *¿Están resueltas todas las decisiones de diseño críticas para 
 6. **Consistencia del perfil de verificación.** `hw_dependency: true` → `required_vl: VL-2`; las rutas de sistema declaran nivel y entorno de verificación.
 7. **Modelo de ML suministrado, si se utiliza.** Los pesos y la metadata están identificados, el contrato de inferencia es implementable y el presupuesto COTS es creíble. Se omite esta comprobación cuando el diseño no tiene modelo de ML.
 
-**PASS** → S2. **FAIL** → S1.
+**PASS** → S2. **FAIL** → S1. **RFD** → §9.2, cuando los requisitos son inviables sobre la plataforma COTS declarada.
 
 La [plantilla de diseño S1/G1](S1_G1_template.md) desarrolla estas familias en diez puntos generales de revisión y uno condicional de ML, incluidos decisiones de diseño, coherencia COTS y evaluación de riesgos.
 
@@ -400,14 +403,17 @@ Un **defecto** significa que V-SIL puede corregirlo internamente. La implementac
 
 Una **RFD** significa que los requisitos del Build Package son **inviables sobre la plataforma COTS declarada**. V-SIL no puede corregirlo internamente — las restricciones mismas deben cambiar. V-SIL **se suspende** hasta que el Build Package se actualice y reingresa en S0.
 
-Una RFD puede emitirse desde **cualquier etapa**:
+Una RFD puede emitirse desde **S1, G1 o cualquier subcompuerta de G2**. S0 y G0 no la emiten: S0 no hace ningún juicio de viabilidad y G0 solo comprueba la estructura. La inviabilidad descubierta al implementar en S2 se reporta a través de G2.
 
 | Descubierta en | Ejemplo |
 |---|---|
 | S1 | La latencia del pipeline excede el requisito bajo cualquier particionamiento sobre este HW |
+| G1 | La revisión de diseño concluye que un presupuesto de latencia no se puede cumplir sobre este HW, ni con el diseño revisado ni con otro particionamiento |
 | G2.0 | Las pruebas unitarias revelan que dos requisitos normativos entran en conflicto matemáticamente |
 | G2.1 | Las métricas SIL muestran que P_d y P_fa no pueden cumplir simultáneamente los umbrales |
 | G2.2 | HIL muestra que el piso de ruido del hardware real excede el presupuesto asumido |
+
+En S1 y G1 aún no se ha medido nada, así que la evidencia es de análisis y no nombra ningún nivel de verificación (P4).
 
 ### 9.3 Contenido de la RFD
 

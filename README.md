@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/dramirezbe/codeanvil-gcpds/actions/workflows/ci.yml/badge.svg)](https://github.com/dramirezbe/codeanvil-gcpds/actions/workflows/ci.yml)
 
-Agent-agnostic project scaffolding, templates, and agent definitions for the **V-SIL methodology** (V-model at the SIL tier, made continuous). Develops, tests, and validates software on COTS hardware — informed by Ground Truth documents — through a pipeline of deterministic and agent-driven gates.
+Agent-agnostic project scaffolding, templates, and agent definitions for the **V-SIL methodology** (V-model at the SIL tier, made continuous). Develops, tests, and validates software on COTS hardware — informed by Ground Truth documents — through the V-SIL v3 flow `S0 → G0 → S1 → G1 → (S2 → G2)`: agent-driven stages, one deterministic gate (G0) and human review gates.
 
 Works with any AI coding agent: Claude, Codex, OpenCode, Pi, or others.
 
@@ -49,12 +49,13 @@ codeanvil create myproject
 # ...or in a specific path
 codeanvil create myproject -p ~/projects
 
-# Write your GT files in myproject/GT/
-#   G0_StRS.md  — Stakeholder Requirements Specification (IEEE 29148 §9.4)
-#   G0_SyRS.md  — System Requirements Specification (IEEE 29148 §9.5)
-# Reference templates: .agents/skills/G0_valid_req_and_GT/templates/
+# Write your Build Package in myproject/GT/build_package.md, then ask your agent to run
+# the S0 skill. It writes the GT pair (IEEE 29148):
+#   G0_StRS.md  — Stakeholder Requirements Specification (§9.4)
+#   G0_SyRS.md  — System Requirements Specification (§9.5)
+# Reference templates: .agents/skills/S0_normalise_build_package/templates/
 
-# Validate the GT pair (deterministic, no AI)
+# Validate the GT pair yourself (deterministic, no AI; the G0 skill runs the same script)
 cd myproject
 python .agents/skills/G0_valid_req_and_GT/scripts/g0_validate.py GT/G0_StRS.md GT/G0_SyRS.md
 
@@ -77,7 +78,7 @@ codeanvil now --machine
 | `codeanvil create --name <label> [--folder <dir>] [-p <path>] [--mcp <name>]` | Scaffold non-interactively (agents, scripts, CI); folder defaults to the derived snake_case name |
 | `codeanvil create <name> [-p <path>] [--mcp <name>]` | Legacy form: name is both project label and folder name (deprecated) |
 | `codeanvil sync` | Register or move a cloned project (reads `.codeanvil/project.yaml`) |
-| `codeanvil status [name]` | Latest gate report per gate (from cwd, or by project name) |
+| `codeanvil status [name]` | Latest report per stage/gate in flow order, with `delivered`, `stale` and `closed` markers (from cwd, or by project name) |
 | `codeanvil list` | Registered projects (short UUID + local path) |
 | `codeanvil now [--machine]` | System timestamp: human-readable or filename-safe |
 
@@ -132,13 +133,13 @@ codeanvil create [<name> | --name <label> [--folder <dir>]] [-p <path>] [--mcp m
        ├── AGENTS.md                 ← generated (canonical agent instructions)
        ├── CLAUDE.md → AGENTS.md     ← symlink
        ├── GT/
-       │    ├── README.md            ← instructions: write G0_StRS.md, G0_SyRS.md here
-       │    ├── G0_StRS.md           ← you author (IEEE 29148 §9.4)
-       │    └── G0_SyRS.md           ← you author (IEEE 29148 §9.5)
+       │    ├── README.md            ← instructions: write build_package.md here
+       │    ├── build_package.md     ← you author; S0 reads it
+       │    ├── G0_StRS.md           ← written by S0 (IEEE 29148 §9.4)
+       │    └── G0_SyRS.md           ← written by S0 (IEEE 29148 §9.5)
        ├── .codeanvil/               ← machine-generated methodology artifacts
        │    ├── project.yaml         ← project identity (UUIDv7, no machine paths)
-       │    ├── custody/             ← custody-chain snapshot + ledger
-       │    └── report/              ← per-cycle iterative reports (<cycle>/<gate>.md)
+       │    └── report/              ← per-cycle iterative reports (<cycle>/<id>.md)
        ├── .agents/
        │    ├── skills/             ← canonical skill store
        │    │    ├── G0_valid_req_and_GT/
@@ -148,8 +149,10 @@ codeanvil create [<name> | --name <label> [--folder <dir>]] [-p <path>] [--mcp m
        │    │    │    │    └── G0_SyRS.md
        │    │    │    ├── references/RULES.md
        │    │    │    └── scripts/g0_validate.py
-       │    │    ├── G1_start_design/
-       │    │    │    └── SKILL.md
+       │    │    ├── S0_normalise_build_package/   ← own blueprints in templates/
+       │    │    ├── S1_design_services/           ← references/ + assets/ (vis-network)
+       │    │    ├── G1_design_review/
+       │    │    ├── RFD_request_for_deviation/
        │    │    └── marconi-*/SKILL.md     ← (if --mcp marconi) 6 RF/SDR skills
        │    └── mcp.yaml            ← (if --mcp) agent-agnostic MCP manifest
        ├── .mcp.json                ← (if --mcp) Claude Code MCP server config
@@ -160,19 +163,24 @@ codeanvil create [<name> | --name <label> [--folder <dir>]] [-p <path>] [--mcp m
 
 Skills live in `.agents/skills/` — the single source of truth. Agent runtime directories (`.claude/skills/`, `.opencode/skills/`, `.codex/skills/`) are symlinks, so every runtime discovers the same skills automatically.
 
-GT reference templates are **locked** inside each skill (e.g. `.agents/skills/G0_.../templates/`). Users write their own GT files in `GT/`.
+GT reference templates are **locked** inside the skills that use them (`.agents/skills/S0_.../templates/` and `.agents/skills/G0_.../templates/`). Users write their Build Package in `GT/`.
 
-1. **Write your GT** — author `G0_StRS.md` and `G0_SyRS.md` in `GT/`, following the locked reference templates
-2. **G0 validates structure** — a deterministic script checks that both GT documents follow the expected format and that the pair is cross-consistent (G0-X). Hard pass/fail, no LLM. The SRS (Software Requirements Specification, §9.6) is produced later at G1.
-3. **G1+ gates run agents** — AI coding agents (any runtime) execute skills that drive design, implementation, and verification stages. Each gate reads the GT and prior gate outputs.
+1. **Write your Build Package** — `GT/build_package.md`. A hand-written StRS + SyRS pair is also accepted.
+2. **S0 normalises** — an agent casts the Build Package into the locked StRS and SyRS blueprints, in one pass, inventing nothing.
+3. **G0 validates structure** — a deterministic script checks that both GT documents follow the expected format and that the pair is cross-consistent (G0-X). Hard pass/fail, no LLM. Then a human answers Gate H: *Requirements complete, bounded, and verifiable?*
+4. **S1 designs** — an agent writes the design of a system of layered services and its dependency graph.
+5. **G1 reviews** — a human decides whether all implementation-critical design choices are resolved (PASS, FEEDBACK or RFD).
+6. **RFD** — when a requirement is infeasible on the declared COTS platform, a decision document suspends the cycle until the Build Package author decides. S2 and G2 (implementation and verification) are planned.
 
 ## Definitions
 
 | Acronym | Meaning |
 |---------|---------|
-| **GT**  | Ground Truth — the StRS + SyRS `.md` pair that defines the project contract (the SRS is produced at G1) |
+| **GT**  | Ground Truth — the StRS + SyRS `.md` pair that defines the project contract (produced by S0 from the Build Package) |
 | **T#**  | Test GT — real-world V-SIL input sets (`methodology/test/T<n>_<name>/`) used to validate the methodology end-to-end |
+| **S#**  | Stage # — a step that produces an artifact (S0 normalise, S1 design) |
 | **G#**  | Gate # — a verification checkpoint in the V-SIL pipeline |
+| **RFD** | Request for Deviation — requirements infeasible on the declared COTS platform |
 | **COTS** | Commercial Off-The-Shelf |
 | **OOTB** | Out-Of-The-Box |
 | **DAQ** | Data Acquisition (device/system; e.g. SDR) |
@@ -216,16 +224,18 @@ codeanvil-gcpds/
 │   ├── GT/                  # Ground Truth document templates (IEEE 29148)
 │   │   ├── G0_StRS.md      # StRS template (§9.4 — merged stakeholder + HW + normativity)
 │   │   ├── G0_SyRS.md      # SyRS template (§9.5 — per-measurand system requirements)
-│   │   ├── G1_SRS.md       # SRS template (§9.6 — G1 output)
 │   │   ├── README.md
 │   │   └── legacy/         # Old template versions (v1, v2, v3)
-│   └── skills/              # Gate skills (deterministic + agent-driven)
+│   ├── backups/             # Retired skills (custody-chain, G1_start_design, G1_SRS.md)
+│   └── skills/              # Stage and gate skills (self-contained)
+│       ├── S0_normalise_build_package/
+│       ├── S1_design_services/     # + references/ and assets/ (vis-network)
+│       ├── G1_design_review/       # + references/G1_CHECKLIST.md
+│       ├── RFD_request_for_deviation/
 │       ├── G0_valid_req_and_GT/
 │       │   ├── SKILL.md            # Agent contract (agentskills.io format)
 │       │   ├── references/RULES.md # Full Phase 1-4 rule tables
 │       │   └── scripts/g0_validate.py  # Deterministic validator (stdlib only)
-│       └── G1_start_design/
-│           └── SKILL.md
 │
 ├── odd/tasks/               # Archived plans and task logs (date-prefixed)
 │

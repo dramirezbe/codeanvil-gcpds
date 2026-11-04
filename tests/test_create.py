@@ -328,9 +328,14 @@ def test_beaupy_is_a_runtime_dependency():
 
 def test_config_declares_skill_prerequisite_chain():
     skills = CONFIG["skills"]
-    assert skills["G0_valid_req_and_GT"]["prerequisite"] is None
-    assert skills["custody-chain"]["prerequisite"] == "G0"
-    assert skills["G1_start_design"]["prerequisite"] == "CC"
+    assert list(skills) == [
+        "S0_normalise_build_package", "G0_valid_req_and_GT",
+        "S1_design_services", "G1_design_review",
+    ]
+    assert skills["S0_normalise_build_package"]["prerequisite"] is None
+    assert skills["G0_valid_req_and_GT"]["prerequisite"] == "S0"
+    assert skills["S1_design_services"]["prerequisite"] == "G0"
+    assert skills["G1_design_review"]["prerequisite"] == "S1"
 
 
 def test_create_makes_report_dir_without_cycle_subdir(tmp_path, db_path):
@@ -387,14 +392,19 @@ def test_agents_md_skill_table_shows_the_prerequisite_chain(tmp_path, db_path):
 
     assert "| Gate | Skill | Prerequisite |" in text
     lines = text.splitlines()
-    g0 = next(line for line in lines if ".agents/skills/G0_valid_req_and_GT/" in line)
-    cc = next(line for line in lines if ".agents/skills/custody-chain/" in line)
-    g1 = next(line for line in lines if ".agents/skills/G1_start_design/" in line)
+    rows = {
+        name: next(line for line in lines if f".agents/skills/{name}/" in line)
+        for name in ("S0_normalise_build_package", "G0_valid_req_and_GT",
+                     "S1_design_services", "G1_design_review", "RFD_request_for_deviation")
+    }
 
-    assert "None (entry point)" in g0
-    assert "`G0.md` latest iteration `HITL: PASS`" in cc
-    assert "`CC.md` latest iteration `HITL: PASS`" in g1
-    assert lines.index(g0) < lines.index(cc) < lines.index(g1)
+    assert "None (entry point)" in rows["S0_normalise_build_package"]
+    assert "`S0.md` latest iteration `HITL: PASS`" in rows["G0_valid_req_and_GT"]
+    assert "`G0.md` latest iteration `HITL: PASS`" in rows["S1_design_services"]
+    assert "`S1.md` latest iteration `HITL: PASS`" in rows["G1_design_review"]
+    assert rows["RFD_request_for_deviation"].rstrip().endswith("| - |")
+    order = [lines.index(rows[name]) for name in rows]
+    assert order == sorted(order)
 
 
 def _skill_text(*parts: str) -> str:
@@ -406,43 +416,192 @@ def test_g0_skill_writes_an_iterative_report():
 
     assert ".codeanvil/report/<cycle-name>/G0.md" in text
     assert "HITL: FEEDBACK" in text
-    assert "no prerequisite" in text.lower()
+    assert "no prerequisite" not in text.lower()
+    assert "S0 must pass first. Run the S0 skill." in text
+    assert "S0 must rework first. Run the S0 skill." in text
+    assert "Based on: S0 iteration" in text
+    assert "Requirements complete, bounded, and verifiable?" in text
+    assert "Decided by:" in text
+    assert "| HITL | PASS |" in text
 
 
-def test_custody_skill_requires_a_passing_g0_report():
-    text = _skill_text("custody-chain")
-
-    assert ".codeanvil/report/<cycle-name>/G0.md" in text
-    assert "G0 must pass first. Run the G0 skill." in text
-    assert ".codeanvil/report/<cycle-name>/CC.md" in text
+def _scaffold_skill(tmp_path, skill: str, *parts: str) -> Path:
+    return tmp_path / "proj" / ".agents" / "skills" / skill / Path(*parts)
 
 
-def test_g1_skill_requires_a_passing_custody_report():
-    text = _skill_text("G1_start_design")
+def test_scaffold_ships_the_v3_chain_and_not_the_retired_skills(tmp_path, db_path):
+    cmd_create(None, tmp_path, project_name="Proj")
+    skills = tmp_path / "proj" / ".agents" / "skills"
 
-    assert ".codeanvil/report/<cycle-name>/CC.md" in text
-    assert "Custody chain must pass first. Run the custody-chain skill." in text
-    assert ".codeanvil/report/<cycle-name>/G1.md" in text
+    for name in ("S0_normalise_build_package", "G0_valid_req_and_GT", "S1_design_services",
+                 "G1_design_review", "RFD_request_for_deviation"):
+        assert (skills / name / "SKILL.md").is_file()
+    assert not (skills / "custody-chain").exists()
+    assert not (skills / "G1_start_design").exists()
+    text = (tmp_path / "proj" / "AGENTS.md").read_text(encoding="utf-8")
+    for retired in ("custody-chain", "CC.md", "G1_SRS", "G1_artifacts"):
+        assert retired not in text
 
 
-def test_scaffolded_g1_skill_writes_artifacts_to_g1_artifacts_dir(tmp_path, db_path):
+def test_s0_blueprints_match_the_g0_copies(tmp_path, db_path):
     cmd_create(None, tmp_path, project_name="Proj")
 
-    text = (
-        tmp_path / "proj" / ".agents" / "skills" / "G1_start_design" / "SKILL.md"
-    ).read_text(encoding="utf-8")
+    for name in ("G0_StRS.md", "G0_SyRS.md"):
+        s0 = _scaffold_skill(tmp_path, "S0_normalise_build_package", "templates", name)
+        g0 = _scaffold_skill(tmp_path, "G0_valid_req_and_GT", "templates", name)
+        assert s0.read_bytes() == g0.read_bytes()
 
-    assert ".codeanvil/report/<cycle-name>/G1_artifacts/" in text
-    assert "Arch_NN.md" in text
+
+def test_scaffolded_s1_ships_its_graph_template_and_library(tmp_path, db_path):
+    cmd_create(None, tmp_path, project_name="Proj")
+
+    template = _scaffold_skill(tmp_path, "S1_design_services", "references", "S1_graph_template.html")
+    library = _scaffold_skill(tmp_path, "S1_design_services", "assets", "vis-network.min.js")
+    assert template.is_file() and library.is_file()
+    html = template.read_text(encoding="utf-8")
+    assert "// === DATA" in html
+    assert "https://" not in html.split("<style>")[0]
+    assert _scaffold_skill(tmp_path, "S1_design_services", "references", "S1_design.md").is_file()
+    assert _scaffold_skill(tmp_path, "G1_design_review", "references", "G1_CHECKLIST.md").is_file()
+
+
+def test_scaffolded_skills_are_self_contained(tmp_path, db_path):
+    """C10 — a skill never points into another skill's folder or into methodology/."""
+    cmd_create(None, tmp_path, project_name="Proj")
+    skills = tmp_path / "proj" / ".agents" / "skills"
+    names = [path.name for path in skills.iterdir() if path.is_dir()]
+
+    for skill in names:
+        others = [name for name in names if name != skill]
+        for file in (skills / skill).rglob("*"):
+            if file.suffix not in (".md", ".html") or not file.is_file():
+                continue
+            text = file.read_text(encoding="utf-8")
+            assert "methodology/" not in text, file
+            for other in others:
+                assert f".agents/skills/{other}/" not in text, (file, other)
+
+
+# --- V-SIL v3 skills: S0, S1, G1, RFD (text contracts) -----------------------
+
+def _skill_file(skill: str, *parts: str) -> Path:
+    return TEMPLATES_DIR / "skills" / skill / Path(*parts)
+
+
+def test_s0_skill_is_the_entry_point_and_normalises_the_build_package():
+    text = _skill_text("S0_normalise_build_package")
+
+    assert ".codeanvil/report/<cycle-name>/S0.md" in text
+    assert "GT/build_package.md" in text
+    assert "no prerequisite" in text.lower()
+    assert "| HITL | PASS |" in text
+    assert "S0 complete. Run the G0 skill." in text
+    assert "in **any** cycle" in text  # RFD re-entry is not a hand-written pair
+
+
+def test_s1_skill_writes_the_design_and_graph_to_s1_artifacts():
+    text = _skill_text("S1_design_services")
+
+    assert ".codeanvil/report/<cycle-name>/S1.md" in text
+    assert "S1_artifacts/S1_design.md" in text
+    assert "G0 must pass first. Run the G0 skill." in text
+    assert "Based on: G0 iteration" in text
+    assert "| HITL | PASS |" in text
+    assert "g1_check" not in text
+    assert "G1_CHECKLIST" not in text  # self-contained: never reads G1's folder
+
+
+def test_s1_skill_builds_the_spider_graph_from_its_own_template():
+    text = _skill_text("S1_design_services")
+
+    assert "S1_artifacts/S1_graph.html" in text
+    assert "S1_graph_template.html" in text
+    assert "spider" in text
+    assert ".codeanvil/project.yaml" in text
+    assert "DATA" in text
+
+
+def test_s1_graph_template_is_offline_and_ships_the_vendored_library():
+    template = _skill_file("S1_design_services", "references", "S1_graph_template.html")
+    library = _skill_file("S1_design_services", "assets", "vis-network.min.js")
+
+    html = template.read_text(encoding="utf-8")
+    assert "// === DATA" in html and "// ===" in html
+    assert "https://" not in html.split("<style>")[0]  # no remote script source
+    assert "assets/vis-network.min.js" in html
+    assert "@version 9.1.9" in library.read_text(encoding="utf-8")[:400]
+
+
+def test_s1_design_template_keeps_the_numbered_sections():
+    text = _skill_file("S1_design_services", "references", "S1_design.md").read_text(encoding="utf-8")
+
+    for heading in ("## 0. COTS envelope", "## 1. Building block view", "### 2.2 Topological",
+                    "### 3.4 Service → service contracts", "## 4. Traceability",
+                    "## 5. Design decisions", "## 6. Risks"):
+        assert heading in text
+
+
+def test_g1_skill_is_a_human_review_with_no_script():
+    text = _skill_text("G1_design_review")
+
+    assert ".codeanvil/report/<cycle-name>/G1.md" in text
+    assert "S1 must pass first. Run the S1 skill." in text
+    assert "S1 must rework first. Run the S1 skill." in text
+    assert "Cycle suspended by RFD. Run the RFD skill." in text
+    assert "Based on: S1 iteration" in text
+    assert "PASS" in text and "FEEDBACK" in text and "RFD" in text
+    assert "S1_graph.html" in text
+    assert "Decided by:" in text
+    assert "g1_check" not in text
+    assert not (TEMPLATES_DIR / "skills" / "G1_design_review" / "scripts").exists()
+    assert _skill_file("G1_design_review", "references", "G1_CHECKLIST.md").is_file()
+
+
+def test_rfd_skill_separates_defects_from_infeasible_requirements():
+    text = _skill_text("RFD_request_for_deviation")
+
+    assert ".codeanvil/report/<cycle-name>/RFD.md" in text
+    assert "RFD_artifacts/RFD-NNN.md" in text
+    assert "infeasible on the declared COTS platform" in text
+    assert "ANALYSIS (no VL)" in text
+    assert "Superseded by cycle:" in text
+    assert "Outcome: Withdrawn" in text
+
+
+def test_chain_skills_refuse_a_cycle_closed_by_an_rfd():
+    for skill in ("S0_normalise_build_package", "G0_valid_req_and_GT",
+                  "S1_design_services", "G1_design_review"):
+        text = _skill_text(skill)
+        assert "Cycle closed by RFD. Continue in cycle <name>." in text, skill
+        assert "Superseded by cycle:" in text, skill
+
+
+def test_rfd_skill_requires_a_new_unique_cycle_name_and_records_the_build_package_digest():
+    text = _skill_text("RFD_request_for_deviation")
+
+    assert "Build Package digest:" in text
+    assert "must not match an existing folder" in text
+    assert "redo the whole flow" in text
+
+
+def test_s0_skill_requires_an_updated_build_package_after_an_rfd():
+    text = _skill_text("S0_normalise_build_package")
+
+    assert "Build Package unchanged since the RFD. Update GT/build_package.md first." in text
+    assert "Build Package digest:" in text
 
 
 # --- status reads cycle-scoped reports (T7) ---------------------------------
 
-def _write_report(project, cycle: str, gate: str, iterations: list[tuple[int, str]]) -> None:
+def _write_report(
+    project, cycle: str, gate: str, iterations: list[tuple],
+) -> None:
+    """Each iteration is (number, hitl) or (number, hitl, description)."""
     report_dir = project / ".codeanvil" / "report" / cycle
     report_dir.mkdir(parents=True, exist_ok=True)
     sections = []
-    for number, hitl in iterations:
+    for number, hitl, *rest in iterations:
+        description = rest[0] if rest else "N/A"
         sections.append(
             f"## Iteration {number}\n\n"
             "| Field       | Value |\n"
@@ -452,7 +611,7 @@ def _write_report(project, cycle: str, gate: str, iterations: list[tuple[int, st
             f"| Iteration   | {number} |\n"
             f"| Cycle       | {cycle} |\n"
             f"| HITL        | {hitl} |\n\n"
-            "### Description\n\nN/A\n"
+            f"### Description\n\n{description}\n"
         )
     (report_dir / f"{gate}.md").write_text(
         f"# {gate}\n\n" + "\n---\n\n".join(sections), encoding="utf-8"
@@ -542,6 +701,116 @@ def test_status_reports_latest_hitl_not_first(tmp_path, db_path, capsys):
     out = capsys.readouterr().out
     assert "G0: FEEDBACK (iteration 2)" in out
     assert "G0: PASS" not in out
+
+
+# --- status: chain order, delivered stages, stale reports, closed cycles (T10) --
+
+def _status_out(tmp_path, capsys, reports, cycle="01_c"):
+    """reports: (gate, iterations) pairs written into one active cycle."""
+    cmd_create(None, tmp_path, project_name="Proj")
+    project = tmp_path / "proj"
+    _set_cycle(project, cycle)
+    for gate, iterations in reports:
+        _write_report(project, cycle, gate, iterations)
+    cmd_status("Proj")
+    return capsys.readouterr().out
+
+
+def test_status_orders_gates_by_the_chain_then_unknown_ids(tmp_path, db_path, capsys):
+    out = _status_out(tmp_path, capsys, [
+        ("RFD", [(1, "FEEDBACK")]), ("CC", [(1, "PASS")]), ("S1", [(1, "PASS")]),
+        ("G0", [(1, "PASS")]), ("S0", [(1, "PASS")]),
+    ])
+    positions = [out.index(f"    {gate}:") for gate in ("S0", "G0", "S1", "CC", "RFD")]
+    assert positions == sorted(positions)
+
+
+def test_status_prints_a_passing_stage_as_delivered(tmp_path, db_path, capsys):
+    out = _status_out(tmp_path, capsys, [
+        ("S1", [(1, "PASS")]), ("G1", [(1, "PASS")]), ("S0", [(1, "FEEDBACK")]),
+    ])
+    assert "S1: delivered (iteration 1)" in out
+    assert "G1: PASS (iteration 1)" in out
+    assert "S0: FEEDBACK (iteration 1)" in out
+
+
+def test_status_marks_a_report_stale_when_its_predecessor_moved_on(tmp_path, db_path, capsys):
+    out = _status_out(tmp_path, capsys, [
+        ("S1", [(1, "PASS"), (2, "PASS")]),
+        ("G1", [(1, "PASS", "Based on: S1 iteration 1")]),
+    ])
+    assert "G1: PASS (iteration 1) [stale: based on S1 iteration 1, S1 is at 2]" in out
+
+
+def test_status_propagates_staleness_down_the_chain(tmp_path, db_path, capsys):
+    out = _status_out(tmp_path, capsys, [
+        ("S1", [(1, "PASS"), (2, "PASS")]),
+        ("G1", [(1, "PASS", "Based on: S1 iteration 1")]),
+        ("S2", [(1, "PASS", "Based on: G1 iteration 1")]),
+    ])
+    assert "S2: delivered (iteration 1) [stale: G1 is stale]" in out
+
+
+def test_status_shows_no_suffix_for_an_up_to_date_report(tmp_path, db_path, capsys):
+    out = _status_out(tmp_path, capsys, [
+        ("S1", [(1, "PASS"), (2, "PASS")]),
+        ("G1", [(1, "PASS", "Based on: S1 iteration 2")]),
+    ])
+    assert "G1: PASS (iteration 1)\n" in out
+    assert "stale" not in out
+
+
+def test_status_ignores_based_on_in_earlier_iterations(tmp_path, db_path, capsys):
+    out = _status_out(tmp_path, capsys, [
+        ("S1", [(1, "PASS"), (2, "PASS")]),
+        ("G1", [(1, "FEEDBACK", "Based on: S1 iteration 1"), (2, "PASS", "no marker")]),
+    ])
+    assert "stale" not in out
+
+
+def test_status_ignores_a_based_on_naming_a_missing_report(tmp_path, db_path, capsys):
+    out = _status_out(tmp_path, capsys, [("G1", [(1, "PASS", "Based on: S1 iteration 1")])])
+    assert "stale" not in out
+
+
+def test_status_stops_on_a_based_on_loop(tmp_path, db_path, capsys):
+    out = _status_out(tmp_path, capsys, [
+        ("S1", [(1, "PASS", "Based on: G1 iteration 1")]),
+        ("G1", [(1, "PASS", "Based on: S1 iteration 1")]),
+    ])
+    assert "S1: delivered (iteration 1)" in out
+    assert "G1: PASS (iteration 1)" in out
+
+
+def test_status_marks_a_cycle_closed_by_the_latest_rfd_iteration(tmp_path, db_path, capsys):
+    cmd_create(None, tmp_path, project_name="Proj")
+    project = tmp_path / "proj"
+    _set_cycle(project, "02_x")
+    _write_report(project, "01_c", "RFD", [
+        (1, "FEEDBACK", "Superseded by cycle: 00_old"),
+        (2, "PASS", "Superseded by cycle: 02_x"),
+    ])
+    _write_report(project, "03_c", "RFD", [
+        (1, "PASS", "Superseded by cycle: 02_x"), (2, "PASS", "decided again"),
+    ])
+
+    cmd_status("Proj")
+
+    out = capsys.readouterr().out
+    assert "01_c (closed: superseded by 02_x)" in out
+    assert "03_c\n" in out
+
+
+def test_status_always_prints_the_active_cycle_even_without_reports(tmp_path, db_path, capsys):
+    cmd_create(None, tmp_path, project_name="Proj")
+    project = tmp_path / "proj"
+    _set_cycle(project, "02_new")
+    _write_report(project, "01_old", "G0", [(1, "PASS")])
+
+    cmd_status("Proj")
+
+    out = capsys.readouterr().out
+    assert "02_new (active)" in out
 
 
 def test_g0_validator_is_side_effect_free_and_maps_exit_codes(tmp_path):
