@@ -308,7 +308,7 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
 
 <!-- ======================================================================= -->
 <h2 id="overview">2 · Stage-gate overview</h2>
-<p>Three stages (<b>S</b>) do work; three gates (<b>G</b>) decide. Each gate can only send work forward on PASS, or back to the stage that can fix it. <b>Click any node</b> to see what it consumes, produces, who decides, and where it routes.</p>
+<p>Three stages (<b>S</b>) do work; three gates (<b>G</b>) decide. Each gate sends work forward on PASS or back to the stage that can fix it; S1, G1 and G2 can also raise an RFD. <b>Click any node</b> to see what it consumes, produces, who decides, and where it routes.</p>
 <div class="btns">
   <button type="button" id="ov-fb" aria-pressed="true">Show feedback routes</button>
 </div>
@@ -322,6 +322,7 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
       <path class="e amber dash" d="M780,88 C780,4 410,4 410,100"/><text class="tl mid" x="600" y="17">design defect</text>
       <path class="e amber dash" d="M759,151 C740,205 662,205 662,160"/><text class="tl mid" x="712" y="214">module defect</text>
       <path class="e red dash" d="M420,160 C420,288 470,288 521,288"/><text class="tl" x="432" y="252">infeasible</text>
+      <path class="e red dash" d="M540,172 V259"/><text class="tl" x="548" y="232">infeasible</text>
       <path class="e red dash" d="M780,172 C780,288 730,288 679,288"/><text class="tl end" x="768" y="252">infeasible</text>
       <path class="e red dash" d="M600,313 V326 H60 V160"/><text class="tl mid" x="330" y="320">updated Build Package</text>
     </g>
@@ -352,7 +353,7 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
 <div class="principles">
   <div class="card"><b>P1</b>HITL is an <i>authorisation</i> barrier; HIL is a <i>validation</i> barrier. A human saying "go" (Gate H) is not evidence; real hardware results (VL-2) are.</div>
   <div class="card"><b>P2</b>Oracle ≠ generator: the model never approves its own work [7]. Whoever writes the code is not the one who passes it.</div>
-  <div class="card"><b>P3</b>Mechanical rejection beats LLM approval, never the reverse [8]. A failing script cannot be overruled by a model's "looks good".</div>
+  <div class="card"><b>P3</b>G0 is the only deterministic gate: its mechanical rejection beats any approval [8]. Every other gate verdict is human (HITL).</div>
   <div class="card"><b>P4</b><i>Verified</i> ≠ <i>validated</i>: every claim names the environment it was produced in [9] (see the honesty declaration in §10).</div>
 </div>
 
@@ -776,8 +777,8 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
   <div class="card"><h4>7 · End-to-end coverage</h4><p>A cross-service <code>SYS-*</code> names a path, an acceptance owner, a measurable budget, and a verification environment.</p><p class="note"><code>SYS-002</code>: detector → <code>occupancy.v1</code> → dashboard.</p></div>
   <div class="card"><h4>Optional · supplied ML package</h4><p>When a module uses ML, G1 checks the supplied weights, identity, inference contract, evaluation metadata and COTS budget.</p><p class="note">No ML module → no model box or ML check. Missing required package → FAIL; demonstrated COTS infeasibility → RFD.</p></div>
   <div class="card" style="display:flex;flex-direction:column;justify-content:center;text-align:center">
-    <p style="margin:0"><b style="color:var(--gate-s)">PASS</b> → S2 &nbsp;·&nbsp; <b style="color:var(--amber-s)">FAIL</b> → S1</p>
-    <p class="note">G1 is a design review. Mechanical failures, such as an implementation DAG cycle, cannot be overridden by a favorable review.</p></div>
+    <p style="margin:0"><b style="color:var(--gate-s)">PASS</b> → S2 &nbsp;·&nbsp; <b style="color:var(--amber-s)">FAIL</b> → S1 &nbsp;·&nbsp; <b style="color:var(--rfd-s)">RFD</b> if infeasible</p>
+    <p class="note">G1 is a human (HITL) design review, not a deterministic gate. An agent may prepare it and recommend a verdict, including an RFD; the human decides.</p></div>
 </div>
 
 <!-- ======================================================================= -->
@@ -980,11 +981,11 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
     S0: ["S0 · Normalisation + GT", "Stage", "Build Package", "G0_StRS.md (§9.4: NRM-*, HWC-*, STK-*) and G0_SyRS.md (§9.5: SYS-*)", "Fills IEEE 29148 blueprints; makes no judgement on sufficiency or scope", "→ G0"],
     G0: ["G0 · Structural validation", "Gate", "StRS + SyRS", "Exit code 0 or 1", "g0_validate.py (deterministic, stdlib-only, no AI), then human Gate H", "PASS + Gate H → S1 · FAIL → S0 (edit GT)"],
     S1: ["S1 · System of layered services", "Stage", "G0-validated GT; supplied ML model only if used", "Service topology, per-service bases and modules, implementation DAG, runtime graph, versioned contracts, system paths, optional model integration", "Design work (see §5)", "→ G1 · infeasible → RFD"],
-    G1: ["G1 · Service + contract validation", "Gate", "The S1 design", "PASS / FAIL on local and system checks; conditional ML readiness check", "Design review; mechanical failures prevail", "PASS → S2 · FAIL → S1"],
+    G1: ["G1 · Service + contract validation", "Gate", "The S1 design", "PASS / FAIL / RFD on local and system checks; conditional ML readiness check", "Human design review (HITL); an agent may prepare it and recommend", "PASS → S2 · FAIL → S1 · infeasible → RFD"],
     S2: ["S2 · Per-service implementation", "Stage", "G1-validated design", "Service bases, modules in DAG order, fake peers, cross-service contracts and connected paths", "Implementation work (see §7)", "→ G2"],
     G2: ["G2 · Adaptive verification", "Gate", "Implemented services + declared VL per module and path", "Module and end-to-end evidence", "Sub-gates G2.0 (always), G2.1 (VL-1+), G2.2 (VL-2)", "PASS → Verified Prototype · design defect → S1 · module defect → S2 · infeasible → RFD"],
     T: ["Verified Prototype", "Terminal output", "G2 PASS", "Per-module and system-path evidence, honesty declaration, optional future work register (see §10)", "—", "Delivered"],
-    RFD: ["Request for Deviation", "External feedback", "Evidence that requirements are infeasible on the declared COTS platform", "Conflicting requirements, evidence with VL, trade-off options, impact analysis, recommendation", "Emitted from any stage; V-SIL suspends", "→ Build Package author → updated Build Package → S0"],
+    RFD: ["Request for Deviation", "External feedback", "Evidence that requirements are infeasible on the declared COTS platform", "Conflicting requirements, evidence with VL, trade-off options, impact analysis, recommendation", "Emitted from S1, G1 or G2; V-SIL suspends", "→ Build Package author → updated Build Package → S0"],
   };
   const ovCard = $("#ov-card");
   const showNode = id => {
@@ -1147,6 +1148,7 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
     ["Interface contract incomplete", "S1", "Design defect, fixed in S1 (G1 check 4 should have caught it)."],
     ["Unchanged module fails on re-test", "S1", "Self-diagnosis: something it depends on changed without a declared edge, so it is an undeclared dependency, i.e. a design defect → S1."],
     ["S1: latency exceeds requirement on any partitioning", "RFD", "No design on this hardware can meet the requirement: RFD from S1."],
+    ["G1: review finds a budget unreachable on this hardware", "RFD", "Analysis only, nothing is measured yet. The agent may suggest it and the human decides: RFD from G1."],
     ["G2.0: two normative requirements conflict", "RFD", "Unit tests show the requirements contradict each other mathematically: RFD from G2.0."],
     ["G2.1: P_d and P_fa cannot both meet thresholds", "RFD", "SIL metrics show the trade-off is impossible: RFD from G2.1 (see RFD-001 below)."],
     ["G2.2: real noise floor exceeds budget", "RFD", "HIL shows the real hardware is worse than assumed: RFD from G2.2."],

@@ -25,7 +25,8 @@
      Principios rectores (del paper):
        P1. HITL es barrera de autorización; HIL es barrera de validación
        P2. Oráculo ≠ generador (quien diseña no es quien aprueba)
-       P3. Rechazo mecánico prevalece sobre aprobación del LLM
+       P3. G0 es la única compuerta determinista; su rechazo mecánico
+           prevalece. Los demás veredictos de compuerta son humanos (HITL)
        P4. Verificado ≠ validado (las afirmaciones nombran el entorno)
      ================================================================ -->
 
@@ -216,7 +217,7 @@ flowchart TD
      ¿Qué criterio de particionamiento se usó?
      ¿Por qué las fronteras están donde están?
      
-     Esto es juicio de diseño, no verificable mecánicamente.
+     Esto es juicio de diseño.
      Es lo que un revisor necesita evaluar en G1.
      
      Ejemplo:
@@ -702,22 +703,22 @@ flowchart LR
      G1 NO es un script determinista como G0.
      G1 es una REVISIÓN de diseño (design review).
      
-     Algunas propiedades son verificables mecánicamente
-     (aciclicidad del DAG). La mayoría son juicio de diseño
-     (¿la descomposición tiene sentido? ¿los contratos son
-     suficientes?). Lo mecánico es necesario pero no suficiente.
+     El veredicto es humano (HITL). Un agente puede preparar la
+     revisión, derivar el orden del DAG, cruzar trazas y recomendar
+     un veredicto, incluida una RFD, pero no decide. Lo que el agente
+     encuentre informa al revisor; no es un veredicto automático.
      
      Principio P2: quien diseñó S1 NO es quien aprueba G1.
-     Principio P3: si hay algo mecánicamente verificable y falla,
-     eso prevalece sobre cualquier opinión de que "se ve bien".
+     Principio P3: la única compuerta determinista es G0; aquí
+     decide el humano.
      ================================================================ -->
 
 ## G1.1 — Aciclicidad del DAG de implementación
 
-<!-- MECÁNICAMENTE VERIFICABLE.
-     Construir el grafo desde la sección 2.1 y verificar con toposort
-     (graphlib.TopologicalSorter o equivalente). Los mensajes de §2.3
-     no son aristas de dependencia; revisar sus bucles en G1.9.
+<!-- REVISIÓN.
+     Construir el grafo desde la sección 2.1 y obtener su orden topológico.
+     Los mensajes de §2.3 no son aristas de dependencia; revisar sus
+     bucles en G1.9.
 -->
 
 | Verificación              | Resultado       |
@@ -728,7 +729,7 @@ flowchart LR
 
 ## G1.2 — Completitud de interfaces
 
-<!-- PARCIALMENTE MECÁNICO: cada arista interna tiene contrato §3.1–3.3;
+<!-- REVISIÓN: cada arista interna tiene contrato §3.1–3.3;
      cada intercambio entre servicios tiene contrato §3.4. La suficiencia
      del contenido y la semántica de fallo son juicio de diseño.
 -->
@@ -743,7 +744,7 @@ SIN preguntarle nada al diseñador?
 
 ## G1.3 — Cobertura de requisitos
 
-<!-- MECÁNICAMENTE VERIFICABLE contra G0_SyRS.md. -->
+<!-- REVISIÓN contra G0_SyRS.md. -->
 
 | Verificación                             | Resultado   |
 |------------------------------------------|-------------|
@@ -773,7 +774,7 @@ SIN preguntarle nada al diseñador?
 
 ## G1.5 — Consistencia del perfil de verificación
 
-<!-- MECÁNICAMENTE VERIFICABLE. -->
+<!-- REVISIÓN. -->
 
 | Módulo          | hw_dependency | required_vl | ¿Consistente? |
 |-----------------|---------------|-------------|----------------|
@@ -845,6 +846,11 @@ solo `hw_dependency: true`; la corrección debe depender de ese hardware.
      ¿La mitigación es viable?
      ¿Alguno debería escalarse a RFD ahora en lugar de
      esperar a que G2 lo descubra?
+
+     Criterio del paper §9: si el requisito es alcanzable, es un defecto
+     y vuelve a S1; si es inviable sobre la COTS declarada, es una RFD.
+     El agente puede sugerirla; decide el humano. En G1 aún no hay
+     mediciones: la evidencia es de análisis y no nombra ningún VL.
 -->
 
 | RSK-ID  | ¿Evidencia creíble? | ¿Mitigación viable? | ¿Escalar a RFD? |
@@ -909,14 +915,13 @@ solo `hw_dependency: true`; la corrección debe depender de ese hardware.
 <!-- Listar las secciones específicas con las observaciones
      concretas de qué falta o qué está mal. -->
 
-**Revisor:** {{nombre / rol}}
+**Revisor (humano):** {{nombre / rol}}
 **Fecha:** {{YYYY-MM-DD}}
 
 <!-- ================================================================
      Nota sobre P2 (Oráculo ≠ Generador):
      
-     El revisor de G1 NO debe ser la misma persona/agente
-     que produjo S1. Si S1 fue generado por un LLM,
-     G1 lo revisa un humano o un agente diferente con
-     contexto independiente.
+     El veredicto de G1 lo emite un humano que no produjo S1.
+     Un agente puede preparar la revisión y recomendar un
+     veredicto, pero un LLM nunca aprueba un diseño.
      ================================================================ -->
