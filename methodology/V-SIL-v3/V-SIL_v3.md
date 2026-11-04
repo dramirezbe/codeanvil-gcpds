@@ -8,7 +8,7 @@
 
 ## Abstract
 
-V-SIL v3 is a software development methodology that receives a finalised Build Package (PRD with measurable constraints, COTS hardware envelope, and acceptance criteria) and delivers a Verified Prototype with per-module evidence — or, when the requirements are infeasible on the declared COTS platform, a formal Request for Deviation (RFD) with trade-off analysis. The methodology is built on three principles: (1) implementation proceeds module by module within a layered architecture; (2) verification depth is adaptive per module — a mandatory floor of unit testing plus sandwich integration is always enforced, while Mock/SIL and HIL levels are reached at the project's convenience; and (3) evidence is honest — every claim names the verification level at which it was produced. Terminology is aligned with IEEE/ISO/IEC 29119, ISO 26262, SDAD [6], the Coordinator-Implementor-Verifier pattern [10], the embedded HAL mock→SIL→HIL substitution ladder [11], and the ECSS/MIL-HDBK-61A Request for Deviation process [16][17].
+V-SIL v3 is a software development methodology that receives a finalised Build Package (PRD with measurable constraints, COTS hardware envelope, and acceptance criteria) and delivers a Verified Prototype with per-module and end-to-end evidence — or, when the requirements are infeasible on the declared COTS platform, a formal Request for Deviation (RFD) with trade-off analysis. S1 may design one service or a system of services: each service has its own layered base and modules, and services meet through versioned contracts. A supplied, already trained ML model is an optional S1 input when the chosen design uses one. Implementation proceeds module by module within each service and then across service boundaries. Verification depth is adaptive per module, while a mandatory floor of unit, sandwich-integration, cross-service contract, and system-path tests applies. Every claim names the verification level and environment at which it was produced. The terminal output may record scoped future work for later software versions; this does not defer current acceptance criteria. Terminology is aligned with IEEE/ISO/IEC 29119, ISO 26262, SDAD [6], the Coordinator-Implementor-Verifier pattern [10], the embedded HAL mock→SIL→HIL substitution ladder [11], and the ECSS/MIL-HDBK-61A Request for Deviation process [16][17].
 
 ```mermaid
 flowchart LR
@@ -19,7 +19,7 @@ flowchart LR
 
     IN["Build Package<br/>PRD · COTS envelope<br/>acceptance criteria"]:::input
     VSIL["V-SIL v3<br/>S0 → G0 → S1 → G1 → S2 → G2"]:::vsil
-    OUT["Verified Prototype<br/>per-module VL evidence"]:::output
+    OUT["Verified Prototype<br/>module + system-path VL evidence"]:::output
     RFD["Request for Deviation<br/>infeasibility evidence<br/>+ trade-off options"]:::rfd
 
     IN --> VSIL
@@ -59,11 +59,11 @@ flowchart TD
     BP["Build Package"]:::input
     S0["S0 — Normalisation + GT"]:::stage
     G0{"G0 — Structural validation"}:::gate
-    S1["S1 — Layered architecture design"]:::stage
+    S1["S1 — Service topology + layered design"]:::stage
     G1{"G1 — DAG + contract validation"}:::gate
-    S2["S2 — Module-by-module implementation"]:::stage
+    S2["S2 — Per-service implementation + integration"]:::stage
     G2{"G2 — Adaptive verification"}:::gate
-    T["Verified Prototype<br/>per-module VL evidence"]:::terminal
+    T["Verified Prototype<br/>module + system-path VL evidence"]:::terminal
     RFD["RFD<br/>Request for Deviation"]:::rfd
 
     BP --> S0
@@ -152,9 +152,26 @@ Deterministic. No AI. Binary verdict. After G0 passes, human Gate H asks: *Requi
 
 ---
 
-## 5 S1 — Layered Architecture Design
+## 5 S1 — System of Layered Services
 
-### 5.1 Layered architecture
+S1 first divides the product into independently deployed services when the requirements call for them. One service remains a valid special case. A **service** owns a runtime, deployment target, base layer, modules, and externally visible ports. Its modules communicate through its own base-layer interfaces; a cross-service exchange goes through a declared, versioned service contract. Splitting a UI from an edge process is justified when they deploy or restart independently, communicate over a network, or have distinct failure domains.
+
+### 5.1 System topology and requirement allocation
+
+The arrows below are **runtime messages**, not implementation dependencies.
+
+```mermaid
+flowchart LR
+    GT["One StRS + SyRS pair"] --> MAP["SYS-* allocated to services and paths"]
+    MAP --> EDGE["Edge service<br/>COTS SDR + local base + modules"]
+    MAP --> UI["UI service<br/>client base + modules"]
+    EDGE -->|"occupancy.v1: measurements"| UI
+    UI -->|"configure.v1: commands"| EDGE
+```
+
+The system view records each service's responsibility, deployment target, COTS resources, network link, and lifecycle. A requirement may map to one service or to an **end-to-end path** spanning several services. One system-level trace table owns this allocation; service designs do not duplicate the Ground Truth. Cross-service contracts specify producer and consumer, schema and version, units, timestamps, ordering, rate, latency, authentication, retries, duplicate handling, and behavior on disconnect or restart where applicable.
+
+### 5.2 Layered architecture within each service
 
 ```mermaid
 flowchart TD
@@ -162,7 +179,7 @@ flowchart TD
     classDef mod fill:#e0e7ff,stroke:#4f46e5,color:#312e81
     classDef integ fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
 
-    subgraph ARCH["S1 produces"]
+    subgraph ARCH["S1 produces for each service"]
         direction TD
         BASE["Base Layer<br/>Orchestration · HAL · data routing<br/>interface contracts"]:::base
         subgraph MODS["Modules"]
@@ -178,9 +195,9 @@ flowchart TD
     BASE --> MODS --> INT
 ```
 
-Modules are plug-in units communicating only through the base layer's declared interfaces. No direct module-to-module calls.
+Modules are plug-in units communicating only through their service's base layer and declared interfaces. No direct module-to-module calls, and no cross-service calls that bypass a service contract. A service without physical hardware can have an empty HAL; its base still owns orchestration and routing.
 
-### 5.2 Component dependency graph (SDR FM example)
+### 5.3 Component dependency graph (edge SDR FM example)
 
 ```mermaid
 flowchart LR
@@ -205,7 +222,9 @@ flowchart LR
     CL -->|occupancy_decision| DS
 ```
 
-Each edge carries an **interface contract** (data type, schema version, units, latency). The graph must be acyclic. Each node carries a **verification profile**: `module_id`, `layer`, `depends_on`, `provides`, `hw_dependency`, `required_vl`.
+Each edge carries an **interface contract** (data type, schema version, units, latency). Each service's implementation dependency graph must be acyclic. Each node carries a **verification profile**: `module_id`, `service_id`, `layer`, `depends_on`, `provides`, `hw_dependency`, `required_vl`. `hw_dependency` means correctness requires a specific physical device or behavior, rather than merely that the code runs on a computer.
+
+The **implementation dependency graph** orders contract definition, service bases, modules, and system integration. It must be acyclic so S2 can build with stubs. The separate **runtime interaction graph** describes live messages. It may contain intentional loops, such as edge telemetry → UI → edge control, provided the contracts define ownership of state, acknowledgement, timeouts, and safe behavior. Runtime message loops do not create implementation dependency cycles.
 
 | Module | Layer | HW dep. | Required VL |
 |---|---|---|---|
@@ -216,23 +235,35 @@ Each edge carries an **interface contract** (data type, schema version, units, l
 | `audio_demod` | Output | no | VL-1 (SIL) |
 | `data_store` | Output | no | VL-0 (unit) |
 
+### 5.4 Optional supplied ML model
+
+An S1 design includes this box **only when it chooses an ML-based module or the Ground Truth explicitly requires one**. Otherwise the box and its G1 check are absent. The supplied model is a controlled input to a service module, not a service by itself. S1 does not train or select a model on behalf of the Build Package author.
+
+When used, S1 identifies the model file and weights by version and digest; names its supplying owner and provenance; specifies the inference runtime, input and output schema, units, preprocessing, labels or thresholds, and postprocessing; and records the supplied performance metadata with its evaluation dataset and conditions. It budgets inference latency, memory, and any device dependency on the declared COTS target. A deterministic fake model response supports VL-0 integration, while later levels exercise the actual supplied model.
+
+Supplied performance metadata is prior evidence, not a G2 verdict. If S1 chooses ML but the model package or the fields needed to implement it are missing, G1 returns **FAIL** for completion of the input or design. Demonstrated infeasibility against the declared COTS requirements follows the RFD route.
+
 ---
 
-## 6 G1 — Dependency-Graph and Interface-Contract Validation
+## 6 G1 — Service, Dependency, and Contract Validation
 
 G1 answers: *Are all implementation-critical design choices resolved?*
 
-1. **DAG acyclicity.** No cycles.
-2. **Interface completeness.** Every edge carries a typed contract.
-3. **Coverage.** Every `SYS-*` traces to at least one module.
-4. **Stub feasibility.** Every contract is complete enough to write a deterministic stub.
-5. **Verification-profile consistency.** `hw_dependency: true` → `required_vl: VL-2`.
+1. **Service topology.** Every service has one responsibility, deployment target, owner of state, and declared external ports; the network and COTS envelope support the topology.
+2. **Implementation DAG acyclicity.** No dependency cycle within or between service build units. Runtime message loops are reviewed separately for bounded behavior.
+3. **Interface completeness.** Every internal edge has a typed contract; every cross-service exchange has a versioned contract and failure behavior.
+4. **Coverage.** Every `SYS-*` traces to module(s) or an end-to-end service path, with an owner and measurable acceptance evidence.
+5. **Stub feasibility.** Every internal and cross-service contract is complete enough to write a deterministic stub or fake peer.
+6. **Verification-profile consistency.** `hw_dependency: true` → `required_vl: VL-2`; system paths have a declared verification level and environment.
+7. **Supplied ML model, when used.** The weights and metadata are identified, the inference contract is implementable, and the COTS budget is credible. This check is omitted when the design has no ML model.
 
 **PASS** → S2. **FAIL** → S1.
 
+The [S1/G1 design template](S1_G1_template.md) expands these check families into ten general review items and one conditional ML item, including design decisions, COTS coherence, and risk assessment.
+
 ---
 
-## 7 S2 — Module-by-Module Implementation
+## 7 S2 — Per-Service Implementation and System Integration
 
 ```mermaid
 flowchart TD
@@ -241,14 +272,14 @@ flowchart TD
     classDef test fill:#f0fdf4,stroke:#16a34a,color:#14532d
     classDef stub fill:#f3f4f6,stroke:#9ca3af,color:#374151,stroke-dasharray:5 3
 
-    subgraph STEP1["Step 1 — Base layer first"]
+    subgraph STEP1["Step 1 — Each service base first"]
         B["Implement base layer<br/>orchestration · HAL · routing"]:::base
         STUBS["Generate stubs<br/>from G1 contracts"]:::stub
         TD["Top-down integration<br/>base + all stubs"]:::test
         B --> STUBS --> TD
     end
 
-    subgraph STEP2["Step 2 — Each module (DAG order)"]
+    subgraph STEP2["Step 2 — Each service's modules (DAG order)"]
         IMPL["Implement module<br/>against contract"]:::mod
         UT["Unit test<br/>in isolation"]:::test
         BU["Bottom-up integration<br/>module + driver vs base"]:::test
@@ -256,9 +287,15 @@ flowchart TD
     end
 
     TD --> STEP2
+    STEP2 --> CONTRACT["Step 3 — Cross-service contract tests<br/>real services + fake peers"]:::test
+    CONTRACT --> SYSTEM["Step 4 — System paths<br/>connected services"]:::test
 ```
 
 Top-down (base → stubs) + bottom-up (module → driver → base) = **sandwich integration testing** [1][2][13].
+
+Define cross-service contracts first so each service can be built independently against a deterministic fake peer. Connect real services after their local VL-0 floor passes. For each `SYS-*` allocated across services, execute a deterministic system-path test across the real service processes with simulated external inputs. This checks serialization, routing, state handoff, and recovery at the declared boundary; VL-1 and VL-2 add stronger environments and measurements.
+
+If a service uses a supplied ML model, S2 implements its inference adapter and tests the declared preprocessing, output mapping, and failure behavior. The fake response exercises the surrounding module contract at VL-0; tests claiming model behavior use the identified weights.
 
 ### Mandatory floor (VL-0) — cannot be skipped
 
@@ -266,6 +303,8 @@ Top-down (base → stubs) + bottom-up (module → driver → base) = **sandwich 
 |---|---|
 | **Base layer** | Unit test + top-down integration with stubs |
 | **Each module** | Unit test + bottom-up integration with driver |
+| **Each cross-service contract** | Producer and consumer contract tests using a fake peer, including version and failure cases |
+| **Each cross-service SYS-* path** | Deterministic test across the connected service processes with simulated external inputs |
 
 ---
 
@@ -279,9 +318,9 @@ flowchart LR
     classDef optional fill:#fef3c7,stroke:#d97706,color:#78350f,stroke-dasharray:5 3
     classDef hil fill:#fee2e2,stroke:#dc2626,color:#7f1d1d,stroke-dasharray:5 3
 
-    VL0["VL-0 — Logic<br/>Unit + sandwich integration<br/>Deterministic vectors<br/>MANDATORY"]:::mandatory
-    VL1["VL-1 — Mock / SIL<br/>+ mock-based system test<br/>Synthetic I/Q · GnuRadio<br/>OPTIONAL"]:::optional
-    VL2["VL-2 — HIL<br/>+ hardware-in-the-loop<br/>Real HW · real RF<br/>OPTIONAL"]:::hil
+    VL0["VL-0 — Logic<br/>Unit + sandwich + service contracts<br/>Deterministic system paths · MANDATORY"]:::mandatory
+    VL1["VL-1 — Mock / SIL<br/>+ measured multi-service system test<br/>Synthetic I/Q · GnuRadio · OPTIONAL"]:::optional
+    VL2["VL-2 — HIL<br/>+ end-to-end acceptance where claimed<br/>Real HW · representative link · OPTIONAL"]:::hil
 
     VL0 -->|"user decides ▸"| VL1 -->|"user decides ▸"| VL2
 ```
@@ -290,25 +329,27 @@ Each level includes all tests from the levels below.
 
 ### 8.2 Adaptive rule
 
-The user chooses the verification level per module, per cycle. Two constraints:
+The user chooses the verification level per module and per system path, per cycle. Two constraints:
 
-1. **Floor.** Every module reaches VL-0 in every cycle.
-2. **Honesty.** No claim higher than what was tested.
+1. **Floor.** Every module and every declared cross-service contract and system path reaches VL-0 in every cycle.
+2. **Honesty.** No module or end-to-end claim is higher than the environment actually tested. Passing services individually does not prove a cross-service requirement.
 
 | Scenario | User declares | G2 checks |
 |---|---|---|
-| Fast iteration | VL-0 all | Unit + sandwich for every module |
-| DSP validation | VL-1 for DSP; VL-0 rest | Mock/SIL for DSP; unit for others |
-| Pre-release | VL-1 all; VL-2 for `iq_acquisition` | Mock all; HIL for acquisition |
-| Full release | All at `required_vl` | Every module at S1-declared max |
+| Fast iteration | VL-0 all | Unit + sandwich for every module; contract and deterministic path tests for connected services |
+| DSP validation | VL-1 for DSP; VL-0 rest | Mock/SIL for DSP; VL-0 floor for every service path |
+| Pre-release | VL-1 for the edge → UI display path; VL-2 for `iq_acquisition` | Measured multi-service path plus HIL acquisition |
+| Full release | All modules and system paths at `required_vl` | Every claim at its S1-declared level |
 
 ### 8.3 Sub-gates
 
 | Sub-gate | Fires when | Checks |
 |---|---|---|
-| **G2.0** | Always | Unit + sandwich integration pass |
-| **G2.1** | VL-1+ declared | Mock/SIL system tests pass; metrics within thresholds |
-| **G2.2** | VL-2 declared | HIL acceptance on real HW; measurements within criteria |
+| **G2.0** | Always | Unit + sandwich, cross-service contract, and deterministic system-path tests pass |
+| **G2.1** | VL-1+ declared for a module or path | Mock/SIL system tests across affected services pass; metrics within thresholds |
+| **G2.2** | VL-2 declared for a module or path | HIL acceptance on real COTS; for cross-service paths, a representative link; measurements within criteria |
+
+For an ML-based module or path, G2 measures the supplied model *inside the implemented system* at the declared level and checks the relevant `SYS-*` criteria. The performance metadata received at S1 is context for test design, not a substitute for those measurements.
 
 ---
 
@@ -350,8 +391,8 @@ A **defect** means V-SIL can fix it internally. The implementation or the design
 
 | Defect class | Routes to | Example |
 |---|---|---|
-| Design defect | S1 | DAG has undeclared dependency; interface contract incomplete |
-| Module defect | S2 | FFT module outputs wrong normalisation; classifier logic error |
+| Design defect | S1 | DAG has undeclared dependency; cross-service contract or state ownership is incomplete |
+| Module or integration defect | S2 | FFT output is wrong; UI deserializes a valid edge message incorrectly |
 
 **Self-diagnosis:** if a module that was *not* changed fails during re-testing → undeclared dependency → design defect → S1.
 
@@ -424,13 +465,41 @@ Verified Prototype — V-SIL v3
     classifier:        VL-0 (logic)— unit + sandwich integration
     audio_demod:       VL-1 (SIL)  — synthetic FM-modulated I/Q
     data_store:        VL-0 (logic)— unit + sandwich integration
+    dashboard:         VL-1 (SIL)  — edge messages on simulated link
+    controls:          VL-0 (logic)— command and acknowledgement vectors
+    alerts:            VL-0 (logic)— unit + sandwich integration
+    history:           VL-0 (logic)— unit + sandwich integration
+
+  Service and system-path evidence:
+    edge -> UI occupancy.v1: VL-1 — schema + latency on simulated link
+    UI -> edge configure.v1: VL-0 — commands, retries, duplicate handling
+    PATH-001 / SYS-002 occupancy display: VL-1 — edge + UI, synthetic RF input
 
   Honesty declaration:
     VL-1 modules: VERIFIED against synthetic data.
     VL-2 modules: VALIDATED on real hardware.
     VL-0 modules: VERIFIED at logic level only.
+    SYS-002: VERIFIED across connected services with synthetic input;
+             no real-link or HIL latency claim.
 
   RFDs issued: 0
+```
+
+### 10.1 Optional future work register
+
+After G2, the prototype may include proposals for later **software versions**. Each entry records an ID, the proposed capability or improvement, its origin and evidence, a candidate version, a decision owner, dependencies, and a proposed acceptance criterion. An empty register can be omitted. The Build Package author decides whether a proposal enters a later version; an accepted proposal becomes new input at S0 and G0. Future CI/CD automation is a possible infrastructure entry for a later version; building that pipeline is outside this version of V-SIL.
+
+Only work explicitly outside the current cycle's approved scope belongs here. A failing current `SYS-*` remains a defect to correct or, if infeasible on the declared COTS platform, an RFD; the register cannot turn it into a passing claim.
+
+```text
+FW-001 — Automate V-SIL verification evidence in CI/CD
+  Category: verification infrastructure
+  Origin: repeated manual G2 execution in this cycle
+  Candidate version: later software release
+  Decision owner: Build Package author
+  Dependency: stable test commands and report format
+  Proposed acceptance: a pipeline reproduces the declared G2 checks
+                       and links its reports to the cycle and source revision
 ```
 
 ---
