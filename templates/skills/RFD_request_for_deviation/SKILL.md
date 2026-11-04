@@ -74,15 +74,23 @@ overrides a decision or reopens a decided RFD.
 
 ## Re-entry
 
-On the decided iteration (not Withdrawn):
+An accepted deviation always starts a **new cycle** and you redo the whole flow in it
+(S0, G0, S1, G1, ...), because the updated Build Package is a new GT baseline. On the decided
+iteration (not Withdrawn):
 
-1. Ask the author for the new cycle's name and normalise it as `AGENTS.md`, `## Cycle`,
-   describes (lowercase, `_` for spaces, only letters, digits, `_` and `-`, zero-padded
-   sequence prefix).
+1. Ask the author for the new cycle's name, using your runtime's native question mechanism, and
+   normalise it as `AGENTS.md`, `## Cycle`, describes (lowercase, `_` for spaces, only letters,
+   digits, `_` and `-`, zero-padded sequence prefix). The name must not match an existing folder
+   under `.codeanvil/report/`: ask again if it does. Never reuse or invent a name.
 2. Set `cycle:` in `.codeanvil/project.yaml`. Update only that key.
-3. Add the exact line `Superseded by cycle: <name>` to the Description. `codeanvil status`
-   then shows the old cycle as closed. It stays read-only.
-4. Return: "Update `GT/build_package.md`, then run the S0 skill."
+3. Add these exact lines to the Description: `Superseded by cycle: <name>` and
+   `Build Package digest: <sha256 of GT/build_package.md, or none when there is no Build Package>`
+   (compute it with
+   `python -c "import hashlib,sys;print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" GT/build_package.md`).
+   `codeanvil status` then shows the old cycle as closed. It stays read-only, and the chain skills
+   refuse to run in it.
+4. Return: "Update `GT/build_package.md`, then run the S0 skill in cycle `<name>`." The S0 skill
+   refuses to start while the Build Package digest is unchanged.
 
 ## Output Contract
 

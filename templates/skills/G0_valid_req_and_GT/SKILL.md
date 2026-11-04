@@ -19,7 +19,10 @@ G0 validates what S0 produced. Before running anything:
 1. Resolve the active cycle from `.codeanvil/project.yaml` (the `cycle:` key).
    If the key is missing, stop and ask the user for a cycle name (see
    `AGENTS.md`, `## Cycle`). Never guess a cycle or reuse another one.
-2. Check, in this order, writing **no iteration** when you stop:
+2. If the latest iteration of `.codeanvil/report/<cycle-name>/RFD.md` holds a line
+   `Superseded by cycle: <name>`, this cycle is **closed** by an RFD and read-only: return exactly
+   `Cycle closed by RFD. Continue in cycle <name>.` and write nothing.
+3. Check, in this order, writing **no iteration** when you stop:
    1. `.codeanvil/report/<cycle-name>/S0.md` is missing or its latest iteration is not
       `HITL: PASS`: return exactly `S0 must pass first. Run the S0 skill.`
    2. `codeanvil status` marks `S0` stale: return the same line.
@@ -28,7 +31,7 @@ G0 validates what S0 produced. Before running anything:
       states `Outcome: Withdrawn`. Otherwise, if its `Based on` line names the current latest
       S0 iteration, nothing was reworked: return exactly
       `S0 must rework first. Run the S0 skill.`
-3. Create `.codeanvil/report/<cycle-name>/` when it does not exist.
+4. Create `.codeanvil/report/<cycle-name>/` when it does not exist.
 
 ## Activation Contract
 

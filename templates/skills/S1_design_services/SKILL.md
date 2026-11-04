@@ -19,7 +19,10 @@ paths. One service is a valid special case. A human reviews the result at G1.
 ## Prerequisite and Cycle
 
 Resolve the active cycle from `.codeanvil/project.yaml` (`cycle:`); if missing, ask the user.
-Then check, in this order, writing **no iteration** when you stop:
+If the latest iteration of `.codeanvil/report/<cycle-name>/RFD.md` holds a line
+`Superseded by cycle: <name>`, this cycle is **closed** by an RFD and read-only: return exactly
+`Cycle closed by RFD. Continue in cycle <name>.` and write nothing. Otherwise check, in this order,
+writing **no iteration** when you stop:
 
 1. `.codeanvil/report/<cycle-name>/G0.md` is missing or its latest iteration is not
    `HITL: PASS`: return exactly `G0 must pass first. Run the G0 skill.`

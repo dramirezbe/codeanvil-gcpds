@@ -48,3 +48,7 @@ Frontmatter: `name: rfd-request-for-deviation`, `metadata.gate: "RFD"`. **Not in
 ## Not covered until T8/T9
 
 G2.0, G2.1 and G2.2 as raising stages are supported by the contract, but cannot be exercised until G2 exists.
+
+## Update (L24): closed cycles and redoing the flow
+
+An accepted deviation always starts a new cycle with a new, unique name, and the whole flow is redone in it. The decided iteration also records `Build Package digest: <sha256 or none>`. Every chain skill (S0, G0, S1, G1) refuses to run in a cycle whose latest `RFD.md` iteration holds `Superseded by cycle: <name>`, returning `Cycle closed by RFD. Continue in cycle <name>.`. S0 in the new cycle refuses to start while the digest of `GT/build_package.md` equals the recorded one (`Build Package unchanged since the RFD. Update GT/build_package.md first.`); `none` skips the check for a hand-written pair.

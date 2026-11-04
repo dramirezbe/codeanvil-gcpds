@@ -93,7 +93,9 @@ gates, and you must not sequence them from it either.
 
 The `RFD_request_for_deviation` skill is outside the chain: it can be raised from S1, G1 or
 any sub-gate of G2 when requirements are infeasible on the declared COTS platform, and it
-suspends the cycle until the Build Package author decides.
+suspends the cycle until the Build Package author decides. An accepted deviation closes the
+cycle: the flow is redone in a **new cycle with a new name**, starting at S0 with an updated
+Build Package. The chain skills refuse to run in a closed cycle.
 
 ## MCP Servers
 

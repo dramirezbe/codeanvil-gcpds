@@ -21,7 +21,17 @@ S0 has **no prerequisite**: it is the entry point of the V-SIL chain.
 
 1. Resolve the active cycle from `.codeanvil/project.yaml` (the `cycle:` key). If it is
    missing, stop and ask the user for a cycle name (see `AGENTS.md`, `## Cycle`).
-2. Create `.codeanvil/report/<cycle-name>/` when it does not exist.
+2. If the latest iteration of `.codeanvil/report/<cycle-name>/RFD.md` holds a line
+   `Superseded by cycle: <name>`, this cycle is **closed** by an RFD and read-only: return exactly
+   `Cycle closed by RFD. Continue in cycle <name>.` and write nothing.
+3. Create `.codeanvil/report/<cycle-name>/` when it does not exist.
+4. **After an RFD:** if another cycle's latest `RFD.md` iteration holds
+   `Superseded by cycle: <this cycle>`, this is the re-entry cycle and the whole flow is redone from
+   here. Compute the SHA-256 of `GT/build_package.md`
+   (`python -c "import hashlib,sys;print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" GT/build_package.md`).
+   If it equals that RFD's `Build Package digest:` line, return exactly
+   `Build Package unchanged since the RFD. Update GT/build_package.md first.` and write nothing.
+   A digest of `none` (the RFD was decided on a hand-written pair) skips this check.
 
 ## Inputs
 

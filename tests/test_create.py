@@ -568,6 +568,29 @@ def test_rfd_skill_separates_defects_from_infeasible_requirements():
     assert "Outcome: Withdrawn" in text
 
 
+def test_chain_skills_refuse_a_cycle_closed_by_an_rfd():
+    for skill in ("S0_normalise_build_package", "G0_valid_req_and_GT",
+                  "S1_design_services", "G1_design_review"):
+        text = _skill_text(skill)
+        assert "Cycle closed by RFD. Continue in cycle <name>." in text, skill
+        assert "Superseded by cycle:" in text, skill
+
+
+def test_rfd_skill_requires_a_new_unique_cycle_name_and_records_the_build_package_digest():
+    text = _skill_text("RFD_request_for_deviation")
+
+    assert "Build Package digest:" in text
+    assert "must not match an existing folder" in text
+    assert "redo the whole flow" in text
+
+
+def test_s0_skill_requires_an_updated_build_package_after_an_rfd():
+    text = _skill_text("S0_normalise_build_package")
+
+    assert "Build Package unchanged since the RFD. Update GT/build_package.md first." in text
+    assert "Build Package digest:" in text
+
+
 # --- status reads cycle-scoped reports (T7) ---------------------------------
 
 def _write_report(
