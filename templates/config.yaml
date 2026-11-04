@@ -6,20 +6,21 @@ defaults:
 
 skills:
   # Declaration order is the gate chain order. `prerequisite` is the report
-  # id of the predecessor gate: the AGENTS.md table renders it and each
-  # skill enforces it on load. null marks the entry point.
+  # id of the predecessor: the AGENTS.md table renders it and each skill
+  # enforces it on load. null marks the entry point. RFD is not listed on
+  # purpose: it can be raised from any stage, so its table cell renders "-".
+  S0_normalise_build_package:
+    project_dir: ".agents/skills/S0_normalise_build_package"
+    prerequisite: null
   G0_valid_req_and_GT:
     project_dir: ".agents/skills/G0_valid_req_and_GT"
-    template_dir: "templates/skills/G0_valid_req_and_GT"
-    prerequisite: null
-  custody-chain:
-    project_dir: ".agents/skills/custody-chain"
-    template_dir: "templates/skills/custody-chain"
+    prerequisite: "S0"
+  S1_design_services:
+    project_dir: ".agents/skills/S1_design_services"
     prerequisite: "G0"
-  G1_start_design:
-    project_dir: ".agents/skills/G1_start_design"
-    template_dir: "templates/skills/G1_start_design"
-    prerequisite: "CC"
+  G1_design_review:
+    project_dir: ".agents/skills/G1_design_review"
+    prerequisite: "S1"
 
 # Flow order of the chain reports, used by `codeanvil status` to print gates
 # in order. Any other report id (RFD, old CC) follows alphabetically.
@@ -66,19 +67,15 @@ agent_pointer_files:
 
 agents_template: "templates/AGENTS/TEMPLATE_AGENT.md"
 
-# Skill that owns the locked GT reference templates and is referenced by
-# the GT README (deterministic key, not derived from frontmatter).
+# Skills that each carry their own copy of the locked GT reference templates
+# (self-contained skills), and the skill the GT README points to
+# (deterministic keys, not derived from frontmatter).
+s0_skill: "S0_normalise_build_package"
 g0_skill: "G0_valid_req_and_GT"
 
 gt_reference_templates:
   - "G0_StRS.md"
   - "G0_SyRS.md"
-
-# G1 ships its SRS reference template inside the G1 skill (the user authors
-# GT/G1_SRS.md later — this is the locked structure copy).
-g1_skill: "G1_start_design"
-g1_reference_templates:
-  - "G1_SRS.md"
 
 # Repo-root paths inside SKILL.md / RULES.md become project-relative after
 # copy. Order matters: applied in insertion order.
@@ -86,9 +83,7 @@ path_replacements:
   "templates/skills/": ".agents/skills/"
   "templates/GT/G0_StRS.md": ".agents/skills/G0_valid_req_and_GT/templates/G0_StRS.md"
   "templates/GT/G0_SyRS.md": ".agents/skills/G0_valid_req_and_GT/templates/G0_SyRS.md"
-  "templates/GT/G1_SRS.md": ".agents/skills/G1_start_design/templates/G1_SRS.md"
   "(repository-root relative)": "(project-root relative)"
-  ".provenance/": ".codeanvil/custody/"
 
 # Never copy build artifacts or legacy empty scripts into a project.
 copy_ignore:

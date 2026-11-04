@@ -328,9 +328,14 @@ def test_beaupy_is_a_runtime_dependency():
 
 def test_config_declares_skill_prerequisite_chain():
     skills = CONFIG["skills"]
-    assert skills["G0_valid_req_and_GT"]["prerequisite"] is None
-    assert skills["custody-chain"]["prerequisite"] == "G0"
-    assert skills["G1_start_design"]["prerequisite"] == "CC"
+    assert list(skills) == [
+        "S0_normalise_build_package", "G0_valid_req_and_GT",
+        "S1_design_services", "G1_design_review",
+    ]
+    assert skills["S0_normalise_build_package"]["prerequisite"] is None
+    assert skills["G0_valid_req_and_GT"]["prerequisite"] == "S0"
+    assert skills["S1_design_services"]["prerequisite"] == "G0"
+    assert skills["G1_design_review"]["prerequisite"] == "S1"
 
 
 def test_create_makes_report_dir_without_cycle_subdir(tmp_path, db_path):
@@ -387,14 +392,19 @@ def test_agents_md_skill_table_shows_the_prerequisite_chain(tmp_path, db_path):
 
     assert "| Gate | Skill | Prerequisite |" in text
     lines = text.splitlines()
-    g0 = next(line for line in lines if ".agents/skills/G0_valid_req_and_GT/" in line)
-    cc = next(line for line in lines if ".agents/skills/custody-chain/" in line)
-    g1 = next(line for line in lines if ".agents/skills/G1_start_design/" in line)
+    rows = {
+        name: next(line for line in lines if f".agents/skills/{name}/" in line)
+        for name in ("S0_normalise_build_package", "G0_valid_req_and_GT",
+                     "S1_design_services", "G1_design_review", "RFD_request_for_deviation")
+    }
 
-    assert "None (entry point)" in g0
-    assert "`G0.md` latest iteration `HITL: PASS`" in cc
-    assert "`CC.md` latest iteration `HITL: PASS`" in g1
-    assert lines.index(g0) < lines.index(cc) < lines.index(g1)
+    assert "None (entry point)" in rows["S0_normalise_build_package"]
+    assert "`S0.md` latest iteration `HITL: PASS`" in rows["G0_valid_req_and_GT"]
+    assert "`G0.md` latest iteration `HITL: PASS`" in rows["S1_design_services"]
+    assert "`S1.md` latest iteration `HITL: PASS`" in rows["G1_design_review"]
+    assert rows["RFD_request_for_deviation"].rstrip().endswith("| - |")
+    order = [lines.index(rows[name]) for name in rows]
+    assert order == sorted(order)
 
 
 def _skill_text(*parts: str) -> str:
@@ -406,34 +416,70 @@ def test_g0_skill_writes_an_iterative_report():
 
     assert ".codeanvil/report/<cycle-name>/G0.md" in text
     assert "HITL: FEEDBACK" in text
-    assert "no prerequisite" in text.lower()
+    assert "no prerequisite" not in text.lower()
+    assert "S0 must pass first. Run the S0 skill." in text
+    assert "S0 must rework first. Run the S0 skill." in text
+    assert "Based on: S0 iteration" in text
+    assert "Requirements complete, bounded, and verifiable?" in text
+    assert "Decided by:" in text
+    assert "| HITL | PASS |" in text
 
 
-def test_custody_skill_requires_a_passing_g0_report():
-    text = _skill_text("custody-chain")
-
-    assert ".codeanvil/report/<cycle-name>/G0.md" in text
-    assert "G0 must pass first. Run the G0 skill." in text
-    assert ".codeanvil/report/<cycle-name>/CC.md" in text
+def _scaffold_skill(tmp_path, skill: str, *parts: str) -> Path:
+    return tmp_path / "proj" / ".agents" / "skills" / skill / Path(*parts)
 
 
-def test_g1_skill_requires_a_passing_custody_report():
-    text = _skill_text("G1_start_design")
+def test_scaffold_ships_the_v3_chain_and_not_the_retired_skills(tmp_path, db_path):
+    cmd_create(None, tmp_path, project_name="Proj")
+    skills = tmp_path / "proj" / ".agents" / "skills"
 
-    assert ".codeanvil/report/<cycle-name>/CC.md" in text
-    assert "Custody chain must pass first. Run the custody-chain skill." in text
-    assert ".codeanvil/report/<cycle-name>/G1.md" in text
+    for name in ("S0_normalise_build_package", "G0_valid_req_and_GT", "S1_design_services",
+                 "G1_design_review", "RFD_request_for_deviation"):
+        assert (skills / name / "SKILL.md").is_file()
+    assert not (skills / "custody-chain").exists()
+    assert not (skills / "G1_start_design").exists()
+    text = (tmp_path / "proj" / "AGENTS.md").read_text(encoding="utf-8")
+    for retired in ("custody-chain", "CC.md", "G1_SRS", "G1_artifacts"):
+        assert retired not in text
 
 
-def test_scaffolded_g1_skill_writes_artifacts_to_g1_artifacts_dir(tmp_path, db_path):
+def test_s0_blueprints_match_the_g0_copies(tmp_path, db_path):
     cmd_create(None, tmp_path, project_name="Proj")
 
-    text = (
-        tmp_path / "proj" / ".agents" / "skills" / "G1_start_design" / "SKILL.md"
-    ).read_text(encoding="utf-8")
+    for name in ("G0_StRS.md", "G0_SyRS.md"):
+        s0 = _scaffold_skill(tmp_path, "S0_normalise_build_package", "templates", name)
+        g0 = _scaffold_skill(tmp_path, "G0_valid_req_and_GT", "templates", name)
+        assert s0.read_bytes() == g0.read_bytes()
 
-    assert ".codeanvil/report/<cycle-name>/G1_artifacts/" in text
-    assert "Arch_NN.md" in text
+
+def test_scaffolded_s1_ships_its_graph_template_and_library(tmp_path, db_path):
+    cmd_create(None, tmp_path, project_name="Proj")
+
+    template = _scaffold_skill(tmp_path, "S1_design_services", "references", "S1_graph_template.html")
+    library = _scaffold_skill(tmp_path, "S1_design_services", "assets", "vis-network.min.js")
+    assert template.is_file() and library.is_file()
+    html = template.read_text(encoding="utf-8")
+    assert "// === DATA" in html
+    assert "https://" not in html.split("<style>")[0]
+    assert _scaffold_skill(tmp_path, "S1_design_services", "references", "S1_design.md").is_file()
+    assert _scaffold_skill(tmp_path, "G1_design_review", "references", "G1_CHECKLIST.md").is_file()
+
+
+def test_scaffolded_skills_are_self_contained(tmp_path, db_path):
+    """C10 — a skill never points into another skill's folder or into methodology/."""
+    cmd_create(None, tmp_path, project_name="Proj")
+    skills = tmp_path / "proj" / ".agents" / "skills"
+    names = [path.name for path in skills.iterdir() if path.is_dir()]
+
+    for skill in names:
+        others = [name for name in names if name != skill]
+        for file in (skills / skill).rglob("*"):
+            if file.suffix not in (".md", ".html") or not file.is_file():
+                continue
+            text = file.read_text(encoding="utf-8")
+            assert "methodology/" not in text, file
+            for other in others:
+                assert f".agents/skills/{other}/" not in text, (file, other)
 
 
 # --- V-SIL v3 skills: S0, S1, G1, RFD (text contracts) -----------------------

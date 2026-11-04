@@ -29,7 +29,7 @@
 | Document ID            | Title                                    | Relationship                    |
 |------------------------|------------------------------------------|---------------------------------|
 | `SYRS-_ACRONYM_-_NNN_` | _System Requirements Specification_      | Derived per-measurand technical specification (G0 pair) |
-| `SRS-_ACRONYM_-_NNN_`  | _Software Requirements Specification_    | Software design output (G1)     |
+| `S1-_ACRONYM_-_NNN_`   | _S1 design document_                     | Software design output (S1)     |
 
 > **Note:** The StRS is the system-level view: all subsystems, all frequency bands,
 > all measurement types. It merges what used to be a separate hardware-constraints
