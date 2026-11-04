@@ -15,12 +15,15 @@ The V-SIL pipeline encoded as executable artifacts:
 - **`templates/GT/`** — Ground Truth document templates. GT is the methodology's input: human-authored `.md` files (not raw PDFs) that define the contract a project must satisfy, following the IEEE/ISO/IEC 29148:2018 document family:
   1. **StRS** (`G0_StRS.md`) — Stakeholder Requirements Specification (§9.4): stakeholder requirements (`STK-`), COTS hardware constraints (`HWC-`), and normative obligations (`NRM-` with inline compliance traceability)
   2. **SyRS** (`G0_SyRS.md`) — System Requirements Specification (§9.5): per-measurand system requirements (`SYS-`) — methods, correction chains, uncertainty budgets — tracing to StRS blocks
-  3. **SRS** (`G1_SRS.md`) — Software Requirements Specification (§9.6): **produced at G1**, not a G0 input
-- **`templates/skills/`** — Skills executed at each gate:
-  - `G0_valid_req_and_GT/` — **Deterministic structural validation** of the GT pair (StRS + SyRS) plus the G0-X cross-document rules. No AI — pure script (`scripts/g0_validate.py`). `SKILL.md` is the agent contract, `references/RULES.md` the full rule tables. Hard pass/fail.
-  - `custody-chain/` — **Cross-cutting provenance skill** (gate `*`). Seals GT files after G0 pass (`source_snapshot.py`), tracks chain of custody for audit documents (`custody_ledger.py`, HMAC-signed hash-chain), validates audit controls (`control_registry.py`), and verifies port bindings (`port_check.py`). All stdlib-only.
-  - `G1_start_design/` — Agent-driven: 9-job design synthesis from G0-validated GT. Multi-hypothesis architecture (user-chosen N candidates, minimum 3), ATAM trade study, SRS authoring (`GT/G1_SRS.md`, IEEE 29148 §9.6) with structural self-validation. Review package with APPROVE/RETURN/REJECT. Each job's intermediate output goes to its own file under `.codeanvil/report/<cycle>/G1_artifacts/` (ASRs, candidates, QA matrix, trade study, ADD, review package).
-  - Future gates (G2, G3, ...) follow the same pattern.
+  The author writes a Build Package (`GT/build_package.md`); the S0 skill casts it into the two blueprints. There is no SRS in v3: the S1 design document replaces it.
+- **`templates/skills/`** — Skills for each stage and gate of the V-SIL v3 flow `S0 → G0 → S1 → G1 → (S2 → G2)`; RFD can be raised from any stage. Each skill is self-contained: its templates, scripts and assets live in its own folder.
+  - `S0_normalise_build_package/` — **Stage**: casts `GT/build_package.md` into `G0_StRS.md` and `G0_SyRS.md` in one pass, with no judgement. Writes `S0.md`.
+  - `G0_valid_req_and_GT/` — **Deterministic structural validation** of the GT pair (StRS + SyRS) plus the G0-X cross-document rules. No AI — pure script (`scripts/g0_validate.py`) — followed by the human Gate H. `SKILL.md` is the agent contract, `references/RULES.md` the full rule tables.
+  - `S1_design_services/` — **Stage**: designs a system of layered services (`S1_artifacts/S1_design.md`) and its dependency graph (`S1_artifacts/S1_graph.html`, vis-network vendored in `assets/`).
+  - `G1_design_review/` — **Human gate**: no script. The agent fills a checklist and recommends; the human answers PASS, FEEDBACK or RFD.
+  - `RFD_request_for_deviation/` — Outside the chain: decision document when requirements are infeasible on the declared COTS platform. Suspends the cycle until the author decides.
+  - S2 and G2 are planned (`odd/tasks/`); they are not implemented yet.
+- **`templates/backups/`** — Retired in v3 and kept for later: `custody-chain/`, `G1_start_design/` and `G1_SRS.md`. Not scaffolded and not shipped in the wheel.
 
 ### `src/codeanvil/` — The delivery tool (serves the methodology)
 
@@ -43,12 +46,12 @@ CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks stat
 
 ## Key concepts
 
-- **GT (Ground Truth)**: the pair of human-authored `.md` files (StRS + SyRS) that define what "correct" means. Human-authored, not raw PDFs. Normativity lives inline in the StRS as `NRM-` blocks; the SRS is produced later at G1.
+- **GT (Ground Truth)**: the pair of human-authored `.md` files (StRS + SyRS) that define what "correct" means. Human-authored, not raw PDFs. Normativity lives inline in the StRS as `NRM-` blocks. S0 produces the pair from the author's Build Package.
 - **T# (Test GT)**: numbered test cases (`methodology/test/T<n>_<name>/`) that serve as V-SIL system inputs — real-world GT instances used to validate and stress-test the methodology pipeline end-to-end. See [`methodology/test/README.md`](methodology/test/README.md) for the full test catalog and end-to-end manual test procedure.
   - **T0_ANE-Lap2** — SDR spectrum monitoring edge sensor (ANE). **GT-ready**: `just-edge/StRS.md` + `just-edge/SyRS.md` are valid GT files that can be copied directly into a project as `G0_StRS.md` / `G0_SyRS.md`.
   - **T1_FM-monitoring** — SDR-based FM broadcast compliance monitoring system. Raw LaTeX spec (GT must be derived). RAG-informed from regulatory docs (FCC Part 73, ANE Res. 105, ITU-R BS.412/450/SM.2152, ISO/IEC 17025).
   - **T2_IoT-Indoor** — Indoor IoT radio environment mapping at 2.4 GHz ISM (Proyecto Hermes / GCPDS). Raw proposal + literature (GT must be derived).
-- **Gate (Gn)**: verification checkpoint. Sequential — G0 must pass before G1 runs. G0 is deterministic (script-only). G1+ use AI coding agents (any runtime).
+- **Stage (Sn) and gate (Gn)**: stages produce, gates judge. Sequential — each needs its predecessor's report at `HITL: PASS`. G0 is the only deterministic gate (script); Gate H, G1 and G2 are human. A stage's PASS means "delivered".
 - **Skill**: `SKILL.md` + optional scripts that define what happens at a gate. Agent-agnostic — any coding agent that reads markdown can execute them. Live in `templates/skills/` (repo) and `.agents/skills/` (scaffolded projects).
 - **Gate progress**: tracked by the harness via the GT files and cycle-scoped reports (`.codeanvil/report/<cycle>/<gate>.md`), not by the tool. There is no orchestrator advancing a stored session — each skill checks its predecessor's report, and the agent asks for the cycle on project open.
 - **MCP server**: external tool provider (Model Context Protocol) that gives agents callable tools beyond text. Installed globally to `~/.codeanvil-config/mcp/<name>/`, wired into projects via per-agent config files. First server: Marconi (GNU Radio — 19 tools, 6 skills for RF/SDR). Configured in `templates/config.yaml` under `mcp_servers`, logic in `src/codeanvil/init/mcp.py`.
@@ -89,8 +92,12 @@ codeanvil-gcpds/                  ← repo root
 ├── src/codeanvil/                ← CLI + scaffold logic (Python package)
 ├── templates/
 │   ├── skills/                   ← skill SOURCE templates (repo-root paths)
+│   │   ├── S0_normalise_build_package/
 │   │   ├── G0_valid_req_and_GT/
-│   │   └── custody-chain/
+│   │   ├── S1_design_services/
+│   │   ├── G1_design_review/
+│   │   └── RFD_request_for_deviation/
+│   ├── backups/                  ← retired skills (custody-chain, G1_start_design)
 │   ├── GT/                       ← GT reference templates (IEEE 29148)
 │   ├── AGENTS/TEMPLATE_AGENT.md  ← AGENTS.md Jinja template
 │   └── config.yaml               ← single source of truth for scaffold
@@ -99,7 +106,7 @@ codeanvil-gcpds/                  ← repo root
 └── AGENTS.md                     ← repo-level agent instructions
 ```
 
-- Skill paths use **repo-root** form: `templates/skills/custody-chain/scripts/...`
+- Skill paths use **repo-root** form: `templates/skills/G0_valid_req_and_GT/scripts/...`
 - `path_replacements` in `config.yaml` rewrites them during scaffold.
 - Changes here affect the **tool and methodology**, not any user project.
 
@@ -112,12 +119,12 @@ project folder — it has no `src/`, no `templates/`, no `pyproject.toml`.
 /path/to/project/                 ← project root (anywhere on disk)
 ├── AGENTS.md                     ← generated from TEMPLATE_AGENT.md (canonical)
 ├── CLAUDE.md -> AGENTS.md        ← symlink
-├── GT/                           ← user-authored ground truth (StRS, SyRS)
-│   ├── G0_StRS.md
-│   └── G0_SyRS.md
+├── GT/                           ← user-authored ground truth
+│   ├── build_package.md          ← the author's input; S0 reads it
+│   ├── G0_StRS.md                ← written by S0
+│   └── G0_SyRS.md                ← written by S0
 ├── .codeanvil/                   ← machine-generated methodology artifacts
 │   ├── project.yaml              ← project identity (UUIDv7, name, GT pointers)
-│   ├── custody/                  ← custody-chain artifacts (snapshot, ledger)
 │   └── report/                   ← per-cycle iterative reports (<cycle>/<gate>.md)
 ├── .agents/
 │   ├── skills/                   ← copied skills (project-root paths)
@@ -125,9 +132,10 @@ project folder — it has no `src/`, no `templates/`, no `pyproject.toml`.
 │   │   │   ├── SKILL.md
 │   │   │   ├── scripts/
 │   │   │   └── templates/        ← locked GT reference copies
-│   │   ├── custody-chain/
-│   │   │   ├── SKILL.md
-│   │   │   └── scripts/
+│   │   ├── S0_normalise_build_package/   ← own blueprints in templates/
+│   │   ├── S1_design_services/           ← references/ + assets/ (vis-network)
+│   │   ├── G1_design_review/
+│   │   ├── RFD_request_for_deviation/
 │   │   └── marconi-*/SKILL.md    ← (if --mcp marconi) 6 RF/SDR skills
 │   └── mcp.yaml                  ← (if --mcp) agent-agnostic MCP manifest
 ├── .mcp.json                     ← (if --mcp) Claude Code MCP server definition
@@ -139,7 +147,7 @@ project folder — it has no `src/`, no `templates/`, no `pyproject.toml`.
 └── .github/copilot-instructions.md  ← pointer to AGENTS.md
 ```
 
-- Skill paths use **project-root** form: `.agents/skills/custody-chain/scripts/...`
+- Skill paths use **project-root** form: `.agents/skills/G0_valid_req_and_GT/scripts/...`
 - GT files are **user-authored inputs**, not tool templates.
 - The agent reads `AGENTS.md` (or `CLAUDE.md` symlink) and follows the methodology.
 

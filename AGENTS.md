@@ -18,7 +18,7 @@ agents they are in a user project. Do not confuse the two environments.
 
 ## Overview
 
-CodeAnvil implements the V-SIL pipeline as a chain of gates — G0 is deterministic, G1+ are AI coding agents. The harness is **agent-agnostic**: it works with any coding agent runtime (Claude, Codex, OpenCode, Pi, etc.). `src/` scaffolds and tracks state.
+CodeAnvil implements the V-SIL v3 flow `S0 → G0 → S1 → G1 → (S2 → G2)` as a chain of stages and gates, with RFD raisable from any stage. G0 is the only deterministic gate; Gate H, G1 and G2 are human verdicts, and the stages are run by AI coding agents. The harness is **agent-agnostic**: it works with any coding agent runtime (Claude, Codex, OpenCode, Pi, etc.). `src/` scaffolds and tracks state.
 
 **Scope**: software development, testing, and validation on COTS hardware (not necessarily OOTB). Does not design hardware — assumes commercial off-the-shelf devices, validates software against GT constraints.
 
@@ -32,33 +32,21 @@ codeanvil create ──► scaffold project anywhere
                        ├─ .claude/skills → ../.agents/skills  (symlink)
                        ├─ .opencode/skills → ../.agents/skills
                        ├─ .codex/skills → ../.agents/skills
-                       ├─ GT/README.md         (user writes G0_StRS.md, G0_SyRS.md here)
-                       ├─ .codeanvil/          (project.yaml + custody/ + report/)
+                       ├─ GT/README.md         (user writes build_package.md; S0 writes G0_StRS.md, G0_SyRS.md)
+                       ├─ .codeanvil/          (project.yaml + report/)
                        └─ DB registration (idempotent)
 codeanvil sync ─────► register/move a cloned project in the local DB
                        (reads the project's .codeanvil/project.yaml — no re-scaffold)
 
-the harness (agent runtime) asks for a cycle, then loads gate skills; each skill
+the harness (agent runtime) asks for a cycle, then loads skills; each skill
 checks its predecessor's report before it runs:
                        │
-                       ├─ G0 (deterministic — no agent)
-                       │    ├─ reads: GT pair (StRS + SyRS .md files)
-                       │    ├─ script: g0_validate.py
-                       │    ├─ checks: required sections, format, fields, G0-X pair rules
-                       │    └─ output: pass/fail (hard gate)
-                       │
-                       ├─ custody-chain (cross-cutting — after G0 pass)
-                       │    ├─ seals GT: source_snapshot.py (SHA-256 + manifest)
-                       │    ├─ records: custody_ledger.py (HMAC-signed, hash-chained)
-                       │    └─ output: PASS/FAIL (tamper detection from here on)
-                       │
-                       ├─ G1 Agent (start design)
-                       │    ├─ reads: validated GT + G0 report
-                       │    ├─ skill: SKILL.md
-                       │    └─ output: design artifacts
-                       │
-                       ├─ G2 Agent (...)
-                       └─ ...
+                       ├─ S0 normalise (agent) ── Build Package → StRS + SyRS
+                       ├─ G0 (deterministic script) + Gate H (human)
+                       ├─ S1 design services (agent) ── design + dependency graph
+                       ├─ G1 design review (human verdict, agent prepares)
+                       ├─ S2, G2 (planned — not implemented yet)
+                       └─ RFD (outside the chain — raised from S1, G1 or G2)
 ```
 
 ## The system — two sides
@@ -80,7 +68,7 @@ checks its predecessor's report before it runs:
 
 ## Test GT cases (V-SIL system inputs)
 
-`methodology/test/T<n>_<name>/` — numbered test cases containing real-world project materials from which the GT pair is derived. They are the methodology's integration tests. See [`methodology/test/README.md`](methodology/test/README.md) for the full catalog and the **end-to-end manual test procedure** (clean install → scaffold → GT → G0 → custody-chain, with sandboxed Claude prompts).
+`methodology/test/T<n>_<name>/` — numbered test cases containing real-world project materials from which the GT pair is derived. They are the methodology's integration tests. See [`methodology/test/README.md`](methodology/test/README.md) for the full catalog and the **end-to-end manual test procedure** (clean install → scaffold → Build Package → S0 → G0 → S1 → G1, with sandboxed agent prompts).
 
 | Test | Domain | GT-ready | Contents |
 |------|--------|----------|----------|
@@ -105,46 +93,47 @@ Pure Python script. No LLM, no AI agent — just `g0_validate.py`.
 - **Output**: per-document reports + G0-X report + gate report; pass/fail with exact listing of missing/malformed sections.
 - **Property**: deterministic — same input, same result. No interpretation.
 
-### Custody Chain — Data Provenance & Integrity (cross-cutting, after G0)
+### S0 — Normalise the Build Package (agent, one pass)
 
-Not a numbered gate — runs alongside any gate to prove GT immutability and track audit document custody.
+- **Skill**: `templates/skills/S0_normalise_build_package/SKILL.md`; its locked blueprints are copied into `templates/` inside the skill on scaffold.
+- **Input**: `GT/build_package.md`. **Output**: `GT/G0_StRS.md`, `GT/G0_SyRS.md` and `S0.md` (inventory, missing list, trace).
+- **Property**: normalises only; invents nothing. A hand-written pair is accepted as a no-op iteration.
 
-- **Purpose**: seal GT files after G0 passes so any later modification is detected; record chain of custody for every generated audit document.
-- **Skill**: `templates/skills/custody-chain/SKILL.md`
-- **Scripts** (all stdlib-only, no network):
-  - `source_snapshot.py` — seal and verify file integrity (SHA-256 + manifest digest)
-  - `custody_ledger.py` — hash-chained, HMAC-signed append-only custody log
-  - `control_registry.py` — validate audit controls are declarative and typed
-  - `port_check.py` — verify runtime ports have bound implementations
-- **Typical flow**: G0 PASS → seal GT (`snapshot --include 'GT/**'`) → record custody → before each later gate, verify GT unchanged
-- **Output**: PASS/FAIL/INCOMPLETE provenance report with findings and evidence
-- **Requires**: `PROVENANCE_HMAC_KEY` env var for signing ledger entries
+### S1 — Design of layered services (agent)
 
-### G1 — Start Design (agent-driven)
+- **Skill**: `templates/skills/S1_design_services/SKILL.md`, with the design template and graph template in `references/` and vis-network in `assets/`.
+- **Output**: `.codeanvil/report/<cycle>/S1_artifacts/S1_design.md` and `S1_graph.html` (one spider per service). `S1.md` is the only state.
 
-- **Purpose**: initiate design phase once GT is validated.
-- **Skill**: `templates/skills/G1_start_design/SKILL.md`
-- **Inputs**: validated GT pair (StRS + SyRS) + G0 pass report
-- **Output**: multi-hypothesis design synthesis and the SRS (`GT/G1_SRS.md`, IEEE 29148 §9.6), structurally validated before human review
+### G1 — Human design review
+
+- **Skill**: `templates/skills/G1_design_review/SKILL.md` and `references/G1_CHECKLIST.md`. No script: the agent fills the checklist and recommends; the human answers PASS, FEEDBACK or RFD.
+
+### RFD — Request for Deviation (outside the chain)
+
+- **Skill**: `templates/skills/RFD_request_for_deviation/SKILL.md`. A decision document for the Build Package author when requirements are infeasible on the declared COTS platform. A decided RFD re-enters at S0 in a new cycle.
+
+The retired custody-chain and multi-hypothesis G1 skills are in `templates/backups/`.
 
 ## Gate chain (report-driven)
 
 There is no `codeanvil run` command and no orchestrator in the tool — and none in
 `AGENTS.md` either. The chain lives in the skills: on load, each skill checks its
-predecessor's report (`G0`, `CC`, `G1` in `config.yaml`) and stops with the
+predecessor's report (`S0`, `G0`, `S1`, `G1` in `config.yaml`) and stops with the
 predecessor's name when it is missing or its latest iteration is not
 `HITL: PASS`.
 
 - **Cycle:** the agent asks the user for a cycle name on every project open,
   normalizes it to a slug (`01_test_sdr_usrp_iot_signals`), records it in
   `.codeanvil/project.yaml`, and scopes reports to
-  `.codeanvil/report/<cycle>/<gate>.md`.
-- **Iteration:** each gate appends one `## Iteration <N>` section per run with a
+  `.codeanvil/report/<cycle>/<id>.md`.
+- **Iteration:** each stage or gate appends one `## Iteration <N>` section per run with a
   `HITL` verdict (`PASS` or `FEEDBACK`; there is no DENIED state).
-- G0: the agent runs `g0_validate.py` directly (deterministic, no AI) and writes
-  `G0.md`; script errors force `FEEDBACK`.
-- custody-chain (CC): requires `G0.md` latest `PASS`; seals GT and records custody.
-- G1+: requires `CC.md` latest `PASS`; each job pauses for `PASS` or `FEEDBACK`.
+- S0: no prerequisite; writes `S0.md` (`PASS` means "delivered").
+- G0: requires `S0.md` latest `PASS`; the agent runs `g0_validate.py` directly
+  (deterministic, no AI), then asks the human Gate H. Script errors force `FEEDBACK`.
+- S1: requires `G0.md` latest `PASS`. G1: requires `S1.md` latest `PASS`; the human answers.
+- Every iteration of G0, S1 and G1 starts with `Based on: <predecessor> iteration <N>`, so
+  `codeanvil status` can mark a report `stale` after its predecessor was reworked.
 
 State lives in the GT files, the cycle reports, and `.codeanvil/`, not in the
 tool. The `codeanvil` CLI only scaffolds and registers projects; it never drives
@@ -152,7 +141,7 @@ gates.
 
 ## Agent contract
 
-Each gate agent (G1+), regardless of runtime:
+Each stage agent (S0, S1), regardless of runtime:
 
 1. Receives `SKILL.md` as instructions
 2. Receives the project's GT documents as context
@@ -219,15 +208,13 @@ myproj/
 ├── AGENTS.md                        ← generated (canonical agent instructions)
 ├── CLAUDE.md → AGENTS.md            ← symlink
 ├── GT/
-│   ├── README.md                    ← write G0_StRS.md, G0_SyRS.md here
-│   ├── G0_StRS.md                   ← user-authored StRS (IEEE 29148 §9.4)
-│   └── G0_SyRS.md                   ← user-authored SyRS (IEEE 29148 §9.5)
+│   ├── README.md                    ← write build_package.md here
+│   ├── build_package.md             ← user-authored; S0 reads it
+│   ├── G0_StRS.md                   ← written by S0 (IEEE 29148 §9.4)
+│   └── G0_SyRS.md                   ← written by S0 (IEEE 29148 §9.5)
 ├── .codeanvil/                      ← machine-generated methodology artifacts
 │   ├── project.yaml                 ← project identity (UUIDv7, name, GT pointers)
-│   ├── custody/                     ← custody-chain artifacts
-│   │   ├── snapshot.json            ← sealed GT digests (after G0 pass)
-│   │   └── custody.jsonl            ← append-only chain-of-custody ledger
-│   └── report/                      ← per-cycle iterative reports (<cycle>/<gate>.md)
+│   └── report/                      ← per-cycle iterative reports (<cycle>/<id>.md)
 ├── .agents/
 │   ├── skills/                      ← canonical skill store
 │   │   ├── G0_valid_req_and_GT/
@@ -237,13 +224,10 @@ myproj/
 │   │   │   │   └── G0_SyRS.md
 │   │   │   ├── references/RULES.md  ← paths rewritten
 │   │   │   └── scripts/g0_validate.py
-│   │   ├── custody-chain/
-│   │   │   ├── SKILL.md             ← cross-cutting provenance skill
-│   │   │   ├── references/schemas.md
-│   │   │   ├── assets/controls.example.json
-│   │   │   └── scripts/             ← source_snapshot, custody_ledger, etc.
-│   │   ├── G1_start_design/
-│   │   │   └── SKILL.md
+│   │   ├── S0_normalise_build_package/   ← own blueprints in templates/
+│   │   ├── S1_design_services/           ← references/ + assets/ (vis-network)
+│   │   ├── G1_design_review/             ← references/G1_CHECKLIST.md
+│   │   ├── RFD_request_for_deviation/
 │   │   └── marconi-*/               ← (if --mcp marconi) 6 RF/SDR skills
 │   │       └── SKILL.md
 │   └── mcp.yaml                     ← (if --mcp) agent-agnostic MCP manifest
