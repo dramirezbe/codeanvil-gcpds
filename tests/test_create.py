@@ -436,6 +436,92 @@ def test_scaffolded_g1_skill_writes_artifacts_to_g1_artifacts_dir(tmp_path, db_p
     assert "Arch_NN.md" in text
 
 
+# --- V-SIL v3 skills: S0, S1, G1, RFD (text contracts) -----------------------
+
+def _skill_file(skill: str, *parts: str) -> Path:
+    return TEMPLATES_DIR / "skills" / skill / Path(*parts)
+
+
+def test_s0_skill_is_the_entry_point_and_normalises_the_build_package():
+    text = _skill_text("S0_normalise_build_package")
+
+    assert ".codeanvil/report/<cycle-name>/S0.md" in text
+    assert "GT/build_package.md" in text
+    assert "no prerequisite" in text.lower()
+    assert "| HITL | PASS |" in text
+    assert "S0 complete. Run the G0 skill." in text
+    assert "in **any** cycle" in text  # RFD re-entry is not a hand-written pair
+
+
+def test_s1_skill_writes_the_design_and_graph_to_s1_artifacts():
+    text = _skill_text("S1_design_services")
+
+    assert ".codeanvil/report/<cycle-name>/S1.md" in text
+    assert "S1_artifacts/S1_design.md" in text
+    assert "G0 must pass first. Run the G0 skill." in text
+    assert "Based on: G0 iteration" in text
+    assert "| HITL | PASS |" in text
+    assert "g1_check" not in text
+    assert "G1_CHECKLIST" not in text  # self-contained: never reads G1's folder
+
+
+def test_s1_skill_builds_the_spider_graph_from_its_own_template():
+    text = _skill_text("S1_design_services")
+
+    assert "S1_artifacts/S1_graph.html" in text
+    assert "S1_graph_template.html" in text
+    assert "spider" in text
+    assert ".codeanvil/project.yaml" in text
+    assert "DATA" in text
+
+
+def test_s1_graph_template_is_offline_and_ships_the_vendored_library():
+    template = _skill_file("S1_design_services", "references", "S1_graph_template.html")
+    library = _skill_file("S1_design_services", "assets", "vis-network.min.js")
+
+    html = template.read_text(encoding="utf-8")
+    assert "// === DATA" in html and "// ===" in html
+    assert "https://" not in html.split("<style>")[0]  # no remote script source
+    assert "assets/vis-network.min.js" in html
+    assert "@version 9.1.9" in library.read_text(encoding="utf-8")[:400]
+
+
+def test_s1_design_template_keeps_the_numbered_sections():
+    text = _skill_file("S1_design_services", "references", "S1_design.md").read_text(encoding="utf-8")
+
+    for heading in ("## 0. COTS envelope", "## 1. Building block view", "### 2.2 Topological",
+                    "### 3.4 Service → service contracts", "## 4. Traceability",
+                    "## 5. Design decisions", "## 6. Risks"):
+        assert heading in text
+
+
+def test_g1_skill_is_a_human_review_with_no_script():
+    text = _skill_text("G1_design_review")
+
+    assert ".codeanvil/report/<cycle-name>/G1.md" in text
+    assert "S1 must pass first. Run the S1 skill." in text
+    assert "S1 must rework first. Run the S1 skill." in text
+    assert "Cycle suspended by RFD. Run the RFD skill." in text
+    assert "Based on: S1 iteration" in text
+    assert "PASS" in text and "FEEDBACK" in text and "RFD" in text
+    assert "S1_graph.html" in text
+    assert "Decided by:" in text
+    assert "g1_check" not in text
+    assert not (TEMPLATES_DIR / "skills" / "G1_design_review" / "scripts").exists()
+    assert _skill_file("G1_design_review", "references", "G1_CHECKLIST.md").is_file()
+
+
+def test_rfd_skill_separates_defects_from_infeasible_requirements():
+    text = _skill_text("RFD_request_for_deviation")
+
+    assert ".codeanvil/report/<cycle-name>/RFD.md" in text
+    assert "RFD_artifacts/RFD-NNN.md" in text
+    assert "infeasible on the declared COTS platform" in text
+    assert "ANALYSIS (no VL)" in text
+    assert "Superseded by cycle:" in text
+    assert "Outcome: Withdrawn" in text
+
+
 # --- status reads cycle-scoped reports (T7) ---------------------------------
 
 def _write_report(
