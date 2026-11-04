@@ -135,9 +135,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     status = sub.add_parser(
         "status",
-        help="Show gate progress for a project",
+        help="Show stage and gate progress for a project",
         description=(
-            "Displays project identity and the latest gate report per gate.\n"
+            "Displays project identity and the latest report per stage and gate, in flow\n"
+            "order, marking delivered stages, stale reports and closed cycles.\n"
             "With no argument, reads from the project found in the current\n"
             "directory (auto-registers it if needed); with a name, looks up\n"
             "the project path in the database."

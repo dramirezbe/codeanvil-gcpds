@@ -49,12 +49,13 @@ codeanvil create myproject
 # ...or in a specific path
 codeanvil create myproject -p ~/projects
 
-# Write your GT files in myproject/GT/
-#   G0_StRS.md  — Stakeholder Requirements Specification (IEEE 29148 §9.4)
-#   G0_SyRS.md  — System Requirements Specification (IEEE 29148 §9.5)
-# Reference templates: .agents/skills/G0_valid_req_and_GT/templates/
+# Write your Build Package in myproject/GT/build_package.md, then ask your agent to run
+# the S0 skill. It writes the GT pair (IEEE 29148):
+#   G0_StRS.md  — Stakeholder Requirements Specification (§9.4)
+#   G0_SyRS.md  — System Requirements Specification (§9.5)
+# Reference templates: .agents/skills/S0_normalise_build_package/templates/
 
-# Validate the GT pair (deterministic, no AI)
+# Validate the GT pair yourself (deterministic, no AI; the G0 skill runs the same script)
 cd myproject
 python .agents/skills/G0_valid_req_and_GT/scripts/g0_validate.py GT/G0_StRS.md GT/G0_SyRS.md
 
