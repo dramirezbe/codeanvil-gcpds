@@ -1,8 +1,8 @@
 # V-SIL v3 skill flow — simplest full flow in `templates/skills/`
 
 Objective: replace the v2-era gate chain (G0 → CC → G1 with SRS) by the V-SIL v3 flow (S0 → G0 → S1 → G1 → S2 → G2, RFD from any stage) using the simplest skill for each step, with `codeanvil status` as the only CLI refactor (S11).
-Branch: `feat/vsil-v3-skill-flow` (created when implementation starts) · Delivery: `ask-on-risk` (forecast ≈ 1500 authored lines, so the chain strategy is asked before the first commit) · Test runner: `pytest` (`uv run --extra dev pytest`).
-Status: **planning only. S0–G1 and RFD are planned; S2 and G2 are HELD for the user (S5).**
+Branch: `feat/vsil-v3-skill-flow` · Delivery: `ask-on-risk` with chain strategy `feature-branch-chain` (chosen 2026-11-04) · Test runner: `pytest` (`uv run --extra dev pytest`).
+Status: **S0–G1, RFD, the chain switch and `status` are implemented (252 tests pass). The agent-driven end-to-end run (T7) is NOT run. S2 and G2 are HELD for the user (S5).**
 
 ## Specs
 
@@ -20,18 +20,18 @@ Status: **planning only. S0–G1 and RFD are planned; S2 and G2 are HELD for the
 
 ## Tasks
 
-Plans are the specification of each task. Nothing below is implemented yet.
+Plans are the specification of each task. Status and commits are observed outcomes.
 
 | ID | Specs | Plan file | Route | Status | Commit |
 |----|-------|-----------|-------|--------|--------|
-| T1 | S1, S2, S3, S7, S9 | `2026-11-04_G1_design_review.md` (HITL review skill, no script) | inline | planned | — |
-| T2 | S1, S2, S3, S8, S9, S10 | `2026-11-04_S1_design_services.md` + `2026-11-04_S1_graph_examples/` | inline | planned | — |
-| T3 | S1, S2, S3, S10 | `2026-11-04_S0_normalise_build_package.md` | inline | planned | — |
-| T4 | S1, S2, S3 | `2026-11-04_RFD_request_for_deviation.md` | inline | planned | — |
-| T5 | S1, S2, S3 | `2026-11-04_G0_gate_h_update.md` | inline | planned | — |
-| T6 | S4, S6, S10 | `2026-11-04_CHAIN_scaffold_switch.md` | inline | planned | — |
-| T7 | S2 | `2026-11-04_E2E_flow_through_g1.md` | inline | planned | — |
-| T10 | S4, S11 | `2026-11-04_STATUS_chain_and_staleness.md` | inline | planned | — |
+| T1 | S1, S2, S3, S7, S9 | `2026-11-04_G1_design_review.md` (HITL review skill, no script) | inline | done | 647cf3d |
+| T2 | S1, S2, S3, S8, S9, S10 | `2026-11-04_S1_design_services.md` + `2026-11-04_S1_graph_examples/` | inline | done | c9b76e7 |
+| T3 | S1, S2, S3, S10 | `2026-11-04_S0_normalise_build_package.md` | inline | done | f45db10 |
+| T4 | S1, S2, S3 | `2026-11-04_RFD_request_for_deviation.md` | inline | done | f45db10 |
+| T5 | S1, S2, S3 | `2026-11-04_G0_gate_h_update.md` | inline | done | c383301 |
+| T6 | S4, S6, S10 | `2026-11-04_CHAIN_scaffold_switch.md` | inline | done (docs 26bbba4) | c383301 |
+| T7 | S2 | `2026-11-04_E2E_flow_through_g1.md` | inline | procedure written; **agent run not performed** | 26bbba4 |
+| T10 | S4, S11 | `2026-11-04_STATUS_chain_and_staleness.md` | inline | done | 3b35444 |
 | T8 | S1, S5, S7 | S2 skill plan (in-stage, agent-driven contract and sandwich validation, C9) | — | **HELD: needs the user** | — |
 | T9 | S1, S5, S7 | G2 skill plan (HITL) + Verified Prototype output | — | **HELD: depends on T8** | — |
 
@@ -125,3 +125,7 @@ Build Package → S0 → G0 ─ PASS + Gate H → S1 → G1 ─ PASS → S2 → 
 
   Dead code the plans cause or keep: the `.provenance/` path replacement, the `.codeanvil/custody/` mkdir and `PROJECT_CUSTODY`, the `template_dir` keys, and stale docs in `parser.py:31,45`, `README.md:164-166,173`, `templates/GT/README.md` and `methodology/test/README.md:22,92,96`. Pre-existing: `valid_structure_SRS.py`, `check_project_path`, `marconi.requires`. Advisories: an open RFD does not suspend S0, G0 and S1; G1 PASS needs a "S2 not available yet" return; RFD has no mode table and its write order is unset; T7 and the CHAIN differential need a scratch `HOME`; `TEMPLATE_AGENT.md:101,112,170` contradict S0 correcting GT; the FAIL to FEEDBACK mapping is unstated; `status` exiting 1 without a DB is undefined for C2 step 2.
 - **L18** (2026-11-04, user, verbatim): "Ok. noproblem for now. apporved plans. commit ans push plans. await instructions to start implementing" → plans approved and committed as they stand, with L17's blockers still open. Assumption: "noproblem for now" defers those fixes, so they are not applied. Do not start implementing until the user says so; resolve L17 and T8 (S2 shape) first.
+- **L19** (2026-11-04, user, verbatim): "Start implementing @odd/tasks/2026-11-04_1042_vsil_v3_skill_flow.md" → implementation of T10, T3, T4, T2, T1, T5+T6 and the docs of T7, inline (no Writer trigger). Chain strategy asked once and answered `feature-branch-chain`.
+- **L20** Evidence. Suite: 234 → 252 passed (`uv run --extra dev pytest`); `templates/tests` 93 passed unchanged; `g0_validate.py` and `RULES.md` unchanged. RED observed for T10 (7 failed first) and for the chain switch (5 failed first); the skill-text tests were written after the skills, so they have no RED. Differential `status` vs base commit in a scratch HOME: the only difference is the requested chain ordering. A wheel built in scratch ships the five skills and `vis-network.min.js`, and no `templates/backups/`. Scaffold smoke test: five skills, the four-row chain table, `g0_validate.py` exit 0 on the FM pair. vis-network 9.1.9 vendored byte-identical to the cdnjs file (sha256 f6ee3a65…).
+- **L21** L17 blockers, as implemented: (1) RFD answer binding and `Outcome: Withdrawn` returns to FEEDBACK (RFD, S1, G1, G0 skills); (2) S0's hand-written-pair row means no `S0.md` in any cycle; (3) `status` always prints the active cycle; (4) resume rule in AGENTS template covers missing, not-PASS and stale; (5) each skill states the exact `| HITL | PASS |` row and tests assert it; (6) G0 shows S0's missing list before Gate H; (7) GT digest lines and `Decided by:` added; (8) the scaffold assertions are in the T5/T6 commit. Dead code removed: the `template_dir` keys, the `.provenance/` replacement and the stale text in `parser.py`, READMEs and docs. Kept on purpose: `PROJECT_CUSTODY` and its mkdir (pinned by `tests/test_sync.py` and `tests/test_paths.py`) and the pre-existing `valid_structure_SRS.py`, `check_project_path` and `marconi.requires`.
+- **L22** Not run: the agent-driven procedure of T7 (`methodology/test/README.md`, prompts 1-6 and the failure table), which needs a sandboxed agent runtime. The flow is NOT ready to use end to end until that run, T8 and T9. The advisories of L17 not listed in L21 (an open RFD does not suspend S0, G0 and S1; the FAIL to FEEDBACK mapping; `status` exit 1 without a DB) stay open.
