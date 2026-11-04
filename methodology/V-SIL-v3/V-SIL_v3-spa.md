@@ -8,7 +8,7 @@
 
 ## Resumen
 
-V-SIL v3 es una metodología de desarrollo de software que recibe un Build Package finalizado (PRD con restricciones medibles, envolvente de hardware COTS y criterios de aceptación) y entrega un Prototipo Verificado con evidencia por módulo — o, cuando los requisitos son inviables sobre la plataforma COTS declarada, una Solicitud de Desviación (Request for Deviation, RFD) formal con análisis de compromisos. La metodología se sustenta en tres principios: (1) la implementación avanza módulo por módulo dentro de una arquitectura en capas; (2) la profundidad de verificación es adaptativa por módulo — siempre se exige un piso obligatorio de pruebas unitarias más integración sándwich, mientras que los niveles Mock/SIL y HIL se alcanzan según la conveniencia del proyecto; y (3) la evidencia es honesta — cada afirmación nombra el nivel de verificación en el que fue producida. La terminología está alineada con IEEE/ISO/IEC 29119, ISO 26262, SDAD [6], el patrón Coordinator-Implementor-Verifier [10], la escalera de sustitución HAL mock→SIL→HIL para sistemas embebidos [11] y el proceso de Request for Deviation de ECSS/MIL-HDBK-61A [16][17].
+V-SIL v3 es una metodología de desarrollo de software que recibe un Build Package finalizado (PRD con restricciones medibles, envolvente de hardware COTS y criterios de aceptación) y entrega un Prototipo Verificado con evidencia por módulo y de extremo a extremo — o, cuando los requisitos son inviables sobre la plataforma COTS declarada, una Solicitud de Desviación (Request for Deviation, RFD) formal con análisis de compromisos. S1 puede diseñar un servicio o un sistema de servicios: cada servicio tiene su propia capa base y sus módulos, y los servicios se conectan mediante contratos versionados. Un modelo de ML suministrado y ya entrenado es una entrada opcional de S1 cuando el diseño lo utiliza. La implementación avanza módulo por módulo dentro de cada servicio y después cruza sus fronteras. La profundidad de verificación es adaptativa por módulo, con un piso obligatorio de pruebas unitarias, integración sándwich, contratos entre servicios y rutas de sistema. Cada afirmación nombra el nivel y el entorno de verificación en que se produjo. La salida terminal puede registrar trabajo futuro acotado para próximas versiones del software, sin aplazar criterios de aceptación vigentes. La terminología está alineada con IEEE/ISO/IEC 29119, ISO 26262, SDAD [6], el patrón Coordinator-Implementor-Verifier [10], la escalera de sustitución HAL mock→SIL→HIL para sistemas embebidos [11] y el proceso de Request for Deviation de ECSS/MIL-HDBK-61A [16][17].
 
 ```mermaid
 flowchart LR
@@ -19,7 +19,7 @@ flowchart LR
 
     IN["Build Package<br/>PRD · envolvente COTS<br/>criterios de aceptación"]:::input
     VSIL["V-SIL v3<br/>S0 → G0 → S1 → G1 → S2 → G2"]:::vsil
-    OUT["Prototipo Verificado<br/>evidencia VL por módulo"]:::output
+    OUT["Prototipo Verificado<br/>evidencia VL por módulo y ruta"]:::output
     RFD["Solicitud de Desviación<br/>evidencia de inviabilidad<br/>+ opciones de compromiso"]:::rfd
 
     IN --> VSIL
@@ -59,11 +59,11 @@ flowchart TD
     BP["Build Package"]:::input
     S0["S0 — Normalización + GT"]:::stage
     G0{"G0 — Validación estructural"}:::gate
-    S1["S1 — Diseño de arquitectura en capas"]:::stage
+    S1["S1 — Topología de servicios + diseño en capas"]:::stage
     G1{"G1 — Validación de DAG + contratos"}:::gate
-    S2["S2 — Implementación módulo por módulo"]:::stage
+    S2["S2 — Implementación por servicio + integración"]:::stage
     G2{"G2 — Verificación adaptativa"}:::gate
-    T["Prototipo Verificado<br/>evidencia VL por módulo"]:::terminal
+    T["Prototipo Verificado<br/>evidencia VL por módulo y ruta"]:::terminal
     RFD["RFD<br/>Solicitud de Desviación"]:::rfd
 
     BP --> S0
@@ -152,9 +152,26 @@ Determinista. Sin IA. Veredicto binario. Tras aprobar G0, la Compuerta humana H 
 
 ---
 
-## 5 S1 — Diseño de Arquitectura en Capas
+## 5 S1 — Sistema de Servicios en Capas
 
-### 5.1 Arquitectura en capas
+S1 primero divide el producto en servicios desplegables por separado cuando los requisitos lo justifican. Un solo servicio sigue siendo un caso válido. Cada **servicio** posee un proceso de ejecución, destino de despliegue, capa base, módulos y puertos externos. Sus módulos se comunican mediante su propia capa base; los intercambios entre servicios pasan por contratos de servicio declarados y versionados. Separar la interfaz de usuario del proceso de borde se justifica cuando se despliegan o reinician independientemente, usan una red o tienen dominios de fallo distintos.
+
+### 5.1 Topología del sistema y asignación de requisitos
+
+Las flechas siguientes son **mensajes en ejecución**, no dependencias de implementación.
+
+```mermaid
+flowchart LR
+    GT["Un par StRS + SyRS"] --> MAP["SYS-* asignados a servicios y rutas"]
+    MAP --> EDGE["Servicio de borde<br/>SDR COTS + base local + módulos"]
+    MAP --> UI["Servicio UI<br/>base cliente + módulos"]
+    EDGE -->|"occupancy.v1: mediciones"| UI
+    UI -->|"configure.v1: comandos"| EDGE
+```
+
+La vista del sistema registra la responsabilidad, el destino de despliegue, los recursos COTS, el enlace de red y el ciclo de vida de cada servicio. Un requisito puede asignarse a un servicio o a una **ruta de extremo a extremo** que abarque varios. Una sola tabla de trazabilidad de sistema controla la asignación; los diseños de servicio no duplican el Ground Truth. Los contratos entre servicios especifican productor y consumidor, esquema y versión, unidades, marcas de tiempo, orden, tasa, latencia, autenticación, reintentos, duplicados y comportamiento ante desconexión o reinicio cuando corresponda.
+
+### 5.2 Arquitectura en capas dentro de cada servicio
 
 ```mermaid
 flowchart TD
@@ -162,7 +179,7 @@ flowchart TD
     classDef mod fill:#e0e7ff,stroke:#4f46e5,color:#312e81
     classDef integ fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
 
-    subgraph ARCH["S1 produce"]
+    subgraph ARCH["S1 produce para cada servicio"]
         direction TD
         BASE["Capa Base<br/>Orquestación · HAL · enrutamiento de datos<br/>contratos de interfaz"]:::base
         subgraph MODS["Módulos"]
@@ -178,9 +195,9 @@ flowchart TD
     BASE --> MODS --> INT
 ```
 
-Los módulos son unidades enchufables (plug-in) que se comunican únicamente a través de las interfaces declaradas de la capa base. No hay llamadas directas entre módulos.
+Los módulos son unidades enchufables (plug-in) que se comunican únicamente a través de la capa base y las interfaces declaradas de su servicio. No hay llamadas directas entre módulos ni llamadas entre servicios que eludan un contrato de servicio. Un servicio sin hardware físico puede tener una HAL vacía; su base sigue encargándose de la orquestación y el enrutamiento.
 
-### 5.2 Grafo de dependencias de componentes (ejemplo SDR FM)
+### 5.3 Grafo de dependencias de componentes (ejemplo SDR FM en borde)
 
 ```mermaid
 flowchart LR
@@ -205,7 +222,9 @@ flowchart LR
     CL -->|occupancy_decision| DS
 ```
 
-Cada arista transporta un **contrato de interfaz** (tipo de dato, versión de esquema, unidades, latencia). El grafo debe ser acíclico. Cada nodo lleva un **perfil de verificación**: `module_id`, `layer`, `depends_on`, `provides`, `hw_dependency`, `required_vl`.
+Cada arista transporta un **contrato de interfaz** (tipo de dato, versión de esquema, unidades, latencia). El grafo de dependencias de implementación de cada servicio debe ser acíclico. Cada nodo lleva un **perfil de verificación**: `module_id`, `service_id`, `layer`, `depends_on`, `provides`, `hw_dependency`, `required_vl`. `hw_dependency` significa que la corrección depende de un dispositivo o comportamiento físico específico, no simplemente que el código se ejecuta en una computadora.
+
+El **grafo de dependencias de implementación** ordena la definición de contratos, las bases, los módulos y la integración del sistema. Debe ser acíclico para permitir la construcción con stubs en S2. El **grafo de interacción en ejecución** describe los mensajes reales y puede contener bucles intencionales, como telemetría del borde → UI → control del borde, siempre que los contratos definan propiedad del estado, confirmación, tiempos de espera y comportamiento seguro. Un bucle de mensajes no crea un ciclo de dependencias de implementación.
 
 | Módulo | Capa | Dep. HW | VL requerido |
 |---|---|---|---|
@@ -216,23 +235,35 @@ Cada arista transporta un **contrato de interfaz** (tipo de dato, versión de es
 | `audio_demod` | Salida | no | VL-1 (SIL) |
 | `data_store` | Salida | no | VL-0 (unidad) |
 
+### 5.4 Modelo de ML suministrado (opcional)
+
+El diseño S1 incluye esta caja **solo si elige un módulo basado en ML o el Ground Truth lo exige explícitamente**. En los demás casos no aparecen ni la caja ni su comprobación G1. El modelo suministrado es una entrada controlada de un módulo de servicio, no un servicio por sí mismo. S1 no entrena ni selecciona un modelo por cuenta del autor del Build Package.
+
+Cuando se utiliza, S1 identifica el archivo y los pesos por versión y digest; nombra al proveedor y la procedencia; especifica runtime de inferencia, esquema de entradas y salidas, unidades, preprocesamiento, etiquetas o umbrales y posprocesamiento; y registra las métricas suministradas con su conjunto de evaluación y condiciones. Presupuesta latencia de inferencia, memoria y cualquier dependencia de dispositivos en la COTS declarada. Una respuesta simulada determinista permite integrar en VL-0; los niveles posteriores ejercitan el modelo suministrado real.
+
+La metadata de rendimiento recibida es evidencia previa, no un veredicto de G2. Si S1 elige ML pero faltan el paquete del modelo o datos necesarios para implementarlo, G1 devuelve **FAIL** para completar la entrada o el diseño. La inviabilidad demostrada frente a los requisitos sobre la COTS declarada sigue la ruta RFD.
+
 ---
 
-## 6 G1 — Validación del Grafo de Dependencias y Contratos de Interfaz
+## 6 G1 — Validación de Servicios, Dependencias y Contratos
 
 G1 responde: *¿Están resueltas todas las decisiones de diseño críticas para la implementación?*
 
-1. **Aciclicidad del DAG.** Sin ciclos.
-2. **Completitud de interfaces.** Cada arista lleva un contrato tipado.
-3. **Cobertura.** Cada `SYS-*` traza al menos a un módulo.
-4. **Viabilidad de stubs.** Cada contrato es lo bastante completo para escribir un stub determinista.
-5. **Consistencia del perfil de verificación.** `hw_dependency: true` → `required_vl: VL-2`.
+1. **Topología de servicios.** Cada servicio tiene responsabilidad, destino de despliegue, dueño del estado y puertos externos; la red y la envolvente COTS sustentan la topología.
+2. **Aciclicidad del DAG de implementación.** Sin ciclos dentro de los servicios ni entre unidades de construcción. Los bucles de mensajes en ejecución se revisan aparte.
+3. **Completitud de interfaces.** Cada arista interna tiene contrato tipado; cada intercambio entre servicios tiene contrato versionado y comportamiento ante fallos.
+4. **Cobertura.** Cada `SYS-*` traza a módulos o a una ruta entre servicios, con responsable y evidencia de aceptación medible.
+5. **Viabilidad de stubs.** Cada contrato interno o entre servicios permite escribir un stub o par simulado determinista.
+6. **Consistencia del perfil de verificación.** `hw_dependency: true` → `required_vl: VL-2`; las rutas de sistema declaran nivel y entorno de verificación.
+7. **Modelo de ML suministrado, si se utiliza.** Los pesos y la metadata están identificados, el contrato de inferencia es implementable y el presupuesto COTS es creíble. Se omite esta comprobación cuando el diseño no tiene modelo de ML.
 
 **PASS** → S2. **FAIL** → S1.
 
+La [plantilla de diseño S1/G1](S1_G1_template.md) desarrolla estas familias en diez puntos generales de revisión y uno condicional de ML, incluidos decisiones de diseño, coherencia COTS y evaluación de riesgos.
+
 ---
 
-## 7 S2 — Implementación Módulo por Módulo
+## 7 S2 — Implementación por Servicio e Integración del Sistema
 
 ```mermaid
 flowchart TD
@@ -241,14 +272,14 @@ flowchart TD
     classDef test fill:#f0fdf4,stroke:#16a34a,color:#14532d
     classDef stub fill:#f3f4f6,stroke:#9ca3af,color:#374151,stroke-dasharray:5 3
 
-    subgraph STEP1["Paso 1 — Primero la capa base"]
+    subgraph STEP1["Paso 1 — Primero la base de cada servicio"]
         B["Implementar capa base<br/>orquestación · HAL · enrutamiento"]:::base
         STUBS["Generar stubs<br/>desde los contratos de G1"]:::stub
         TD["Integración descendente<br/>base + todos los stubs"]:::test
         B --> STUBS --> TD
     end
 
-    subgraph STEP2["Paso 2 — Cada módulo (orden del DAG)"]
+    subgraph STEP2["Paso 2 — Módulos de cada servicio (orden del DAG)"]
         IMPL["Implementar módulo<br/>contra el contrato"]:::mod
         UT["Prueba unitaria<br/>en aislamiento"]:::test
         BU["Integración ascendente<br/>módulo + driver vs base"]:::test
@@ -256,9 +287,15 @@ flowchart TD
     end
 
     TD --> STEP2
+    STEP2 --> CONTRACT["Paso 3 — Pruebas de contratos entre servicios<br/>servicios reales + pares simulados"]:::test
+    CONTRACT --> SYSTEM["Paso 4 — Rutas de sistema<br/>servicios conectados"]:::test
 ```
 
 Descendente (base → stubs) + ascendente (módulo → driver → base) = **prueba de integración sándwich** [1][2][13].
+
+Se definen primero los contratos entre servicios para construir cada servicio independientemente contra un par simulado determinista. Los servicios reales se conectan después de superar su piso local VL-0. Para cada `SYS-*` asignado a varios servicios se ejecuta una prueba determinista de la ruta entre los procesos reales, con entradas externas simuladas. Así se comprueban serialización, enrutamiento, transferencia de estado y recuperación en la frontera declarada; VL-1 y VL-2 añaden entornos y mediciones más exigentes.
+
+Si un servicio utiliza un modelo de ML suministrado, S2 implementa su adaptador de inferencia y prueba el preprocesamiento, la interpretación de salidas y el comportamiento ante fallos declarados. La respuesta simulada ejercita el contrato del módulo circundante en VL-0; las pruebas que afirman comportamiento del modelo utilizan los pesos identificados.
 
 ### Piso obligatorio (VL-0) — no se puede omitir
 
@@ -266,6 +303,8 @@ Descendente (base → stubs) + ascendente (módulo → driver → base) = **prue
 |---|---|
 | **Capa base** | Prueba unitaria + integración descendente con stubs |
 | **Cada módulo** | Prueba unitaria + integración ascendente con driver |
+| **Cada contrato entre servicios** | Pruebas del productor y consumidor con un par simulado, incluidos casos de versión y fallo |
+| **Cada ruta SYS-* entre servicios** | Prueba determinista entre procesos conectados con entradas externas simuladas |
 
 ---
 
@@ -279,9 +318,9 @@ flowchart LR
     classDef optional fill:#fef3c7,stroke:#d97706,color:#78350f,stroke-dasharray:5 3
     classDef hil fill:#fee2e2,stroke:#dc2626,color:#7f1d1d,stroke-dasharray:5 3
 
-    VL0["VL-0 — Lógica<br/>Unidad + integración sándwich<br/>Vectores deterministas<br/>OBLIGATORIO"]:::mandatory
-    VL1["VL-1 — Mock / SIL<br/>+ prueba de sistema basada en mock<br/>I/Q sintético · GnuRadio<br/>OPCIONAL"]:::optional
-    VL2["VL-2 — HIL<br/>+ hardware-in-the-loop<br/>HW real · RF real<br/>OPCIONAL"]:::hil
+    VL0["VL-0 — Lógica<br/>Unidad + sándwich + contratos de servicio<br/>Rutas deterministas · OBLIGATORIO"]:::mandatory
+    VL1["VL-1 — Mock / SIL<br/>+ prueba medida de varios servicios<br/>I/Q sintético · GnuRadio · OPCIONAL"]:::optional
+    VL2["VL-2 — HIL<br/>+ aceptación extremo a extremo donde se declare<br/>HW real · enlace representativo · OPCIONAL"]:::hil
 
     VL0 -->|"el usuario decide ▸"| VL1 -->|"el usuario decide ▸"| VL2
 ```
@@ -290,25 +329,27 @@ Cada nivel incluye todas las pruebas de los niveles inferiores.
 
 ### 8.2 Regla adaptativa
 
-El usuario elige el nivel de verificación por módulo, por ciclo. Dos restricciones:
+El usuario elige el nivel de verificación por módulo y por ruta de sistema, por ciclo. Dos restricciones:
 
-1. **Piso.** Cada módulo alcanza VL-0 en cada ciclo.
-2. **Honestidad.** Ninguna afirmación por encima de lo que se probó.
+1. **Piso.** Cada módulo, contrato entre servicios y ruta de sistema declarada alcanza VL-0 en cada ciclo.
+2. **Honestidad.** Ninguna afirmación por módulo o de extremo a extremo supera el entorno realmente probado. Aprobar servicios por separado no demuestra un requisito entre servicios.
 
 | Escenario | El usuario declara | G2 verifica |
 |---|---|---|
-| Iteración rápida | VL-0 en todos | Unidad + sándwich para cada módulo |
-| Validación de DSP | VL-1 para DSP; VL-0 el resto | Mock/SIL para DSP; unidad para los demás |
-| Pre-lanzamiento | VL-1 en todos; VL-2 para `iq_acquisition` | Mock en todos; HIL para la adquisición |
-| Lanzamiento completo | Todos en su `required_vl` | Cada módulo en el máximo declarado en S1 |
+| Iteración rápida | VL-0 en todos | Unidad + sándwich por módulo; contratos y rutas deterministas entre servicios |
+| Validación de DSP | VL-1 para DSP; VL-0 el resto | Mock/SIL para DSP; piso VL-0 para cada ruta de sistema |
+| Pre-lanzamiento | VL-1 para la ruta borde → UI; VL-2 para `iq_acquisition` | Ruta multiservicio medida y adquisición HIL |
+| Lanzamiento completo | Módulos y rutas en su `required_vl` | Cada afirmación en el nivel declarado en S1 |
 
 ### 8.3 Sub-compuertas
 
 | Sub-compuerta | Se activa cuando | Verifica |
 |---|---|---|
-| **G2.0** | Siempre | Pasan unidad + integración sándwich |
-| **G2.1** | VL-1+ declarado | Pasan las pruebas de sistema Mock/SIL; métricas dentro de umbrales |
-| **G2.2** | VL-2 declarado | Aceptación HIL en HW real; mediciones dentro de los criterios |
+| **G2.0** | Siempre | Pasan unidad, sándwich, contratos entre servicios y rutas deterministas |
+| **G2.1** | VL-1+ declarado para módulo o ruta | Pasan pruebas Mock/SIL entre servicios afectados; métricas dentro de umbrales |
+| **G2.2** | VL-2 declarado para módulo o ruta | Aceptación HIL en COTS real; para rutas entre servicios, enlace representativo; mediciones dentro de los criterios |
+
+Para un módulo o una ruta basados en ML, G2 mide el modelo suministrado *dentro del sistema implementado* en el nivel declarado y comprueba los criterios `SYS-*` correspondientes. La metadata de rendimiento recibida en S1 orienta el diseño de pruebas, pero no sustituye estas mediciones.
 
 ---
 
@@ -350,8 +391,8 @@ Un **defecto** significa que V-SIL puede corregirlo internamente. La implementac
 
 | Clase de defecto | Se enruta a | Ejemplo |
 |---|---|---|
-| Defecto de diseño | S1 | El DAG tiene una dependencia no declarada; contrato de interfaz incompleto |
-| Defecto de módulo | S2 | El módulo FFT produce una normalización incorrecta; error de lógica del clasificador |
+| Defecto de diseño | S1 | El DAG tiene una dependencia no declarada; falta propiedad del estado o un contrato entre servicios |
+| Defecto de módulo o integración | S2 | La FFT produce un valor incorrecto; la UI interpreta mal un mensaje válido del borde |
 
 **Autodiagnóstico:** si un módulo que *no* fue modificado falla durante la re-prueba → dependencia no declarada → defecto de diseño → S1.
 
@@ -424,13 +465,41 @@ Prototipo Verificado — V-SIL v3
     classifier:        VL-0 (lógica) — unidad + integración sándwich
     audio_demod:       VL-1 (SIL)    — I/Q sintético modulado en FM
     data_store:        VL-0 (lógica) — unidad + integración sándwich
+    dashboard:         VL-1 (SIL)    — mensajes del borde en enlace simulado
+    controls:          VL-0 (lógica) — vectores de comandos y confirmaciones
+    alerts:            VL-0 (lógica) — unidad + integración sándwich
+    history:           VL-0 (lógica) — unidad + integración sándwich
+
+  Evidencia por servicio y ruta de sistema:
+    borde -> UI occupancy.v1: VL-1 — esquema + latencia en enlace simulado
+    UI -> borde configure.v1: VL-0 — comandos, reintentos y duplicados
+    PATH-001 / SYS-002 pantalla de ocupación: VL-1 — borde + UI, RF sintética
 
   Declaración de honestidad:
     Módulos VL-1: VERIFICADOS contra datos sintéticos.
     Módulos VL-2: VALIDADOS en hardware real.
     Módulos VL-0: VERIFICADOS solo a nivel de lógica.
+    SYS-002: VERIFICADO entre servicios conectados con entrada sintética;
+             sin afirmación de latencia en enlace real o HIL.
 
   RFD emitidas: 0
+```
+
+### 10.1 Registro opcional de trabajo futuro
+
+Después de G2, el prototipo puede incluir propuestas para próximas **versiones del software**. Cada entrada registra ID, capacidad o mejora propuesta, origen y evidencia, versión candidata, responsable de decidir, dependencias y criterio de aceptación propuesto. Si no hay entradas, se omite el registro. El autor del Build Package decide si una propuesta entra en otra versión; una propuesta aceptada se convierte en entrada nueva para S0 y G0. Automatizar CI/CD en el futuro es una posible entrada de infraestructura para una versión posterior; construir ese pipeline queda fuera de esta versión de V-SIL.
+
+Aquí solo entra trabajo expresamente fuera del alcance aprobado del ciclo actual. Un `SYS-*` vigente que falla sigue siendo un defecto por corregir o, si es inviable en la COTS declarada, una RFD; el registro no lo convierte en una afirmación aprobada.
+
+```text
+FW-001 — Automatizar la evidencia de verificación V-SIL en CI/CD
+  Categoría: infraestructura de verificación
+  Origen: ejecución manual repetida de G2 en este ciclo
+  Versión candidata: versión posterior del software
+  Responsable de decidir: autor del Build Package
+  Dependencia: comandos de prueba y formato de informe estables
+  Aceptación propuesta: un pipeline reproduce las comprobaciones G2
+                       declaradas y vincula los informes al ciclo y revisión fuente
 ```
 
 ---

@@ -1,4 +1,4 @@
-# S1 — Diseño de Arquitectura en Capas
+# S1 — Diseño de un Sistema de Servicios en Capas
 
 <!-- ================================================================
      V-SIL v3 · Etapa S1 + Compuerta G1
@@ -12,9 +12,11 @@
      
      Extensiones V-SIL v3:
        - Envolvente COTS con topología física e interfaces HW↔HW
-       - Perfil de verificación por módulo (VL-0/1/2, hw_dependency)
+       - Topología y despliegue de servicios; una capa base por servicio
+       - Perfil de verificación por módulo y ruta de sistema (VL-0/1/2)
        - Stub recipe por contrato
-       - Clasificación de contratos: HW→SW, SW→SW, SW→HW
+       - Clasificación de contratos: HW→SW, SW→SW, SW→HW, servicio→servicio
+       - Paquete de modelo ML suministrado: apartado opcional, solo si se usa
        - Sección de riesgos e inviabilidades conocidas (pre-RFD)
      
      Entrada: G0_StRS.md + G0_SyRS.md (aprobados por G0 + Gate H)
@@ -37,6 +39,8 @@
 | Autor              | {{nombre / rol}}                                 |
 | G0 aprobado        | {{ref al commit o hash de G0_StRS + G0_SyRS}}    |
 | Gate H aprobado    | {{fecha + quién autorizó}}                       |
+| Servicios          | {{IDs de servicios; un solo servicio es válido}} |
+| Modelo ML          | {{omitir si no aplica; si se usa, ref. al paquete}} |
 | Estado             | borrador / en revisión G1 / aprobado G1          |
 
 ---
@@ -47,6 +51,7 @@
      IEEE 29148 HWC-* blocks.
      
      Cada dispositivo COTS es un nodo en la arquitectura física.
+     Asignar también los dispositivos y enlaces a servicios.
      Cada conexión física es una interfaz con restricciones medibles.
      Estas restricciones fluyen hacia los contratos de software:
      un budget de ruido, una precisión de frecuencia, un throughput
@@ -120,6 +125,17 @@ flowchart LR
        nombrar cuál en la sección 3.
 -->
 
+### 0.4 Despliegue y enlaces entre servicios
+
+| Servicio ID | Proceso / destino de despliegue | HWC-* que utiliza | Enlace(s) con otros servicios | Reinicio / operación desconectada |
+|-------------|----------------------------------|-------------------|--------------------------------|-----------------------------------|
+| SVC-EDGE    |                                  |                   |                                |                                   |
+| SVC-UI      |                                  |                   |                                |                                   |
+
+<!-- Una máquina puede alojar varios servicios; un servicio también puede
+     carecer de HWC-* propio. Indicar los límites reales de proceso, red y
+     fallo. No tratar un módulo en el mismo proceso como otro servicio. -->
+
 ---
 
 ## 1. Vista de Bloques de Construcción (Building Block View)
@@ -127,18 +143,38 @@ flowchart LR
 <!-- ================================================================
      arc42 §5: Building Block View.
      
-     S1 produce tres capas, en este orden:
+     S1 primero define los servicios del sistema. Cada servicio produce:
        1. Capa base: orquestación + HAL + enrutamiento + contratos
        2. Módulos: unidades plug-in, una por responsabilidad
-       3. Integración: módulos conectados a través de la capa base
+       3. Integración: módulos conectados a través de su capa base
      
      Restricción fundamental:
        Los módulos se comunican EXCLUSIVAMENTE a través de las
-       interfaces declaradas de la capa base.
+       interfaces declaradas de la capa base de su servicio.
        No hay llamadas directas módulo → módulo.
+       Los servicios se comunican mediante contratos versionados.
      ================================================================ -->
 
-### 1.1 White Box: Sistema completo (Nivel 1)
+### 1.1 Vista de servicios del sistema (Nivel 0)
+
+| Servicio ID | Responsabilidad única | Estado que posee | Entradas / salidas externas | Destino de despliegue |
+|-------------|------------------------|-----------------|-----------------------------|-----------------------|
+| SVC-EDGE    |                        |                 |                             |                       |
+| SVC-UI      |                        |                 |                             |                       |
+
+```mermaid
+flowchart LR
+    EDGE["SVC-EDGE<br/>base + módulos"] -->|"occupancy.v1"| UI["SVC-UI<br/>base + módulos"]
+    UI -->|"configure.v1"| EDGE
+```
+
+**Motivación de las fronteras de servicio:**
+
+<!-- ¿Por qué procesos o despliegues distintos? ¿Qué se reinicia por separado?
+     ¿Quién posee el estado compartido y qué ocurre si el enlace se interrumpe?
+     Con un solo servicio, declarar aquí ese servicio y omitir las aristas. -->
+
+### 1.2 White Box: cada servicio (Nivel 1)
 
 <!-- arc42: "the white box description of the overall system 
      together with black box descriptions of all contained 
@@ -146,7 +182,7 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    subgraph BASE["Capa Base"]
+    subgraph BASE["Capa Base de SVC-xxx"]
         direction LR
         ORCH["Orquestación"]
         HAL_["HAL"]
@@ -163,11 +199,14 @@ flowchart TD
 
     subgraph INTEG["Integración"]
         direction LR
-        SYS["Sistema completo:<br/>módulos conectados por la capa base"]
+        SYS["Servicio integrado:<br/>módulos conectados por su capa base"]
     end
 
     BASE --> MODS --> INTEG
 ```
+
+<!-- Repetir 1.2–1.4 para cada servicio. La integración del producto completo
+     se describe mediante los contratos y rutas entre servicios de §3–4. -->
 
 **Motivación de la descomposición:**
 
@@ -190,13 +229,15 @@ flowchart TD
      de la tarea de ocupación FM."
 -->
 
-### 1.2 Capa Base
+### 1.3 Capa Base
 
-<!-- White box de la capa base: sus tres responsabilidades
-     y cómo se implementarán.
+<!-- White box de la capa base DE CADA SERVICIO: sus responsabilidades
+     y cómo se implementarán. La HAL puede estar vacía si no toca HW.
 -->
 
-#### 1.2.1 Orquestación
+**Servicio ID:** {{SVC-xxx}}
+
+#### 1.3.1 Orquestación
 
 | Campo                   | Valor |
 |-------------------------|-------|
@@ -209,7 +250,7 @@ flowchart TD
      lo impone?
 -->
 
-#### 1.2.2 HAL (Hardware Abstraction Layer)
+#### 1.3.2 HAL (Hardware Abstraction Layer)
 
 | Campo                      | Valor |
 |----------------------------|-------|
@@ -222,7 +263,7 @@ flowchart TD
      cambiar. Si eso no es cierto, explicar por qué.
 -->
 
-#### 1.2.3 Enrutamiento de datos
+#### 1.3.3 Enrutamiento de datos
 
 | Señal de entrada | Consumidores | Mecanismo |
 |------------------|--------------|-----------|
@@ -232,7 +273,7 @@ flowchart TD
      o se enruta condicionalmente.
 -->
 
-### 1.3 Black Boxes: Módulos
+### 1.4 Black Boxes: Módulos
 
 <!-- arc42: "black box descriptions of all contained building blocks"
      + V-SIL verification profile.
@@ -242,10 +283,11 @@ flowchart TD
      El "cómo funciona internamente" es tema de S2.
 -->
 
-#### {{módulo_id}}
+#### {{SVC-xxx/módulo_id}}
 
 | Campo            | Valor |
 |------------------|-------|
+| service_id       | <!-- SVC-xxx dueño del módulo; usar SVC-xxx/módulo_id en trazas --> |
 | Capa funcional   | <!-- HAL / DSP / Decisión / Salida / Control / otra --> |
 | Responsabilidad  | <!-- UNA oración: qué hace este módulo --> |
 | depends_on       | <!-- [lista de contratos que consume] --> |
@@ -278,6 +320,35 @@ flowchart TD
      REPETIR esta sección para CADA módulo.
      ============================================================ -->
 
+### 1.5 Modelo de ML suministrado (opcional)
+
+<!-- OMITIR esta sección completa en el diseño final si no hay módulo ML.
+     Un requisito de resultado no obliga a usar ML si otra arquitectura
+     lo satisface. Si se elige ML, el modelo ya debe estar entrenado y
+     suministrado como entrada controlada; S1 diseña su integración. -->
+
+| Campo | Valor |
+|-------|-------|
+| Módulo consumidor | <!-- SVC-xxx/módulo_id --> |
+| SYS-* que satisface | <!-- requisitos de resultado, no solo elección técnica --> |
+| Proveedor y procedencia | <!-- quién entrega modelo y datos de procedencia --> |
+| Artefacto y pesos | <!-- ruta/URI controlada, formato, versión, SHA-256 --> |
+| Runtime de inferencia | <!-- versión, dependencias, compatibilidad COTS --> |
+| Entradas | <!-- forma, tipo, unidades, tasa y preprocesamiento exacto --> |
+| Salidas | <!-- forma, etiquetas, umbrales, confianza, posprocesamiento --> |
+| Rendimiento suministrado | <!-- métricas, dataset, tamaño, condiciones, límites --> |
+| Presupuesto COTS | <!-- latencia p95/p99, RAM, CPU/GPU, energía si aplica --> |
+| Perfil de verificación | <!-- required_vl y entorno donde se medirá en G2 --> |
+| Fallos y versión incompatible | <!-- respuesta segura ante ausencia, error o cambio --> |
+
+**Contrato de inferencia y respuesta simulada:**
+
+<!-- Entrada concreta → salida esperada; definir respuesta simulada
+     determinista para VL-0. Esa respuesta prueba la integración del
+     módulo, no la calidad del modelo. G2 mide con los pesos identificados. -->
+
+**Decisión de diseño:** {{DEC-NNN que justifica usar este modelo y su ubicación}}
+
 ---
 
 ## 2. Vista de Dependencias (Dependency Viewpoint)
@@ -286,15 +357,15 @@ flowchart TD
      IEEE 1016 §2.2.6: relationships and dependencies among
      design elements.
      
-     El DAG incluye TANTO los nodos de hardware (como fuentes
-     y sumideros) como los módulos de software.
-     
-     Restricción: el grafo DEBE ser acíclico.
-     Si hay un ciclo, el diseño no es implementable módulo por
-     módulo con stubs → el diseño debe cambiar.
+     Separar dependencias de implementación e interacción en ejecución.
+     El DAG de implementación incluye contratos, bases, módulos, hardware
+     como fuente/sumidero y la integración final. DEBE ser acíclico para
+     que S2 construya con stubs. La interacción en ejecución puede tener
+     mensajes bidireccionales entre servicios; se revisa como protocolo,
+     no se usa para ordenar la implementación.
      ================================================================ -->
 
-### 2.1 Grafo de Dependencias (DAG)
+### 2.1 Grafo de Dependencias de Implementación (DAG)
 
 ```mermaid
 flowchart LR
@@ -304,24 +375,32 @@ flowchart LR
         CTRL["HWC-yyy<br/>dispositivo controlado"]
     end
 
-    subgraph SW["Módulos de software"]
-        M1["módulo_1<br/>capa · VL-n"]
-        M2["módulo_2<br/>capa · VL-n"]
-        M3["módulo_3<br/>capa · VL-n"]
+    C["Contratos de servicio<br/>versionados"]
+    subgraph EDGE["SVC-EDGE"]
+        EB["base borde"]
+        M1["adquisición<br/>HAL · VL-2"]
+        M2["detector<br/>DSP · VL-1"]
+    end
+    subgraph UI["SVC-UI"]
+        UB["base UI"]
+        M3["pantalla<br/>Salida · VL-1"]
     end
 
-    SRC -->|contrato_a| M1
-    M1 -->|contrato_b| M2
-    M2 -->|contrato_c| M3
-    M1 -->|contrato_d| CTRL
+    C --> EB & UB
+    SRC -->|contrato HW→SW| M1
+    EB --> M1 --> M2
+    UB --> M3
+    M1 -->|contrato SW→HW| CTRL
+    M2 & M3 --> SYS["Integración del sistema"]
 ```
 
 <!-- Guía para el diagrama:
      - Los nodos HW van en un subgraph separado.
-     - Cada arista lleva el nombre del contrato.
-     - Cada nodo SW muestra: id, capa funcional, VL requerido.
-     - No debe haber aristas directas módulo→módulo que no
-       pasen por un contrato declarado.
+     - Las aristas de dependencia nombran contratos u orden de construcción.
+     - Cada nodo SW muestra: servicio, id, capa funcional, VL requerido.
+     - Un contrato entre servicios se define antes de ambos servicios;
+       NO se representa como una dependencia mutua entre ellos.
+     - Los datos y comandos en ejecución se muestran en §2.3.
 -->
 
 ### 2.2 Orden topológico de implementación
@@ -330,15 +409,28 @@ flowchart LR
      Este es el orden en que S2 implementará los módulos
      después de la capa base.
      
-     El primer módulo es el que no tiene dependencias de SW
-     (solo depende de HW). El último es el terminal.
+     El primer módulo de cada servicio solo depende de contratos, base
+     y, si aplica, HW. El último paso integra los servicios reales.
 -->
 
-| Paso | Módulo | Depende de (contratos) | Justificación del orden |
-|------|--------|------------------------|-------------------------|
-| 1    |        |                        |                         |
-| 2    |        |                        |                         |
-| n    |        |                        |                         |
+| Paso | Servicio | Módulo / integración | Depende de (contratos) | Justificación del orden |
+|------|----------|----------------------|------------------------|-------------------------|
+| 1    |          |                      |                        |                         |
+| 2    |          |                      |                        |                         |
+| n    |          |                      |                        |                         |
+
+### 2.3 Grafo de Interacción en Ejecución
+
+```mermaid
+flowchart LR
+    EDGE["SVC-EDGE"] -->|"occupancy.v1: telemetría"| UI["SVC-UI"]
+    UI -->|"configure.v1: comando"| EDGE
+```
+
+<!-- Un bucle de mensajes es válido si cada arista tiene contrato §3.4.
+     Para cada bucle: ¿quién posee el estado?, ¿qué confirma un comando?,
+     ¿cuándo vence?, ¿cómo se evita un reintento duplicado?, ¿qué ocurre
+     si un servicio cae o se reconecta? -->
 
 ---
 
@@ -348,7 +440,7 @@ flowchart LR
      IEEE 1016 §2.2.8: contracts between components or with
      external systems.
      
-     V-SIL clasifica los contratos en tres tipos:
+     V-SIL clasifica los contratos en cuatro tipos:
      
        HW → SW:  lo que el hardware entrega al software
                   (restringido por las interfaces PHY-*)
@@ -358,6 +450,9 @@ flowchart LR
      
        SW → HW:  lo que el software envía al hardware
                   (comandos de control, configuración)
+
+       Servicio → servicio: mensajes que cruzan procesos o red
+                  con esquema, versión y semántica de fallos
      
      CADA contrato debe ser suficiente para derivar un stub
      determinista. Si no puedes escribir el stub recipe,
@@ -416,8 +511,8 @@ flowchart LR
 
 | Campo               | Valor |
 |----------------------|-------|
-| Productor            | <!-- módulo que genera --> |
-| Consumidor(es)       | <!-- [módulos que consumen] --> |
+| Productor            | <!-- SVC-xxx/módulo que genera; mismo servicio --> |
+| Consumidor(es)       | <!-- [SVC-xxx/módulos que consumen]; mismo servicio --> |
 | Tipo de dato         |       |
 | Shape / estructura   |       |
 | Unidades             |       |
@@ -451,32 +546,61 @@ flowchart LR
 <!-- Ejemplo: "Mock GPIO que registra llamadas y reporta
      posición actual. No controla hardware real." -->
 
+### 3.4 Contratos servicio → servicio
+
+#### {{contrato_id}}: {{SVC-origen}} → {{SVC-destino}}
+
+| Campo | Valor |
+|-------|-------|
+| Productor / consumidor | <!-- SVC-xxx + puerto de cada extremo --> |
+| Propietario del estado | <!-- un servicio; la réplica del otro se identifica --> |
+| Operación / mensaje | <!-- e.g., occupancy.v1 o configure.v1 --> |
+| Transporte / dirección | <!-- HTTP, evento, WebSocket, etc. --> |
+| Esquema y versión | <!-- campos, tipos, compatibilidad vN/vN+1 --> |
+| Unidades y tiempo | <!-- unidades, reloj, marca de tiempo, caducidad --> |
+| Orden / tasa / tamaño | <!-- garantías, límites y backpressure --> |
+| Latencia / disponibilidad | <!-- presupuesto y condiciones medibles --> |
+| Autorización | <!-- quién puede leer o emitir comandos --> |
+| Confirmación y reintentos | <!-- timeout, idempotencia, duplicados --> |
+| Desconexión / reinicio | <!-- estado seguro, cola, resincronización --> |
+| SYS-* / NRM-* afectados | <!-- requisitos que cruzan esta frontera --> |
+
+**Receta de par simulado:**
+
+<!-- Respuestas deterministas nominales y de error, versión incompatible,
+     mensaje duplicado, retraso, desconexión y reconexión aplicables. -->
+
+**Vectores de contrato y prueba:**
+
+<!-- Mensaje concreto → respuesta/estado esperado en productor y consumidor.
+     S2 usa el mismo vector para ambos lados del contrato en VL-0. -->
+
 ---
 
 ## 4. Trazabilidad
 
 <!-- ================================================================
      IEEE 29148: cada requisito SYS-* de G0_SyRS.md debe trazar
-     a al menos un módulo.
+     a un módulo o a una ruta entre servicios con módulos responsables.
      
      Un SYS-* sin módulo = requisito no cubierto.
      Un módulo sin SYS-* = código huérfano (cuestionar).
      ================================================================ -->
 
-### 4.1 Requisitos → Módulos
+### 4.1 Requisitos → Servicios, Módulos y Rutas
 
-| Requisito | Texto (resumen)                   | Módulo(s)       | Contrato(s) involucrado(s) |
-|-----------|-----------------------------------|-----------------|----------------------------|
-| SYS-001   |                                   |                 |                            |
-| SYS-002   |                                   |                 |                            |
+| Requisito | Texto (resumen) | Servicio(s) | Módulo(s) | Ruta / contrato(s) | Responsable de aceptación |
+|-----------|-----------------|-------------|-----------|---------------------|---------------------------|
+| SYS-001   |                 |             |           |                     |                           |
+| SYS-002   |                 |             |           |                     |                           |
 
 ### 4.2 Módulos → Requisitos (vista inversa)
 
 <!-- Útil para detectar módulos huérfanos. -->
 
-| Módulo         | Requisito(s) que satisface |
-|----------------|----------------------------|
-|                |                            |
+| Servicio | Módulo (SVC-xxx/módulo_id) | Requisito(s) que satisface |
+|----------|----------------------------|----------------------------|
+|          |                            |                            |
 
 ### 4.3 Restricciones normativas → Contratos
 
@@ -487,6 +611,17 @@ flowchart LR
 | Normativa | Restricción                        | Contrato afectado | Valor impuesto |
 |-----------|------------------------------------|-------------------|----------------|
 | NRM-001   |                                    |                   |                |
+
+### 4.4 Rutas de Sistema y Evidencia de Extremo a Extremo
+
+| Ruta ID | SYS-* | Servicios y contratos en orden | Entrada → resultado observable | Presupuesto extremo a extremo | required_vl | Entorno / criterio de aceptación |
+|---------|-------|--------------------------------|--------------------------------|-------------------------------|-------------|----------------------------------|
+| PATH-001 |       |                                |                                |                               | VL-0/1/2    |                                  |
+
+<!-- Cada SYS-* que cruza servicios necesita una PATH-* y un presupuesto
+     medible. S2 prueba la ruta con servicios conectados y entradas externas
+     simuladas en VL-0. VL-1 y VL-2 añaden el entorno declarado. Una prueba
+     aislada por servicio no demuestra el requisito de extremo a extremo. -->
 
 ---
 
@@ -501,6 +636,8 @@ flowchart LR
      - ¿Por qué separar feature_extractor de fft_engine?
      - ¿Por qué audio_demod no pasa por el clasificador?
      - ¿Por qué este mecanismo de orquestación?
+     - ¿Por qué separar estos servicios y quién posee el estado compartido?
+     - ¿Qué enlace y protocolo sostienen las rutas PATH-*?
      
      Cada decisión sigue el formato MADR.
      Ref: https://adr.github.io/madr/
@@ -540,9 +677,16 @@ flowchart LR
      Si es inviable, se escala como RFD formal (ver paper §9.2–9.3).
      ================================================================ -->
 
-| ID      | Riesgo                            | Requisitos afectados | Evidencia / estimación       | Mitigación propuesta         | ¿RFD potencial? |
-|---------|-----------------------------------|----------------------|------------------------------|------------------------------|------------------|
-| RSK-001 |                                   |                      |                              |                              | sí / no          |
+| ID      | Riesgo                            | Requisitos / PATH-* afectados | Evidencia / estimación | Mitigación propuesta | ¿RFD potencial? |
+|---------|-----------------------------------|-------------------------------|-----------------------|----------------------|------------------|
+| RSK-001 |                                   |                               |                       |                      | sí / no          |
+
+<!-- Una mejora para otra versión puede anotarse como candidata de trabajo
+     futuro solo si está fuera del alcance aprobado del ciclo. La salida
+     terminal registra las propuestas FW-*; un SYS-* vigente que falla sigue
+     la ruta de defecto o RFD, nunca pasa a FW-* para aprobar G1/G2. La
+     automatización CI/CD puede ser candidata posterior, no requisito aquí.
+     El autor del Build Package decide su inclusión en otro ciclo S0/G0. -->
 
 ---
 ---
@@ -568,11 +712,12 @@ flowchart LR
      eso prevalece sobre cualquier opinión de que "se ve bien".
      ================================================================ -->
 
-## G1.1 — Aciclicidad del DAG
+## G1.1 — Aciclicidad del DAG de implementación
 
 <!-- MECÁNICAMENTE VERIFICABLE.
-     Construir el grafo desde la sección 2.1 y verificar
-     con toposort (graphlib.TopologicalSorter o equivalente).
+     Construir el grafo desde la sección 2.1 y verificar con toposort
+     (graphlib.TopologicalSorter o equivalente). Los mensajes de §2.3
+     no son aristas de dependencia; revisar sus bucles en G1.9.
 -->
 
 | Verificación              | Resultado       |
@@ -583,17 +728,17 @@ flowchart LR
 
 ## G1.2 — Completitud de interfaces
 
-<!-- PARCIALMENTE MECÁNICO: se puede verificar que cada arista
-     del DAG tiene un contrato en la sección 3 con los campos
-     requeridos. Pero la SUFICIENCIA del contenido es juicio.
+<!-- PARCIALMENTE MECÁNICO: cada arista interna tiene contrato §3.1–3.3;
+     cada intercambio entre servicios tiene contrato §3.4. La suficiencia
+     del contenido y la semántica de fallo son juicio de diseño.
 -->
 
 | Contrato        | ¿Existe en §3? | Campos completos | ¿Stub recipe presente? |
 |-----------------|-----------------|------------------|------------------------|
 |                 | sí / no         | sí / faltan: ... | sí / no                |
 
-**Pregunta de revisión:** para cada contrato, ¿los campos son
-suficientes para que un implementador escriba un stub determinista
+**Pregunta de revisión:** para cada contrato, ¿los campos son suficientes
+para escribir un stub o par simulado determinista y probar ambos extremos
 SIN preguntarle nada al diseñador?
 
 ## G1.3 — Cobertura de requisitos
@@ -602,15 +747,16 @@ SIN preguntarle nada al diseñador?
 
 | Verificación                             | Resultado   |
 |------------------------------------------|-------------|
-| SYS-* sin módulo (sección 4.1)           | (listar)    |
+| SYS-* sin módulo o ruta (sección 4.1)    | (listar)    |
 | Módulos sin SYS-* (sección 4.2)          | (listar)    |
 | NRM-* sin contrato afectado (sección 4.3)| (listar)    |
+| SYS-* entre servicios sin PATH-* (§4.4) | (listar)    |
 
 ## G1.4 — Viabilidad de stubs
 
 <!-- JUICIO DE DISEÑO.
      
-     Para cada stub recipe en la sección 3:
+     Para cada stub recipe o receta de par simulado en la sección 3:
      ¿Un implementador puede generar ese stub a partir de
      lo que dice el contrato?
      
@@ -634,6 +780,9 @@ SIN preguntarle nada al diseñador?
 |                 | true/false    | VL-n        | sí / FAIL: ... |
 
 **Regla:** `hw_dependency: true` → `required_vl: VL-2` (obligatorio).
+El perfil incluye `service_id`. En §4.4, cada PATH-* declara `required_vl`,
+entorno y criterio medible. Ejecutarse en un equipo físico no implica por sí
+solo `hw_dependency: true`; la corrección debe depender de ese hardware.
 
 ## G1.6 — Calidad de las decisiones de diseño
 
@@ -662,8 +811,8 @@ SIN preguntarle nada al diseñador?
 
 <!-- JUICIO DE DISEÑO.
      
-     1. ¿La topología física (§0.2) es consistente con
-        el inventario (§0.1)?
+     1. ¿La topología física (§0.2) y el despliegue (§0.4) son
+     consistentes con el inventario (§0.1)?
      
      2. ¿Cada interfaz física (§0.3) tiene las restricciones
         que el software necesita conocer?
@@ -674,7 +823,7 @@ SIN preguntarle nada al diseñador?
         Ejemplo: si PHY-002 dice IL = 2.3 dB y el contrato
         raw_iq dice "budget NF = 3 dB", hay una contradicción.
      
-     4. ¿La HAL (§1.2.2) abstrae TODOS los dispositivos que
+     4. ¿La HAL (§1.3.2) abstrae TODOS los dispositivos que
         el software toca? ¿Hay algún módulo que accede a
         hardware directamente sin pasar por la HAL?
 -->
@@ -685,6 +834,7 @@ SIN preguntarle nada al diseñador?
 | ¿PHY-* cubren todas las conexiones del diagrama?    |                 |
 | ¿Budgets HW→SW coherentes con PHY-*?                |                 |
 | ¿La HAL es el único punto de contacto con HW?       |                 |
+| ¿Los enlaces de §0.4 soportan los contratos §3.4?   |                 |
 
 ## G1.8 — Riesgos evaluados
 
@@ -700,6 +850,47 @@ SIN preguntarle nada al diseñador?
 | RSK-ID  | ¿Evidencia creíble? | ¿Mitigación viable? | ¿Escalar a RFD? |
 |---------|---------------------|----------------------|------------------|
 |         |                     |                      |                  |
+
+## G1.9 — Topología, estado y bucles entre servicios
+
+<!-- JUICIO DE DISEÑO. Un solo servicio pasa si no hay aristas externas. -->
+
+| Verificación | Resultado |
+|--------------|-----------|
+| ¿Cada servicio de §1.1 tiene responsabilidad, despliegue y puertos definidos? | |
+| ¿Cada mensaje de §2.3 tiene contrato versionado en §3.4? | |
+| ¿La propiedad del estado y la compatibilidad de versiones están claras? | |
+| ¿Los bucles de comandos/telemetría tienen timeout, confirmación e idempotencia? | |
+| ¿Desconexión y reinicio conservan un estado seguro y recuperable? | |
+
+## G1.10 — Cobertura de rutas de extremo a extremo
+
+| Verificación | Resultado |
+|--------------|-----------|
+| ¿Cada SYS-* entre servicios tiene PATH-* en §4.4 y responsable? | |
+| ¿El presupuesto de cada PATH-* se reparte entre módulos y enlace? | |
+| ¿Existe prueba VL-0 con procesos conectados y entradas simuladas? | |
+| ¿required_vl y entorno permiten comprobar el criterio de aceptación? | |
+
+<!-- La suma de pruebas aisladas por servicio no sustituye una prueba
+     de la ruta completa. G2 debe citar evidencia por módulo y PATH-*. -->
+
+## G1.11 — Preparación del modelo ML (solo si §1.5 existe)
+
+<!-- OMITIR esta comprobación en el informe G1 si el diseño no usa ML.
+     Revisar la preparación para implementar, no aprobar las métricas
+     suministradas como si ya fueran evidencia de G2. -->
+
+| Verificación condicional | Resultado |
+|--------------------------|-----------|
+| ¿Artefacto y pesos disponibles, versionados y con digest? | |
+| ¿Runtime y recursos compatibles con la COTS declarada? | |
+| ¿Entradas, preprocesamiento, salidas y umbrales son implementables? | |
+| ¿Métricas incluyen dataset y condiciones de medición? | |
+| ¿Existe respuesta simulada determinista y plan para medir el modelo real en G2? | |
+
+**Si faltan pesos o metadata necesarios:** FAIL → completar entrada/diseño en S1.
+**Si se demuestra inviabilidad del requisito en la COTS declarada:** RFD.
 
 ---
 
