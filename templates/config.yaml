@@ -21,6 +21,12 @@ skills:
   G1_design_review:
     project_dir: ".agents/skills/G1_design_review"
     prerequisite: "S1"
+  S2_implement_services:
+    project_dir: ".agents/skills/S2_implement_services"
+    prerequisite: "G1"
+  G2_adaptive_verification:
+    project_dir: ".agents/skills/G2_adaptive_verification"
+    prerequisite: "S2"
 
 # Flow order of the chain reports, used by `codeanvil status` to print gates
 # in order. Any other report id (RFD, old CC) follows alphabetically.

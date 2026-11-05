@@ -331,11 +331,14 @@ def test_config_declares_skill_prerequisite_chain():
     assert list(skills) == [
         "S0_normalise_build_package", "G0_valid_req_and_GT",
         "S1_design_services", "G1_design_review",
+        "S2_implement_services", "G2_adaptive_verification",
     ]
     assert skills["S0_normalise_build_package"]["prerequisite"] is None
     assert skills["G0_valid_req_and_GT"]["prerequisite"] == "S0"
     assert skills["S1_design_services"]["prerequisite"] == "G0"
     assert skills["G1_design_review"]["prerequisite"] == "S1"
+    assert skills["S2_implement_services"]["prerequisite"] == "G1"
+    assert skills["G2_adaptive_verification"]["prerequisite"] == "S2"
 
 
 def test_create_makes_report_dir_without_cycle_subdir(tmp_path, db_path):
@@ -395,13 +398,16 @@ def test_agents_md_skill_table_shows_the_prerequisite_chain(tmp_path, db_path):
     rows = {
         name: next(line for line in lines if f".agents/skills/{name}/" in line)
         for name in ("S0_normalise_build_package", "G0_valid_req_and_GT",
-                     "S1_design_services", "G1_design_review", "RFD_request_for_deviation")
+                     "S1_design_services", "G1_design_review", "S2_implement_services",
+                     "G2_adaptive_verification", "RFD_request_for_deviation")
     }
 
     assert "None (entry point)" in rows["S0_normalise_build_package"]
     assert "`S0.md` latest iteration `HITL: PASS`" in rows["G0_valid_req_and_GT"]
     assert "`G0.md` latest iteration `HITL: PASS`" in rows["S1_design_services"]
     assert "`S1.md` latest iteration `HITL: PASS`" in rows["G1_design_review"]
+    assert "`G1.md` latest iteration `HITL: PASS`" in rows["S2_implement_services"]
+    assert "`S2.md` latest iteration `HITL: PASS`" in rows["G2_adaptive_verification"]
     assert rows["RFD_request_for_deviation"].rstrip().endswith("| - |")
     order = [lines.index(rows[name]) for name in rows]
     assert order == sorted(order)
@@ -434,7 +440,8 @@ def test_scaffold_ships_the_v3_chain_and_not_the_retired_skills(tmp_path, db_pat
     skills = tmp_path / "proj" / ".agents" / "skills"
 
     for name in ("S0_normalise_build_package", "G0_valid_req_and_GT", "S1_design_services",
-                 "G1_design_review", "RFD_request_for_deviation"):
+                 "G1_design_review", "S2_implement_services", "G2_adaptive_verification",
+                 "RFD_request_for_deviation"):
         assert (skills / name / "SKILL.md").is_file()
     assert not (skills / "custody-chain").exists()
     assert not (skills / "G1_start_design").exists()
