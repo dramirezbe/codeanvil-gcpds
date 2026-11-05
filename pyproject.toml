@@ -29,3 +29,4 @@ packages = ["src/codeanvil"]
 "templates/GT/README.md.template" = "codeanvil/templates/GT/README.md.template"
 "templates/config.yaml" = "codeanvil/templates/config.yaml"
 "templates/AGENTS" = "codeanvil/templates/AGENTS"
+"templates/agents" = "codeanvil/templates/agents"

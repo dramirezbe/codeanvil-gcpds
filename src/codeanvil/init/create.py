@@ -1,3 +1,4 @@
+import json
 import re
 import shutil
 from pathlib import Path
@@ -49,6 +50,7 @@ def scaffold_project(
     _generate_agents_md(project_dir, mcp_servers=mcp_servers)
     _link_agent_skill_dirs(project_dir)
     _link_agent_configs(project_dir)
+    _write_subagents(project_dir)
 
     log.info("scaffolded project '%s' at %s", name, project_dir)
     return project_dir
@@ -372,3 +374,36 @@ def _link_agent_configs(project_dir: Path) -> None:
             pointer.unlink()  # replace symlinks: pointer files must be regular files
         pointer.write_text(str(pointer_text).rstrip("\n") + "\n", encoding="utf-8")
         log.debug("wrote pointer file %s", pointer)
+
+
+def _write_subagents(project_dir: Path) -> None:
+    """Write each configured subagent in every runtime's own format.
+
+    One shared body per subagent, one header per runtime: Markdown files get
+    a YAML frontmatter, TOML files get flat string fields plus the body as
+    `developer_instructions`. Always overwritten — generated, not hand-edited."""
+    for name, cfg in CONFIG.get("subagents", {}).items():
+        body_path = TEMPLATES_DIR.parent / cfg["body"]
+        try:
+            body = body_path.read_text(encoding="utf-8")
+        except OSError as exc:
+            log.error("subagent body for '%s' not found at %s: %s", name, body_path, exc)
+            continue
+
+        for runtime, target in cfg["targets"].items():
+            dest = project_dir / target["path"]
+            if target["format"] == "markdown":
+                meta = {**target.get("frontmatter", {}), "description": cfg["description"]}
+                header = yaml.safe_dump(meta, sort_keys=False, allow_unicode=True, width=10**6)
+                content = f"---\n{header}---\n\n{body}"
+            elif target["format"] == "toml":
+                fields = {**target.get("fields", {}), "description": cfg["description"]}
+                lines = [f"{key} = {json.dumps(str(value), ensure_ascii=False)}" for key, value in fields.items()]
+                escaped = body.replace("\\", "\\\\").replace('"""', '""\\"')
+                content = "\n".join(lines) + f'\ndeveloper_instructions = """\n{escaped}"""\n'
+            else:
+                log.warning("unknown subagent format '%s' for %s — skipping", target["format"], runtime)
+                continue
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_text(content, encoding="utf-8")
+            log.debug("wrote %s subagent %s", runtime, dest)
