@@ -10,7 +10,7 @@ methodology pipeline. They are the methodology's integration tests.
 | **T0_ANE-Lap2** | SDR spectrum monitoring (ANE edge sensor) | **Yes** — `just-edge/StRS.md` + `just-edge/SyRS.md` are valid GT files | Also has `full-system/StRS_APPROVED.md` (broader scope, historical snapshot) |
 | **T1_FM-monitoring** | SDR-based FM broadcast compliance | No — raw LaTeX spec, GT must be derived | `00_sdr_spectrum_sensor_design/` (RAG-informed from FCC/ANE/ITU) |
 | **T2_IoT-Indoor** | Indoor IoT radio environment mapping, 2.4 GHz | No — raw proposal + literature | Hermes proposal, radio env mapping papers, variable adaptation doc |
-| **T3_FM-mock** | FM channel occupancy, RTL-SDR → Raspberry Pi edge + small dashboard | Build Package — `build_package.md`, S0 writes the GT pair | Full-flow fixture for `mock-only` (S0 → G2, VL-1, no lab inputs, ML localisation only as future work) |
+| **T3_FM-mock** | FM spectrum + waterfall + channel detection, RTL-SDR → Raspberry Pi DSP service + browser UI | Build Package — `build_package.md`, S0 writes the GT pair | Full-flow fixture for `mock-only` (S0 → G2, VL-1, no lab inputs, ML localisation only as future work) |
 
 Only **T0** has ready-to-use GT files for the pipeline, and **T3** a ready-to-use Build
 Package. T1 and T2 are raw project materials from which GT files would be authored.
@@ -309,8 +309,10 @@ Cycles:
 
 ### 5b. Full flow S0 → G2, `mock-only` (T3_FM-mock)
 
-Scenario: SDR → Raspberry Pi edge, a small user dashboard, validation up to VL-1 with the
-Mock HAL and labelled synthetic scenes, no real hardware. The ML spectral-localisation model
+Scenario: SDR → Raspberry Pi DSP service (spectrum, waterfall, detection of the 10 FM channels
+of a 2 MHz slice) and a browser UI, validation up to VL-1 with the Mock HAL and the labelled
+synthetic scenes the Build Package fixes (B.2 signal model, B.3 scenes SC-1–SC-6, B.4 golden
+vectors GV-1–GV-5), no real hardware. The ML spectral-localisation model
 is future work only, so the design has no §1.5. Plan:
 `odd/tasks/2026-11-05_E2E_full_flow_mock_only.md`.
 
@@ -325,9 +327,9 @@ codeanvil sandbox claude    # or opencode, codex; pi only for the fresh-session 
 | Step | Prompt | Expect |
 |------|--------|--------|
 | 1 | Run S0, then G0 | SyRS §4–§6 hold the "not applicable" line; GT pair passes `g0_validate.py`; human Gate H |
-| 2 | Run S1 | `HAL mode: mock-only`; `Toolchain` per service (edge and dashboard); §1.3.4 with D2 paths, §1.6, §1.7 filled; no §1.5; no `hw_dependency: true` |
-| 3 | Run G1, answer PASS | Checklist with G1.11–G1.13 and the kit row (incl. `Toolchain`); returns `G1 passed. Run the S2 skill.` |
-| 4 | Run S2 | D2 tree: `src/fm_edge/` (Python, `__main__.py`) and `src/dashboard/` (TS), `pyproject.toml` + `uv.lock`, `package.json` + `pnpm-workspace.yaml` + `pnpm-lock.yaml`, `verification/` with `run.sh`, `golden/`, `telemetry/`, `fm_edge/`, `dashboard/`; kit and base first, then modules, paths and VL-1 tests; `verification/run.sh vl0` green with telemetry; `test_run.md` has the two `run.sh` commands; `grep -r codeanvil src/` is empty; edge logs show `[YYYY-MM-DD HH:MM:SS.mmm] LEVEL name.funcName message` in colour; `uv sync --frozen --no-dev && uv run fm_edge` starts without kit dependencies |
+| 2 | Run S1 | `HAL mode: mock-only`; `Toolchain` per service (DSP and UI); §1.3.4 with D2 paths, §1.6 Mock HAL following B.2 with SC-1–SC-6 and GV-1–GV-5 as its vectors, §1.7 filled; no §1.5; no `hw_dependency: true`; no label invented beyond B.3 |
+| 3 | Run G1, answer PASS | No script runs; checklist with G1.11–G1.14 and the kit row (incl. `Toolchain`); G1.14 runs the `--version` checks and asks before installing; returns `G1 passed. Run the S2 skill.` |
+| 4 | Run S2 | D2 tree: `src/fm_edge/` (Python, `__main__.py`) and `src/dashboard/` (TS), `pyproject.toml` + `uv.lock`, `package.json` + `pnpm-workspace.yaml` + `pnpm-lock.yaml`, `verification/` with `run.sh`, `golden/` (manifest lists SC-1–SC-6 and GV-1–GV-5 with the B.3 labels copied as expected output), `telemetry/`, `fm_edge/`, `dashboard/`; kit and base first, then modules, paths and VL-1 tests; `verification/run.sh vl0` green with telemetry; `test_run.md` has the two `run.sh` commands; `grep -r codeanvil src/` is empty; edge logs show `[YYYY-MM-DD HH:MM:SS.mmm] LEVEL name.funcName message` in colour; `uv sync --frozen --no-dev && uv run fm_edge` starts without kit dependencies |
 | 5 | Run G2, declare VL-1 for DSP and the edge → UI path | Runs delegated to `vsil-verifier` (Claude Code, OpenCode); source tree unchanged after them; only the `test_run.md` commands run; a VL-2 request is refused; `verified_prototype.md` written on PASS |
 | 6 | `codeanvil status` | S0–S2 `delivered`, G0–G2 `PASS` |
 
