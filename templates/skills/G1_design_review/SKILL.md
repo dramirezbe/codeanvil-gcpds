@@ -62,7 +62,7 @@ writing **no iteration** when you stop:
    and show the human whether they match the design's Meta row. Information only: it never blocks.
 4. Present the findings, `open` first, and a recommendation. When the G1.8 test points to RFD,
    the recommendation names it.
-5. Ask the human: **PASS**, **FEEDBACK** or **RFD**, and who is deciding.
+5. Ask the human: **PASS**, **FEEDBACK** or **RFD**, as **Asking the human** says below.
 6. Write the iteration with the filled form and the answer verbatim, including `Decided by: <name>`.
 
 | Human answer | Row written | Route |
@@ -70,6 +70,8 @@ writing **no iteration** when you stop:
 | PASS | `HITL: PASS` | S2: return "G1 passed. Run the S2 skill." |
 | FEEDBACK | `HITL: FEEDBACK` plus sections to rework | S1 |
 | RFD | `HITL: FEEDBACK` plus the line `Verdict: RFD` | RFD skill |
+
+**Asking the human.** Ask with your runtime's native question tool (`AskUserQuestion` in Claude Code): one single-select question with the options `PASS`, `FEEDBACK` and `RFD`, and a free-text answer allowed (the tool's type-your-own-answer choice). If the runtime has no question tool, ask the same question in chat and wait for the reply; never assume or default an answer. Any answer is recorded verbatim; a typed answer that does not choose `PASS` or `RFD` counts as `FEEDBACK`, never as `PASS`, and its text is the feedback. Then ask who is deciding, unless the human already said.
 
 ## Report Contract
 

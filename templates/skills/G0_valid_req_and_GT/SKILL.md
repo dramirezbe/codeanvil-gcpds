@@ -85,11 +85,13 @@ Write exactly one file: `.codeanvil/report/<cycle-name>/G0.md`.
 
 | Situation | Action |
 |-----------|--------|
-| Exit `0` | Show the user the script output and the **missing list** from the latest `S0.md` iteration (placeholders the validator does not reject). Then ask **Gate H**: *Requirements complete, bounded, and verifiable?* Answer **PASS** or **FEEDBACK**, and who is deciding. Write the iteration with that `HITL` value; `PASS` completes G0. |
+| Exit `0` | Show the user the script output and the **missing list** from the latest `S0.md` iteration (placeholders the validator does not reject). Then ask **Gate H**: *Requirements complete, bounded, and verifiable?* Ask it as **Asking the human** says below. Write the iteration with that `HITL` value; `PASS` completes G0. |
 | Gate H `FEEDBACK` | Collect the reasons one per line, each starting with the block ID it concerns, and write them verbatim. The route back is S0. Never suggest or complete a reason. |
 | Exit `1` | `HITL` is forced to **FEEDBACK**, with no question to the human. Write the iteration with the full report so each ERROR is fixable by line + block ID. The route back is S0. |
 | Exit `2` | Script error (bad args, unreadable file, undetectable doc type). Fix the invocation or the type heading and re-run. Write **no** iteration. |
 | Pair incomplete | The G0 GATE REPORT names the missing document; supply both files in one invocation. Write the iteration with `HITL: FEEDBACK`. |
+
+**Asking the human.** Ask with your runtime's native question tool (`AskUserQuestion` in Claude Code): one single-select question with the options `PASS` and `FEEDBACK`, and a free-text answer allowed (the tool's type-your-own-answer choice). If the runtime has no question tool, ask the same question in chat and wait for the reply; never assume or default an answer. Any answer is recorded verbatim; a typed answer that does not choose `PASS` counts as `FEEDBACK`, never as `PASS`, and its text is the feedback. Then ask who is deciding, unless the human already said.
 | Finding needs context | Read the reported file and line; `Line` + block ID (+ `[StRS]`/`[SyRS]` tag on G0-X findings) locate it. |
 
 ## Execution Steps

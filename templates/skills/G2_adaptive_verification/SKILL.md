@@ -79,7 +79,7 @@ say so and ask the user to run G2 in a fresh session; run nothing in the session
    recommendation names it.
 7. **Present** one table per module and path (declared level, environment, result, telemetry
    flag), the draft honesty declaration and a recommendation. Ask the human: **PASS**,
-   **FEEDBACK** or **RFD**, and who is deciding.
+   **FEEDBACK** or **RFD**, as **Asking the human** says below.
 8. Write the iteration with the results table and the answer verbatim, including
    `Decided by: <name>`.
 
@@ -89,6 +89,8 @@ say so and ask the user to run G2 in a fresh session; run nothing in the session
 | FEEDBACK, module defect | `HITL: FEEDBACK` plus `Verdict: module defect` and the modules, including missing VL-1 tests | S2 |
 | FEEDBACK, design defect | `HITL: FEEDBACK` plus `Verdict: design defect` and the S1 sections to rework | S1 |
 | RFD | `HITL: FEEDBACK` plus the line `Verdict: RFD` | RFD skill, with the G2 report as evidence |
+
+**Asking the human.** Ask with your runtime's native question tool (`AskUserQuestion` in Claude Code): one single-select question with the options `PASS`, `FEEDBACK` and `RFD`, and a free-text answer allowed (the tool's type-your-own-answer choice). If the runtime has no question tool, ask the same question in chat and wait for the reply; never assume or default an answer. Any answer is recorded verbatim; a typed answer that does not choose `PASS` or `RFD` counts as `FEEDBACK`, never as `PASS`, and its text is the feedback. Then ask who is deciding, unless the human already said. A FEEDBACK answer names module defect or design defect; ask if it does not.
 
 ## Report Contract
 
