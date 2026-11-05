@@ -33,7 +33,9 @@ writing **no iteration** when you stop:
    `Outcome: Withdrawn`, in which case continue.
 
 When S1 already delivered and nothing asks for rework, say so and point to the G1 skill. Rework
-is requested by a `G1.md` iteration with `FEEDBACK` (named sections to rework) or by the user.
+is requested by a `G1.md` iteration with `FEEDBACK` (named sections to rework), by an `S2.md` or
+`G2.md` iteration with `FEEDBACK` and the line `Verdict: design defect` naming the sections to
+rework, or by the user.
 
 ## Inputs and Outputs
 
@@ -42,7 +44,7 @@ is requested by a `G1.md` iteration with `FEEDBACK` (named sections to rework) o
 | Input | `GT/G0_StRS.md`, `GT/G0_SyRS.md` | Read-only |
 | Input | `.codeanvil/project.yaml` | Read-only; its keys are copied as text into the graph |
 | Input (optional) | Supplied ML package | Only if the design uses ML or the GT requires it |
-| Input (rework) | Latest `G1.md` FEEDBACK | Named sections to rework |
+| Input (rework) | Latest `G1.md` FEEDBACK, or `S2.md` / `G2.md` FEEDBACK with `Verdict: design defect` | Named sections to rework |
 | Template | `templates/skills/S1_design_services/references/S1_design.md` | This skill's locked template |
 | Output | `.codeanvil/report/<cycle-name>/S1_artifacts/S1_design.md` | Overwritten on rework |
 | Output | `.codeanvil/report/<cycle-name>/S1_artifacts/S1_graph.html` | Dependency graph; overwritten on rework |
@@ -58,6 +60,19 @@ Working files live in `S1_artifacts/`, never directly in the cycle folder.
   have distinct failure domains.
 - `hw_dependency: true` means `required_vl: VL-2`. Running on a computer does not count as a
   hardware dependency.
+- **HAL mode** (Meta) is `mock-only` unless the GT or the user requires real hardware this cycle.
+  In `mock-only`, no module has `hw_dependency: true`, so the highest `required_vl` is VL-1, there
+  is no Real HW HAL, and SyRS §4–§6 are not read.
+- In `mock+real`, the Real HW HAL (§1.6) cites the SyRS `PROTO-*` rows it executes, plus the §4
+  correction chains and §5 tolerances it applies. A SyRS §6 that says
+  `Not applicable: no lab inputs in the Build Package.` cannot support `mock+real`: record that
+  GT gap as a risk in design §6.
+- The Mock HAL (§1.6) and the Telemetry companion (§1.7) are always designed. The Telemetry
+  companion lives in `verification/telemetry/`: it is never a module and never under `src/`.
+- **Toolchain** (Meta) names, per service, `SVC-xxx: <package> · <language> · <package manager> ·
+  <test runner>`, using only `Python · uv · pytest` or `TypeScript · pnpm · vitest`. `<package>`
+  is a valid identifier and names `src/<package>/`. Derive it from §1.3.1 and the deployment
+  target; ask the user only when the GT and the orchestration mechanism leave it open.
 - Keep the implementation DAG and the runtime interaction graph separate. A cross-service
   contract is defined before both services and is never drawn as a mutual dependency.
 - Every contract is complete enough to write a deterministic stub without asking the designer.
@@ -74,13 +89,16 @@ Working files live in `S1_artifacts/`, never directly in the cycle folder.
 2. Allocate `SYS-*` to services and paths: §0.4, §1.1, §4.1.
 3. Fill the COTS envelope from the `HWC-*` blocks: §0.1–0.3.
 4. For each service: its base (§1.3) and module cards (§1.4), each with the full verification profile.
+   Set `HAL mode` and `Toolchain` in the Meta, then fill the verification kit (§1.3.4), the HAL
+   substitution ladder (§1.6) and the Telemetry companion (§1.7).
 5. Draw the implementation DAG and topological order (§2.1–2.2) and the runtime graph (§2.3).
 6. Write the contracts with stub or fake-peer recipes and vectors (§3).
 7. Complete traces and `PATH-*` (§4).
 8. Record decisions with real alternatives (§5; DEC-001 is the partitioning decision) and risks (§6).
 9. Reread the design against this short list and fix what you find: no `{{` left, every `SYS-*`
    traced, every contract with a recipe, `hw_dependency: true` at `VL-2`, no cycle in the build
-   order. This is a courtesy to the reviewer, not a gate.
+   order, `HAL mode` set, `Toolchain` set for every service, kit table complete, §1.7 present.
+   This is a courtesy to the reviewer, not a gate.
 10. Build the dependency graph (next section).
 11. Write the iteration with the row `| HITL | PASS |` and the graph's path in the Description.
     Return the design path and `S1 complete. Run the G1 skill.`
