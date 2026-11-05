@@ -281,7 +281,7 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
     <text class="tl mid" x="450" y="226">updated Build Package (re-enters at S0)</text>
   </svg>
   </div>
-  <figcaption>Abstract diagram. Services contain layered modules; verification depth adapts per module and system path above a mandatory floor; every claim names the level and environment that produced it. S1 designs a Mock HAL, a Real HW HAL and a telemetry companion. A supplied ML model and a future work register are optional.</figcaption>
+  <figcaption>Abstract diagram. Services contain layered modules; verification depth adapts per module and system path above a mandatory floor; every claim names the level and environment that produced it. S1 always designs a Mock HAL and a mandatory telemetry companion, and adds a Real HW HAL only in <code>mock+real</code>. A supplied ML model and a future work register are optional.</figcaption>
 </figure>
 
 <!-- ======================================================================= -->
@@ -472,7 +472,7 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
     <text class="tl" x="662" y="152">traces to</text>
   </svg>
   </div>
-  <figcaption>Obligations, COTS constraints and needs land in typed blocks; <code>SYS-*</code> blocks must trace back to StRS blocks, which G0 checks mechanically. The obligation → <code>NRM-*</code>, COTS → <code>HWC-*</code>, needs → <code>STK-*</code> pairing is the typical mapping. The paper assigns no block type to lab procedures, calibration and tolerances; S1's Real HW HAL references them (§5.5).</figcaption>
+  <figcaption>Obligations, COTS constraints and needs land in typed blocks; <code>SYS-*</code> blocks must trace back to StRS blocks, which G0 checks mechanically. The obligation → <code>NRM-*</code>, COTS → <code>HWC-*</code>, needs → <code>STK-*</code> pairing is the typical mapping. Optional lab procedures, calibration and tolerances go into SyRS §6 Field Measurement Protocols (<code>PROTO-*</code>), §4 Correction Chains and §5 Uncertainty Budgets; otherwise each holds <code>Not applicable: no lab inputs in the Build Package.</code> S1's Real HW HAL references them only in <code>mock+real</code> (§5.5).</figcaption>
 </figure>
 
 <!-- ======================================================================= -->
@@ -767,11 +767,11 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
 <p><b>Status: uncertain.</b> This version defines the model only as an optional S1 input and a G1 readiness check; its connection to S2 and G2 is future work (FW-005). When a design chooses ML, the model is an optional input to a module. It is trained with <b>Mock HAL data plus labelling</b> or, failing that, with <b>Real HW HAL data plus labelling</b>. S1 records weights and hash, training data source and labelling, inference inputs and outputs, preprocessing, performance metadata with its evaluation conditions, and COTS resource budgets. G1 checks that this package is ready to implement. G2 measures the actual model in the integrated system; supplied performance figures are prior evidence. Automating this lifecycle with MLOps is future work (FW-005). The star toggle above shows an illustrative alternative; the terminal example below uses no ML model.</p>
 
 <h3 id="hal-ladder">5.5 HAL substitution ladder and telemetry companion</h3>
-<p>S1 designs two HAL implementations behind one base-layer interface contract. They differ only in what produces <code>raw_iq</code>; swapping them is the <b>HAL substitution</b> that moves between verification levels [11]. S1 also specifies a <b>telemetry companion</b> that runs beside every test. <b>Pick a level</b> to see what feeds the port.</p>
+<p>S1 declares <code>HAL mode: mock-only</code> or <code>HAL mode: mock+real</code>. The Mock HAL is always designed; the Real HW HAL, with its lab procedures, calibration and tolerances, only in <code>mock+real</code>. Both sit behind one base-layer interface contract and differ only in what produces <code>raw_iq</code>; swapping them is the <b>HAL substitution</b> that moves between verification levels [11]. S1 also specifies a mandatory <b>telemetry companion</b> that runs beside every test. <b>Pick a level</b> to see what feeds the port.</p>
 <div class="btns" id="hal-btns">
   <button type="button" data-hal="v0" aria-pressed="true">VL-0 · Mock HAL</button>
   <button type="button" data-hal="v1" aria-pressed="false">VL-1 · Mock HAL</button>
-  <button type="button" data-hal="v2" aria-pressed="false">VL-2 · Real HW HAL</button>
+  <button type="button" data-hal="v2" aria-pressed="false">VL-2 · Real HW HAL (only in mock+real)</button>
 </div>
 <figure>
   <div class="scroll">
@@ -801,7 +801,7 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
   </svg>
   </div>
   <div class="card" id="hal-card" aria-live="polite"></div>
-  <figcaption>Calibration grade and tolerances are inputs from the Build Package, not claims of V-SIL. The companion lets G2 determine whether the compute unit (UC) was within its operating envelope during each test.</figcaption>
+  <figcaption>Calibration grade and tolerances are inputs recorded in the SyRS, not claims of V-SIL. The telemetry companion is mandatory in every design and every test run; it is verification infrastructure and is never shipped in the delivered software. The companion lets G2 determine whether the compute unit (UC) was within its operating envelope during each test.</figcaption>
 </figure>
 
 <!-- ======================================================================= -->
@@ -898,7 +898,7 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
   <tbody>
     <tr><td><span class="badge b0">VL-0</span></td><td>Deterministic golden vectors (short, repeatable, edge-case)</td><td>Mock HAL</td><td>Records UC state; attached to evidence</td></tr>
     <tr><td><span class="badge b1">VL-1</span></td><td>Synthetic I/Q at known SNR, modulation, channel conditions</td><td>Mock HAL</td><td>Records UC state; attached to evidence</td></tr>
-    <tr><td><span class="badge b2">VL-2</span></td><td>Real RF via COTS SDR; datasets generated following Build Package lab procedures with declared calibration and tolerances</td><td>Real HW HAL</td><td>Records UC state; attached to evidence</td></tr>
+    <tr><td><span class="badge b2">VL-2</span></td><td>Real RF via COTS SDR; datasets generated following the SyRS lab procedures (<code>PROTO-*</code>) with declared calibration and tolerances; only in <code>mock+real</code></td><td>Real HW HAL</td><td>Records UC state; attached to evidence</td></tr>
   </tbody>
 </table>
 </div>
@@ -940,7 +940,7 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
   <div class="subgates" id="subgates">
     <div data-sg="0"><b>G2.0</b> always · unit + sandwich + service contracts + deterministic paths · Mock HAL golden vectors · companion confirms UC nominal</div>
     <div data-sg="1"><b>G2.1</b> VL-1+ declared · Mock HAL synthetic I/Q · Mock/SIL across affected services, metrics within thresholds · companion confirms UC nominal</div>
-    <div data-sg="2"><b>G2.2</b> VL-2 declared · Real HW HAL on COTS SDR · datasets from Build Package lab procedures with declared calibration and tolerances; representative link for a system path · companion confirms UC nominal</div>
+    <div data-sg="2"><b>G2.2</b> VL-2 declared (only in <code>mock+real</code>) · Real HW HAL on COTS SDR · datasets from the SyRS lab procedures (<code>PROTO-*</code>) with declared calibration and tolerances; representative link for a system path · companion confirms UC nominal</div>
   </div>
   <div class="card" id="scen-card"></div>
 </figure>
@@ -1032,7 +1032,7 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
 
 <div class="grid" style="margin-top:.7rem">
   <div class="card"><h4>Telemetry companion report</h4>All tests: UC within operating envelope.<br><span class="mono">CPU peak 63% · Temp peak 68 °C · Dropped buffers 0</span><br><span class="note">No evidence invalidated by UC conditions. The companion is not listed above because it is verification infrastructure, not a module.</span></div>
-  <div class="card"><h4>Honesty declaration</h4><b>VL-2:</b> validated on real hardware (Real HW HAL); calibration at screening grade per Build Package; tolerances ±2.1 dBi declared by the development team.<br><b>VL-1:</b> verified against synthetic data (Mock HAL).<br><b>VL-0:</b> verified at logic level only.<br><b>SYS-002:</b> verified across connected services with synthetic input; no real-link or HIL latency claim.</div>
+  <div class="card"><h4>Honesty declaration</h4><b>VL-2:</b> validated on real hardware (Real HW HAL); calibration at screening grade per SyRS §4; tolerances ±2.1 dBi declared by the development team (SyRS §5).<br><b>VL-1:</b> verified against synthetic data (Mock HAL).<br><b>VL-0:</b> verified at logic level only.<br><b>SYS-002:</b> verified across connected services with synthetic input; no real-link or HIL latency claim.</div>
 </div>
 
 <h3 id="future-work">10.1 Optional future work register</h3>
@@ -1118,7 +1118,7 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
     BP: ["Build Package", "Input, owned outside V-SIL", "PRD with measurable constraints, COTS hardware envelope, acceptance criteria, laboratory procedures, hardware calibration at the development team's screening grade, tolerances.", "—", "Its author", "→ S0. Receives RFDs and returns an updated Build Package."],
     S0: ["S0 · Normalisation + GT", "Stage", "Build Package", "G0_StRS.md (§9.4: NRM-*, HWC-*, STK-*) and G0_SyRS.md (§9.5: SYS-*)", "Fills IEEE 29148 blueprints; makes no judgement on sufficiency or scope", "→ G0"],
     G0: ["G0 · Structural validation", "Gate", "StRS + SyRS", "Exit code 0 or 1", "g0_validate.py (deterministic, stdlib-only, no AI), then human Gate H", "PASS + Gate H → S1 · FAIL → S0 (edit GT)"],
-    S1: ["S1 · System of layered services", "Stage", "G0-validated GT; supplied ML model only if used", "Service topology, per-service bases and modules, implementation DAG, runtime graph, versioned contracts, system paths, Mock HAL + Real HW HAL, telemetry companion, optional model integration", "Design work (see §5)", "→ G1 · infeasible → RFD"],
+    S1: ["S1 · System of layered services", "Stage", "G0-validated GT; supplied ML model only if used", "Service topology, per-service bases and modules, implementation DAG, runtime graph, versioned contracts, system paths, HAL mode, Mock HAL (+ Real HW HAL in mock+real), telemetry companion, optional model integration", "Design work (see §5)", "→ G1 · infeasible → RFD"],
     G1: ["G1 · Service + contract validation", "Gate", "The S1 design", "PASS / FAIL / RFD on local and system checks, HAL ladder and telemetry companion; conditional ML readiness check", "Human design review (HITL); an agent may prepare it and recommend", "PASS → S2 · FAIL → S1 · infeasible → RFD"],
     S2: ["S2 · Per-service implementation", "Stage", "G1-validated design", "Service bases, modules in DAG order, fake peers, cross-service contracts and connected paths, versioned golden vectors", "Implementation work (see §7)", "→ G2"],
     G2: ["G2 · Adaptive verification", "Gate", "Implemented services + declared VL per module and path", "Module and end-to-end evidence, each record with the companion's UC readings", "Sub-gates G2.0 (always), G2.1 (VL-1+), G2.2 (VL-2)", "PASS → Verified Prototype · design defect → S1 · module defect → S2 · infeasible → RFD"],
@@ -1262,7 +1262,7 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
   const HAL_INFO = {
     v0: "<b>VL-0 · Mock HAL.</b> Deterministic golden vectors: short, repeatable, edge-case coverage. Each vector carries a digest, generation parameters, the condition it simulates and its expected output.",
     v1: "<b>VL-1 · Mock HAL.</b> Synthetic I/Q files at known SNR, modulation and channel conditions, from an FM-modulated software synthesiser or recorded golden captures.",
-    v2: "<b>VL-2 · Real HW HAL.</b> The declared COTS SDR. It executes the Build Package laboratory procedures to generate <b>real datasets</b> at the development team's calibration (screening grade, not normative) and declared tolerances, then runs the final field tests.",
+    v2: "<b>VL-2 · Real HW HAL (only in <code>mock+real</code>).</b> The declared COTS SDR. It executes the SyRS laboratory procedures (<code>PROTO-*</code>) to generate <b>real datasets</b> at the development team's calibration (screening grade, not normative) and declared tolerances, then runs the final field tests.",
   };
   const halBtns = $("#hal-btns");
   const showHal = id => {

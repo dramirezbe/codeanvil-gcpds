@@ -17,8 +17,10 @@
        - Stub recipe por contrato
        - Clasificación de contratos: HW→SW, SW→SW, SW→HW, servicio→servicio
        - Paquete de modelo ML suministrado: apartado opcional, solo si se usa
-       - Escalera de sustitución HAL: Mock HAL + Real HW HAL (§1.6)
-       - Telemetry companion: monitoreo silencioso de UC (§1.7)
+       - Modo HAL (`mock-only` | `mock+real`): Mock HAL siempre;
+         Real HW HAL solo en `mock+real` (§1.6)
+       - Telemetry companion obligatorio, nunca se entrega (§1.7)
+       - Toolchain por servicio, con el que S2 construye (Meta)
        - Sección de riesgos e inviabilidades conocidas (pre-RFD)
      
      Entrada: G0_StRS.md + G0_SyRS.md (aprobados por G0 + Gate H)
@@ -44,6 +46,8 @@
 | Gate H aprobado    | {{fecha + quién autorizó}}                       |
 | Servicios          | {{IDs de servicios; un solo servicio es válido}} |
 | Modelo ML          | {{omitir si no aplica; si se usa, ref. al paquete}} |
+| HAL mode           | {{mock-only / mock+real}}                        |
+| Toolchain          | {{una entrada por servicio: `SVC-xxx: <package> · <language> · <package manager> · <test runner>`; e.g. `SVC-001: fm_edge · Python 3.12 · uv · pytest; SVC-002: dashboard · TypeScript · pnpm · vitest`}} |
 | Estado             | borrador / en revisión G1 / aprobado G1          |
 
 ---
@@ -360,16 +364,26 @@ flowchart TD
 ### 1.6 Escalera de sustitución HAL
 
 <!-- ================================================================
-     V-SIL v3 §5.5: dos implementaciones de HAL que comparten el
-     mismo contrato de interfaz de la capa base.
+     V-SIL v3 §5.5: el modo HAL de Meta decide qué HAL se diseñan.
      
-     Mock HAL: generador de datos sintéticos para VL-0 y VL-1.
-     Real HW HAL: interfaz con hardware COTS real para datasets
-     de laboratorio y pruebas de campo VL-2.
+     Mock HAL: obligatorio en todo modo; generador de datos
+     sintéticos para VL-0 y VL-1.
+     Real HW HAL: solo en `mock+real`; interfaz con hardware COTS
+     real para datasets de laboratorio y pruebas de campo VL-2.
+     Puede declararse en VL-0 (API de dispositivo simulada) durante
+     un ciclo; G2.2 entonces no se activa.
      
-     Ambas se conectan al mismo puerto de la capa base.
-     La sustitución HAL es lo que mueve entre niveles de verificación.
+     En `mock-only`: sin Real HW HAL, sin procedimientos de lab,
+     calibración ni tolerancias, sin módulos con hw_dependency: true;
+     toda afirmación queda limitada a VL-1. Eliminar la subsección
+     Real HW HAL y la verificación de sustitución.
+     En `mock+real`: ambas se conectan al mismo puerto de la capa
+     base; la sustitución HAL es lo que mueve entre niveles.
      ================================================================ -->
+
+| Campo | Valor |
+|-------|-------|
+| HAL mode | <!-- mock-only / mock+real; el mismo valor de Meta --> |
 
 #### Mock HAL
 
@@ -393,23 +407,23 @@ flowchart TD
 <!-- Cambiar un vector invalida toda evidencia que lo haya usado.
      El conjunto de vectores se versiona junto con el código fuente. -->
 
-#### Real HW HAL
+#### Real HW HAL (solo en `mock+real`)
 
 | Campo | Valor |
 |-------|-------|
 | Puerto de capa base | <!-- mismo contrato que Mock HAL --> |
 | Dispositivo COTS | <!-- HWC-NNN --> |
-| Procedimientos de laboratorio | <!-- referencia a los procedimientos del Build Package --> |
-| Grado de calibración | <!-- grado de tamizaje del equipo de desarrollo, no normativo --> |
-| Tolerancias declaradas | <!-- ±X.X dBi, declaradas por el equipo de desarrollo --> |
+| Procedimientos de laboratorio | <!-- PROTO-* de la SyRS §6 Field Measurement Protocols --> |
+| Grado de calibración | <!-- términos de la SyRS §4 Correction Chains; grado de tamizaje del equipo de desarrollo, no normativo --> |
+| Tolerancias declaradas | <!-- SyRS §5 Uncertainty Budgets; ±X.X dBi, declaradas por el equipo de desarrollo --> |
 | Propósito VL-2 | <!-- generación de datasets reales + pruebas de campo finales --> |
 
-<!-- El grado de calibración y las tolerancias son entradas del Build Package,
-     no afirmaciones de V-SIL. El Real HW HAL se usa en S2 para:
+<!-- El grado de calibración y las tolerancias son entradas registradas
+     en la SyRS, no afirmaciones de V-SIL. El Real HW HAL se usa en S2 para:
      (a) generar datasets reales siguiendo procedimientos de lab, y
      (b) ejecutar las pruebas de campo finales en VL-2. -->
 
-**Verificación de sustitución:**
+**Verificación de sustitución (solo en `mock+real`):**
 
 <!-- Documentar cómo se verifica que ambas HAL son intercambiables
      en el mismo puerto de la capa base. ¿Qué prueba confirma
@@ -422,7 +436,9 @@ flowchart TD
      V-SIL v3 §5.5: proceso ligero y no intrusivo que monitorea
      la unidad de cómputo durante todas las ejecuciones de prueba.
      
-     Es infraestructura de verificación, NO un módulo del sistema.
+     Obligatorio en todo diseño y en toda ejecución de pruebas.
+     Es infraestructura de verificación, NO un módulo del sistema:
+     vive en el kit de verificación y nunca se entrega con el software.
      No tiene SYS-*, no aparece en el DAG de implementación.
      ================================================================ -->
 
@@ -985,18 +1001,21 @@ solo `hw_dependency: true`; la corrección debe depender de ese hardware.
 ## G1.11 — Escalera de sustitución HAL
 
 <!-- REVISIÓN.
-     Verificar que ambas HAL (Mock y Real HW) comparten el mismo
-     contrato de interfaz de la capa base y que los vectores dorados
-     tienen gobernanza completa.
+     Verificar que el Mock HAL expone el contrato de interfaz de la
+     capa base y que los vectores dorados tienen gobernanza completa.
+     Las filas del Real HW HAL aplican solo en `mock+real`; en
+     `mock-only` se marcan "No aplica (mock-only)".
 -->
 
 | Verificación | Resultado |
 |--------------|-----------|
-| ¿Mock HAL y Real HW HAL exponen el mismo contrato de interfaz? | |
+| ¿Meta declara `HAL mode` (mock-only / mock+real)? | |
+| ¿El Mock HAL expone el contrato de interfaz de la capa base? | |
 | ¿Los vectores dorados llevan ID, SHA-256, parámetros y salida esperada? | |
-| ¿El Real HW HAL referencia procedimientos de lab del Build Package? | |
-| ¿El grado de calibración y tolerancias en dBi están declarados? | |
-| ¿La prueba de sustitución entre HALs está definida? | |
+| Solo en `mock+real`: ¿el Real HW HAL expone el mismo contrato de interfaz? | |
+| Solo en `mock+real`: ¿el Real HW HAL referencia los `PROTO-*`, las cadenas de corrección (§4) y las tolerancias (§5) de la SyRS? | |
+| Solo en `mock+real`: ¿el grado de calibración y las tolerancias en dBi están declarados? | |
+| Solo en `mock+real`: ¿la prueba de sustitución entre HALs está definida? | |
 
 ## G1.12 — Telemetry companion
 
