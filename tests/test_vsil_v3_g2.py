@@ -1,0 +1,73 @@
+"""T7: G2 runs the S2 evidence through the verifier subagent and writes the Verified Prototype."""
+
+from codeanvil.CLI.commands.create import cmd_create
+from codeanvil.config.paths import TEMPLATES_DIR
+from codeanvil.init.create import _parse_skill_frontmatter
+from test_create import _scaffold_skill, _skill_text, db_path  # noqa: F401  (db_path is a fixture)
+
+SKILL = "G2_adaptive_verification"
+PROTOTYPE = TEMPLATES_DIR / "skills" / SKILL / "references" / "verified_prototype.md"
+
+
+def _g2_text() -> str:
+    return _skill_text(SKILL)
+
+
+def test_g2_frontmatter_keeps_the_gate_shape():
+    meta = _parse_skill_frontmatter(TEMPLATES_DIR / "skills" / SKILL / "SKILL.md")
+
+    assert meta["name"] == "g2-adaptive-verification"
+    assert meta["gate"] == "G2"
+    assert "Not implemented" not in meta["description"]
+
+
+def test_g2_prerequisite_messages_match_g1_wording():
+    text = _g2_text()
+
+    assert "Cycle closed by RFD. Continue in cycle" in text
+    assert "Cycle suspended by RFD. Run the RFD skill." in text
+    assert "S2 must pass first. Run the S2 skill." in text
+    assert "S2 must rework first. Run the S2 skill." in text
+    assert "Outcome: Withdrawn" in text
+    assert "Based on: S2 iteration" in text
+
+
+def test_g2_delegates_runs_to_the_verifier_and_falls_back_to_a_fresh_session():
+    text = _g2_text()
+
+    assert "vsil-verifier" in text
+    assert "fresh session" in text
+    assert "test_run.md" in text
+    assert "verification/run.sh vl0" in text and "verification/run.sh vl1" in text
+
+
+def test_g2_levels_by_mode_and_routes():
+    text = _g2_text()
+
+    assert "mock-only" in text and "mock+real" in text
+    assert "PROTO-" in text
+    assert "Possible infeasibility" in text
+    assert "Verdict: module defect" in text
+    assert "Verdict: design defect" in text
+    assert "Verdict: RFD" in text
+    assert "verified_prototype.md" in text
+    assert "VALIDATED" in text
+    assert "FW-ML-4" in text
+
+
+def test_verified_prototype_template_has_the_paper_sections():
+    text = PROTOTYPE.read_text(encoding="utf-8")
+
+    for section in ("HAL mode", "Toolchain", "Module evidence", "Path evidence",
+                    "Telemetry report", "Honesty declaration", "Delivered tree",
+                    "Verifier", "RFDs issued", "Future work"):
+        assert section in text, section
+    assert "VERIFIED" in text and "VALIDATED" in text
+    assert "verification/" in text and "src/<service>/" in text
+
+
+def test_scaffold_ships_the_g2_reference(tmp_path, db_path):
+    cmd_create(None, tmp_path, project_name="Proj")
+
+    assert _scaffold_skill(tmp_path, SKILL, "references", "verified_prototype.md").is_file()
+    assert "templates/skills/" not in _scaffold_skill(tmp_path, SKILL, "SKILL.md").read_text(encoding="utf-8")
