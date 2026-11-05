@@ -61,6 +61,10 @@ S0 has **no prerequisite**: it is the entry point of the V-SIL chain.
 - Copy `Status`, `Compliance` and STK `Standard(s)` from the Build Package; never infer
   them. Where the blueprint has an enum marker, use `PENDING` or `PROPOSED`. Never fill a
   field by vocabulary heuristic.
+- Laboratory procedures, calibration and tolerances go into `GT/G0_SyRS.md`: procedures to
+  §6 as `PROTO-NNN` rows, calibration to §4, tolerances to §5. Never invent one. When the
+  Build Package has none for a section, write exactly
+  `Not applicable: no lab inputs in the Build Package.` under its heading and keep the heading.
 - Give no verdict and no comment on sufficiency, realism or scope.
 - Write only the two GT files and `S0.md`. Never touch `GT/build_package.md`.
 

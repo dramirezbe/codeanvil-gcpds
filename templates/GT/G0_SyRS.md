@@ -175,7 +175,9 @@ _Place SYS- blocks here, grouped by measurand or method family._
 
 _Per-block correction chains (antenna factor, cable loss, impedance matching, …).
 Structure: source → correction term → uncertainty contribution. MVP scope: the
-section must exist; completeness of each chain is a G0 v2 check._
+section must exist; completeness of each chain is a G0 v2 check.
+Optional. Filled only when the Build Package supplies lab inputs (used by the Real HW HAL
+in `mock+real`). Otherwise: `Not applicable: no lab inputs in the Build Package.`_
 
 | Block        | Correction        | Model / Source          | Applied Where       |
 |--------------|-------------------|-------------------------|---------------------|
@@ -186,7 +188,9 @@ section must exist; completeness of each chain is a G0 v2 check._
 ## 5. Uncertainty Budgets
 
 _GUM uncertainty budgets per measurand/component. MVP scope: this section must
-exist (placeholders acceptable); budget structure and completeness are G0 v2 checks._
+exist (placeholders acceptable); budget structure and completeness are G0 v2 checks.
+Optional. Filled only when the Build Package supplies lab inputs (used by the Real HW HAL
+in `mock+real`). Otherwise: `Not applicable: no lab inputs in the Build Package.`_
 
 | Measurand | Component        | Source u(x) | Distribution | Sensitivity c | Standard u |
 |-----------|------------------|-------------|--------------|---------------|------------|
@@ -196,7 +200,9 @@ exist (placeholders acceptable); budget structure and completeness are G0 v2 che
 
 ## 6. Field Measurement Protocols
 
-_Field procedures: setup, calibration, execution, and recording for each protocol._
+_Field procedures: setup, calibration, execution, and recording for each protocol.
+Optional. Filled only when the Build Package supplies lab inputs (used by the Real HW HAL
+in `mock+real`). Otherwise: `Not applicable: no lab inputs in the Build Package.`_
 
 | Protocol ID | Applies To (Blocks)  | Setup | Calibration | Execution |
 |-------------|----------------------|-------|-------------|-----------|
