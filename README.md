@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/dramirezbe/codeanvil-gcpds/actions/workflows/ci.yml/badge.svg)](https://github.com/dramirezbe/codeanvil-gcpds/actions/workflows/ci.yml)
 
-Agent-agnostic project scaffolding, templates, and agent definitions for the **V-SIL methodology** (V-model at the SIL tier, made continuous). Develops, tests, and validates software on COTS hardware — informed by Ground Truth documents — through the V-SIL v3 flow `S0 → G0 → S1 → G1 → (S2 → G2)`: agent-driven stages, one deterministic gate (G0) and human review gates.
+Agent-agnostic project scaffolding, templates, and agent definitions for the **V-SIL methodology** (V-model at the SIL tier, made continuous). Develops, tests, and validates software on COTS hardware — informed by Ground Truth documents — through the V-SIL v3 flow `S0 → G0 → S1 → G1 → S2 → G2`: agent-driven stages, one deterministic gate (G0) and human review gates, ending in a Verified Prototype.
 
 Works with any AI coding agent: Claude, Codex, OpenCode, Pi, or others.
 
@@ -152,14 +152,20 @@ codeanvil create [<name> | --name <label> [--folder <dir>]] [-p <path>] [--mcp m
        │    │    ├── S0_normalise_build_package/   ← own blueprints in templates/
        │    │    ├── S1_design_services/           ← references/ + assets/ (vis-network)
        │    │    ├── G1_design_review/
+       │    │    ├── S2_implement_services/        ← references/ (project layout, loggers)
+       │    │    ├── G2_adaptive_verification/     ← references/verified_prototype.md
        │    │    ├── RFD_request_for_deviation/
        │    │    └── marconi-*/SKILL.md     ← (if --mcp marconi) 6 RF/SDR skills
        │    └── mcp.yaml            ← (if --mcp) agent-agnostic MCP manifest
        ├── .mcp.json                ← (if --mcp) Claude Code MCP server config
        ├── .claude/skills  → ../.agents/skills
        ├── .opencode/skills → ../.agents/skills
-       └── .codex/skills   → ../.agents/skills
+       ├── .codex/skills   → ../.agents/skills
+       └── .claude/agents/, .opencode/agents/, .codex/agents/   ← generated vsil-verifier subagent
 ```
+
+`src/`, `verification/` and the root manifests are not scaffolded: S2 creates them when it builds the code.
+The `vsil-verifier` subagent (one shared body, one file per runtime) is used only by G2 to run the verification commands in a fresh, read-only context; Copilot and Pi have no subagent file, so G2 asks for a fresh session there.
 
 Skills live in `.agents/skills/` — the single source of truth. Agent runtime directories (`.claude/skills/`, `.opencode/skills/`, `.codex/skills/`) are symlinks, so every runtime discovers the same skills automatically.
 
@@ -170,7 +176,9 @@ GT reference templates are **locked** inside the skills that use them (`.agents/
 3. **G0 validates structure** — a deterministic script checks that both GT documents follow the expected format and that the pair is cross-consistent (G0-X). Hard pass/fail, no LLM. Then a human answers Gate H: *Requirements complete, bounded, and verifiable?*
 4. **S1 designs** — an agent writes the design of a system of layered services and its dependency graph.
 5. **G1 reviews** — a human decides whether all implementation-critical design choices are resolved (PASS, FEEDBACK or RFD).
-6. **RFD** — when a requirement is infeasible on the declared COTS platform, a decision document suspends the cycle until the Build Package author decides. S2 and G2 (implementation and verification) are planned.
+6. **S2 implements** — an agent builds the services under `src/`, the verification kit under `verification/` (Mock HAL, golden vectors, mandatory telemetry companion) and the VL-1 tests, and records the two test commands.
+7. **G2 verifies** — the `vsil-verifier` subagent re-runs those commands in a fresh, read-only context; a human answers PASS, FEEDBACK (module or design defect) or RFD. PASS writes the Verified Prototype.
+8. **RFD** — when a requirement is infeasible on the declared COTS platform, a decision document suspends the cycle until the Build Package author decides.
 
 ## Definitions
 

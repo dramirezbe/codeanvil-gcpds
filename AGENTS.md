@@ -12,13 +12,14 @@ V-SIL methodology.
 - Changes here affect the tool and methodology — they do NOT run against any user's GT.
 
 A **scaffolded user project** (produced by `codeanvil create`) is a different thing:
-it has `.agents/skills/`, `GT/`, `.codeanvil/`, and no `src/` or `templates/`.
-The user's AGENTS.md (generated from `templates/AGENTS/TEMPLATE_AGENT.md`) tells
-agents they are in a user project. Do not confuse the two environments.
+it has `.agents/skills/`, `GT/`, `.codeanvil/`, and no `templates/`; it has no `src/`
+until S2 writes the delivered code there. The user's AGENTS.md (generated from
+`templates/AGENTS/TEMPLATE_AGENT.md`) never mentions this repository: it names only the
+`codeanvil` CLI, the skills and `GT/`. Do not confuse the two environments.
 
 ## Overview
 
-CodeAnvil implements the V-SIL v3 flow `S0 → G0 → S1 → G1 → (S2 → G2)` as a chain of stages and gates, with RFD raisable from any stage. G0 is the only deterministic gate; Gate H, G1 and G2 are human verdicts, and the stages are run by AI coding agents. The harness is **agent-agnostic**: it works with any coding agent runtime (Claude, Codex, OpenCode, Pi, etc.). `src/` scaffolds and tracks state.
+CodeAnvil implements the V-SIL v3 flow `S0 → G0 → S1 → G1 → S2 → G2` as a chain of stages and gates, with RFD raisable from any stage. G0 is the only deterministic gate; Gate H, G1 and G2 are human verdicts, and the stages are run by AI coding agents. The harness is **agent-agnostic**: it works with any coding agent runtime (Claude, Codex, OpenCode, Pi, etc.). `src/` scaffolds and tracks state.
 
 **Scope**: software development, testing, and validation on COTS hardware (not necessarily OOTB). Does not design hardware — assumes commercial off-the-shelf devices, validates software against GT constraints.
 
@@ -32,6 +33,7 @@ codeanvil create ──► scaffold project anywhere
                        ├─ .claude/skills → ../.agents/skills  (symlink)
                        ├─ .opencode/skills → ../.agents/skills
                        ├─ .codex/skills → ../.agents/skills
+                       ├─ .claude/agents/, .opencode/agents/, .codex/agents/  (vsil-verifier)
                        ├─ GT/README.md         (user writes build_package.md; S0 writes G0_StRS.md, G0_SyRS.md)
                        ├─ .codeanvil/          (project.yaml + report/)
                        └─ DB registration (idempotent)
@@ -45,7 +47,8 @@ checks its predecessor's report before it runs:
                        ├─ G0 (deterministic script) + Gate H (human)
                        ├─ S1 design services (agent) ── design + dependency graph
                        ├─ G1 design review (human verdict, agent prepares)
-                       ├─ S2, G2 (planned — not implemented yet)
+                       ├─ S2 implement services (agent) ── code + verification kit + VL-1 tests
+                       ├─ G2 adaptive verification (human verdict, vsil-verifier runs) ── Verified Prototype
                        └─ RFD (outside the chain — raised from S1, G1 or G2)
 ```
 
@@ -108,6 +111,20 @@ Pure Python script. No LLM, no AI agent — just `g0_validate.py`.
 
 - **Skill**: `templates/skills/G1_design_review/SKILL.md` and `references/G1_CHECKLIST.md`. No script: the agent fills the checklist and recommends; the human answers PASS, FEEDBACK or RFD.
 
+### S2 — Implement services (agent)
+
+- **Skill**: `templates/skills/S2_implement_services/SKILL.md`, with `references/project_layout.md` and the locked loggers `references/logger.py` and `references/logger.ts`.
+- **Output**: the delivered code in `src/<service>/`, the verification kit in `verification/`, the root manifests, `S2.md` and `S2_artifacts/test_run.md` (the two `verification/run.sh vl0|vl1` commands and `Possible infeasibility`). Only S2 writes code; a design defect is a `Verdict: design defect` iteration routed to S1.
+
+### G2 — Adaptive verification (human verdict)
+
+- **Skill**: `templates/skills/G2_adaptive_verification/SKILL.md` and `references/verified_prototype.md`. G2 declares the levels, delegates the `test_run.md` commands to the `vsil-verifier` subagent, presents the results and records the human's PASS, FEEDBACK (`Verdict: module defect` → S2, `Verdict: design defect` → S1) or RFD. On PASS it writes `G2_artifacts/verified_prototype.md`.
+
+### `vsil-verifier` subagent
+
+- **Body**: `templates/agents/vsil-verifier.md`, one shared body; `subagents` in `templates/config.yaml` lists one file per runtime. `codeanvil create` writes `.claude/agents/vsil-verifier.md`, `.opencode/agents/vsil-verifier.md` and `.codex/agents/vsil-verifier.toml`.
+- **Contract**: fresh context, read-only, runs only the `test_run.md` commands, never writes a report and never asks the human; it returns a results table to G2. Runtimes without subagents (Copilot, Pi) run G2 in a fresh session.
+
 ### RFD — Request for Deviation (outside the chain)
 
 - **Skill**: `templates/skills/RFD_request_for_deviation/SKILL.md`. A decision document for the Build Package author when requirements are infeasible on the declared COTS platform. A decided RFD re-enters at S0 in a new cycle.
@@ -118,7 +135,7 @@ The retired custody-chain and multi-hypothesis G1 skills are in `templates/backu
 
 There is no `codeanvil run` command and no orchestrator in the tool — and none in
 `AGENTS.md` either. The chain lives in the skills: on load, each skill checks its
-predecessor's report (`S0`, `G0`, `S1`, `G1` in `config.yaml`) and stops with the
+predecessor's report (`S0`, `G0`, `S1`, `G1`, `S2` in `config.yaml`) and stops with the
 predecessor's name when it is missing or its latest iteration is not
 `HITL: PASS`.
 
@@ -132,7 +149,9 @@ predecessor's name when it is missing or its latest iteration is not
 - G0: requires `S0.md` latest `PASS`; the agent runs `g0_validate.py` directly
   (deterministic, no AI), then asks the human Gate H. Script errors force `FEEDBACK`.
 - S1: requires `G0.md` latest `PASS`. G1: requires `S1.md` latest `PASS`; the human answers.
-- Every iteration of G0, S1 and G1 starts with `Based on: <predecessor> iteration <N>`, so
+- S2: requires `G1.md` latest `PASS`; writes `S2.md` (`PASS` means "delivered").
+- G2: requires `S2.md` latest `PASS`; the `vsil-verifier` subagent runs, the human answers.
+- Every iteration of G0, S1, G1, S2 and G2 starts with `Based on: <predecessor> iteration <N>`, so
   `codeanvil status` can mark a report `stale` after its predecessor was reworked.
 
 State lives in the GT files, the cycle reports, and `.codeanvil/`, not in the
@@ -227,6 +246,8 @@ myproj/
 │   │   ├── S0_normalise_build_package/   ← own blueprints in templates/
 │   │   ├── S1_design_services/           ← references/ + assets/ (vis-network)
 │   │   ├── G1_design_review/             ← references/G1_CHECKLIST.md
+│   │   ├── S2_implement_services/        ← references/ (project_layout, loggers)
+│   │   ├── G2_adaptive_verification/     ← references/verified_prototype.md
 │   │   ├── RFD_request_for_deviation/
 │   │   └── marconi-*/               ← (if --mcp marconi) 6 RF/SDR skills
 │   │       └── SKILL.md
@@ -234,20 +255,24 @@ myproj/
 ├── .mcp.json                        ← (if --mcp) Claude Code MCP server config
 ├── .claude/
 │   ├── skills  → ../.agents/skills
+│   ├── agents/vsil-verifier.md      ← generated subagent
 │   ├── settings.json                ← (if --mcp) enabledMcpjsonServers
 │   └── settings.local.json          ← (if --mcp) enabledMcpjsonServers
 ├── .vscode/mcp.json                 ← (if --mcp) VS Code / Copilot MCP config
 ├── .opencode/
 │   ├── skills → ../.agents/skills
+│   ├── agents/vsil-verifier.md      ← generated subagent
 │   └── mcp.json                     ← (if --mcp) OpenCode MCP config
 ├── .codex/
 │   ├── skills → ../.agents/skills
+│   ├── agents/vsil-verifier.toml    ← generated subagent
 │   └── mcp.json                     ← (if --mcp) Codex MCP config
 ├── .github/skills  → ../.agents/skills
 └── .github/copilot-instructions.md  ← pointer to AGENTS.md
 ```
 
 Agent runtimes discover skills via their own symlinked directory. All point to the same `.agents/skills/`.
+`src/`, `verification/` and the root manifests (`pyproject.toml`, `uv.lock`, `package.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`) are not scaffolded: S2 creates them.
 
 ## Packaging and distribution
 
