@@ -1,6 +1,6 @@
 # Plan — T1: paper, template and diagrams follow the HAL mode
 
-Feature: `odd/tasks/2026-11-05_1421_vsil_v3_full_flow.md` · Task T1 · Specs S1, S2, S3, S7, S10 · Contracts C0, D1–D5
+Feature: `odd/tasks/2026-11-05_1421_vsil_v3_full_flow.md` · Task T1 · Specs S1, S2, S3, S7, S10, S11, S12, S13 · Contracts C0, D1–D5, D7–D11
 Targets: `methodology/V-SIL-v3/V-SIL_v3.md`, `V-SIL_v3-spa.md`, `S1_G1_template.md`, `V-SIL_v3-diagrams.html`.
 
 ## Goal
@@ -12,14 +12,19 @@ C0 makes the paper the source of every skill, so it changes first. Today the pap
 | Where | Change |
 |-------|--------|
 | Paper §5.5 | S1 declares `HAL mode: mock-only` or `mock+real` (D1). The Mock HAL is always designed. The Real HW HAL and its lab procedures, calibration and tolerances appear only in `mock+real`. |
+| Paper §3 (S0) and §5.5 | Lab procedures, calibration and tolerances are cast by S0 into the SyRS as optional content: §6 Field Measurement Protocols (`PROTO-*`), §4 Correction Chains, §5 Uncertainty Budgets; otherwise "not applicable" (D9). Replace "supplied by the Build Package" with "recorded in the SyRS". |
 | Paper §5.5 | The telemetry companion is mandatory, verification infrastructure only, never shipped (S2, D3). |
 | Paper §5.5 | The verification kit (D2 list) is built in the initial layer of S2, before any module (S3). |
-| Paper §6, check 7 | "Mock HAL exposes the base-layer interface; golden vectors carry digest, parameters and expected outputs. In `mock+real`, the Real HW HAL exposes the same interface and references the Build Package lab inputs." |
+| Paper §6, check 7 | "Mock HAL exposes the base-layer interface; golden vectors carry digest, parameters and expected outputs. In `mock+real`, the Real HW HAL exposes the same interface and references the SyRS `PROTO-*`, correction chains and tolerances." |
 | Paper §7 | Step 1 becomes "Initial layer: base + verification kit". The data-sources table notes that VL-2 needs `mock+real`. |
+| Paper §7 | S2 writes every test, including the VL-1 tests for modules and paths with `required_vl` VL-1 or higher, without claiming them; G2 only runs them (D8). |
+| Paper §8.3 | G2 runs the tests S2 wrote; a declared level with no test is a module defect (D8). The runs happen in a separate read-only verifier context (a subagent where the runtime supports it, otherwise a fresh session), which implements P2 (D11). G2.2 uses the SyRS `PROTO-*` (D9). |
+| Paper §5.5 / Template Meta | S1 declares a `Toolchain` per service (language and test runner) that S2 builds with (D7). |
+| Paper §7 | One sentence on the code layout: each service in `src/<service>/` with its declared toolchain, the kit in `verification/` (tests included) and never shipped, one command per verification level, delivered code free of any CodeAnvil dependency (D2, D8, D10). The full trees stay in S2's `references/project_layout.md`, not in the paper. |
 | Paper §8.2 | Add D5: `mock-only` caps claims at VL-1. Keep S7: in `mock+real` the Real HW HAL may be declared at VL-0 for a cycle. |
 | Paper §5.4 | Done before T1 (L5 of the feature document): status "uncertain", S2 and G2 ML paragraphs marked future work, FW-005 origin updated. No further change. |
-| Paper §10 | The Verified Prototype lists the delivered tree (`app/`) apart from the kit (`verification/`) (A3). |
-| Template §1.6 | Add the `HAL mode` row; mark the Real HW HAL table "only in `mock+real`". |
+| Paper §10 | The Verified Prototype lists the delivered tree (`src/<service>/`) apart from the kit (`verification/`) (D2), and names the verifier context (D11). |
+| Template §1.6 | Add the `HAL mode` row; mark the Real HW HAL table "only in `mock+real`"; its lab rows cite SyRS `PROTO-*`, §4 and §5 (D9). |
 | Template G1.11 | Real HW HAL rows only in `mock+real`. |
 | Diagrams §5.5 | The VL-2 button notes "only in `mock+real`"; the caption states that the telemetry companion is mandatory and not shipped. |
 
