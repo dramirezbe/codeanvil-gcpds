@@ -272,6 +272,8 @@ G1 responde: *¿Están resueltas todas las decisiones de diseño críticas para 
 
 G1 es una revisión de diseño humana (HITL), no una compuerta determinista. Un agente puede preparar la revisión y recomendar un veredicto, incluida una RFD; decide el humano.
 
+G1 no ejecuta scripts. El agente que la prepara valida por sí mismo: lee el diseño completo y el GT, rederiva cada comprobación desde las secciones fuente en lugar de confiar en los resúmenes del propio diseño, y ejecuta el toolchain declarado en la máquina de desarrollo. Una revisión exhaustiva justifica su costo en tokens. Los hallazgos del agente informan al humano; nunca se convierten en un veredicto automático.
+
 1. **Topología de servicios.** Cada servicio tiene responsabilidad, destino de despliegue, dueño del estado y puertos externos; la red y la envolvente COTS sustentan la topología.
 2. **Aciclicidad del DAG de implementación.** Sin ciclos dentro de los servicios ni entre unidades de construcción. Los bucles de mensajes en ejecución se revisan aparte.
 3. **Completitud de interfaces.** Cada arista interna tiene contrato tipado; cada intercambio entre servicios tiene contrato versionado y comportamiento ante fallos.
@@ -282,9 +284,11 @@ G1 es una revisión de diseño humana (HITL), no una compuerta determinista. Un 
 8. **Telemetry companion.** La especificación del companion declara qué monitorea, su intervalo de muestreo, su presupuesto de recursos y que su huella está acotada por debajo de un umbral declarado.
 9. **Modelo de ML suministrado, si se utiliza.** Los pesos, la metadata, la fuente de los datos de entrenamiento y el procedimiento de etiquetado están identificados, el contrato de inferencia es implementable y el presupuesto COTS es creíble. Se omite esta comprobación cuando el diseño no tiene modelo de ML.
 
+10. **Disponibilidad del toolchain.** En la máquina de desarrollo, el runtime del lenguaje y el gestor de paquetes de cada entrada de `Toolchain` responden a su comando de versión. El agente instala una herramienta faltante solo tras un breve sí del usuario; una instalación rechazada o fallida es un hallazgo abierto.
+
 **PASS** → S2. **FAIL** → S1. **RFD** → §9.2, cuando los requisitos son inviables sobre la plataforma COTS declarada.
 
-La [plantilla de diseño S1/G1](S1_G1_template.md) desarrolla estas familias en doce puntos generales de revisión y uno condicional de ML, incluidos decisiones de diseño, coherencia COTS, escalera HAL, telemetry companion y evaluación de riesgos.
+La [plantilla de diseño S1/G1](S1_G1_template.md) desarrolla estas familias en trece puntos generales de revisión y uno condicional de ML, incluidos decisiones de diseño, coherencia COTS, escalera HAL, telemetry companion, disponibilidad del toolchain y evaluación de riesgos.
 
 ---
 

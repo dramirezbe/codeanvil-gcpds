@@ -806,7 +806,7 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
 
 <!-- ======================================================================= -->
 <h2 id="g1">6 · G1: Service, dependency, and contract validation</h2>
-<p>G1 asks: <i>are all implementation-critical design choices resolved?</i> The five core checks remain. Two system checks cover service boundaries and end-to-end requirements; two more cover the HAL substitution ladder and the telemetry companion. The S1/G1 template expands these families into twelve general review items and one conditional ML item. A runtime message loop is reviewed as a protocol; only the implementation dependency graph must be acyclic.</p>
+<p>G1 asks: <i>are all implementation-critical design choices resolved?</i> The five core checks remain. Two system checks cover service boundaries and end-to-end requirements; two more cover the HAL substitution ladder and the telemetry companion, and one checks that the declared toolchain runs on the development machine. The S1/G1 template expands these families into thirteen general review items and one conditional ML item. G1 runs no script: the agent reads the whole design and GT, re-derives every check itself and spends the tokens a thorough review needs. A runtime message loop is reviewed as a protocol; only the implementation dependency graph must be acyclic.</p>
 <div class="grid">
   <div class="card"><h4>1 · DAG acyclicity</h4>
     <svg viewBox="0 0 240 92" role="img" aria-label="A cycle between two modules fails">

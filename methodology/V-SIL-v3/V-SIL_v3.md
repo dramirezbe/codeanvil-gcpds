@@ -272,6 +272,8 @@ G1 answers: *Are all implementation-critical design choices resolved?*
 
 G1 is a human (HITL) design review, not a deterministic gate. An agent may prepare the review and recommend a verdict, including an RFD; the human decides.
 
+G1 runs no script. The agent that prepares it validates by itself: it reads the whole design and the GT, re-derives every check from the source sections instead of trusting the design's own summaries, and runs the declared toolchain on the development machine. A thorough review is worth its token cost. The agent's findings inform the human; they never become an automatic verdict.
+
 1. **Service topology.** Every service has one responsibility, deployment target, owner of state, and declared external ports; the network and COTS envelope support the topology.
 2. **Implementation DAG acyclicity.** No dependency cycle within or between service build units. Runtime message loops are reviewed separately for bounded behavior.
 3. **Interface completeness.** Every internal edge has a typed contract; every cross-service exchange has a versioned contract and failure behavior.
@@ -282,9 +284,11 @@ G1 is a human (HITL) design review, not a deterministic gate. An agent may prepa
 8. **Telemetry companion.** The companion spec declares what it monitors, its sampling interval, its resource budget, and that its footprint is bounded below a declared threshold.
 9. **Supplied ML model, when used.** The weights, metadata, training data source, and labelling procedure are identified, the inference contract is implementable, and the COTS budget is credible. This check is omitted when the design has no ML model.
 
+10. **Toolchain availability.** On the development machine, the language runtime and package manager of every `Toolchain` entry answer their version command. The agent installs a missing tool only after a brief yes from the user; a refused or failed install is an open finding.
+
 **PASS** → S2. **FAIL** → S1. **RFD** → §9.2, when the requirements are infeasible on the declared COTS platform.
 
-The [S1/G1 design template](S1_G1_template.md) expands these check families into twelve general review items and one conditional ML item, including design decisions, COTS coherence, HAL ladder, telemetry companion, and risk assessment.
+The [S1/G1 design template](S1_G1_template.md) expands these check families into thirteen general review items and one conditional ML item, including design decisions, COTS coherence, HAL ladder, telemetry companion, toolchain availability, and risk assessment.
 
 ---
 

@@ -819,6 +819,12 @@ flowchart LR
      
      G1 NO es un script determinista como G0.
      G1 es una REVISIÓN de diseño (design review).
+
+     G1 no ejecuta scripts. El agente valida por sí mismo: lee el
+     diseño completo y el GT, rederiva cada fila desde las secciones
+     fuente (no confía en los resúmenes del diseño) y ejecuta el
+     toolchain en la máquina (G1.14). Gasta los tokens que una
+     revisión exhaustiva necesita.
      
      El veredicto es humano (HITL). Un agente puede preparar la
      revisión, derivar el orden del DAG, cruzar trazas y recomendar
@@ -1049,6 +1055,23 @@ solo `hw_dependency: true`; la corrección debe depender de ese hardware.
 
 **Si faltan pesos o metadata necesarios:** FAIL → completar entrada/diseño en S1.
 **Si se demuestra inviabilidad del requisito en la COTS declarada:** RFD.
+
+## G1.14 — Disponibilidad del toolchain
+
+<!-- REVISIÓN EN LA MÁQUINA.
+     El agente ejecuta él mismo el `--version` del runtime y del gestor
+     de paquetes de cada entrada de `Toolchain` (p. ej. `python3`, `uv`,
+     `node`, `pnpm`; `tsc` para TypeScript). Si falta una herramienta,
+     pregunta brevemente al usuario y solo instala tras un sí, a nivel
+     de usuario y nunca con `sudo` sin permiso.
+-->
+
+| Verificación | Resultado |
+|--------------|-----------|
+| ¿Responde el runtime de cada servicio (versión registrada)? | |
+| ¿Responde el gestor de paquetes de cada servicio (versión registrada)? | |
+| ¿Las versiones cumplen lo que exige el diseño? | |
+| Herramientas instaladas tras el sí del usuario, o rechazadas | |
 
 ---
 
