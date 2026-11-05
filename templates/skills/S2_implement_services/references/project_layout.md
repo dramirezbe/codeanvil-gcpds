@@ -33,7 +33,8 @@ A pnpm package with **no nested `src/`**.
 ```
 src/<package>/
 ├── package.json           # "type": "module", no dependency on any verification/ package
-├── tsconfig.json          # strict, "allowImportingTsExtensions" or "rewriteRelativeImportExtensions"
+├── tsconfig.json          # strict, "allowImportingTsExtensions" or "rewriteRelativeImportExtensions";
+│                          #   "lib" with "DOM" for a UI, "types": ["node"] + @types/node (dev) for Node
 ├── main.ts                # base entry; a UI uses main.tsx + index.html + vite.config.ts
 ├── config/
 │   ├── logger.ts          # copied unchanged from references/logger.ts
@@ -79,9 +80,13 @@ packages = ["src/<package>"]      # listed explicitly, one per Python service; n
 
 [tool.pytest.ini_options]
 testpaths = ["verification"]
-pythonpath = ["src", "verification"]
+pythonpath = ["src", "."]
 markers = ["vl0: VL-0 floor test", "vl1: VL-1 metric test"]
 ```
+
+Kit code is imported from the project root, never as a top-level package: `verification/<package>/`
+has the same name as `src/<package>/` and would be shadowed by it. Write
+`from verification.<package>.mock_hal import ...` and `from <package>.hal.port import ...`.
 
 No `sys.path` bootstrap. Deploy with `uv sync --frozen --no-dev`, start with `uv run <package>`.
 A uv workspace is allowed only when two Python services deploy to different hosts with conflicting

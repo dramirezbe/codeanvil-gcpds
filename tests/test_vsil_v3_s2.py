@@ -213,3 +213,26 @@ def test_reference_logger_ts_matches_the_python_line(tmp_path, db_path):
     colored = _run_node_logger(root, {"FORCE_COLOR": "1"}).splitlines()
     assert _TIMESTAMP.sub("", colored[0]) == _TIMESTAMP.sub("", _codeanvil_line(color=True))
     assert _TIMESTAMP.sub("", colored[1]) == "\033[33mWARNING\033[0m \033[2msvc.mod\033[0m.func careful"
+
+
+# --- review fixes (2026-11-05) ----------------------------------------------
+
+def _layout_text() -> str:
+    from codeanvil.config.paths import TEMPLATES_DIR
+    path = TEMPLATES_DIR / "skills" / "S2_implement_services" / "references" / "project_layout.md"
+    return path.read_text(encoding="utf-8")
+
+
+def test_layout_kit_imports_do_not_collide_with_the_service_package():
+    text = _layout_text()
+
+    assert 'pythonpath = ["src", "."]' in text
+    assert 'pythonpath = ["src", "verification"]' not in text
+    assert "verification.<package>.mock_hal" in text
+
+
+def test_layout_tsconfig_declares_the_console_types():
+    text = _layout_text()
+
+    assert '"lib"' in text and '"DOM"' in text
+    assert "@types/node" in text

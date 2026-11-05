@@ -61,6 +61,8 @@ cannot edit files and returns one results table. Pass it only the cycle name and
 levels, nothing from S2's conversation. G2 itself declares levels, presents, asks the human and
 writes the report. When the runtime has no `vsil-verifier` subagent (for example Copilot or Pi),
 say so and ask the user to run G2 in a fresh session; run nothing in the session that ran S2.
+In a fresh session that did not run S2, G2 runs steps 2–5 itself and records
+`Verifier` = `fresh session`.
 
 ## Steps
 

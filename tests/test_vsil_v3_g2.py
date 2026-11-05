@@ -71,3 +71,10 @@ def test_scaffold_ships_the_g2_reference(tmp_path, db_path):
 
     assert _scaffold_skill(tmp_path, SKILL, "references", "verified_prototype.md").is_file()
     assert "templates/skills/" not in _scaffold_skill(tmp_path, SKILL, "SKILL.md").read_text(encoding="utf-8")
+
+
+def test_g2_fresh_session_runs_the_steps_itself():
+    text = _skill_text("G2_adaptive_verification")
+
+    assert "In a fresh session that did not run S2, G2 runs steps 2–5 itself" in text
+    assert "`Verifier` = `fresh session`" in text
