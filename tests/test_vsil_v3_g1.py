@@ -66,7 +66,7 @@ def test_g1_reviews_the_kit_and_the_toolchain():
 def test_g1_skill_fills_the_new_rows_and_routes_a_pass_to_s2():
     text = _skill_text("G1_design_review")
 
-    assert "Fill the checklist, including G1.11–G1.13 and the kit row." in text
+    assert "Fill the checklist, including G1.11–G1.14 and the kit row." in text
     assert "G1 passed. Run the S2 skill." in text
     assert "S2 is not available in this release" not in text
 
@@ -86,3 +86,42 @@ def test_scaffolded_g1_checklist_carries_the_new_rows(tmp_path, db_path):  # noq
 
     assert "G1.11 HAL ladder" in text
     assert "Toolchain" in text
+
+
+# --- G1 validates by itself, with no script (2026-11-05) --------------------
+
+def test_g1_runs_no_script_at_all():
+    text = _skill_text("G1_design_review")
+
+    assert "python -c" not in text
+    assert "hashlib" not in text
+    assert "sha256sum" in text
+    assert "G1 runs no script" in text
+
+
+def test_g1_spends_tokens_on_a_full_review():
+    text = _skill_text("G1_design_review")
+
+    assert "Read the whole design and both GT documents" in text
+    assert "re-derive every row yourself" in text
+    assert "Never trust the design's own summaries" in text
+
+
+def test_g1_validates_the_toolchain_on_the_machine_and_installs_with_consent():
+    text = _skill_text("G1_design_review")
+    checklist = (TEMPLATES_DIR / "skills" / "G1_design_review" / "references"
+                 / "G1_CHECKLIST.md").read_text(encoding="utf-8")
+
+    assert "--version" in text
+    assert "ask the user briefly" in text
+    assert "Install it only after a yes" in text
+    assert "never with `sudo` unless the user says so" in text
+    row = next(line for line in checklist.splitlines() if line.startswith("| G1.14"))
+    assert "installed" in row and "refused" in row
+
+
+def test_g1_frontmatter_allows_network_only_for_consented_installs():
+    text = _skill_text("G1_design_review")
+
+    assert "No network access" not in text
+    assert "No scripts." in text
