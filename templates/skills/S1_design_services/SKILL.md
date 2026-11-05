@@ -61,7 +61,9 @@ Working files live in `S1_artifacts/`, never directly in the cycle folder.
 - Keep the implementation DAG and the runtime interaction graph separate. A cross-service
   contract is defined before both services and is never drawn as a mutual dependency.
 - Every contract is complete enough to write a deterministic stub without asking the designer.
-- Omit design §1.5 entirely when no ML is used. Never train or select a model.
+- Omit design §1.5 entirely when no ML is used. Never train or select a model. When used, record its
+  training source: Mock HAL (a software signal generator behind the HAL port) data plus labelling or,
+  failing that, real-hardware HAL data plus labelling.
 - Ask the user only when a choice cannot be derived from the GT.
 
 ## Steps (one pass)

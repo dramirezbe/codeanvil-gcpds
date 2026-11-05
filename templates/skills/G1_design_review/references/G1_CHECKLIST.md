@@ -19,7 +19,7 @@ Section numbers (§) refer to the S1 design document.
 | G1.8 risks | Per `RSK-*`: credible evidence, viable mitigation. Apply the defect-or-RFD test to each | The test points to RFD: the recommendation names it, with `ANALYSIS (no VL)` evidence. Otherwise `advisory` |
 | G1.9 topology, state, loops | Each service has responsibility, deployment and ports; each message of §2.3 has a versioned §3.4 contract; state owner, timeout, acknowledgement, idempotency and safe disconnect are defined. One service passes if it has no external edge | Any is undefined |
 | G1.10 end-to-end paths | Each cross-service `SYS-*` has a `PATH-*` with an owner; its budget is split across modules and link; a VL-0 test with connected processes and simulated inputs exists | Either is missing |
-| G1.11 ML readiness | Only if §1.5 exists: weights with digest, runtime and COTS budget, implementable inputs and outputs, metrics with dataset and conditions, a deterministic fake response. Supplied metrics are not judged as G2 evidence | Any is missing |
+| G1.11 ML readiness | Only if §1.5 exists: weights with digest, training data source and labelling, runtime and COTS budget, implementable inputs and outputs, metrics with dataset and conditions, a deterministic fake response. Supplied metrics are not judged as G2 evidence | Any is missing |
 
 **Defect or RFD (G1.8).** If the requirement is achievable, the design is wrong: it is a defect
 and returns to S1. If it is infeasible on the declared COTS platform under any partitioning, it is

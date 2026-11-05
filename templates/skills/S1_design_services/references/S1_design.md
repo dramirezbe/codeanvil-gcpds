@@ -169,8 +169,9 @@ flowchart LR
 ### 1.5 Supplied ML model (optional)
 
 <!-- OMIT this whole section if no module uses ML. An outcome requirement does not oblige ML.
-     If ML is chosen, the model is already trained and supplied as a controlled input; S1 designs
-     its integration. Never train or select a model here. -->
+     If ML is chosen, the model is supplied as a controlled input, trained with Mock HAL data plus
+     labelling or, failing that, real-hardware HAL data plus labelling. S1 designs its integration.
+     Never train or select a model here. -->
 
 | Field                    | Value |
 |--------------------------|-------|
@@ -178,6 +179,7 @@ flowchart LR
 | SYS-* it satisfies       | <!-- outcome requirements, not only a technical choice --> |
 | Provider and provenance  |  |
 | Artifact and weights     | <!-- controlled path/URI, format, version, SHA-256 --> |
+| Training data and labels | <!-- Mock HAL or, failing that, real-hardware HAL; labelling procedure; dataset version, SHA-256 --> |
 | Inference runtime        | <!-- version, dependencies, COTS compatibility --> |
 | Inputs                   | <!-- shape, type, units, rate, exact preprocessing --> |
 | Outputs                  | <!-- shape, labels, thresholds, confidence, postprocessing --> |
