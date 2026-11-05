@@ -56,7 +56,7 @@ writing **no iteration** when you stop:
 
 1. Give the human the graph's path from `S1.md`: its spiders support the topology and
    runtime-loop review (G1.9); the build order is reviewed in the design's §2 (G1.1).
-2. Fill the checklist against the design and the GT.
+2. Fill the checklist, including G1.11–G1.13 and the kit row.
 3. Recompute the GT digests with
    `python -c "import hashlib,sys;[print(hashlib.sha256(open(p,'rb').read()).hexdigest(),p) for p in sys.argv[1:]]" GT/G0_StRS.md GT/G0_SyRS.md`
    and show the human whether they match the design's Meta row. Information only: it never blocks.
@@ -67,7 +67,7 @@ writing **no iteration** when you stop:
 
 | Human answer | Row written | Route |
 |--------------|-------------|-------|
-| PASS | `HITL: PASS` | S2, which is not available yet: return "G1 passed. S2 is not available in this release." |
+| PASS | `HITL: PASS` | S2: return "G1 passed. Run the S2 skill." |
 | FEEDBACK | `HITL: FEEDBACK` plus sections to rework | S1 |
 | RFD | `HITL: FEEDBACK` plus the line `Verdict: RFD` | RFD skill |
 
