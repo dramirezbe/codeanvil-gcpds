@@ -17,6 +17,8 @@
        - Stub recipe por contrato
        - Clasificación de contratos: HW→SW, SW→SW, SW→HW, servicio→servicio
        - Paquete de modelo ML suministrado: apartado opcional, solo si se usa
+       - Escalera de sustitución HAL: Mock HAL + Real HW HAL (§1.6)
+       - Telemetry companion: monitoreo silencioso de UC (§1.7)
        - Sección de riesgos e inviabilidades conocidas (pre-RFD)
      
      Entrada: G0_StRS.md + G0_SyRS.md (aprobados por G0 + Gate H)
@@ -325,8 +327,12 @@ flowchart TD
 
 <!-- OMITIR esta sección completa en el diseño final si no hay módulo ML.
      Un requisito de resultado no obliga a usar ML si otra arquitectura
-     lo satisface. Si se elige ML, el modelo ya debe estar entrenado y
-     suministrado como entrada controlada; S1 diseña su integración. -->
+     lo satisface. Si se elige ML, el modelo se suministra como entrada
+     controlada, entrenado con datos del Mock HAL más etiquetado o, en su
+     defecto, con datos del Real HW HAL más etiquetado; S1 diseña su
+     integración.
+     ESTADO: incierto. La conexión con S2 y G2 es trabajo futuro
+     (V-SIL v3 §5.4, FW-005). -->
 
 | Campo | Valor |
 |-------|-------|
@@ -334,6 +340,7 @@ flowchart TD
 | SYS-* que satisface | <!-- requisitos de resultado, no solo elección técnica --> |
 | Proveedor y procedencia | <!-- quién entrega modelo y datos de procedencia --> |
 | Artefacto y pesos | <!-- ruta/URI controlada, formato, versión, SHA-256 --> |
+| Datos de entrenamiento y etiquetado | <!-- Mock HAL o, en su defecto, Real HW HAL; procedimiento de etiquetado; versión y SHA-256 del dataset --> |
 | Runtime de inferencia | <!-- versión, dependencias, compatibilidad COTS --> |
 | Entradas | <!-- forma, tipo, unidades, tasa y preprocesamiento exacto --> |
 | Salidas | <!-- forma, etiquetas, umbrales, confianza, posprocesamiento --> |
@@ -349,6 +356,100 @@ flowchart TD
      módulo, no la calidad del modelo. G2 mide con los pesos identificados. -->
 
 **Decisión de diseño:** {{DEC-NNN que justifica usar este modelo y su ubicación}}
+
+### 1.6 Escalera de sustitución HAL
+
+<!-- ================================================================
+     V-SIL v3 §5.5: dos implementaciones de HAL que comparten el
+     mismo contrato de interfaz de la capa base.
+     
+     Mock HAL: generador de datos sintéticos para VL-0 y VL-1.
+     Real HW HAL: interfaz con hardware COTS real para datasets
+     de laboratorio y pruebas de campo VL-2.
+     
+     Ambas se conectan al mismo puerto de la capa base.
+     La sustitución HAL es lo que mueve entre niveles de verificación.
+     ================================================================ -->
+
+#### Mock HAL
+
+| Campo | Valor |
+|-------|-------|
+| Puerto de capa base | <!-- el mismo contrato de interfaz que Real HW HAL --> |
+| VL-0: vectores deterministas | <!-- descripción de los vectores: longitud, tipo, cobertura de casos límite --> |
+| VL-1: I/Q sintético | <!-- SNR, modulación, condiciones de canal, herramienta de generación --> |
+| Herramienta de generación | <!-- e.g., sintetizador FM por software, captura grabada --> |
+
+**Vectores dorados (gobernanza):**
+
+<!-- Cada vector dorado es un artefacto controlado.
+     Listar los vectores iniciales con su gobernanza. -->
+
+| Vector ID | Condición simulada | Digest SHA-256 | Parámetros de generación | Salida esperada en consumidor |
+|-----------|-------------------|----------------|--------------------------|-------------------------------|
+| GV-001    |                   |                |                          |                               |
+| GV-002    |                   |                |                          |                               |
+
+<!-- Cambiar un vector invalida toda evidencia que lo haya usado.
+     El conjunto de vectores se versiona junto con el código fuente. -->
+
+#### Real HW HAL
+
+| Campo | Valor |
+|-------|-------|
+| Puerto de capa base | <!-- mismo contrato que Mock HAL --> |
+| Dispositivo COTS | <!-- HWC-NNN --> |
+| Procedimientos de laboratorio | <!-- referencia a los procedimientos del Build Package --> |
+| Grado de calibración | <!-- grado de tamizaje del equipo de desarrollo, no normativo --> |
+| Tolerancias declaradas | <!-- ±X.X dBi, declaradas por el equipo de desarrollo --> |
+| Propósito VL-2 | <!-- generación de datasets reales + pruebas de campo finales --> |
+
+<!-- El grado de calibración y las tolerancias son entradas del Build Package,
+     no afirmaciones de V-SIL. El Real HW HAL se usa en S2 para:
+     (a) generar datasets reales siguiendo procedimientos de lab, y
+     (b) ejecutar las pruebas de campo finales en VL-2. -->
+
+**Verificación de sustitución:**
+
+<!-- Documentar cómo se verifica que ambas HAL son intercambiables
+     en el mismo puerto de la capa base. ¿Qué prueba confirma
+     que el Mock HAL y el Real HW HAL producen salidas compatibles
+     con el contrato de interfaz? -->
+
+### 1.7 Telemetry companion
+
+<!-- ================================================================
+     V-SIL v3 §5.5: proceso ligero y no intrusivo que monitorea
+     la unidad de cómputo durante todas las ejecuciones de prueba.
+     
+     Es infraestructura de verificación, NO un módulo del sistema.
+     No tiene SYS-*, no aparece en el DAG de implementación.
+     ================================================================ -->
+
+| Campo | Valor |
+|-------|-------|
+| Señales monitoreadas | <!-- CPU, memoria, temperatura, buffers perdidos, latencia de planificación --> |
+| Intervalo de muestreo | <!-- e.g., 1 s, 100 ms --> |
+| Presupuesto de recursos | <!-- CPU máx %, memoria máx --> |
+| Umbral de huella declarado | <!-- el companion no debe superar este consumo --> |
+| Formato de salida | <!-- e.g., CSV con timestamp, JSON lines --> |
+| Integración con evidencia | <!-- cómo se adjuntan las lecturas a cada registro de evidencia --> |
+
+**Envolvente de operación de la UC:**
+
+<!-- Definir los umbrales fuera de los cuales la evidencia se marca
+     como potencialmente inválida. -->
+
+| Señal | Umbral nominal | Acción si se excede |
+|-------|----------------|---------------------|
+| Temperatura | <!-- e.g., ≤ 80 °C --> | <!-- marcar evidencia --> |
+| CPU | <!-- e.g., ≤ 90% sostenido --> | <!-- marcar evidencia --> |
+| Buffers perdidos | <!-- e.g., 0 --> | <!-- marcar evidencia --> |
+| Latencia de planificación | <!-- e.g., ≤ X ms --> | <!-- marcar evidencia --> |
+
+<!-- El telemetry companion NO interfiere con el sistema bajo prueba.
+     Si su propia huella supera el umbral declarado, es un defecto
+     de infraestructura, no del sistema. -->
 
 ---
 
@@ -881,7 +982,38 @@ solo `hw_dependency: true`; la corrección debe depender de ese hardware.
 <!-- La suma de pruebas aisladas por servicio no sustituye una prueba
      de la ruta completa. G2 debe citar evidencia por módulo y PATH-*. -->
 
-## G1.11 — Preparación del modelo ML (solo si §1.5 existe)
+## G1.11 — Escalera de sustitución HAL
+
+<!-- REVISIÓN.
+     Verificar que ambas HAL (Mock y Real HW) comparten el mismo
+     contrato de interfaz de la capa base y que los vectores dorados
+     tienen gobernanza completa.
+-->
+
+| Verificación | Resultado |
+|--------------|-----------|
+| ¿Mock HAL y Real HW HAL exponen el mismo contrato de interfaz? | |
+| ¿Los vectores dorados llevan ID, SHA-256, parámetros y salida esperada? | |
+| ¿El Real HW HAL referencia procedimientos de lab del Build Package? | |
+| ¿El grado de calibración y tolerancias en dBi están declarados? | |
+| ¿La prueba de sustitución entre HALs está definida? | |
+
+## G1.12 — Telemetry companion
+
+<!-- REVISIÓN.
+     Verificar que la especificación del companion es completa
+     y que su huella no compromete las pruebas.
+-->
+
+| Verificación | Resultado |
+|--------------|-----------|
+| ¿Se declara qué señales monitorea y con qué intervalo? | |
+| ¿El presupuesto de recursos del companion está declarado y acotado? | |
+| ¿La envolvente de operación de la UC tiene umbrales definidos? | |
+| ¿Se define cómo se adjuntan las lecturas a cada registro de evidencia? | |
+| ¿La huella del companion está por debajo del umbral declarado? | |
+
+## G1.13 — Preparación del modelo ML (solo si §1.5 existe)
 
 <!-- OMITIR esta comprobación en el informe G1 si el diseño no usa ML.
      Revisar la preparación para implementar, no aprobar las métricas
@@ -890,6 +1022,7 @@ solo `hw_dependency: true`; la corrección debe depender de ese hardware.
 | Verificación condicional | Resultado |
 |--------------------------|-----------|
 | ¿Artefacto y pesos disponibles, versionados y con digest? | |
+| ¿Fuente de datos de entrenamiento (Mock HAL o Real HW HAL) y etiquetado identificados? | |
 | ¿Runtime y recursos compatibles con la COTS declarada? | |
 | ¿Entradas, preprocesamiento, salidas y umbrales son implementables? | |
 | ¿Métricas incluyen dataset y condiciones de medición? | |

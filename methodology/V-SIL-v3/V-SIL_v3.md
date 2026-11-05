@@ -8,7 +8,7 @@
 
 ## Abstract
 
-V-SIL v3 is a software development methodology that receives a finalised Build Package (PRD with measurable constraints, COTS hardware envelope, and acceptance criteria) and delivers a Verified Prototype with per-module and end-to-end evidence — or, when the requirements are infeasible on the declared COTS platform, a formal Request for Deviation (RFD) with trade-off analysis. S1 may design one service or a system of services: each service has its own layered base and modules, and services meet through versioned contracts. A supplied, already trained ML model is an optional S1 input when the chosen design uses one. Implementation proceeds module by module within each service and then across service boundaries. Verification depth is adaptive per module, while a mandatory floor of unit, sandwich-integration, cross-service contract, and system-path tests applies. Every claim names the verification level and environment at which it was produced. The terminal output may record scoped future work for later software versions; this does not defer current acceptance criteria. Terminology is aligned with IEEE/ISO/IEC 29119, ISO 26262, SDAD [6], the Coordinator-Implementor-Verifier pattern [10], the embedded HAL mock→SIL→HIL substitution ladder [11], and the ECSS/MIL-HDBK-61A Request for Deviation process [16][17].
+V-SIL v3 is a software development methodology that receives a finalised Build Package (PRD with measurable constraints, COTS hardware envelope, acceptance criteria, laboratory procedures, hardware calibration at the development team's screening grade, and tolerances in dBi) and delivers a Verified Prototype with per-module and end-to-end evidence — or, when the requirements are infeasible on the declared COTS platform, a formal Request for Deviation (RFD) with trade-off analysis. S1 may design one service or a system of services: each service has its own layered base and modules, and services meet through versioned contracts. S1 also designs two HAL implementations — a **Mock HAL** that generates deterministic and synthetic data for VL-0 and VL-1, and a **Real HW HAL** that interfaces with the physical hardware for laboratory dataset generation and field tests at VL-2 — as well as a **telemetry companion** that silently monitors the compute unit during all test executions. An ML model is an optional S1 input when the chosen design uses one; it is trained with Mock HAL data plus labelling or, failing that, with Real HW HAL data plus labelling. Implementation proceeds module by module within each service and then across service boundaries. Verification depth is adaptive per module, while a mandatory floor of unit, sandwich-integration, cross-service contract, and system-path tests applies. Every claim names the verification level and environment at which it was produced; the telemetry companion attaches compute-unit state (CPU, memory, temperature, buffer health, scheduling latency) to every evidence record. The terminal output may record scoped future work for later software versions; this does not defer current acceptance criteria. Terminology is aligned with IEEE/ISO/IEC 29119, ISO 26262, SDAD [6], the Coordinator-Implementor-Verifier pattern [10], the embedded HAL mock→SIL→HIL substitution ladder [11], and the ECSS/MIL-HDBK-61A Request for Deviation process [16][17].
 
 ```mermaid
 flowchart LR
@@ -17,7 +17,7 @@ flowchart LR
     classDef output fill:#dcfce7,stroke:#16a34a,color:#14532d,stroke-width:2px
     classDef rfd fill:#fee2e2,stroke:#dc2626,color:#7f1d1d,stroke-width:2px
 
-    IN["Build Package<br/>PRD · COTS envelope<br/>acceptance criteria"]:::input
+    IN["Build Package<br/>PRD · COTS envelope · acceptance criteria<br/>lab procedures · calibration · tolerances"]:::input
     VSIL["V-SIL v3<br/>S0 → G0 → S1 → G1 → S2 → G2"]:::vsil
     OUT["Verified Prototype<br/>module + system-path VL evidence"]:::output
     RFD["Request for Deviation<br/>infeasibility evidence<br/>+ trade-off options"]:::rfd
@@ -101,7 +101,7 @@ flowchart LR
     classDef process fill:#ede9fe,stroke:#7c3aed,color:#3b0764
     classDef output fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e
 
-    BP["Build Package<br/>Obligations · COTS<br/>constraints · QA"]:::input
+    BP["Build Package<br/>Obligations · COTS · QA<br/>lab procedures · calibration · tolerances"]:::input
     FILL["Fill IEEE 29148<br/>blueprints"]:::process
     StRS["G0_StRS.md<br/>§9.4"]:::output
     SyRS["G0_SyRS.md<br/>§9.5"]:::output
@@ -238,11 +238,25 @@ The **implementation dependency graph** orders contract definition, service base
 
 ### 5.4 Optional supplied ML model
 
-An S1 design includes this box **only when it chooses an ML-based module or the Ground Truth explicitly requires one**. Otherwise the box and its G1 check are absent. The supplied model is a controlled input to a service module, not a service by itself. S1 does not train or select a model on behalf of the Build Package author.
+**Status: uncertain.** This version defines the ML model only as an optional S1 input and a G1 readiness check. Its connection to S2 and G2 (training data generation, inference adapter, measurement at G2) is not implemented and is future work, together with MLOps (FW-005).
 
-When used, S1 identifies the model file and weights by version and digest; names its supplying owner and provenance; specifies the inference runtime, input and output schema, units, preprocessing, labels or thresholds, and postprocessing; and records the supplied performance metadata with its evaluation dataset and conditions. It budgets inference latency, memory, and any device dependency on the declared COTS target. A deterministic fake model response supports VL-0 integration, while later levels exercise the actual supplied model.
+An S1 design includes this box **only when it chooses an ML-based module or the Ground Truth explicitly requires one**. Otherwise the box and its G1 check are absent. The supplied model is a controlled input to a service module, not a service by itself. It is trained with Mock HAL data plus labelling or, failing that, with Real HW HAL data plus labelling. S1 does not train or select a model on behalf of the Build Package author.
 
-Supplied performance metadata is prior evidence, not a G2 verdict. If S1 chooses ML but the model package or the fields needed to implement it are missing, G1 returns **FAIL** for completion of the input or design. Demonstrated infeasibility against the declared COTS requirements follows the RFD route.
+When used, S1 identifies the model file and weights by version and digest; names its supplying owner and provenance; records the training data source and labelling procedure; specifies the inference runtime, input and output schema, units, preprocessing, labels or thresholds, and postprocessing; and records the supplied performance metadata with its evaluation dataset and conditions. It budgets inference latency, memory, and any device dependency on the declared COTS target. A deterministic fake model response supports VL-0 integration, while later levels exercise the actual supplied model.
+
+Supplied performance metadata is prior evidence, not a G2 verdict. If S1 chooses ML but the model package or the fields needed to implement it are missing, G1 returns **FAIL** for completion of the input or design. Demonstrated infeasibility against the declared COTS requirements follows the RFD route. Automating this model lifecycle with MLOps is future work (FW-005).
+
+### 5.5 HAL substitution ladder and telemetry companion
+
+S1 designs two HAL implementations that share the same base-layer interface contract but differ in what produces `raw_iq`:
+
+- **Mock HAL.** A software-only signal generator. At VL-0 it emits deterministic vectors (short, repeatable, edge-case coverage). At VL-1 it produces synthetic I/Q files at known SNR, modulation, and channel conditions using an FM-modulated software synthesiser or recorded golden captures. Each golden vector is versioned with a SHA-256 digest, generation parameters, the condition it simulates, and its expected output. The Mock HAL is the default data source for all sandwich-integration and SIL tests.
+
+- **Real HW HAL.** The production HAL that interfaces with the declared COTS SDR. It serves two purposes: (a) executing the laboratory procedures supplied by the Build Package to generate **real datasets** with the development team's calibration quality (screening grade, not normative) and declared tolerances in dBi; and (b) running the final field tests at VL-2. The calibration grade and tolerances are inputs from the Build Package, not claims of V-SIL.
+
+Both HALs plug into the same base-layer port. Swapping one for the other is the **HAL substitution** that moves between verification levels [11].
+
+S1 also specifies a **telemetry companion**: a lightweight, non-intrusive process that runs alongside every test execution and records compute-unit state — CPU utilisation, available memory, temperature, dropped buffers, and scheduling latency. It must not interfere with the system under test; its own resource footprint is declared and bounded. The companion attaches its readings to every evidence record so that G2 can determine whether the compute unit was within its operating envelope during a test. The telemetry companion is verification infrastructure, not a system module: it has no `SYS-*`, does not appear in the implementation DAG, and is absent from the Verified Prototype's module evidence.
 
 ---
 
@@ -258,11 +272,13 @@ G1 is a human (HITL) design review, not a deterministic gate. An agent may prepa
 4. **Coverage.** Every `SYS-*` traces to module(s) or an end-to-end service path, with an owner and measurable acceptance evidence.
 5. **Stub feasibility.** Every internal and cross-service contract is complete enough to write a deterministic stub or fake peer.
 6. **Verification-profile consistency.** `hw_dependency: true` → `required_vl: VL-2`; system paths have a declared verification level and environment.
-7. **Supplied ML model, when used.** The weights and metadata are identified, the inference contract is implementable, and the COTS budget is credible. This check is omitted when the design has no ML model.
+7. **HAL substitution ladder.** Both Mock HAL and Real HW HAL expose the same base-layer interface. Golden vectors carry digest, generation parameters, and expected outputs. The Real HW HAL references the Build Package's laboratory procedures, calibration grade, and tolerances.
+8. **Telemetry companion.** The companion spec declares what it monitors, its sampling interval, its resource budget, and that its footprint is bounded below a declared threshold.
+9. **Supplied ML model, when used.** The weights, metadata, training data source, and labelling procedure are identified, the inference contract is implementable, and the COTS budget is credible. This check is omitted when the design has no ML model.
 
 **PASS** → S2. **FAIL** → S1. **RFD** → §9.2, when the requirements are infeasible on the declared COTS platform.
 
-The [S1/G1 design template](S1_G1_template.md) expands these check families into ten general review items and one conditional ML item, including design decisions, COTS coherence, and risk assessment.
+The [S1/G1 design template](S1_G1_template.md) expands these check families into twelve general review items and one conditional ML item, including design decisions, COTS coherence, HAL ladder, telemetry companion, and risk assessment.
 
 ---
 
@@ -298,7 +314,21 @@ Top-down (base → stubs) + bottom-up (module → driver → base) = **sandwich 
 
 Define cross-service contracts first so each service can be built independently against a deterministic fake peer. Connect real services after their local VL-0 floor passes. For each `SYS-*` allocated across services, execute a deterministic system-path test across the real service processes with simulated external inputs. This checks serialization, routing, state handoff, and recovery at the declared boundary; VL-1 and VL-2 add stronger environments and measurements.
 
-If a service uses a supplied ML model, S2 implements its inference adapter and tests the declared preprocessing, output mapping, and failure behavior. The fake response exercises the surrounding module contract at VL-0; tests claiming model behavior use the identified weights.
+*Future work (FW-005, §5.4).* If a service uses a supplied ML model, S2 implements its inference adapter and tests the declared preprocessing, output mapping, and failure behavior. The fake response exercises the surrounding module contract at VL-0; tests claiming model behavior use the identified weights.
+
+### Data sources by verification level
+
+The HAL substitution ladder determines what feeds the pipeline at each level. The **telemetry companion** runs during every test at every level.
+
+| Level | Data source | HAL used | Telemetry companion |
+|---|---|---|---|
+| **VL-0** | Deterministic golden vectors (short, repeatable, edge-case) | Mock HAL | Records UC state; attached to evidence |
+| **VL-1** | Synthetic I/Q at known SNR, modulation, channel conditions | Mock HAL | Records UC state; attached to evidence |
+| **VL-2** | Real RF via COTS SDR; datasets generated following Build Package lab procedures with declared calibration and tolerances | Real HW HAL | Records UC state; attached to evidence |
+
+### Golden vector governance
+
+Each golden vector or synthetic capture used by the Mock HAL is a controlled artefact: it carries a unique identifier, SHA-256 digest, generation parameters, the condition it simulates (nominal, edge-case, degraded), and the expected output at the consuming module's contract. Changing a vector invalidates every evidence record that used it. The golden-vector set is versioned alongside the source code.
 
 ### Mandatory floor (VL-0) — cannot be skipped
 
@@ -308,6 +338,7 @@ If a service uses a supplied ML model, S2 implements its inference adapter and t
 | **Each module** | Unit test + bottom-up integration with driver |
 | **Each cross-service contract** | Producer and consumer contract tests using a fake peer, including version and failure cases |
 | **Each cross-service SYS-* path** | Deterministic test across the connected service processes with simulated external inputs |
+| **Telemetry companion** | Running and recording during all tests above; UC state attached to every evidence record |
 
 ---
 
@@ -328,14 +359,15 @@ flowchart LR
     VL0 -->|"user decides ▸"| VL1 -->|"user decides ▸"| VL2
 ```
 
-Each level includes all tests from the levels below.
+Each level includes all tests from the levels below. The HAL substitution ladder (§5.5) determines what feeds the pipeline: Mock HAL at VL-0 and VL-1, Real HW HAL at VL-2. The telemetry companion runs at every level.
 
 ### 8.2 Adaptive rule
 
-The user chooses the verification level per module and per system path, per cycle. Two constraints:
+The user chooses the verification level per module and per system path, per cycle. Three constraints:
 
 1. **Floor.** Every module and every declared cross-service contract and system path reaches VL-0 in every cycle.
 2. **Honesty.** No module or end-to-end claim is higher than the environment actually tested. Passing services individually does not prove a cross-service requirement.
+3. **Telemetry context.** Every evidence record includes the telemetry companion's readings for the compute unit during that test. Evidence produced while the UC was outside its declared operating envelope (temperature, CPU saturation, dropped buffers) is flagged and may be invalidated by the reviewer.
 
 | Scenario | User declares | G2 checks |
 |---|---|---|
@@ -348,11 +380,11 @@ The user chooses the verification level per module and per system path, per cycl
 
 | Sub-gate | Fires when | Checks |
 |---|---|---|
-| **G2.0** | Always | Unit + sandwich, cross-service contract, and deterministic system-path tests pass |
-| **G2.1** | VL-1+ declared for a module or path | Mock/SIL system tests across affected services pass; metrics within thresholds |
-| **G2.2** | VL-2 declared for a module or path | HIL acceptance on real COTS; for cross-service paths, a representative link; measurements within criteria |
+| **G2.0** | Always | Unit + sandwich, cross-service contract, and deterministic system-path tests pass; Mock HAL golden vectors; telemetry companion confirms UC nominal |
+| **G2.1** | VL-1+ declared for a module or path | Mock HAL synthetic I/Q; Mock/SIL system tests across affected services pass; metrics within thresholds; telemetry companion confirms UC nominal |
+| **G2.2** | VL-2 declared for a module or path | Real HW HAL on COTS SDR; datasets from Build Package lab procedures with declared calibration and tolerances; for cross-service paths, a representative link; measurements within criteria; telemetry companion confirms UC nominal |
 
-For an ML-based module or path, G2 measures the supplied model *inside the implemented system* at the declared level and checks the relevant `SYS-*` criteria. The performance metadata received at S1 is context for test design, not a substitute for those measurements.
+*Future work (FW-005, §5.4).* For an ML-based module or path, G2 measures the supplied model *inside the implemented system* at the declared level and checks the relevant `SYS-*` criteria. The performance metadata received at S1 is context for test design, not a substitute for those measurements.
 
 ---
 
@@ -465,12 +497,12 @@ Verified Prototype — V-SIL v3
   Cycle: pre_release_01
 
   Module evidence:
-    iq_acquisition:    VL-2 (HIL)  — HackRF One, FM 88–108 MHz
-    fft_engine:        VL-1 (SIL)  — GnuRadio mock, golden I/Q
-    feature_extractor: VL-1 (SIL)  — synthetic PSD at known SNR
-    classifier:        VL-0 (logic)— unit + sandwich integration
-    audio_demod:       VL-1 (SIL)  — synthetic FM-modulated I/Q
-    data_store:        VL-0 (logic)— unit + sandwich integration
+    iq_acquisition:    VL-2 (HIL)  — Real HW HAL, HackRF One, FM 88–108 MHz
+    fft_engine:        VL-1 (SIL)  — Mock HAL, golden I/Q (vectors v1.2, SHA bc3f…)
+    feature_extractor: VL-1 (SIL)  — Mock HAL, synthetic PSD at known SNR
+    classifier:        VL-0 (logic)— Mock HAL, deterministic vectors
+    audio_demod:       VL-1 (SIL)  — Mock HAL, synthetic FM-modulated I/Q
+    data_store:        VL-0 (logic)— Mock HAL, deterministic vectors
     dashboard:         VL-1 (SIL)  — edge messages on simulated link
     controls:          VL-0 (logic)— command and acknowledgement vectors
     alerts:            VL-0 (logic)— unit + sandwich integration
@@ -479,14 +511,22 @@ Verified Prototype — V-SIL v3
   Service and system-path evidence:
     edge -> UI occupancy.v1: VL-1 — schema + latency on simulated link
     UI -> edge configure.v1: VL-0 — commands, retries, duplicate handling
-    PATH-001 / SYS-002 occupancy display: VL-1 — edge + UI, synthetic RF input
+    PATH-001 / SYS-002 occupancy display: VL-1 — edge + UI, Mock HAL synthetic RF
+
+  Telemetry companion report:
+    All tests: UC within operating envelope
+    CPU peak: 63%  |  Temp peak: 68 °C  |  Dropped buffers: 0
+    No evidence invalidated by UC conditions.
 
   Honesty declaration:
-    VL-1 modules: VERIFIED against synthetic data.
-    VL-2 modules: VALIDATED on real hardware.
+    VL-1 modules: VERIFIED against synthetic data (Mock HAL).
+    VL-2 modules: VALIDATED on real hardware (Real HW HAL);
+                  calibration: screening grade per Build Package;
+                  tolerances: ±2.1 dBi declared by development team.
     VL-0 modules: VERIFIED at logic level only.
     SYS-002: VERIFIED across connected services with synthetic input;
              no real-link or HIL latency claim.
+    Telemetry companion: UC nominal during all test executions.
 
   RFDs issued: 0
 ```
@@ -506,6 +546,50 @@ FW-001 — Automate V-SIL verification evidence in CI/CD
   Dependency: stable test commands and report format
   Proposed acceptance: a pipeline reproduces the declared G2 checks
                        and links its reports to the cycle and source revision
+
+FW-002 — Processor-in-the-Loop (PIL) as intermediate level
+  Category: verification depth
+  Origin: SOTA review; when UC ≠ development host, compiled code on the
+          target processor may behave differently under timing constraints
+  Candidate version: later software release
+  Decision owner: Build Package author
+  Dependency: target UC identified and accessible for cross-compilation
+  Proposed acceptance: PIL level defined between VL-1 and VL-2 with
+                       timing and scheduling checks on the target processor
+
+FW-003 — Formal fault injection at VL-2
+  Category: verification depth
+  Origin: SOTA review (ISO 26262-5 §10; IEC 61508-3 Table A.5);
+          current VL-2 tests nominal operation only
+  Candidate version: later software release
+  Decision owner: Build Package author
+  Dependency: fault scenarios defined per module (USB disconnect,
+              buffer overflow, SDR clock drift, UC power glitch)
+  Proposed acceptance: declared fault scenarios executed at VL-2;
+                       system response documented per scenario
+
+FW-004 — SIL ↔ HIL correlation measurement
+  Category: verification confidence
+  Origin: SOTA review; VL-1 and VL-2 results are reported independently
+          with no measured correlation between them
+  Candidate version: later software release
+  Decision owner: Build Package author
+  Dependency: both VL-1 and VL-2 executed for the same modules
+  Proposed acceptance: quantified deviation between Mock HAL and
+                       Real HW HAL results for overlapping test cases
+
+FW-005 — MLOps for the optional ML model
+  Category: model lifecycle
+  Origin: the optional ML model is trained and labelled outside any
+          automated pipeline, and its S2 and G2 integration is not
+          implemented yet (§5.4)
+  Candidate version: later software release
+  Decision owner: Build Package author
+  Dependency: versioned Mock HAL or Real HW HAL datasets and a declared
+              labelling procedure
+  Proposed acceptance: a pipeline reproduces training from versioned data
+                       and labels and links each model version to its
+                       G2 evidence
 ```
 
 ---

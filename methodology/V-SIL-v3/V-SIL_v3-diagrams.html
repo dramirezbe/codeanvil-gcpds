@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>V-SIL v3 Diagrams</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script src="../../templates/skills/S1_design_services/assets/vis-network.min.js"></script>
 <style>
 /* Visual companion to V-SIL_v3.md: one section per paper diagram, inline SVG, small interactions */
 :root {
@@ -174,17 +175,8 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
 .chip text { font: 500 10.5px 'IBM Plex Mono', ui-monospace, monospace; fill: var(--fg); }
 .chip.click:hover rect, .chip.sel rect { stroke: var(--hl); stroke-width: 2; }
 
-/* Service stars: local spokes and selectable cross-service flows */
-.star-local path { fill: none; stroke: var(--line); stroke-width: 2; }
-.star-flow path { fill: none; stroke-width: 2.5; }
-.star-flow.telemetry path { stroke: var(--gate-s); }
-.star-flow.control path { stroke: var(--amber-s); }
-#stars:not([data-ml="yes"]) #ml-asset { display: none; }
-#ml-asset path { fill: none; stroke: var(--proc-s); stroke-width: 1.8; stroke-dasharray: 5 3; marker-end: url(#m-line); }
-#stars[data-view="telemetry"] .star-flow.control,
-#stars[data-view="control"] .star-flow.telemetry { opacity: .16; }
-#stars[data-view="telemetry"] .star-flow.telemetry path,
-#stars[data-view="control"] .star-flow.control path { stroke-width: 4; }
+/* Service stars: vis-network canvas, same look as the S1 dependency graph */
+#stars { width: 100%; height: 600px; }
 
 /* VL matrix */
 .vl-matrix { display: grid; grid-template-columns: minmax(130px, 1.4fr) repeat(3, minmax(56px, 1fr)) minmax(120px, 1.6fr); gap: 4px; font-size: .88rem; align-items: stretch; }
@@ -213,11 +205,10 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
 .compare .card { margin: 0; }
 .compare .d { border-top: 4px solid var(--amber-s); }
 .compare .r { border-top: 4px solid var(--rfd-s); }
-.terms { display: grid; grid-template-columns: 1fr auto 1fr; gap: .3rem .6rem; align-items: center; font-size: .9rem; }
-.terms .arrow { color: var(--muted); }
-.terms .std { font-weight: 600; }
-.terms .src { grid-column: 3; color: var(--muted); font-size: .78rem; margin-top: -.25rem; margin-bottom: .35rem; }
-@media (max-width: 620px) { .terms { grid-template-columns: 1fr; } .terms .arrow { display: none; } .terms .src { grid-column: 1; } }
+.gloss { display: grid; gap: .7rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 430px), 1fr)); margin-top: .6rem; }
+.gloss .card { margin: 0; }
+.gloss dl { grid-template-columns: minmax(5rem, 8.5rem) 1fr; gap: .35rem .8rem; }
+.gloss dt { color: var(--fg); font-weight: 600; }
 .principles { display: grid; gap: .6rem; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); margin-top: .8rem; }
 .principles .card { margin: 0; }
 .principles b { display: block; font-size: 1.05rem; color: var(--hl); }
@@ -246,14 +237,14 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
   <div>
     <span class="tag">Visual companion · V-SIL v3 · 3.0-draft</span>
     <h1>V-SIL v3: Adaptive Stage-Gate Lifecycle, diagram by diagram</h1>
-    <p class="sub">The V-SIL v3 lifecycle, from one service to an edge + UI system. Two service stars show the system boundary; the SDR FM flowgraph then expands the edge service.</p>
+    <p class="sub">The V-SIL v3 lifecycle, from one service to an edge + UI system. Two service stars show the system boundary; the SDR FM flowgraph then expands the edge service. A HAL substitution ladder and a telemetry companion tie every claim to its data source and compute-unit state.</p>
   </div>
   <button id="theme" type="button" aria-label="Toggle colour theme">◐ Theme</button>
 </header>
 
 <nav class="toc" aria-label="Sections">
   <a href="#big">0 Big picture</a><a href="#terms">1 Terminology</a><a href="#overview">2 Stage-gate</a>
-  <a href="#s0">3 S0</a><a href="#g0">4 G0</a><a href="#s1">5 S1</a><a href="#service-stars">Edge + UI stars</a><a href="#ml-box">Optional ML</a><a href="#g1">6 G1</a>
+  <a href="#s0">3 S0</a><a href="#g0">4 G0</a><a href="#s1">5 S1</a><a href="#service-stars">Edge + UI stars</a><a href="#ml-box">Optional ML</a><a href="#hal-ladder">HAL + telemetry</a><a href="#g1">6 G1</a>
   <a href="#s2">7 S2</a><a href="#g2">8 G2</a><a href="#feedback">9 Feedback</a><a href="#terminal">10 Output</a><a href="#future-work">Future work</a>
 </nav>
 
@@ -265,10 +256,12 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
 <figure>
   <div class="scroll">
   <svg viewBox="0 0 900 250" role="img" aria-label="Build Package goes into V-SIL v3, which outputs a Verified Prototype or a Request for Deviation">
-    <g class="k-input"><rect class="s" x="20" y="55" width="210" height="96" rx="10"/>
-      <text class="tb mid" x="125" y="85">Build Package</text>
-      <text class="t mid" x="125" y="107">PRD · COTS envelope</text>
-      <text class="t mid" x="125" y="126">acceptance criteria</text></g>
+    <g class="k-input"><rect class="s" x="20" y="40" width="210" height="126" rx="10"/>
+      <text class="tb mid" x="125" y="66">Build Package</text>
+      <text class="t mid" x="125" y="88">PRD · COTS envelope</text>
+      <text class="t mid" x="125" y="106">acceptance criteria</text>
+      <text class="t mid" x="125" y="124">lab procedures · calibration</text>
+      <text class="t mid" x="125" y="142">tolerances</text></g>
     <g class="k-stage"><rect class="s" x="330" y="55" width="240" height="96" rx="10"/>
       <text class="tb mid" x="450" y="92">V-SIL v3</text>
       <text class="t mid" x="450" y="116">S0 → G0 → S1 → G1 → S2 → G2</text></g>
@@ -284,27 +277,111 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
     <text class="tl mid" x="618" y="62">nominal</text>
     <path class="e red dash" d="M570,118 C620,118 620,158 666,158"/>
     <text class="tl mid" x="616" y="153">infeasible</text>
-    <path class="e red dash" d="M775,198 V232 H125 V155"/>
+    <path class="e red dash" d="M775,198 V232 H125 V170"/>
     <text class="tl mid" x="450" y="226">updated Build Package (re-enters at S0)</text>
   </svg>
   </div>
-  <figcaption>Abstract diagram. Services contain layered modules; verification depth adapts per module and system path above a mandatory floor; every claim names the level and environment that produced it. A supplied ML model and a future work register are optional.</figcaption>
+  <figcaption>Abstract diagram. Services contain layered modules; verification depth adapts per module and system path above a mandatory floor; every claim names the level and environment that produced it. S1 designs a Mock HAL, a Real HW HAL and a telemetry companion. A supplied ML model and a future work register are optional.</figcaption>
 </figure>
 
 <!-- ======================================================================= -->
-<h2 id="terms">1 · Terminology: informal → standard</h2>
-<p>v3 replaces in-house words with standard ones, so that every term can be looked up in a named source.</p>
-<div class="card terms" role="table" aria-label="Terminology mapping">
-  <span>Propagation test (base → modules with placeholders)</span><span class="arrow">→</span><span class="std">Top-down integration test with stubs</span><span class="src">IEEE 29119; Pressman [1]</span>
-  <span>Backpropagation test (module → base)</span><span class="arrow">→</span><span class="std">Bottom-up integration test with drivers</span><span class="src">IEEE 29119; Pressman [1]</span>
-  <span>Combined propagation + backpropagation</span><span class="arrow">→</span><span class="std">Sandwich (hybrid) integration testing</span><span class="src">IEEE 29119 [2]</span>
-  <span>Placeholders</span><span class="arrow">→</span><span class="std">Stubs (called by the unit under test)</span><span class="src">Standard SE</span>
-  <span>Test harnesses simulating callers</span><span class="arrow">→</span><span class="std">Drivers (call the unit under test)</span><span class="src">Standard SE</span>
-  <span>Router validation</span><span class="arrow">→</span><span class="std">Interface-contract verification</span><span class="src">Contract testing [3]; Bass et al. [4]</span>
-  <span>Design by layers</span><span class="arrow">→</span><span class="std">Layered architecture + component dependency graph (DAG)</span><span class="src">Bass et al. [4]</span>
-  <span>Levels N0 / N1 / N2</span><span class="arrow">→</span><span class="std">Verification levels VL-0, VL-1, VL-2</span><span class="src">Adapted from ISO 26262 [5]</span>
-  <span>Feedback to Build Package with trade-off</span><span class="arrow">→</span><span class="std">Request for Deviation (RFD)</span><span class="src">ECSS [16]; MIL-HDBK-61A [17]; NASA NPR 7150.2 [18]</span>
+<h2 id="terms">1 · Terminology used in the diagrams</h2>
+<p>A short reference for the terms used across the diagrams. <b>V-SIL term</b> marks a name this methodology defines itself; the rest keep their usual meaning, and any difference is stated.</p>
+<div class="gloss">
+  <div class="card"><h4>Lifecycle</h4><dl>
+    <dt>Stage / gate</dt><dd>A stage produces work; a gate decides whether it moves on, as in Stage-Gate. Gate verdicts here are PASS, FAIL or RFD.</dd>
+    <dt>Sub-gate</dt><dd><b>V-SIL term.</b> G2.0, G2.1 and G2.2: the parts of G2 that fire for the declared level.</dd>
+    <dt>HITL</dt><dd>Human-in-the-loop: a person makes the decision at that step. <b>Gate H</b> is the human authorisation after G0. Not to be confused with HIL.</dd>
+    <dt>Build Package</dt><dd><b>V-SIL term.</b> The input: PRD (product requirements document), COTS envelope, acceptance criteria, lab procedures, calibration and tolerances.</dd>
+    <dt>COTS</dt><dd>Commercial off-the-shelf: hardware bought as is, whose limits the design must accept.</dd>
+    <dt>Defect</dt><dd>The requirements are achievable but the design or a module is wrong. Fixed inside V-SIL.</dd>
+    <dt>RFD</dt><dd>Request for Deviation: a formal request for a <i>planned</i> departure from a requirement; an unplanned one is a waiver (ECSS-M-ST-40C). V-SIL raises it when the COTS platform cannot meet the requirements. Unlike ECSS departures, it ends in an updated Build Package.</dd>
+    <dt>Verified Prototype</dt><dd><b>V-SIL term.</b> The output: the built system with evidence per module and path.</dd>
+    <dt>FW-*</dt><dd><b>V-SIL term.</b> Future work register entry: a proposal for a later version, never a way to defer a current criterion.</dd>
+    <dt>MLOps</dt><dd>Machine learning operations: an automated model lifecycle covering training, versioning and deployment. Future work here (FW-005).</dd>
+  </dl></div>
+  <div class="card"><h4>Requirements</h4><dl>
+    <dt>GT</dt><dd>Ground Truth: the StRS + SyRS pair that defines what "correct" means.</dd>
+    <dt>IEEE 29148</dt><dd>The requirements engineering standard that supplies the document blueprints.</dd>
+    <dt>StRS</dt><dd>Stakeholder Requirements Specification (§9.4 of the standard).</dd>
+    <dt>SyRS</dt><dd>System Requirements Specification (§9.5 of the standard).</dd>
+    <dt>STK-*</dt><dd>Stakeholder requirement block.</dd>
+    <dt>NRM-*</dt><dd>Normative obligation block, citing its standard and clause.</dd>
+    <dt>HWC-*</dt><dd>COTS hardware constraint block.</dd>
+    <dt>SYS-*</dt><dd>System requirement block; it must trace back to StRS blocks.</dd>
+    <dt>Deterministic</dt><dd>The same input always gives the same verdict: <code>g0_validate.py</code>, with no AI.</dd>
+    <dt>Verification</dt><dd>Objective evidence that specified requirements are fulfilled: built right (ISO/IEC/IEEE 15288).</dd>
+    <dt>Validation</dt><dd>Objective evidence that the requirements for the intended use are fulfilled: the right thing built (ISO/IEC/IEEE 15288). This page keeps VALIDATED for real-hardware evidence.</dd>
+    <dt>Honesty declaration</dt><dd><b>V-SIL term.</b> The statement of which environment backs each claim.</dd>
+  </dl></div>
+  <div class="card"><h4>Architecture</h4><dl>
+    <dt>Service</dt><dd>An independently deployed unit with its own base and modules, such as <code>SVC-EDGE</code>.</dd>
+    <dt>Base layer</dt><dd>What a service builds first: orchestration, HAL and data routing.</dd>
+    <dt>Module</dt><dd>A unit of function with its own verification profile.</dd>
+    <dt>Verification profile</dt><dd>A module's declared fields, including <code>hw_dependency</code> and <code>required_vl</code>.</dd>
+    <dt>DAG</dt><dd>Directed acyclic graph of build dependencies. A runtime message loop between services is reviewed separately and is allowed.</dd>
+    <dt>Interface contract</dt><dd>What crosses an edge: type, schema version, units and latency.</dd>
+    <dt>Service contract</dt><dd>A versioned contract between services, with failure behaviour, such as <code>occupancy.v1</code>.</dd>
+    <dt>PATH-*</dt><dd>A named end-to-end route that carries a cross-service requirement.</dd>
+    <dt>HAL</dt><dd>Hardware abstraction layer: a uniform interface that hides hardware details from the software above it.</dd>
+    <dt>Mock HAL</dt><dd><b>V-SIL term.</b> A software signal generator behind the HAL port. In test-double terms it is closer to a <i>fake</i> than a strict mock.</dd>
+    <dt>Real HW HAL</dt><dd><b>V-SIL term.</b> The production HAL that drives the declared COTS SDR.</dd>
+    <dt>ML package</dt><dd><b>V-SIL term.</b> An optional model input to a module, trained with Mock HAL data plus labels or, failing that, Real HW HAL data plus labels. Uncertain: its S2 and G2 integration is future work.</dd>
+    <dt>UC</dt><dd>Compute unit: the machine that runs the system under test.</dd>
+    <dt>Telemetry companion</dt><dd><b>V-SIL term.</b> A process beside each test that records UC state; verification infrastructure, not a module.</dd>
+    <dt>Flowgraph</dt><dd>A GNU Radio signal-processing graph. A <b>hierarchical block</b> groups blocks into one, and here represents a module.</dd>
+  </dl></div>
+  <div class="card"><h4>Testing</h4><dl>
+    <dt>Unit test</dt><dd>Tests one module or base part in isolation.</dd>
+    <dt>Test double</dt><dd>Any stand-in that replaces a production part during a test (Meszaros).</dd>
+    <dt>Stub</dt><dd>A double that gives canned answers to the unit under test.</dd>
+    <dt>Driver</dt><dd>A routine that calls the unit under test and feeds it test cases.</dd>
+    <dt>Fake peer</dt><dd>A working but simplified stand-in for the other service.</dd>
+    <dt>Top-down</dt><dd>Integrates from the base downward, with stubs for missing modules.</dd>
+    <dt>Bottom-up</dt><dd>Integrates from modules upward, with drivers in place of missing callers.</dd>
+    <dt>Sandwich</dt><dd>Hybrid of top-down and bottom-up, so it uses both stubs and drivers.</dd>
+    <dt>Contract test</dt><dd>Checks each side of an integration in isolation against the shared contract.</dd>
+    <dt>Golden vector</dt><dd>A versioned input with its known expected output, used as a benchmark. Changing one invalidates the evidence that used it.</dd>
+    <dt>Evidence record</dt><dd><b>V-SIL term.</b> A test result with its level, environment and UC readings.</dd>
+  </dl></div>
+  <div class="card"><h4>Verification levels</h4><dl>
+    <dt>VL-0 / VL-1 / VL-2</dt><dd><b>V-SIL term.</b> Nested levels: logic, simulated system, real hardware. There is no single standard scale for these.</dd>
+    <dt>Floor</dt><dd>VL-0 for every module, contract and path in every cycle.</dd>
+    <dt>SIL</dt><dd>Software-in-the-loop: the real code runs on a host against a simulated environment.</dd>
+    <dt>PIL</dt><dd>Processor-in-the-loop: the code runs on the target processor with a simulated environment. Not a V-SIL level yet (FW-002).</dd>
+    <dt>HIL</dt><dd>Hardware-in-the-loop: real hardware under test, classically against a real-time simulated plant. VL-2 goes further and uses real RF.</dd>
+    <dt>HAL substitution</dt><dd>Swapping the HAL behind the same port to move between levels.</dd>
+  </dl></div>
+  <div class="card"><h4>Radio and signal processing</h4><dl>
+    <dt>RF / SDR</dt><dd>Radio frequency; software-defined radio, which turns RF into samples for software to process.</dd>
+    <dt>I/Q</dt><dd>In-phase and quadrature samples: one complex number per sample, as in <code>raw_iq</code>.</dd>
+    <dt>MS/s</dt><dd>Million samples per second.</dd>
+    <dt>DSP</dt><dd>Digital signal processing.</dd>
+    <dt>FFT / bin</dt><dd>Fast Fourier transform; a bin is one frequency slot of its output.</dd>
+    <dt>PSD</dt><dd>Power spectral density: signal power per frequency, here averaged over FFTs.</dd>
+    <dt>SNR</dt><dd>Signal-to-noise ratio, in dB.</dd>
+    <dt>P<sub>d</sub> / P<sub>fa</sub></dt><dd>Probability of detecting an occupied channel; probability of calling an idle one occupied. They trade off.</dd>
+    <dt>dBFS</dt><dd>Level relative to digital full scale (0 dBFS). Not an absolute power.</dd>
+    <dt>dBi</dt><dd>Antenna gain relative to an isotropic radiator.</dd>
+    <dt>Screening grade</dt><dd><b>V-SIL term.</b> The development team's own calibration quality: useful for screening, not normative.</dd>
+  </dl></div>
 </div>
+<details class="card">
+  <summary>Sources for these definitions</summary>
+  <ul>
+    <li>Stage-Gate: <a href="https://www.netguru.com/blog/stage-gate-process-guide">Netguru guide</a></li>
+    <li>HITL: <a href="https://nhimg.org/glossary/human-in-the-loop-ai/">NHI glossary</a></li>
+    <li>RFD: <a href="https://ecss-reader.pages.dev/docs/standards/management/ECSS-M-ST-40C">ECSS-M-ST-40C, cl. 3.2 and 5.3.2.6</a></li>
+    <li>Verification and validation: SEBoK, <a href="https://sebokwiki.org/wiki/Verification_(glossary)">verification</a> and <a href="https://sebokwiki.org/wiki/Validation_(glossary)">validation</a></li>
+    <li>Test doubles: <a href="https://martinfowler.com/bliki/TestDouble.html">M. Fowler, "Test Double"</a></li>
+    <li>Integration: <a href="https://vitolavecchia.altervista.org/?p=8451">V. Lavecchia [13]</a>; <a href="https://www.cse.chalmers.se/edu/course.2017/DAT261/_downloads/04-TestingGeneral-2017.pdf">Chalmers course notes</a> (driver)</li>
+    <li>Contract testing: <a href="https://docs.pact.io/">Pact documentation</a></li>
+    <li>SIL, PIL, HIL: <a href="https://www.mathworks.com/discovery/hardware-in-the-loop-hil.html">MathWorks</a>; <a href="https://www.analogictips.com/how-do-mil-sil-pil-and-hil-simulation-and-testing-relate-to-mbse-faq/">Analog IC Tips</a></li>
+    <li>HAL: <a href="https://lenovo.com/us/en/glossary/hardware-abstraction-layer">Lenovo glossary</a>. Golden reference: <a href="https://www.forasoft.com/learn/video-quality/glossary/terms-vqm/golden-reference">Fora Soft glossary</a></li>
+    <li>dBFS: <a href="https://en.wikipedia.org/wiki/DBFS">Wikipedia</a>. dBi: <a href="https://rfessentials.com/resources/rf-glossary/dbi/">RF Essentials</a></li>
+    <li>Other signal-processing terms are textbook usage, with no link here.</li>
+  </ul>
+</details>
 
 <!-- ======================================================================= -->
 <h2 id="overview">2 · Stage-gate overview</h2>
@@ -362,16 +439,18 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
 <p>S0 is a <b>casting</b> step, not a review: it pours the Build Package into the IEEE 29148 [12] blueprints and makes no judgement about sufficiency or scope. Any iteration happens later, at G0.</p>
 <figure>
   <div class="scroll">
-  <svg viewBox="0 0 900 270" role="img" aria-label="Build Package content is cast into StRS and SyRS blueprints">
-    <g class="k-input"><rect class="s" x="20" y="25" width="230" height="220" rx="10"/>
+  <svg viewBox="0 0 900 330" role="img" aria-label="Build Package content, including laboratory procedures, calibration and tolerances, is cast into StRS and SyRS blueprints">
+    <g class="k-input"><rect class="s" x="20" y="25" width="230" height="280" rx="10"/>
       <text class="tb mid" x="135" y="52">Build Package</text></g>
     <g class="k-input"><rect class="s" x="38" y="68" width="194" height="44" rx="6" style="fill:var(--surface-2)"/><text class="t mid" x="135" y="95">Obligations</text></g>
     <g class="k-input"><rect class="s" x="38" y="124" width="194" height="44" rx="6" style="fill:var(--surface-2)"/><text class="t mid" x="135" y="151">COTS constraints</text></g>
     <g class="k-input"><rect class="s" x="38" y="180" width="194" height="44" rx="6" style="fill:var(--surface-2)"/><text class="t mid" x="135" y="201">Stakeholder needs /</text><text class="t mid" x="135" y="216">quality attributes</text></g>
+    <g class="k-input"><rect class="s" x="38" y="236" width="194" height="52" rx="6" style="fill:var(--surface-2)"/><text class="t mid" x="135" y="257">Lab procedures</text><text class="t mid" x="135" y="275">calibration · tolerances</text></g>
 
     <path class="e" d="M232,90 C290,90 290,135 326,135"/>
     <path class="e" d="M232,146 H326"/>
     <path class="e" d="M232,202 C290,202 290,157 326,157"/>
+    <path class="e" d="M232,262 C300,262 300,170 326,170"/>
     <g class="k-proc"><rect class="s" x="330" y="112" width="170" height="68" rx="10"/>
       <text class="tb mid" x="415" y="140">Fill IEEE 29148</text><text class="t mid" x="415" y="160">blueprints</text></g>
     <path class="e" d="M500,135 C550,135 550,75 596,75"/>
@@ -393,7 +472,7 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
     <text class="tl" x="662" y="152">traces to</text>
   </svg>
   </div>
-  <figcaption>Each Build Package ingredient lands in a typed block; <code>SYS-*</code> blocks must trace back to StRS blocks, which G0 checks mechanically. The obligation → <code>NRM-*</code>, COTS → <code>HWC-*</code>, needs → <code>STK-*</code> pairing is the typical mapping.</figcaption>
+  <figcaption>Obligations, COTS constraints and needs land in typed blocks; <code>SYS-*</code> blocks must trace back to StRS blocks, which G0 checks mechanically. The obligation → <code>NRM-*</code>, COTS → <code>HWC-*</code>, needs → <code>STK-*</code> pairing is the typical mapping. The paper assigns no block type to lab procedures, calibration and tolerances; S1's Real HW HAL references them (§5.5).</figcaption>
 </figure>
 
 <!-- ======================================================================= -->
@@ -434,7 +513,7 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
 <h2 id="s1">5 · S1: System of layered services</h2>
 <p>S1 allocates one Ground Truth to one or more services. Each service has its own base and modules. Independently deployed services meet through versioned contracts; a requirement spanning them has a named end-to-end path.</p>
 <h3 id="service-stars">5.1 Two service stars: edge + UI</h3>
-<p>Each star has a local base at its center and modules on its spokes. Select a flow to see which ports cross the service boundary. The two directions are a valid runtime interaction loop; implementation still follows an acyclic order: contracts, service bases, modules, then system integration.</p>
+<p>Each star has a local base at its center and modules on its spokes. Select a flow to see which contract crosses the service boundary, and drag a node to rearrange the graph. The two directions are a valid runtime interaction loop; implementation still follows an acyclic order: contracts, service bases, modules, then system integration.</p>
 <div class="btns" id="star-btns">
   <button type="button" data-star-view="all" aria-pressed="true">Whole system</button>
   <button type="button" data-star-view="telemetry" aria-pressed="false">Telemetry → UI</button>
@@ -442,53 +521,10 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
 </div>
 <button type="button" id="ml-toggle" aria-pressed="false">Show optional ML package</button>
 <figure>
-  <div class="scroll wide">
-  <svg id="stars" viewBox="0 0 1280 460" role="img" aria-label="Two service star graphs: edge base connected to acquisition, DSP, detector and data store; UI base connected to dashboard, controls, alerts and history; versioned telemetry and command contracts connect the services">
-    <rect x="20" y="20" width="535" height="420" rx="16" style="fill:var(--stage-f);stroke:var(--stage-s);stroke-width:2"/>
-    <rect x="725" y="20" width="535" height="420" rx="16" style="fill:var(--proc-f);stroke:var(--proc-s);stroke-width:2"/>
-    <text class="tb" x="42" y="48">SVC-EDGE · COTS SDR</text><text class="ts" x="42" y="67">Own runtime · HAL · processing state</text>
-    <text class="tb" x="747" y="48">SVC-UI · browser / server</text><text class="ts" x="747" y="67">Own runtime · client state · no direct SDR access</text>
-
-    <g class="star-local">
-      <path d="M280,230 L152,125 M290,230 L418,125 M280,270 L152,365 M290,270 L418,365"/>
-      <path d="M990,230 L862,125 M1000,230 L1128,125 M990,270 L862,365 M1000,270 L1128,365"/>
-    </g>
-    <g class="star-flow telemetry" data-flow="telemetry">
-      <path d="M355,240 C470,240 470,193 555,193"/>
-      <path d="M555,193 H715" marker-end="url(#m-green)"/>
-      <path d="M725,193 C810,193 810,240 925,240" marker-end="url(#m-green)"/>
-    </g>
-    <g class="star-flow control" data-flow="control">
-      <path d="M925,262 C810,262 810,305 725,305"/>
-      <path d="M725,305 H565" marker-end="url(#m-amber)"/>
-      <path d="M555,305 C470,305 470,262 355,262" marker-end="url(#m-amber)"/>
-    </g>
-    <text class="tm mid" x="640" y="170" style="fill:var(--gate-t)">occupancy.v1</text>
-    <text class="ts mid" x="640" y="183">timestamp · units · latency</text>
-    <text class="tm mid" x="640" y="337" style="fill:var(--amber-t)">configure.v1</text>
-    <text class="ts mid" x="640" y="352">auth · ack · retry</text>
-
-    <g class="k-stage"><circle class="s" cx="285" cy="250" r="68"/><text class="tb mid" x="285" y="244">EDGE base</text><text class="ts mid" x="285" y="262">HAL · routing</text></g>
-    <g class="k-proc"><circle class="s" cx="995" cy="250" r="68"/><text class="tb mid" x="995" y="244">UI base</text><text class="ts mid" x="995" y="262">API · state</text></g>
-    <g class="k-hal"><rect class="s" x="83" y="100" width="140" height="50" rx="8"/><text class="t mid" x="153" y="130">Acquisition</text></g>
-    <g class="k-dsp"><rect class="s" x="348" y="100" width="140" height="50" rx="8"/><text class="t mid" x="418" y="130">DSP</text></g>
-    <g class="k-dec"><rect class="s" x="83" y="340" width="140" height="50" rx="8"/><text class="t mid" x="153" y="370">Detector</text></g>
-    <g class="k-out"><rect class="s" x="348" y="340" width="140" height="50" rx="8"/><text class="t mid" x="418" y="370">Data store</text></g>
-    <g class="k-out"><rect class="s" x="793" y="100" width="140" height="50" rx="8"/><text class="t mid" x="863" y="130">Dashboard</text></g>
-    <g class="k-amber"><rect class="s" x="1058" y="100" width="140" height="50" rx="8"/><text class="t mid" x="1128" y="130">Controls</text></g>
-    <g class="k-proc"><rect class="s" x="793" y="340" width="140" height="50" rx="8"/><text class="t mid" x="863" y="370">Alerts</text></g>
-    <g class="k-proc"><rect class="s" x="1058" y="340" width="140" height="50" rx="8"/><text class="t mid" x="1128" y="370">History</text></g>
-    <g id="ml-asset" class="k-stub">
-      <path d="M240,414 L224,378"/>
-      <rect class="s" x="240" y="399" width="160" height="34" rx="7"/>
-      <text class="tm mid" x="320" y="420" style="fill:var(--stub-t)">ML package · optional</text>
-    </g>
-    <text class="ts mid" x="640" y="426">SYS-002: edge measurement → occupancy.v1 → dashboard · one end-to-end claim</text>
-  </svg>
-  </div>
-  <figcaption>Each center is a service-specific base with selected module spokes. The arrows between stars are service contracts, with independent failure and version behavior.</figcaption>
+  <div id="stars" role="img" aria-label="Two service spider graphs in the S1 graph style: SVC-EDGE base connected to iq_acquisition, fft_engine, feature_extractor, classifier, audio_demod and data_store, with HWC-001 HackRF feeding iq_acquisition; SVC-UI base connected to dashboard, controls, alerts and history; occupancy.v1 runs from edge to UI and configure.v1 from UI to edge"></div>
+  <figcaption>The same graph style S1 delivers as <code>S1_graph.html</code>. Purple is a service base, red is hardware and service contracts, and the other colours mark a module's functional layer. SVC-EDGE owns the runtime, HAL and processing state on the COTS SDR host; SVC-UI owns client state and has no direct SDR access. <code>SYS-002</code> is one end-to-end claim: edge measurement → <code>occupancy.v1</code> → dashboard.</figcaption>
   <div class="card" id="star-card" aria-live="polite"></div>
-  <div class="card" id="ml-card" aria-live="polite">The detector uses no ML package in this example. S1 omits the model box and G1 omits its conditional check.</div>
+  <div class="card" id="ml-card" aria-live="polite">The classifier uses no ML package in this example. S1 omits the model box and G1 omits its conditional check.</div>
 </figure>
 
 <h3>5.2 Layered architecture inside each service</h3>
@@ -674,11 +710,12 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
   <thead><tr><th>Flowgraph concept</th><th>V-SIL S1 artefact</th></tr></thead>
   <tbody>
     <tr><td>Top block + GNU Radio scheduler</td><td>Base layer: orchestration</td></tr>
-    <tr><td>Osmocom Source wrapped behind one output port</td><td>Base layer: HAL (the only place that touches the HackRF)</td></tr>
+    <tr><td>Osmocom Source wrapped behind one output port</td><td>Base layer: Real HW HAL (the only place that touches the HackRF)</td></tr>
     <tr><td>One output port feeding two branches (<code>raw_iq</code> fan-out)</td><td>Base layer: data routing</td></tr>
     <tr><td>Hierarchical block (a shaded zone)</td><td>Module, with its verification profile</td></tr>
     <tr><td>Port type, vector length, sample rate on a crossing wire</td><td>Interface contract (type, schema version, units, latency)</td></tr>
-    <tr><td><code>Vector Source</code> / <code>File Source</code> feeding a hier block's input</td><td>Stub or mock used in S2 and VL-1 (see §7 and §8)</td></tr>
+    <tr><td><code>Vector Source</code> / <code>File Source</code> feeding a hier block's input</td><td>Stub used in S2 (see §7)</td></tr>
+    <tr><td><code>Vector Source</code> / <code>File Source</code> in place of the Osmocom Source</td><td>Mock HAL at VL-0 and VL-1, on the same base-layer port (see §5.5 and §8)</td></tr>
     <tr><td><code>gr_unittest</code> QA test per block</td><td>Unit test (VL-0 floor)</td></tr>
   </tbody>
 </table>
@@ -727,11 +764,49 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
 </div>
 
 <h3 id="ml-box">5.4 Optional supplied ML model</h3>
-<p>When a design chooses ML, the model is a supplied, already trained input to a module. S1 records weights and hash, inference inputs and outputs, preprocessing, performance metadata with its evaluation conditions, and COTS resource budgets. G1 checks that this package is ready to implement. G2 measures the actual model in the integrated system; supplied performance figures are prior evidence. The star toggle above shows an illustrative alternative; the terminal example below uses no ML model.</p>
+<p><b>Status: uncertain.</b> This version defines the model only as an optional S1 input and a G1 readiness check; its connection to S2 and G2 is future work (FW-005). When a design chooses ML, the model is an optional input to a module. It is trained with <b>Mock HAL data plus labelling</b> or, failing that, with <b>Real HW HAL data plus labelling</b>. S1 records weights and hash, training data source and labelling, inference inputs and outputs, preprocessing, performance metadata with its evaluation conditions, and COTS resource budgets. G1 checks that this package is ready to implement. G2 measures the actual model in the integrated system; supplied performance figures are prior evidence. Automating this lifecycle with MLOps is future work (FW-005). The star toggle above shows an illustrative alternative; the terminal example below uses no ML model.</p>
+
+<h3 id="hal-ladder">5.5 HAL substitution ladder and telemetry companion</h3>
+<p>S1 designs two HAL implementations behind one base-layer interface contract. They differ only in what produces <code>raw_iq</code>; swapping them is the <b>HAL substitution</b> that moves between verification levels [11]. S1 also specifies a <b>telemetry companion</b> that runs beside every test. <b>Pick a level</b> to see what feeds the port.</p>
+<div class="btns" id="hal-btns">
+  <button type="button" data-hal="v0" aria-pressed="true">VL-0 · Mock HAL</button>
+  <button type="button" data-hal="v1" aria-pressed="false">VL-1 · Mock HAL</button>
+  <button type="button" data-hal="v2" aria-pressed="false">VL-2 · Real HW HAL</button>
+</div>
+<figure>
+  <div class="scroll">
+  <svg id="hal" viewBox="0 0 1000 390" role="img" aria-label="Mock HAL and Real HW HAL plug into the same base-layer port that feeds the system under test; a telemetry companion reads compute-unit state and attaches it to each evidence record">
+    <rect class="zone" x="20" y="20" width="330" height="170" style="fill:color-mix(in srgb,var(--amber-f) 45%,transparent);stroke:var(--amber-s)"/>
+    <text class="tb" x="36" y="44" style="fill:var(--amber-t)">Mock HAL</text>
+    <text class="ts" x="36" y="60">software-only · default source for sandwich and SIL tests</text>
+    <g id="hal-v0" class="k-gate"><rect class="s" x="36" y="72" width="298" height="48" rx="6"/><text class="t mid" x="185" y="92">VL-0 · deterministic vectors</text><text class="ts mid" x="185" y="110" style="fill:var(--gate-t)">short · repeatable · edge-case coverage</text></g>
+    <g id="hal-v1" class="k-amber"><rect class="s" x="36" y="128" width="298" height="48" rx="6"/><text class="t mid" x="185" y="148">VL-1 · synthetic I/Q</text><text class="ts mid" x="185" y="166" style="fill:var(--amber-t)">known SNR · modulation · channel conditions</text></g>
+    <g id="hal-v2" class="k-rfd"><rect class="s" x="20" y="206" width="330" height="72" rx="8"/><text class="tb mid" x="185" y="230">Real HW HAL</text><text class="t mid" x="185" y="249">VL-2 · declared COTS SDR</text><text class="ts mid" x="185" y="267" style="fill:var(--rfd-t)">real lab datasets + final field tests</text></g>
+    <g id="hal-bp" class="k-input"><rect class="s" x="20" y="306" width="330" height="56" rx="8"/><text class="tb mid" x="185" y="329">Build Package</text><text class="ts mid" x="185" y="349" style="fill:var(--input-t)">lab procedures · calibration grade · tolerances</text></g>
+    <path id="e-hal-bp" class="e" d="M185,306 V282"/>
+
+    <path id="e-hal-v0" class="e" d="M334,96 C390,96 390,145 436,145"/>
+    <path id="e-hal-v1" class="e" d="M334,152 C380,152 390,163 436,163"/>
+    <path id="e-hal-v2" class="e" d="M350,242 C395,242 395,181 436,181"/>
+    <g class="k-stage"><rect class="s" x="440" y="118" width="170" height="90" rx="8"/><text class="tb mid" x="525" y="144">Base-layer port</text><text class="tm mid" x="525" y="164" style="fill:var(--stage-t)">raw_iq</text><text class="ts mid" x="525" y="186" style="fill:var(--stage-t)">same interface contract</text></g>
+    <path class="e" d="M610,163 H686"/>
+    <g class="k-stage"><rect class="s" x="690" y="118" width="290" height="90" rx="8"/><text class="tb mid" x="835" y="152">Base + modules</text><text class="ts mid" x="835" y="174" style="fill:var(--stage-t)">system under test</text></g>
+
+    <path class="e dash" d="M715,208 V246"/><text class="tl" x="723" y="232">reads UC state</text>
+    <path class="e" d="M890,208 V264"/><text class="tl" x="898" y="240">test result</text>
+    <g class="k-proc"><rect class="s" x="440" y="250" width="300" height="102" rx="8"/><text class="tb mid" x="590" y="274">Telemetry companion</text><text class="t mid" x="590" y="294">beside every test, at every level</text><text class="ts mid" x="590" y="314" style="fill:var(--proc-t)">CPU · memory · temperature · dropped buffers</text><text class="ts mid" x="590" y="332" style="fill:var(--proc-t)">scheduling latency · footprint declared, bounded</text></g>
+    <path class="e" d="M740,301 H796"/>
+    <g class="k-gate"><rect class="s" x="800" y="268" width="180" height="66" rx="8"/><text class="tb mid" x="890" y="292">Evidence record</text><text class="ts mid" x="890" y="310" style="fill:var(--gate-t)">result + UC readings</text><text class="ts mid" x="890" y="325" style="fill:var(--gate-t)">outside envelope → flagged</text></g>
+    <text class="ts" x="440" y="376">Verification infrastructure, not a system module: no SYS-*, not in the implementation DAG.</text>
+  </svg>
+  </div>
+  <div class="card" id="hal-card" aria-live="polite"></div>
+  <figcaption>Calibration grade and tolerances are inputs from the Build Package, not claims of V-SIL. The companion lets G2 determine whether the compute unit (UC) was within its operating envelope during each test.</figcaption>
+</figure>
 
 <!-- ======================================================================= -->
 <h2 id="g1">6 · G1: Service, dependency, and contract validation</h2>
-<p>G1 asks: <i>are all implementation-critical design choices resolved?</i> The five core checks remain. Two system checks cover service boundaries and end-to-end requirements. The S1/G1 template expands these families into ten general review items and one conditional ML item. A runtime message loop is reviewed as a protocol; only the implementation dependency graph must be acyclic.</p>
+<p>G1 asks: <i>are all implementation-critical design choices resolved?</i> The five core checks remain. Two system checks cover service boundaries and end-to-end requirements; two more cover the HAL substitution ladder and the telemetry companion. The S1/G1 template expands these families into twelve general review items and one conditional ML item. A runtime message loop is reviewed as a protocol; only the implementation dependency graph must be acyclic.</p>
 <div class="grid">
   <div class="card"><h4>1 · DAG acyclicity</h4>
     <svg viewBox="0 0 240 92" role="img" aria-label="A cycle between two modules fails">
@@ -774,8 +849,10 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
     </svg>
     <p class="note">Hardware-dependent modules must be planned for HIL.</p></div>
   <div class="card"><h4>6 · Service boundary</h4><p>Every service has a deployment target, state owner, and ports. Every runtime exchange has a versioned contract with timeouts, retries, and disconnect behavior.</p><p class="note">Edge telemetry and UI commands may form a runtime loop. Their implementation order still starts with the contracts.</p></div>
-  <div class="card"><h4>7 · End-to-end coverage</h4><p>A cross-service <code>SYS-*</code> names a path, an acceptance owner, a measurable budget, and a verification environment.</p><p class="note"><code>SYS-002</code>: detector → <code>occupancy.v1</code> → dashboard.</p></div>
-  <div class="card"><h4>Optional · supplied ML package</h4><p>When a module uses ML, G1 checks the supplied weights, identity, inference contract, evaluation metadata and COTS budget.</p><p class="note">No ML module → no model box or ML check. Missing required package → FAIL; demonstrated COTS infeasibility → RFD.</p></div>
+  <div class="card"><h4>7 · End-to-end coverage</h4><p>A cross-service <code>SYS-*</code> names a path, an acceptance owner, a measurable budget, and a verification environment.</p><p class="note"><code>SYS-002</code>: classifier → <code>occupancy.v1</code> → dashboard.</p></div>
+  <div class="card"><h4>8 · HAL substitution ladder</h4><p>Mock HAL and Real HW HAL expose the same base-layer interface. Golden vectors carry digest, generation parameters, and expected outputs.</p><p class="note">The Real HW HAL references the Build Package's laboratory procedures, calibration grade, and tolerances.</p></div>
+  <div class="card"><h4>9 · Telemetry companion</h4><p>The spec declares what it monitors, its sampling interval, and its resource budget.</p><p class="note">Its footprint is bounded below a declared threshold, so it cannot disturb the system under test.</p></div>
+  <div class="card"><h4>Optional · supplied ML package</h4><p>When a module uses ML, G1 checks the weights, identity, training data source and labelling, inference contract, evaluation metadata and COTS budget.</p><p class="note">No ML module → no model box or ML check. Missing required package → FAIL; demonstrated COTS infeasibility → RFD.</p></div>
   <div class="card" style="display:flex;flex-direction:column;justify-content:center;text-align:center">
     <p style="margin:0"><b style="color:var(--gate-s)">PASS</b> → S2 &nbsp;·&nbsp; <b style="color:var(--amber-s)">FAIL</b> → S1 &nbsp;·&nbsp; <b style="color:var(--rfd-s)">RFD</b> if infeasible</p>
     <p class="note">G1 is a human (HITL) design review, not a deterministic gate. An agent may prepare it and recommend a verdict, including an RFD; the human decides.</p></div>
@@ -784,7 +861,7 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
 <!-- ======================================================================= -->
 <h2 id="s2">7 · S2: Per-service implementation and system integration</h2>
 <p>Each service builds its base first and proves it <b>top-down</b> against stubs. It then replaces stubs one at a time, in DAG order, proving each module <b>bottom-up</b> with a driver. The stepper shows SVC-EDGE. Once both services pass locally, producer and consumer contract tests and connected-service path tests complete VL-0. <b>Step through it.</b></p>
-<p>If an ML module exists, S2 builds its inference adapter against a deterministic fake response for VL-0 integration, then uses the identified model weights for tests that claim model behavior.</p>
+<p><i>Future work (FW-005).</i> If an ML module exists, S2 builds its inference adapter against a deterministic fake response for VL-0 integration, then uses the identified model weights for tests that claim model behavior.</p>
 <div class="btns">
   <button type="button" id="s2-prev">◀ Previous</button>
   <button type="button" id="s2-next">Next ▶</button>
@@ -808,17 +885,32 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
     <tr><td><b>Each module</b></td><td>Unit test + bottom-up integration with driver</td></tr>
     <tr><td><b>Each service contract</b></td><td>Producer and consumer tests with fake peers, including version and failure cases</td></tr>
     <tr><td><b>Each cross-service SYS-* path</b></td><td>Connected service processes with deterministic simulated external inputs</td></tr>
+    <tr><td><b>Telemetry companion</b></td><td>Running and recording during all tests above; UC state attached to every evidence record</td></tr>
   </tbody>
 </table>
 </div>
 
+<h3 id="data-sources">Data sources by verification level</h3>
+<p>The HAL substitution ladder (§5.5) determines what feeds the pipeline at each level. The telemetry companion runs during every test at every level.</p>
+<div class="tablewrap card">
+<table>
+  <thead><tr><th>Level</th><th>Data source</th><th>HAL used</th><th>Telemetry companion</th></tr></thead>
+  <tbody>
+    <tr><td><span class="badge b0">VL-0</span></td><td>Deterministic golden vectors (short, repeatable, edge-case)</td><td>Mock HAL</td><td>Records UC state; attached to evidence</td></tr>
+    <tr><td><span class="badge b1">VL-1</span></td><td>Synthetic I/Q at known SNR, modulation, channel conditions</td><td>Mock HAL</td><td>Records UC state; attached to evidence</td></tr>
+    <tr><td><span class="badge b2">VL-2</span></td><td>Real RF via COTS SDR; datasets generated following Build Package lab procedures with declared calibration and tolerances</td><td>Real HW HAL</td><td>Records UC state; attached to evidence</td></tr>
+  </tbody>
+</table>
+</div>
+<div class="card"><h4>Golden vector governance</h4>Each golden vector or synthetic capture used by the Mock HAL is a controlled artefact: unique identifier, SHA-256 digest, generation parameters, the condition it simulates (nominal, edge-case, degraded), and the expected output at the consuming module's contract. <b>Changing a vector invalidates every evidence record that used it.</b> The set is versioned alongside the source code.</div>
+
 <!-- ======================================================================= -->
 <h2 id="g2">8 · G2: Adaptive verification gate</h2>
 <h3>8.1 Verification levels nest</h3>
-<p>Each level contains every test of the levels below it. In the FM flowgraph, moving up a level means swapping what feeds <code>raw_iq</code>: the HAL substitution ladder mock → SIL → HIL [11].</p>
+<p>Each level contains every test of the levels below it. In the FM flowgraph, moving up a level means swapping what feeds <code>raw_iq</code>: the HAL substitution ladder mock → SIL → HIL [11], with the Mock HAL at VL-0 and VL-1 and the Real HW HAL at VL-2. The telemetry companion runs at every level.</p>
 <figure>
   <div class="scroll">
-  <svg viewBox="0 0 900 290" role="img" aria-label="VL-2 contains VL-1 which contains VL-0, with the source block used at each level">
+  <svg viewBox="0 0 900 330" role="img" aria-label="VL-2 contains VL-1 which contains VL-0, with the HAL and source block used at each level; the telemetry companion spans all levels">
     <rect x="20" y="20" width="560" height="250" rx="14" style="fill:var(--rfd-f);stroke:var(--rfd-s);stroke-width:1.6;stroke-dasharray:6 4"/>
     <text class="tb" x="38" y="46" style="fill:var(--rfd-t)">VL-2 · HIL</text><text class="ts" x="38" y="64" style="fill:var(--rfd-t)">+ hardware-in-the-loop · real HW · real RF · optional</text>
     <rect x="50" y="80" width="500" height="170" rx="12" style="fill:var(--amber-f);stroke:var(--amber-s);stroke-width:1.6;stroke-dasharray:6 4"/>
@@ -829,25 +921,26 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
 
     <text class="tl" x="610" y="40">What feeds raw_iq at each level</text>
     <g class="grc">
-      <rect class="blk" x="610" y="54" width="270" height="56" rx="6" style="stroke:var(--rfd-s)"/><text class="bt" x="622" y="76">Osmocom Source</text><text class="bp" x="622" y="96">HackRF One · live 88–108 MHz</text>
-      <rect class="blk" x="610" y="124" width="270" height="56" rx="6" style="stroke:var(--amber-s)"/><text class="bt" x="622" y="146">File Source / FM-mod synth</text><text class="bp" x="622" y="166">golden I/Q at known SNR</text>
-      <rect class="blk" x="610" y="194" width="270" height="56" rx="6" style="stroke:var(--gate-s)"/><text class="bt" x="622" y="216">Vector Source</text><text class="bp" x="622" y="236">short deterministic vectors</text>
+      <rect class="blk" x="610" y="54" width="270" height="56" rx="6" style="stroke:var(--rfd-s)"/><text class="bt" x="622" y="76">Real HW HAL · Osmocom Source</text><text class="bp" x="622" y="96">HackRF One · live 88–108 MHz</text>
+      <rect class="blk" x="610" y="124" width="270" height="56" rx="6" style="stroke:var(--amber-s)"/><text class="bt" x="622" y="146">Mock HAL · File Source / FM synth</text><text class="bp" x="622" y="166">golden I/Q at known SNR</text>
+      <rect class="blk" x="610" y="194" width="270" height="56" rx="6" style="stroke:var(--gate-s)"/><text class="bt" x="622" y="216">Mock HAL · Vector Source</text><text class="bp" x="622" y="236">short deterministic vectors</text>
     </g>
     <path class="e noarrow" d="M580,82 H606" style="stroke:var(--rfd-s)"/><path class="e noarrow" d="M550,152 H606" style="stroke:var(--amber-s)"/><path class="e noarrow" d="M520,222 H606" style="stroke:var(--gate-s)"/>
+    <g class="k-proc"><rect class="s" x="20" y="284" width="860" height="34" rx="8"/><text class="t mid" x="450" y="306">Telemetry companion · every level · UC state attached to every evidence record</text></g>
   </svg>
   </div>
 </figure>
 
 <h3>8.2 Adaptive rule: pick a scenario</h3>
-<p>The user chooses a level <b>per module and system path, per cycle</b>. The floor covers every module, service contract, and cross-service path at VL-0. Evidence may claim only the environment tested. The matrix shows module choices; the edge → UI path has its own S1 <code>required_vl</code> and evidence.</p>
-<p>For an ML module, G2 measures the supplied model in the implemented system at the declared level. Performance metadata received in S1 informs the tests; it does not supply the G2 verdict.</p>
+<p>The user chooses a level <b>per module and system path, per cycle</b>. The floor covers every module, service contract, and cross-service path at VL-0. Evidence may claim only the environment tested. Every evidence record includes the companion's readings; evidence produced while the UC was outside its declared operating envelope is flagged and may be invalidated by the reviewer. The matrix shows module choices; the edge → UI path has its own S1 <code>required_vl</code> and evidence.</p>
+<p><i>Future work (FW-005).</i> For an ML module, G2 measures the supplied model in the implemented system at the declared level. Performance metadata received in S1 informs the tests; it does not supply the G2 verdict.</p>
 <div class="btns" id="scen-btns"></div>
 <figure>
   <div class="vl-matrix" id="vlm" aria-live="polite"></div>
   <div class="subgates" id="subgates">
-    <div data-sg="0"><b>G2.0</b> always · unit + sandwich + service contracts + deterministic paths</div>
-    <div data-sg="1"><b>G2.1</b> VL-1+ declared · Mock/SIL across affected services, metrics within thresholds</div>
-    <div data-sg="2"><b>G2.2</b> VL-2 declared · HIL on real COTS; representative link for a system path</div>
+    <div data-sg="0"><b>G2.0</b> always · unit + sandwich + service contracts + deterministic paths · Mock HAL golden vectors · companion confirms UC nominal</div>
+    <div data-sg="1"><b>G2.1</b> VL-1+ declared · Mock HAL synthetic I/Q · Mock/SIL across affected services, metrics within thresholds · companion confirms UC nominal</div>
+    <div data-sg="2"><b>G2.2</b> VL-2 declared · Real HW HAL on COTS SDR · datasets from Build Package lab procedures with declared calibration and tolerances; representative link for a system path · companion confirms UC nominal</div>
   </div>
   <div class="card" id="scen-card"></div>
 </figure>
@@ -923,18 +1016,23 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
 <h2 id="terminal">10 · Terminal output: the Verified Prototype</h2>
 <p>The deliverable lists evidence by module and by cross-service path, with the environment behind each claim (P4). Cycle <code>pre_release_01</code>, RFDs issued: <b>0</b>.</p>
 <div class="evid">
-  <div class="ev v2"><span class="mono">iq_acquisition</span><span class="badge b2">VL-2 HIL</span><br><span class="note">HackRF One, FM 88–108 MHz</span><br><b style="color:var(--rfd-s)">VALIDATED</b> on real hardware</div>
-  <div class="ev v1"><span class="mono">fft_engine</span><span class="badge b1">VL-1 SIL</span><br><span class="note">GNU Radio mock, golden I/Q</span><br><b style="color:var(--amber-s)">VERIFIED</b> against synthetic data</div>
-  <div class="ev v1"><span class="mono">feature_extractor</span><span class="badge b1">VL-1 SIL</span><br><span class="note">synthetic PSD at known SNR</span><br><b style="color:var(--amber-s)">VERIFIED</b> against synthetic data</div>
-  <div class="ev v1"><span class="mono">audio_demod</span><span class="badge b1">VL-1 SIL</span><br><span class="note">synthetic FM-modulated I/Q</span><br><b style="color:var(--amber-s)">VERIFIED</b> against synthetic data</div>
-  <div class="ev v0"><span class="mono">classifier</span><span class="badge b0">VL-0 logic</span><br><span class="note">unit + sandwich integration</span><br><b style="color:var(--gate-s)">VERIFIED</b> at logic level only</div>
-  <div class="ev v0"><span class="mono">data_store</span><span class="badge b0">VL-0 logic</span><br><span class="note">unit + sandwich integration</span><br><b style="color:var(--gate-s)">VERIFIED</b> at logic level only</div>
+  <div class="ev v2"><span class="mono">iq_acquisition</span><span class="badge b2">VL-2 HIL</span><br><span class="note">Real HW HAL, HackRF One, FM 88–108 MHz</span><br><b style="color:var(--rfd-s)">VALIDATED</b> on real hardware</div>
+  <div class="ev v1"><span class="mono">fft_engine</span><span class="badge b1">VL-1 SIL</span><br><span class="note">Mock HAL, golden I/Q (vectors v1.2, SHA bc3f…)</span><br><b style="color:var(--amber-s)">VERIFIED</b> against synthetic data</div>
+  <div class="ev v1"><span class="mono">feature_extractor</span><span class="badge b1">VL-1 SIL</span><br><span class="note">Mock HAL, synthetic PSD at known SNR</span><br><b style="color:var(--amber-s)">VERIFIED</b> against synthetic data</div>
+  <div class="ev v1"><span class="mono">audio_demod</span><span class="badge b1">VL-1 SIL</span><br><span class="note">Mock HAL, synthetic FM-modulated I/Q</span><br><b style="color:var(--amber-s)">VERIFIED</b> against synthetic data</div>
+  <div class="ev v0"><span class="mono">classifier</span><span class="badge b0">VL-0 logic</span><br><span class="note">Mock HAL, deterministic vectors</span><br><b style="color:var(--gate-s)">VERIFIED</b> at logic level only</div>
+  <div class="ev v0"><span class="mono">data_store</span><span class="badge b0">VL-0 logic</span><br><span class="note">Mock HAL, deterministic vectors</span><br><b style="color:var(--gate-s)">VERIFIED</b> at logic level only</div>
   <div class="ev v1"><span class="mono">dashboard · UI</span><span class="badge b1">VL-1 SIL</span><br><span class="note">edge messages on simulated link</span><br><b style="color:var(--amber-s)">VERIFIED</b> against simulated data</div>
   <div class="ev v0"><span class="mono">controls · UI</span><span class="badge b0">VL-0 logic</span><br><span class="note">command and acknowledgement vectors</span><br><b style="color:var(--gate-s)">VERIFIED</b> at logic level</div>
   <div class="ev v0"><span class="mono">alerts · UI</span><span class="badge b0">VL-0 logic</span><br><span class="note">unit + sandwich integration</span><br><b style="color:var(--gate-s)">VERIFIED</b> at logic level</div>
   <div class="ev v0"><span class="mono">history · UI</span><span class="badge b0">VL-0 logic</span><br><span class="note">unit + sandwich integration</span><br><b style="color:var(--gate-s)">VERIFIED</b> at logic level</div>
-  <div class="ev v1"><span class="mono">PATH-001 · edge → UI</span><span class="badge b1">VL-1 SIL</span><br><span class="note">SYS-002 occupancy display, connected services, synthetic RF and simulated link</span><br><b style="color:var(--amber-s)">VERIFIED</b> end to end in that environment</div>
+  <div class="ev v1"><span class="mono">PATH-001 · edge → UI</span><span class="badge b1">VL-1 SIL</span><br><span class="note">SYS-002 occupancy display, connected services, Mock HAL synthetic RF and simulated link</span><br><b style="color:var(--amber-s)">VERIFIED</b> end to end in that environment</div>
   <div class="ev v0"><span class="mono">configure.v1 · UI → edge</span><span class="badge b0">VL-0 logic</span><br><span class="note">schema, authorization, retry and duplicate-command tests with fake peers</span><br><b style="color:var(--gate-s)">VERIFIED</b> at contract level only</div>
+</div>
+
+<div class="grid" style="margin-top:.7rem">
+  <div class="card"><h4>Telemetry companion report</h4>All tests: UC within operating envelope.<br><span class="mono">CPU peak 63% · Temp peak 68 °C · Dropped buffers 0</span><br><span class="note">No evidence invalidated by UC conditions. The companion is not listed above because it is verification infrastructure, not a module.</span></div>
+  <div class="card"><h4>Honesty declaration</h4><b>VL-2:</b> validated on real hardware (Real HW HAL); calibration at screening grade per Build Package; tolerances ±2.1 dBi declared by the development team.<br><b>VL-1:</b> verified against synthetic data (Mock HAL).<br><b>VL-0:</b> verified at logic level only.<br><b>SYS-002:</b> verified across connected services with synthetic input; no real-link or HIL latency claim.</div>
 </div>
 
 <h3 id="future-work">10.1 Optional future work register</h3>
@@ -947,6 +1045,46 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
     <dt>Decision owner</dt><dd>Build Package author</dd>
     <dt>Dependency</dt><dd>Stable test commands and report format</dd>
     <dt>Proposed acceptance</dt><dd>A future pipeline reproduces declared G2 checks and links reports to the cycle and source revision</dd>
+  </dl>
+</details>
+<details class="card">
+  <summary>Example FW-002 · Processor-in-the-Loop (PIL) as intermediate level</summary>
+  <dl>
+    <dt>Category</dt><dd>Verification depth for a later software release</dd>
+    <dt>Origin</dt><dd>SOTA review; when UC ≠ development host, compiled code on the target processor may behave differently under timing constraints</dd>
+    <dt>Decision owner</dt><dd>Build Package author</dd>
+    <dt>Dependency</dt><dd>Target UC identified and accessible for cross-compilation</dd>
+    <dt>Proposed acceptance</dt><dd>PIL level defined between VL-1 and VL-2 with timing and scheduling checks on the target processor</dd>
+  </dl>
+</details>
+<details class="card">
+  <summary>Example FW-003 · Formal fault injection at VL-2</summary>
+  <dl>
+    <dt>Category</dt><dd>Verification depth for a later software release</dd>
+    <dt>Origin</dt><dd>SOTA review (ISO 26262-5 §10; IEC 61508-3 Table A.5); current VL-2 tests nominal operation only</dd>
+    <dt>Decision owner</dt><dd>Build Package author</dd>
+    <dt>Dependency</dt><dd>Fault scenarios defined per module (USB disconnect, buffer overflow, SDR clock drift, UC power glitch)</dd>
+    <dt>Proposed acceptance</dt><dd>Declared fault scenarios executed at VL-2; system response documented per scenario</dd>
+  </dl>
+</details>
+<details class="card">
+  <summary>Example FW-004 · SIL ↔ HIL correlation measurement</summary>
+  <dl>
+    <dt>Category</dt><dd>Verification confidence for a later software release</dd>
+    <dt>Origin</dt><dd>SOTA review; VL-1 and VL-2 results are reported independently with no measured correlation between them</dd>
+    <dt>Decision owner</dt><dd>Build Package author</dd>
+    <dt>Dependency</dt><dd>Both VL-1 and VL-2 executed for the same modules</dd>
+    <dt>Proposed acceptance</dt><dd>Quantified deviation between Mock HAL and Real HW HAL results for overlapping test cases</dd>
+  </dl>
+</details>
+<details class="card">
+  <summary>Example FW-005 · MLOps for the optional ML model</summary>
+  <dl>
+    <dt>Category</dt><dd>Model lifecycle for a later software release</dd>
+    <dt>Origin</dt><dd>The optional ML model is trained and labelled outside any automated pipeline, and its S2 and G2 integration is not implemented yet</dd>
+    <dt>Decision owner</dt><dd>Build Package author</dd>
+    <dt>Dependency</dt><dd>Versioned Mock HAL or Real HW HAL datasets and a declared labelling procedure</dd>
+    <dt>Proposed acceptance</dt><dd>A pipeline reproduces training from versioned data and labels and links each model version to its G2 evidence</dd>
   </dl>
 </details>
 <p class="note" style="margin-top:1rem">Source: <code>methodology/V-SIL-v3/V-SIL_v3.md</code> (3.0-draft, October 2026). References [n] refer to that paper's list.</p>
@@ -977,14 +1115,14 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
 
   // ---- §2 overview ----------------------------------------------------
   const INFO = {
-    BP: ["Build Package", "Input, owned outside V-SIL", "PRD with measurable constraints, COTS hardware envelope, acceptance criteria.", "—", "Its author", "→ S0. Receives RFDs and returns an updated Build Package."],
+    BP: ["Build Package", "Input, owned outside V-SIL", "PRD with measurable constraints, COTS hardware envelope, acceptance criteria, laboratory procedures, hardware calibration at the development team's screening grade, tolerances.", "—", "Its author", "→ S0. Receives RFDs and returns an updated Build Package."],
     S0: ["S0 · Normalisation + GT", "Stage", "Build Package", "G0_StRS.md (§9.4: NRM-*, HWC-*, STK-*) and G0_SyRS.md (§9.5: SYS-*)", "Fills IEEE 29148 blueprints; makes no judgement on sufficiency or scope", "→ G0"],
     G0: ["G0 · Structural validation", "Gate", "StRS + SyRS", "Exit code 0 or 1", "g0_validate.py (deterministic, stdlib-only, no AI), then human Gate H", "PASS + Gate H → S1 · FAIL → S0 (edit GT)"],
-    S1: ["S1 · System of layered services", "Stage", "G0-validated GT; supplied ML model only if used", "Service topology, per-service bases and modules, implementation DAG, runtime graph, versioned contracts, system paths, optional model integration", "Design work (see §5)", "→ G1 · infeasible → RFD"],
-    G1: ["G1 · Service + contract validation", "Gate", "The S1 design", "PASS / FAIL / RFD on local and system checks; conditional ML readiness check", "Human design review (HITL); an agent may prepare it and recommend", "PASS → S2 · FAIL → S1 · infeasible → RFD"],
-    S2: ["S2 · Per-service implementation", "Stage", "G1-validated design", "Service bases, modules in DAG order, fake peers, cross-service contracts and connected paths", "Implementation work (see §7)", "→ G2"],
-    G2: ["G2 · Adaptive verification", "Gate", "Implemented services + declared VL per module and path", "Module and end-to-end evidence", "Sub-gates G2.0 (always), G2.1 (VL-1+), G2.2 (VL-2)", "PASS → Verified Prototype · design defect → S1 · module defect → S2 · infeasible → RFD"],
-    T: ["Verified Prototype", "Terminal output", "G2 PASS", "Per-module and system-path evidence, honesty declaration, optional future work register (see §10)", "—", "Delivered"],
+    S1: ["S1 · System of layered services", "Stage", "G0-validated GT; supplied ML model only if used", "Service topology, per-service bases and modules, implementation DAG, runtime graph, versioned contracts, system paths, Mock HAL + Real HW HAL, telemetry companion, optional model integration", "Design work (see §5)", "→ G1 · infeasible → RFD"],
+    G1: ["G1 · Service + contract validation", "Gate", "The S1 design", "PASS / FAIL / RFD on local and system checks, HAL ladder and telemetry companion; conditional ML readiness check", "Human design review (HITL); an agent may prepare it and recommend", "PASS → S2 · FAIL → S1 · infeasible → RFD"],
+    S2: ["S2 · Per-service implementation", "Stage", "G1-validated design", "Service bases, modules in DAG order, fake peers, cross-service contracts and connected paths, versioned golden vectors", "Implementation work (see §7)", "→ G2"],
+    G2: ["G2 · Adaptive verification", "Gate", "Implemented services + declared VL per module and path", "Module and end-to-end evidence, each record with the companion's UC readings", "Sub-gates G2.0 (always), G2.1 (VL-1+), G2.2 (VL-2)", "PASS → Verified Prototype · design defect → S1 · module defect → S2 · infeasible → RFD"],
+    T: ["Verified Prototype", "Terminal output", "G2 PASS", "Per-module and system-path evidence, telemetry companion report, honesty declaration, optional future work register (see §10)", "—", "Delivered"],
     RFD: ["Request for Deviation", "External feedback", "Evidence that requirements are infeasible on the declared COTS platform", "Conflicting requirements, evidence with VL, trade-off options, impact analysis, recommendation", "Emitted from S1, G1 or G2; V-SIL suspends", "→ Build Package author → updated Build Package → S0"],
   };
   const ovCard = $("#ov-card");
@@ -1019,29 +1157,130 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
   $("#g0-fail").classList.add("dim"); $("#g0-failbox").classList.add("dim");
 
   // ---- §5 two service stars -------------------------------------------
+  // Same data shape and rendering as the S1 graph template (S1_graph_template.html).
+  const STAR_SERVICES = [
+    { id: "SVC-EDGE", label: "SVC-EDGE\nEDGE base\nHAL, routing", modules: [
+      { id: "iq_acquisition", label: "iq_acquisition\nVL-2", color: "#378ADD" },
+      { id: "fft_engine", label: "fft_engine\nVL-1", color: "#1D9E75" },
+      { id: "feature_extractor", label: "feature_extractor\nVL-1", color: "#1D9E75" },
+      { id: "classifier", label: "classifier\nVL-0", color: "#B7791F" },
+      { id: "audio_demod", label: "audio_demod\nVL-1", color: "#1D9E75" },
+      { id: "data_store", label: "data_store\nVL-0", color: "#888780" },
+    ] },
+    { id: "SVC-UI", label: "SVC-UI\nUI base\nAPI, state", modules: [
+      { id: "dashboard", label: "dashboard\nVL-1", color: "#378ADD" },
+      { id: "controls", label: "controls\nVL-0", color: "#378ADD" },
+      { id: "alerts", label: "alerts\nVL-0", color: "#888780" },
+      { id: "history", label: "history\nVL-0", color: "#888780" },
+    ] },
+  ];
+  const STAR_HARDWARE = [{ id: "HWC-001", label: "HWC-001\nHackRF", to: ["SVC-EDGE/iq_acquisition"] }];
+  const STAR_CONTRACTS = [
+    { id: "occupancy.v1", view: "telemetry", from: "SVC-EDGE", to: "SVC-UI" },
+    { id: "configure.v1", view: "control", from: "SVC-UI", to: "SVC-EDGE" },
+  ];
+  const STAR_RED = "#D85A30", STAR_GREY = "#B4B2A9", STAR_BASE = "#7F77DD";
   const STAR_INFO = {
     all: "<b>One system, two services.</b> Each service owns its base and modules. The shared Ground Truth allocates SYS-* requirements to modules or cross-service paths. Contracts are defined before either service is implemented.",
     telemetry: "<b>occupancy.v1 · edge → UI.</b> The edge publishes timestamped occupancy with units, schema version and a latency budget. SYS-002 is accepted only when the connected edge → dashboard path meets its declared criterion.",
     control: "<b>configure.v1 · UI → edge.</b> Commands need authorization, acknowledgement, timeout, idempotent retry and a safe behavior when either service disconnects or restarts. This runtime return path does not make the implementation DAG cyclic.",
   };
-  const starBtns = $("#star-btns"), stars = $("#stars");
+  // Larger type than the S1 template: the graph is fitted to a narrower figure, which scales labels down.
+  const starBox = n => ({ ...n, shape: "box", font: { color: "#fff", size: 20 } });
+  let starNodes = null, starEdges = null, starView = "all", starMl = false;
+  const paintStars = () => {
+    if (!starNodes) return;
+    STAR_CONTRACTS.forEach(c => {
+      const on = starView === "all" || starView === c.view, opacity = on ? 1 : .16;
+      starNodes.update({ id: `c:${c.id}`, opacity });
+      [`${c.id}:in`, `${c.id}:out`].forEach(id => starEdges.update({
+        id, width: starView === c.view ? 4 : 1.5, color: { color: STAR_RED, opacity },
+      }));
+    });
+    starNodes.update({ id: "ml", hidden: !starMl });
+    starEdges.update({ id: "ml-edge", hidden: !starMl });
+  };
+  const drawStars = () => {
+    starNodes = new vis.DataSet([
+      ...STAR_SERVICES.map(s => ({ id: s.id, label: s.label, color: STAR_BASE, shape: "circle", font: { color: "#fff", size: 20 } })),
+      ...STAR_SERVICES.flatMap(s => s.modules.map(m => starBox({ ...m, id: `${s.id}/${m.id}` }))),
+      ...STAR_HARDWARE.map(h => starBox({ id: h.id, label: h.label, color: STAR_RED })),
+      ...STAR_CONTRACTS.map(c => starBox({ id: `c:${c.id}`, label: c.id, color: STAR_RED })),
+      // Stays in the simulation while hidden, so toggling it does not rearrange the graph.
+      { id: "ml", label: "ML package\noptional", shape: "box", hidden: true, borderWidth: 2,
+        color: { background: "#ffffff", border: "#6b7280" }, font: { color: "#374151", size: 20 },
+        shapeProperties: { borderDashes: [5, 3] } },
+    ]);
+    starEdges = new vis.DataSet([
+      ...STAR_SERVICES.flatMap(s => s.modules.map(m => ({ from: s.id, to: `${s.id}/${m.id}`, color: { color: STAR_GREY } }))),
+      ...STAR_HARDWARE.flatMap(h => h.to.map(to => ({ from: h.id, to, arrows: "to", dashes: true, color: { color: STAR_RED } }))),
+      ...STAR_CONTRACTS.flatMap(c => [
+        { id: `${c.id}:in`, from: c.from, to: `c:${c.id}`, arrows: "to", color: { color: STAR_RED } },
+        { id: `${c.id}:out`, from: `c:${c.id}`, to: c.to, arrows: "to", color: { color: STAR_RED } },
+      ]),
+      { id: "ml-edge", from: "ml", to: "SVC-EDGE/classifier", arrows: "to", dashes: true, hidden: true, color: { color: "#6b7280" } },
+    ]);
+    new vis.Network($("#stars"), { nodes: starNodes, edges: starEdges }, {
+      layout: { randomSeed: 1 },
+      physics: { solver: "repulsion", repulsion: { nodeDistance: 180 } },
+      nodes: { borderWidth: 0, shadow: { enabled: true, size: 6, color: "rgba(0,0,0,0.1)" } },
+      edges: { width: 1.5, smooth: { type: "continuous" } },
+      // zoomView stays off so that scrolling over the figure keeps scrolling the page.
+      interaction: { hover: true, tooltipDelay: 100, zoomView: false },
+    });
+    paintStars();
+  };
+  if (window.vis) {
+    drawStars();
+  } else {
+    // Opened outside the repository: the vendored copy is missing, so use the CDN.
+    const cdn = document.createElement("script");
+    cdn.src = "https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.9/dist/vis-network.min.js";
+    cdn.onload = drawStars;
+    cdn.onerror = () => { $("#stars").textContent = "vis-network could not load: open this page from the repository or with network access."; };
+    document.head.append(cdn);
+  }
+  const starBtns = $("#star-btns");
   $$("button[data-star-view]", starBtns).forEach(btn => btn.addEventListener("click", () => {
     press(starBtns, btn);
-    stars.dataset.view = btn.dataset.starView;
-    $("#star-card").innerHTML = STAR_INFO[btn.dataset.starView];
+    starView = btn.dataset.starView;
+    paintStars();
+    $("#star-card").innerHTML = STAR_INFO[starView];
   }));
-  stars.dataset.view = "all";
   $("#star-card").innerHTML = STAR_INFO.all;
-  stars.dataset.ml = "no";
   $("#ml-toggle").addEventListener("click", e => {
-    const show = e.currentTarget.getAttribute("aria-pressed") !== "true";
-    e.currentTarget.setAttribute("aria-pressed", String(show));
-    e.currentTarget.textContent = show ? "Hide optional ML package" : "Show optional ML package";
-    stars.dataset.ml = show ? "yes" : "no";
-    $("#ml-card").innerHTML = show
-      ? "<b>ML selected for the detector.</b> S1 identifies supplied weights, hash, input/output contract, preprocessing, evaluation metadata and COTS budget. G1 checks package readiness; G2 measures the real model in the integrated system."
-      : "The detector uses no ML package in this example. S1 omits the model box and G1 omits its conditional check.";
+    starMl = e.currentTarget.getAttribute("aria-pressed") !== "true";
+    e.currentTarget.setAttribute("aria-pressed", String(starMl));
+    e.currentTarget.textContent = starMl ? "Hide optional ML package" : "Show optional ML package";
+    paintStars();
+    $("#ml-card").innerHTML = starMl
+      ? "<b>ML selected for the classifier.</b> It is trained with Mock HAL data plus labelling or, failing that, Real HW HAL data plus labelling. S1 identifies weights, hash, training source, input/output contract, preprocessing, evaluation metadata and COTS budget. G1 checks package readiness; G2 measures the real model in the integrated system."
+      : "The classifier uses no ML package in this example. S1 omits the model box and G1 omits its conditional check.";
   });
+
+  // ---- §5.5 HAL substitution ladder -----------------------------------
+  const HAL_INFO = {
+    v0: "<b>VL-0 · Mock HAL.</b> Deterministic golden vectors: short, repeatable, edge-case coverage. Each vector carries a digest, generation parameters, the condition it simulates and its expected output.",
+    v1: "<b>VL-1 · Mock HAL.</b> Synthetic I/Q files at known SNR, modulation and channel conditions, from an FM-modulated software synthesiser or recorded golden captures.",
+    v2: "<b>VL-2 · Real HW HAL.</b> The declared COTS SDR. It executes the Build Package laboratory procedures to generate <b>real datasets</b> at the development team's calibration (screening grade, not normative) and declared tolerances, then runs the final field tests.",
+  };
+  const halBtns = $("#hal-btns");
+  const showHal = id => {
+    ["v0", "v1", "v2"].forEach(v => {
+      $(`#hal-${v}`).classList.toggle("dim", v !== id);
+      const edge = $(`#e-hal-${v}`);
+      edge.classList.toggle("dim", v !== id);
+      edge.classList.toggle("lit", v === id);
+    });
+    $("#hal-bp").classList.toggle("dim", id !== "v2");
+    $("#e-hal-bp").classList.toggle("dim", id !== "v2");
+    $("#hal-card").innerHTML = HAL_INFO[id];
+  };
+  $$("button[data-hal]", halBtns).forEach(btn => btn.addEventListener("click", () => {
+    press(halBtns, btn);
+    showHal(btn.dataset.hal);
+  }));
+  showHal("v0");
 
   // ---- §5 module highlight across flowgraph, DAG and table -------------
   const highlight = mod => $$("[data-mod]").forEach(n => n.classList.toggle("hl", n.dataset.mod === mod));
