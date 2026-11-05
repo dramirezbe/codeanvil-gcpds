@@ -10,9 +10,10 @@ methodology pipeline. They are the methodology's integration tests.
 | **T0_ANE-Lap2** | SDR spectrum monitoring (ANE edge sensor) | **Yes** — `just-edge/StRS.md` + `just-edge/SyRS.md` are valid GT files | Also has `full-system/StRS_APPROVED.md` (broader scope, historical snapshot) |
 | **T1_FM-monitoring** | SDR-based FM broadcast compliance | No — raw LaTeX spec, GT must be derived | `00_sdr_spectrum_sensor_design/` (RAG-informed from FCC/ANE/ITU) |
 | **T2_IoT-Indoor** | Indoor IoT radio environment mapping, 2.4 GHz | No — raw proposal + literature | Hermes proposal, radio env mapping papers, variable adaptation doc |
+| **T3_FM-mock** | FM channel occupancy, RTL-SDR → Raspberry Pi edge + small dashboard | Build Package — `build_package.md`, S0 writes the GT pair | Full-flow fixture for `mock-only` (S0 → G2, VL-1, no lab inputs, ML localisation only as future work) |
 
-Only **T0** has ready-to-use GT files for the pipeline. T1 and T2 are raw project
-materials from which GT files would be authored.
+Only **T0** has ready-to-use GT files for the pipeline, and **T3** a ready-to-use Build
+Package. T1 and T2 are raw project materials from which GT files would be authored.
 
 ---
 
@@ -306,7 +307,45 @@ Cycles:
 | Graph differs from design | Remove a module from the graph's `DATA`, run G1 | Finding marked `open` |
 | RFD closes the cycle | Answer RFD at G1, decide it, name a new cycle | Old cycle shows `(closed: superseded by <name>)`; G1 before the decision returns `Cycle suspended by RFD. Run the RFD skill.` |
 
-The flow is **not** end to end until S2 and G2 exist; nothing after G1 is covered here.
+### 5b. Full flow S0 → G2, `mock-only` (T3_FM-mock)
+
+Scenario: SDR → Raspberry Pi edge, a small user dashboard, validation up to VL-1 with the
+Mock HAL and labelled synthetic scenes, no real hardware. The ML spectral-localisation model
+is future work only, so the design has no §1.5. Plan:
+`odd/tasks/2026-11-05_E2E_full_flow_mock_only.md`.
+
+```bash
+ROOT="$(mktemp -d)"
+codeanvil create --name "FM Occupancy Mock" -p "$ROOT"
+cd "$ROOT"/fm_occupancy_mock
+cp <repo>/methodology/test/T3_FM-mock/build_package.md GT/build_package.md
+codeanvil sandbox claude    # or opencode, codex; pi only for the fresh-session probe
+```
+
+| Step | Prompt | Expect |
+|------|--------|--------|
+| 1 | Run S0, then G0 | SyRS §4–§6 hold the "not applicable" line; GT pair passes `g0_validate.py`; human Gate H |
+| 2 | Run S1 | `HAL mode: mock-only`; `Toolchain` per service (edge and dashboard); §1.3.4 with D2 paths, §1.6, §1.7 filled; no §1.5; no `hw_dependency: true` |
+| 3 | Run G1, answer PASS | Checklist with G1.11–G1.13 and the kit row (incl. `Toolchain`); returns `G1 passed. Run the S2 skill.` |
+| 4 | Run S2 | D2 tree: `src/fm_edge/` (Python, `__main__.py`) and `src/dashboard/` (TS), `pyproject.toml` + `uv.lock`, `package.json` + `pnpm-workspace.yaml` + `pnpm-lock.yaml`, `verification/` with `run.sh`, `golden/`, `telemetry/`, `fm_edge/`, `dashboard/`; kit and base first, then modules, paths and VL-1 tests; `verification/run.sh vl0` green with telemetry; `test_run.md` has the two `run.sh` commands; `grep -r codeanvil src/` is empty; edge logs show `[YYYY-MM-DD HH:MM:SS.mmm] LEVEL name.funcName message` in colour; `uv sync --frozen --no-dev && uv run fm_edge` starts without kit dependencies |
+| 5 | Run G2, declare VL-1 for DSP and the edge → UI path | Runs delegated to `vsil-verifier` (Claude Code, OpenCode); source tree unchanged after them; only the `test_run.md` commands run; a VL-2 request is refused; `verified_prototype.md` written on PASS |
+| 6 | `codeanvil status` | S0–S2 `delivered`, G0–G2 `PASS` |
+
+Failure probes:
+
+| Probe | How | Expect |
+|-------|-----|--------|
+| ML section in the design | Add a §1.5 to the design before S2 | `ML integration is future work. Remove design §1.5 for this round.`; no iteration |
+| Design defect | Remove a contract field before S2 | `Verdict: design defect` iteration; S1 reworks |
+| Module defect | Force a module bug before G2 | `Verdict: module defect`, routed to S2 |
+| Missing VL-1 test | Delete one VL-1 test before G2 | `Verdict: module defect`; G2 writes no test |
+| Rework routed from reports | Re-run G2 after that FEEDBACK without re-running S2 | `S2 must rework first. Run the S2 skill.` |
+| Interrupted S2 | Interrupt S2 mid-module and re-run it | Finished modules kept |
+| Runtime without subagents | Run G2 in Pi or Copilot | Fresh-session request; no runs |
+
+Recommended, not required: run step 5 on the Raspberry Pi so the telemetry companion records
+the real compute unit. Record each row's observation, with the agent runtime used, in the
+feature document's Log; a failing step reopens the task of the skill that failed.
 
 ### 6. Cleanup
 
@@ -321,7 +360,8 @@ rm -rf /tmp/smoke-test
 
 After running the full flow, note:
 
-- [ ] Did `codeanvil create` scaffold S0, G0, S1, G1 and RFD (and no custody-chain)?
+- [ ] Did `codeanvil create` scaffold S0, G0, S1, G1, S2, G2 and RFD (and no custody-chain)?
+- [ ] Did it write `vsil-verifier` to `.claude/agents/`, `.opencode/agents/` and `.codex/agents/`?
 - [ ] Did the AGENTS.md skill table list the chain S0 → G0 → S1 → G1 with RFD as `-`?
 - [ ] Did the agent ask for a cycle name on project open and normalize it (`01_smoke_test`)?
 - [ ] Did `.codeanvil/` contain `project.yaml` (with `cycle:`) and an empty `report/`?
