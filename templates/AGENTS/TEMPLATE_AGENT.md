@@ -1,25 +1,14 @@
 # Project Instructions
 
-This project follows the **V-SIL methodology** (V-model at the SIL tier).
-This file is a **reference** — it describes the project, its skills, and its
-conventions. It does not orchestrate stages or gates: each skill enforces its own
-prerequisite report, so the chain lives in the skills. All instructions
-below are binding.
-
-## Context — You are in a user project, not the CodeAnvil repo
-
-This is a **scaffolded project** created by `codeanvil create`. You are running the
-V-SIL methodology against the user's Ground Truth documents — you are NOT developing
-the CodeAnvil tool itself.
-
-- There is no `src/`, no `templates/`, no `pyproject.toml` here.
-- Skills live at `.agents/skills/<name>/` — run scripts from the **project root**.
-- GT files in `GT/` are **user-authored inputs**. Never treat them as tool templates.
-- Do not try to install, build, or modify CodeAnvil from this directory.
+This project follows the **V-SIL v3 methodology** (V-model at the SIL tier), whose chain
+is S0 → G0 → S1 → G1 → S2 → G2, with RFD outside it. This file is a **reference** — it
+describes the project, its skills, and its conventions. It does not orchestrate stages or
+gates: each skill enforces its own prerequisite report, so the chain lives in the skills.
+All instructions below are binding.
 
 ## Rules
 
-- You **MUST** run stages and gates in sequential order (S0, G0, S1, G1, ...). A step
+- You **MUST** run stages and gates in sequential order (S0, G0, S1, G1, S2, G2). A step
   **SHALL NOT** execute until its predecessor passes.
 - You **MUST** load the skill file (`.agents/skills/<skill>/SKILL.md`) before executing any step.
 - You **SHALL NOT** skip, reorder, or combine stages and gates.
@@ -28,6 +17,9 @@ the CodeAnvil tool itself.
 - You **SHALL** report the gate verdict exactly as the skill's output contract specifies.
 - You **MUST NOT** re-implement gate logic in prose — run the scripts and tools the skill prescribes.
 - You **SHALL** treat errors as blocking and warnings as advisory unless a skill says otherwise.
+- Only S2 writes code under `src/` and `verification/`, reworks included; G2 and the
+  `vsil-verifier` subagent **MUST NOT** edit code.
+- Delivered code under `src/` **MUST NOT** import or call `codeanvil` or depend on `verification/`.
 
 ## On Project Open
 
@@ -38,9 +30,13 @@ skill, and before asking the user anything — run:
 codeanvil status
 ```
 
-This prints the project identity, active cycle, and per-gate HITL verdicts.
-Use its output as your orientation: it tells you where the methodology stands
-so you do not need to read files or list directories to discover progress.
+This prints the project identity, active cycle, and per-gate HITL verdicts. Use it as your
+orientation: you do not need to read files or list directories to discover progress.
+
+- The `codeanvil` CLI is the only tool for project state and timestamps:
+  `codeanvil status`, `codeanvil now`, `codeanvil now --machine`.
+- How each step works is in its skill under `.agents/skills/`; what the project must do
+  is in `GT/`. Read those to know what to do; run skill scripts from the project root.
 
 ## Cycle
 
@@ -91,11 +87,20 @@ skill checks its prerequisite report itself:
 This is a **chain, not orchestration**: nothing in this file sequences stages or
 gates, and you must not sequence them from it either.
 
-The `RFD_request_for_deviation` skill is outside the chain: it can be raised from S1, G1 or
-any sub-gate of G2 when requirements are infeasible on the declared COTS platform, and it
-suspends the cycle until the Build Package author decides. An accepted deviation closes the
-cycle: the flow is redone in a **new cycle with a new name**, starting at S0 with an updated
-Build Package. The chain skills refuse to run in a closed cycle.
+A rework is routed by a verdict line in the report: `Verdict: design defect` (from S2 or G2)
+returns to S1; `Verdict: module defect` (from G2) returns to S2.
+
+The `RFD_request_for_deviation` skill is outside the chain: it can be raised from S1, G1 or any
+sub-gate of G2 when requirements are infeasible on the declared COTS platform (S2 only records
+`Possible infeasibility` for G2), and it suspends the cycle until the Build Package author
+decides. An accepted deviation closes the cycle: the flow is redone in a **new cycle with a new
+name**, starting at S0 with an updated Build Package. The chain skills refuse to run in a closed cycle.
+
+## Subagents
+
+`vsil-verifier` is generated in `.claude/agents/`, `.opencode/agents/` and `.codex/agents/`. Only the
+G2 skill uses it, to run the verification commands in a fresh, read-only context; in a runtime without
+subagents, run G2 in a fresh session. Never use it for anything else or edit its files (regenerated).
 
 ## MCP Servers
 
@@ -115,18 +120,22 @@ The `GT/` directory holds human-authored `.md` files:
 | `G0_StRS.md` | Stakeholder Requirements Specification (IEEE 29148 §9.4), written by S0 |
 | `G0_SyRS.md` | System Requirements Specification (IEEE 29148 §9.5), written by S0 |
 
-G0 is a **pair gate**: both files must pass, plus the G0-X cross-document rules,
-before S1 runs. The S1 design document is produced by S1 in `S1_artifacts/`.
+`G0_SyRS.md` §4–§6 hold the optional lab inputs (correction chains, tolerances, `PROTO-*`
+procedures); with none in the Build Package, each holds `Not applicable: no lab inputs in the Build Package.`
+
+G0 is a **pair gate**: both files must pass, plus the G0-X cross-document rules, before S1
+runs. The S1 design document is produced by S1 in `S1_artifacts/`.
 
 These files are **inputs**. You **MUST NOT** modify them to make a gate pass.
 
 ## Report Format
 
 Every stage and gate writes **one** report file: `.codeanvil/report/<cycle-name>/<id>.md`
-(for example `S0.md`, `G0.md`, `S1.md`, `G1.md`, `RFD.md`). Iterations are appended
-sections in that file — never separate files. S1 and RFD additionally write working
-files to `.codeanvil/report/<cycle-name>/<ID>_artifacts/` (`S1_artifacts/`,
-`RFD_artifacts/`), overwritten on rework and not report iterations.
+(for example `S0.md`, `G0.md`, `S1.md`, `G1.md`, `S2.md`, `G2.md`, `RFD.md`). Iterations are
+appended sections in that file — never separate files. S1, S2, G2 and RFD also write working
+files to `.codeanvil/report/<cycle-name>/<ID>_artifacts/` (`S1_artifacts/`, `S2_artifacts/`
+with `test_run.md`, `G2_artifacts/` with `verified_prototype.md`, the cycle's terminal
+output, and `RFD_artifacts/`), overwritten on rework and not report iterations.
 
 ```markdown
 # <Gate Name>
@@ -161,7 +170,7 @@ Rules:
 - `HITL: PASS` means the step is done. `HITL: FEEDBACK` means iterate. On a stage
   (S0, S1, S2), PASS means the output was delivered; the human verdict belongs to
   the next gate.
-- Every iteration of G0, S1, G1 (and later S2, G2) starts its Description with the exact
+- Every iteration of G0, S1, G1, S2 and G2 starts its Description with the exact
   line `Based on: <predecessor id> iteration <N>`, where `N` is the predecessor's latest
   iteration when the work starts. S0 and RFD have no such line. `codeanvil status` uses
   it to mark a report `stale` when its predecessor was reworked.
@@ -177,6 +186,8 @@ Rules:
 - For **filenames** and machine identifiers: `codeanvil now --machine`
 - Do NOT generate timestamps any other way. The tool owns the format.
 - Do not use raw `datetime.now().strftime()`.
+- These rules cover reports and filenames. Delivered code formats its own log timestamps
+  through its `config/logger` and never calls `codeanvil`.
 
 ## Folder Reference
 
@@ -186,7 +197,10 @@ Rules:
 | `.codeanvil/project.yaml` | Project identity (`id`, `name`, GT pointers) plus the active `cycle`. |
 | `.codeanvil/report/<cycle-name>/` | One iterative report per gate, scoped to the cycle. |
 | `.codeanvil/report/<cycle-name>/S1_artifacts/`, `RFD_artifacts/` | The S1 design and graph, and RFD decision documents. Overwritten on rework. |
+| `.codeanvil/report/<cycle-name>/S2_artifacts/` | S2's `test_run.md`: the verification commands and `Possible infeasibility` entries. |
+| `.codeanvil/report/<cycle-name>/G2_artifacts/` | `verified_prototype.md`, written on G2 PASS. |
 | `.agents/skills/` | Canonical skill store — every agent runtime links here. |
+| `.claude/agents/`, `.opencode/agents/`, `.codex/agents/` | The generated `vsil-verifier` subagent, one file per runtime. |
 
 ## Project Layout
 
@@ -196,7 +210,10 @@ Rules:
     │   project.yaml       <- project identity (id, name, GT pointers, cycle)
     │   report/            <- per-cycle gate reports (<cycle-name>/<gate>.md)
     │                          <cycle-name>/S1_artifacts/  <- S1 design + dependency graph
+    │                          <cycle-name>/S2_artifacts/  <- test_run.md
+    │                          <cycle-name>/G2_artifacts/  <- verified_prototype.md
     .agents/skills/        <- canonical skill store (all gate skills)
+    .claude/agents/        <- vsil-verifier (also .opencode/agents/, .codex/agents/)
 
-Agent-specific directories (`.claude/`, `.github/`, `.opencode/`,
-`.codex/`) contain symlinks to the canonical sources.
+Agent-specific directories (`.claude/`, `.github/`, `.opencode/`, `.codex/`) contain
+symlinks to `.agents/skills/` and the generated `vsil-verifier` files.

@@ -17,8 +17,17 @@
 | G0 approved    | {{SHA-256 of G0_StRS.md and G0_SyRS.md; information only}}  |
 | Gate H         | {{date + who authorised, copied from G0.md}}                |
 | Services       | {{service IDs; a single service is valid}}                  |
+| HAL mode       | {{mock-only / mock+real}}                                   |
+| Toolchain      | {{one entry per service: SVC-xxx: <package> · <language> · <package manager> · <test runner>}} |
 | ML model       | {{omit if not used; otherwise reference to the supplied package}} |
 | Status         | draft / in G1 review / approved at G1                       |
+
+<!-- HAL mode: mock-only (Mock HAL only; no Real HW HAL, no lab procedures, no
+     hw_dependency: true, every claim capped at VL-1) or mock+real (adds the Real HW HAL, §1.6).
+     Toolchain example: "SVC-001: fm_edge · Python 3.12 · uv · pytest; SVC-002: dashboard ·
+     TypeScript · pnpm · vitest". Allowed: Python · uv · pytest and TypeScript · pnpm · vitest.
+     <package> is a valid identifier and names src/<package>/. S2 builds with it and never
+     chooses another. -->
 
 ---
 
@@ -70,6 +79,22 @@ flowchart LR
 
 <!-- One machine may host several services; a service may have no HWC-* of its own. State the
      real process, network and failure boundaries. A module in the same process is not a service. -->
+
+### 0.5 Runnable system entry point
+
+| Field | Value |
+|-------|-------|
+| Project-root command | {{one command that starts the complete system; for multiple services, a launcher}} |
+| HAL mode for preview | {{mock-only or mock+real; name the selected runtime HAL}} |
+| Services started | {{service IDs and processes}} |
+| Local URL / endpoint | {{address and port a user can open}} |
+| Visible result | {{what appears or updates when the system is working}} |
+| Shutdown | {{how all child processes stop cleanly}} |
+
+<!-- This is an implementation contract for S2. A package entry point must actually start its
+     pipeline; a function that merely logs instructions does not count. If the preview uses a
+     Mock HAL, its runtime implementation belongs in the runnable package or an explicit demo
+     bundle, never solely in the non-shipped verification kit. -->
 
 ---
 
@@ -130,7 +155,7 @@ flowchart LR
 | Isolation           | <!-- if a COTS device is swapped, what changes and what does not --> |
 
 <!-- The HAL is the ONLY point that touches hardware. If swapping a device changes more than the
-     HAL, explain why. -->
+     HAL, explain why. Its implementations (Mock HAL, Real HW HAL) are designed in §1.6. -->
 
 #### 1.3.3 Data routing
 
@@ -139,6 +164,25 @@ flowchart LR
 |              |           |           |
 
 <!-- Document every place where a signal forks or is routed conditionally. -->
+
+#### 1.3.4 Verification kit
+
+<!-- The tools S2 builds in its initial layer, before any module. The kit is verification
+     infrastructure: it is never shipped and no service imports it. In-process tools live in
+     verification/<package>/ in the service's language; shared tools (run.sh, golden/,
+     telemetry/) live in verification/; the HAL port and the Real HW HAL live in
+     src/<package>/hal/. Omit the Real HW HAL row in mock-only. -->
+
+| Tool | Path | Language | Consumed by | Source section |
+|------|------|----------|-------------|----------------|
+| Mock HAL | `verification/<package>/mock_hal/` | | | §1.6 |
+| Golden vectors + manifest | `verification/golden/` + `manifest.md` | | | §1.6, §3 |
+| Telemetry companion | `verification/telemetry/` | Python | every test run | §1.7 |
+| Stubs | `verification/<package>/stubs/` | | | §3.1–3.3 |
+| Fake peers | `verification/<package>/fakes/` | | | §3.4 |
+| Drivers | `verification/<package>/drivers/` | | | §4.4 |
+| Level runner | `verification/run.sh` (`vl0`, `vl1`) | shell | S2, G2 | §4.4 |
+| Real HW HAL + fake device API (mock+real only) | `src/<package>/hal/` | | | §1.6 |
 
 ### 1.4 Black boxes: modules
 
@@ -160,7 +204,7 @@ flowchart LR
 **Rationale for the required VL:**
 
 <!-- hw_dependency = true → required_vl MUST be VL-2. Running on a computer does not count:
-     the correctness must depend on that hardware.
+     the correctness must depend on that hardware. In mock-only, hw_dependency is always false.
      VL-1: which risk justifies going beyond VL-0 (e.g. behaviour only visible with realistic data)?
      VL-0: why is pure logic enough (e.g. a fixed threshold, checkable with deterministic vectors)? -->
 
@@ -169,8 +213,9 @@ flowchart LR
 ### 1.5 Supplied ML model (optional)
 
 <!-- OMIT this whole section if no module uses ML. An outcome requirement does not oblige ML.
-     If ML is chosen, the model is already trained and supplied as a controlled input; S1 designs
-     its integration. Never train or select a model here. -->
+     If ML is chosen, the model is supplied as a controlled input, trained with Mock HAL data plus
+     labelling or, failing that, real-hardware HAL data plus labelling. S1 designs its integration.
+     Never train or select a model here. -->
 
 | Field                    | Value |
 |--------------------------|-------|
@@ -178,6 +223,7 @@ flowchart LR
 | SYS-* it satisfies       | <!-- outcome requirements, not only a technical choice --> |
 | Provider and provenance  |  |
 | Artifact and weights     | <!-- controlled path/URI, format, version, SHA-256 --> |
+| Training data and labels | <!-- Mock HAL or, failing that, real-hardware HAL; labelling procedure; dataset version, SHA-256 --> |
 | Inference runtime        | <!-- version, dependencies, COTS compatibility --> |
 | Inputs                   | <!-- shape, type, units, rate, exact preprocessing --> |
 | Outputs                  | <!-- shape, labels, thresholds, confidence, postprocessing --> |
@@ -192,6 +238,78 @@ flowchart LR
      the module's integration, not the model's quality: G2 measures with the identified weights. -->
 
 **Design decision:** {{DEC-NNN justifying this model and its location}}
+
+### 1.6 HAL substitution ladder
+
+<!-- Two HAL implementations behind the same base-layer port. HAL substitution is what moves a
+     module between verification levels. The Mock HAL is always designed. The Real HW HAL exists
+     only in mock+real: omit its subsection in mock-only. -->
+
+#### Mock HAL
+
+| Field | Value |
+|-------|-------|
+| Base-layer port | <!-- the same interface contract as the Real HW HAL --> |
+| VL-0: deterministic vectors | <!-- length, type, edge-case coverage --> |
+| VL-1: synthetic generator | <!-- SNR, modulation, channel conditions, generation tool --> |
+| Generation tool | <!-- e.g. software FM synthesiser, recorded capture --> |
+
+**Golden vectors (governance):**
+
+| Vector ID | Simulated condition | SHA-256 digest | Generation parameters | Expected output at consumer |
+|-----------|---------------------|----------------|-----------------------|-----------------------------|
+| GV-001    |                     |                |                       |                             |
+
+<!-- Each golden vector is a controlled artifact, listed in verification/golden/manifest.md.
+     Changing a vector invalidates every evidence record that used it. -->
+
+#### Real HW HAL (mock+real only)
+
+| Field | Value |
+|-------|-------|
+| Base-layer port | <!-- same contract as the Mock HAL --> |
+| COTS device | <!-- HWC-NNN --> |
+| Lab procedures | <!-- PROTO-* rows of G0_SyRS.md §6 it executes --> |
+| Correction chains | <!-- G0_SyRS.md §4 terms it applies --> |
+| Declared tolerances | <!-- G0_SyRS.md §5 budgets it applies --> |
+| Calibration grade | <!-- development-team screening grade, not normative --> |
+| Fake device API | <!-- how the Real HW HAL runs at VL-0 without the device --> |
+
+<!-- Calibration grade and tolerances are Build Package inputs carried by the SyRS, not V-SIL
+     claims. A SyRS §6 holding "Not applicable: no lab inputs in the Build Package." cannot
+     support mock+real: record the gap as a risk in §6. -->
+
+**Substitution check:**
+
+<!-- Which test confirms that the Mock HAL and the Real HW HAL produce outputs compatible with
+     the base-layer port contract? -->
+
+### 1.7 Telemetry companion
+
+<!-- Mandatory in every design. A lightweight, non-intrusive process that monitors the compute
+     unit during every test run. It is verification infrastructure in verification/telemetry/,
+     NOT a module: it has no SYS-*, is not in the DAG, never ships under src/ and is never listed
+     as module evidence. -->
+
+| Field | Value |
+|-------|-------|
+| Monitored signals | <!-- CPU, memory, temperature, dropped buffers, scheduling latency --> |
+| Sampling interval | <!-- e.g. 1 s, 100 ms --> |
+| Resource budget | <!-- max CPU %, max memory: the companion's own footprint --> |
+| Output format | <!-- e.g. CSV with timestamp, JSON lines --> |
+| Evidence attachment | <!-- how readings attach to each evidence record --> |
+
+**Compute-unit operating envelope:**
+
+| Signal | Nominal threshold | Action if exceeded |
+|--------|-------------------|--------------------|
+| Temperature | <!-- e.g. ≤ 80 °C --> | <!-- flag evidence --> |
+| CPU | <!-- e.g. ≤ 90 % sustained --> | <!-- flag evidence --> |
+| Dropped buffers | <!-- e.g. 0 --> | <!-- flag evidence --> |
+| Scheduling latency | <!-- e.g. ≤ X ms --> | <!-- flag evidence --> |
+
+<!-- Evidence recorded outside the envelope is flagged as potentially invalid. If the companion's
+     own footprint exceeds its budget, that is an infrastructure defect, not a system defect. -->
 
 ---
 

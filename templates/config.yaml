@@ -21,6 +21,12 @@ skills:
   G1_design_review:
     project_dir: ".agents/skills/G1_design_review"
     prerequisite: "S1"
+  S2_implement_services:
+    project_dir: ".agents/skills/S2_implement_services"
+    prerequisite: "G1"
+  G2_adaptive_verification:
+    project_dir: ".agents/skills/G2_adaptive_verification"
+    prerequisite: "S2"
 
 # Flow order of the chain reports, used by `codeanvil status` to print gates
 # in order. Any other report id (RFD, old CC) follows alphabetically.
@@ -66,6 +72,30 @@ agent_pointer_files:
   #   "GEMINI.md": "See AGENTS.md for project instructions."
 
 agents_template: "templates/AGENTS/TEMPLATE_AGENT.md"
+
+# Subagents shipped with every project: one shared body, one header per
+# runtime. Only runtimes with documented project-scoped subagents are listed;
+# Copilot and Pi get no file and G2 falls back to a fresh session.
+# Codex (developers.openai.com/codex/subagents): name, description and
+# developer_instructions are required; sandbox_mode in an agent file does not
+# override the parent session, so read-only rests on the body's Never list.
+subagents:
+  vsil-verifier:
+    body: "templates/agents/vsil-verifier.md"
+    description: "V-SIL G2 verifier: runs the S2 test commands in a fresh, read-only context and returns a results table. Use only from the G2 skill."
+    targets:
+      claude:
+        path: ".claude/agents/vsil-verifier.md"
+        format: "markdown"
+        frontmatter: {name: "vsil-verifier", tools: "Read, Grep, Glob, Bash"}
+      opencode:
+        path: ".opencode/agents/vsil-verifier.md"
+        format: "markdown"
+        frontmatter: {mode: "subagent", permission: {edit: "deny", webfetch: "deny", bash: "allow"}}
+      codex:
+        path: ".codex/agents/vsil-verifier.toml"
+        format: "toml"
+        fields: {name: "vsil-verifier"}
 
 # Skills that each carry their own copy of the locked GT reference templates
 # (self-contained skills), and the skill the GT README points to

@@ -17,6 +17,10 @@
        - Stub recipe por contrato
        - Clasificación de contratos: HW→SW, SW→SW, SW→HW, servicio→servicio
        - Paquete de modelo ML suministrado: apartado opcional, solo si se usa
+       - Modo HAL (`mock-only` | `mock+real`): Mock HAL siempre;
+         Real HW HAL solo en `mock+real` (§1.6)
+       - Telemetry companion obligatorio, nunca se entrega (§1.7)
+       - Toolchain por servicio, con el que S2 construye (Meta)
        - Sección de riesgos e inviabilidades conocidas (pre-RFD)
      
      Entrada: G0_StRS.md + G0_SyRS.md (aprobados por G0 + Gate H)
@@ -42,6 +46,8 @@
 | Gate H aprobado    | {{fecha + quién autorizó}}                       |
 | Servicios          | {{IDs de servicios; un solo servicio es válido}} |
 | Modelo ML          | {{omitir si no aplica; si se usa, ref. al paquete}} |
+| HAL mode           | {{mock-only / mock+real}}                        |
+| Toolchain          | {{una entrada por servicio: `SVC-xxx: <package> · <language> · <package manager> · <test runner>`; e.g. `SVC-001: fm_edge · Python 3.12 · uv · pytest; SVC-002: dashboard · TypeScript · pnpm · vitest`}} |
 | Estado             | borrador / en revisión G1 / aprobado G1          |
 
 ---
@@ -136,6 +142,22 @@ flowchart LR
 <!-- Una máquina puede alojar varios servicios; un servicio también puede
      carecer de HWC-* propio. Indicar los límites reales de proceso, red y
      fallo. No tratar un módulo en el mismo proceso como otro servicio. -->
+
+### 0.5 Punto de entrada ejecutable del sistema
+
+| Campo | Valor |
+|-------|-------|
+| Comando desde la raíz del proyecto | {{un comando que arranca el sistema completo}} |
+| Modo HAL de demostración | {{Mock HAL o Real HW HAL}} |
+| Servicios que arranca | {{procesos y servicios}} |
+| URL o endpoint local | {{dirección y puerto}} |
+| Resultado visible | {{qué debe actualizarse al funcionar}} |
+| Apagado | {{cómo se detienen todos los procesos}} |
+
+<!-- S2 implementa este contrato y G2 ejecuta su prueba de arranque. En modo
+     mock-only, el Mock HAL necesario para la demostración debe estar en el
+     paquete ejecutable o en un bundle de demostración; no puede depender
+     únicamente del kit verification/ que no se entrega. -->
 
 ---
 
@@ -325,8 +347,12 @@ flowchart TD
 
 <!-- OMITIR esta sección completa en el diseño final si no hay módulo ML.
      Un requisito de resultado no obliga a usar ML si otra arquitectura
-     lo satisface. Si se elige ML, el modelo ya debe estar entrenado y
-     suministrado como entrada controlada; S1 diseña su integración. -->
+     lo satisface. Si se elige ML, el modelo se suministra como entrada
+     controlada, entrenado con datos del Mock HAL más etiquetado o, en su
+     defecto, con datos del Real HW HAL más etiquetado; S1 diseña su
+     integración.
+     ESTADO: incierto. La conexión con S2 y G2 es trabajo futuro
+     (V-SIL v3 §5.4, FW-005). -->
 
 | Campo | Valor |
 |-------|-------|
@@ -334,6 +360,7 @@ flowchart TD
 | SYS-* que satisface | <!-- requisitos de resultado, no solo elección técnica --> |
 | Proveedor y procedencia | <!-- quién entrega modelo y datos de procedencia --> |
 | Artefacto y pesos | <!-- ruta/URI controlada, formato, versión, SHA-256 --> |
+| Datos de entrenamiento y etiquetado | <!-- Mock HAL o, en su defecto, Real HW HAL; procedimiento de etiquetado; versión y SHA-256 del dataset --> |
 | Runtime de inferencia | <!-- versión, dependencias, compatibilidad COTS --> |
 | Entradas | <!-- forma, tipo, unidades, tasa y preprocesamiento exacto --> |
 | Salidas | <!-- forma, etiquetas, umbrales, confianza, posprocesamiento --> |
@@ -349,6 +376,112 @@ flowchart TD
      módulo, no la calidad del modelo. G2 mide con los pesos identificados. -->
 
 **Decisión de diseño:** {{DEC-NNN que justifica usar este modelo y su ubicación}}
+
+### 1.6 Escalera de sustitución HAL
+
+<!-- ================================================================
+     V-SIL v3 §5.5: el modo HAL de Meta decide qué HAL se diseñan.
+     
+     Mock HAL: obligatorio en todo modo; generador de datos
+     sintéticos para VL-0 y VL-1.
+     Real HW HAL: solo en `mock+real`; interfaz con hardware COTS
+     real para datasets de laboratorio y pruebas de campo VL-2.
+     Puede declararse en VL-0 (API de dispositivo simulada) durante
+     un ciclo; G2.2 entonces no se activa.
+     
+     En `mock-only`: sin Real HW HAL, sin procedimientos de lab,
+     calibración ni tolerancias, sin módulos con hw_dependency: true;
+     toda afirmación queda limitada a VL-1. Eliminar la subsección
+     Real HW HAL y la verificación de sustitución.
+     En `mock+real`: ambas se conectan al mismo puerto de la capa
+     base; la sustitución HAL es lo que mueve entre niveles.
+     ================================================================ -->
+
+| Campo | Valor |
+|-------|-------|
+| HAL mode | <!-- mock-only / mock+real; el mismo valor de Meta --> |
+
+#### Mock HAL
+
+| Campo | Valor |
+|-------|-------|
+| Puerto de capa base | <!-- el mismo contrato de interfaz que Real HW HAL --> |
+| VL-0: vectores deterministas | <!-- descripción de los vectores: longitud, tipo, cobertura de casos límite --> |
+| VL-1: I/Q sintético | <!-- SNR, modulación, condiciones de canal, herramienta de generación --> |
+| Herramienta de generación | <!-- e.g., sintetizador FM por software, captura grabada --> |
+
+**Vectores dorados (gobernanza):**
+
+<!-- Cada vector dorado es un artefacto controlado.
+     Listar los vectores iniciales con su gobernanza. -->
+
+| Vector ID | Condición simulada | Digest SHA-256 | Parámetros de generación | Salida esperada en consumidor |
+|-----------|-------------------|----------------|--------------------------|-------------------------------|
+| GV-001    |                   |                |                          |                               |
+| GV-002    |                   |                |                          |                               |
+
+<!-- Cambiar un vector invalida toda evidencia que lo haya usado.
+     El conjunto de vectores se versiona junto con el código fuente. -->
+
+#### Real HW HAL (solo en `mock+real`)
+
+| Campo | Valor |
+|-------|-------|
+| Puerto de capa base | <!-- mismo contrato que Mock HAL --> |
+| Dispositivo COTS | <!-- HWC-NNN --> |
+| Procedimientos de laboratorio | <!-- PROTO-* de la SyRS §6 Field Measurement Protocols --> |
+| Grado de calibración | <!-- términos de la SyRS §4 Correction Chains; grado de tamizaje del equipo de desarrollo, no normativo --> |
+| Tolerancias declaradas | <!-- SyRS §5 Uncertainty Budgets; ±X.X dBi, declaradas por el equipo de desarrollo --> |
+| Propósito VL-2 | <!-- generación de datasets reales + pruebas de campo finales --> |
+
+<!-- El grado de calibración y las tolerancias son entradas registradas
+     en la SyRS, no afirmaciones de V-SIL. El Real HW HAL se usa en S2 para:
+     (a) generar datasets reales siguiendo procedimientos de lab, y
+     (b) ejecutar las pruebas de campo finales en VL-2. -->
+
+**Verificación de sustitución (solo en `mock+real`):**
+
+<!-- Documentar cómo se verifica que ambas HAL son intercambiables
+     en el mismo puerto de la capa base. ¿Qué prueba confirma
+     que el Mock HAL y el Real HW HAL producen salidas compatibles
+     con el contrato de interfaz? -->
+
+### 1.7 Telemetry companion
+
+<!-- ================================================================
+     V-SIL v3 §5.5: proceso ligero y no intrusivo que monitorea
+     la unidad de cómputo durante todas las ejecuciones de prueba.
+     
+     Obligatorio en todo diseño y en toda ejecución de pruebas.
+     Es infraestructura de verificación, NO un módulo del sistema:
+     vive en el kit de verificación y nunca se entrega con el software.
+     No tiene SYS-*, no aparece en el DAG de implementación.
+     ================================================================ -->
+
+| Campo | Valor |
+|-------|-------|
+| Señales monitoreadas | <!-- CPU, memoria, temperatura, buffers perdidos, latencia de planificación --> |
+| Intervalo de muestreo | <!-- e.g., 1 s, 100 ms --> |
+| Presupuesto de recursos | <!-- CPU máx %, memoria máx --> |
+| Umbral de huella declarado | <!-- el companion no debe superar este consumo --> |
+| Formato de salida | <!-- e.g., CSV con timestamp, JSON lines --> |
+| Integración con evidencia | <!-- cómo se adjuntan las lecturas a cada registro de evidencia --> |
+
+**Envolvente de operación de la UC:**
+
+<!-- Definir los umbrales fuera de los cuales la evidencia se marca
+     como potencialmente inválida. -->
+
+| Señal | Umbral nominal | Acción si se excede |
+|-------|----------------|---------------------|
+| Temperatura | <!-- e.g., ≤ 80 °C --> | <!-- marcar evidencia --> |
+| CPU | <!-- e.g., ≤ 90% sostenido --> | <!-- marcar evidencia --> |
+| Buffers perdidos | <!-- e.g., 0 --> | <!-- marcar evidencia --> |
+| Latencia de planificación | <!-- e.g., ≤ X ms --> | <!-- marcar evidencia --> |
+
+<!-- El telemetry companion NO interfiere con el sistema bajo prueba.
+     Si su propia huella supera el umbral declarado, es un defecto
+     de infraestructura, no del sistema. -->
 
 ---
 
@@ -702,6 +835,12 @@ flowchart LR
      
      G1 NO es un script determinista como G0.
      G1 es una REVISIÓN de diseño (design review).
+
+     G1 no ejecuta scripts. El agente valida por sí mismo: lee el
+     diseño completo y el GT, rederiva cada fila desde las secciones
+     fuente (no confía en los resúmenes del diseño) y ejecuta el
+     toolchain en la máquina (G1.14). Gasta los tokens que una
+     revisión exhaustiva necesita.
      
      El veredicto es humano (HITL). Un agente puede preparar la
      revisión, derivar el orden del DAG, cruzar trazas y recomendar
@@ -881,7 +1020,41 @@ solo `hw_dependency: true`; la corrección debe depender de ese hardware.
 <!-- La suma de pruebas aisladas por servicio no sustituye una prueba
      de la ruta completa. G2 debe citar evidencia por módulo y PATH-*. -->
 
-## G1.11 — Preparación del modelo ML (solo si §1.5 existe)
+## G1.11 — Escalera de sustitución HAL
+
+<!-- REVISIÓN.
+     Verificar que el Mock HAL expone el contrato de interfaz de la
+     capa base y que los vectores dorados tienen gobernanza completa.
+     Las filas del Real HW HAL aplican solo en `mock+real`; en
+     `mock-only` se marcan "No aplica (mock-only)".
+-->
+
+| Verificación | Resultado |
+|--------------|-----------|
+| ¿Meta declara `HAL mode` (mock-only / mock+real)? | |
+| ¿El Mock HAL expone el contrato de interfaz de la capa base? | |
+| ¿Los vectores dorados llevan ID, SHA-256, parámetros y salida esperada? | |
+| Solo en `mock+real`: ¿el Real HW HAL expone el mismo contrato de interfaz? | |
+| Solo en `mock+real`: ¿el Real HW HAL referencia los `PROTO-*`, las cadenas de corrección (§4) y las tolerancias (§5) de la SyRS? | |
+| Solo en `mock+real`: ¿el grado de calibración y las tolerancias en dBi están declarados? | |
+| Solo en `mock+real`: ¿la prueba de sustitución entre HALs está definida? | |
+
+## G1.12 — Telemetry companion
+
+<!-- REVISIÓN.
+     Verificar que la especificación del companion es completa
+     y que su huella no compromete las pruebas.
+-->
+
+| Verificación | Resultado |
+|--------------|-----------|
+| ¿Se declara qué señales monitorea y con qué intervalo? | |
+| ¿El presupuesto de recursos del companion está declarado y acotado? | |
+| ¿La envolvente de operación de la UC tiene umbrales definidos? | |
+| ¿Se define cómo se adjuntan las lecturas a cada registro de evidencia? | |
+| ¿La huella del companion está por debajo del umbral declarado? | |
+
+## G1.13 — Preparación del modelo ML (solo si §1.5 existe)
 
 <!-- OMITIR esta comprobación en el informe G1 si el diseño no usa ML.
      Revisar la preparación para implementar, no aprobar las métricas
@@ -890,6 +1063,7 @@ solo `hw_dependency: true`; la corrección debe depender de ese hardware.
 | Verificación condicional | Resultado |
 |--------------------------|-----------|
 | ¿Artefacto y pesos disponibles, versionados y con digest? | |
+| ¿Fuente de datos de entrenamiento (Mock HAL o Real HW HAL) y etiquetado identificados? | |
 | ¿Runtime y recursos compatibles con la COTS declarada? | |
 | ¿Entradas, preprocesamiento, salidas y umbrales son implementables? | |
 | ¿Métricas incluyen dataset y condiciones de medición? | |
@@ -897,6 +1071,34 @@ solo `hw_dependency: true`; la corrección debe depender de ese hardware.
 
 **Si faltan pesos o metadata necesarios:** FAIL → completar entrada/diseño en S1.
 **Si se demuestra inviabilidad del requisito en la COTS declarada:** RFD.
+
+## G1.14 — Disponibilidad del toolchain
+
+<!-- REVISIÓN EN LA MÁQUINA.
+     El agente ejecuta él mismo el `--version` del runtime y del gestor
+     de paquetes de cada entrada de `Toolchain` (p. ej. `python3`, `uv`,
+     `node`, `pnpm`; `tsc` para TypeScript). Si falta una herramienta,
+     pregunta brevemente al usuario y solo instala tras un sí, a nivel
+     de usuario y nunca con `sudo` sin permiso.
+-->
+
+| Verificación | Resultado |
+|--------------|-----------|
+| ¿Responde el runtime de cada servicio (versión registrada)? | |
+| ¿Responde el gestor de paquetes de cada servicio (versión registrada)? | |
+| ¿Las versiones cumplen lo que exige el diseño? | |
+| Herramientas instaladas tras el sí del usuario, o rechazadas | |
+
+## G1.15 — Punto de entrada ejecutable
+
+| Verificación | Resultado |
+|--------------|-----------|
+| ¿§0.5 define un comando desde la raíz que arranca todos los servicios? | |
+| ¿Se identifica el HAL, la URL, el resultado visible y el apagado? | |
+| ¿Puede ejecutarse sin importar el kit `verification/` no entregado? | |
+
+**Hallazgo abierto:** el comando solo escribe instrucciones o falta una
+dependencia de ejecución para poner el sistema en marcha.
 
 ---
 

@@ -16,13 +16,15 @@ The V-SIL pipeline encoded as executable artifacts:
   1. **StRS** (`G0_StRS.md`) — Stakeholder Requirements Specification (§9.4): stakeholder requirements (`STK-`), COTS hardware constraints (`HWC-`), and normative obligations (`NRM-` with inline compliance traceability)
   2. **SyRS** (`G0_SyRS.md`) — System Requirements Specification (§9.5): per-measurand system requirements (`SYS-`) — methods, correction chains, uncertainty budgets — tracing to StRS blocks
   The author writes a Build Package (`GT/build_package.md`); the S0 skill casts it into the two blueprints. There is no SRS in v3: the S1 design document replaces it.
-- **`templates/skills/`** — Skills for each stage and gate of the V-SIL v3 flow `S0 → G0 → S1 → G1 → (S2 → G2)`; RFD can be raised from any stage. Each skill is self-contained: its templates, scripts and assets live in its own folder.
+- **`templates/skills/`** — Skills for each stage and gate of the V-SIL v3 flow `S0 → G0 → S1 → G1 → S2 → G2`; RFD can be raised from any stage. Each skill is self-contained: its templates, scripts and assets live in its own folder.
   - `S0_normalise_build_package/` — **Stage**: casts `GT/build_package.md` into `G0_StRS.md` and `G0_SyRS.md` in one pass, with no judgement. Writes `S0.md`.
   - `G0_valid_req_and_GT/` — **Deterministic structural validation** of the GT pair (StRS + SyRS) plus the G0-X cross-document rules. No AI — pure script (`scripts/g0_validate.py`) — followed by the human Gate H. `SKILL.md` is the agent contract, `references/RULES.md` the full rule tables.
   - `S1_design_services/` — **Stage**: designs a system of layered services (`S1_artifacts/S1_design.md`) and its dependency graph (`S1_artifacts/S1_graph.html`, vis-network vendored in `assets/`).
   - `G1_design_review/` — **Human gate**: no script. The agent fills a checklist and recommends; the human answers PASS, FEEDBACK or RFD.
   - `RFD_request_for_deviation/` — Outside the chain: decision document when requirements are infeasible on the declared COTS platform. Suspends the cycle until the author decides.
-  - S2 and G2 are planned (`odd/tasks/`); they are not implemented yet.
+  - `S2_implement_services/` — **Stage**: builds the services under `src/<service>/`, the verification kit under `verification/` (Mock HAL, golden vectors, telemetry companion) and the VL-1 tests, from `references/project_layout.md` and the locked loggers (`references/logger.py`, `references/logger.ts`). Writes `S2.md` and `S2_artifacts/test_run.md`.
+  - `G2_adaptive_verification/` — **Human gate**: delegates the `test_run.md` commands to the `vsil-verifier` subagent, presents the results and records PASS, FEEDBACK (`Verdict: module defect` → S2, `Verdict: design defect` → S1) or RFD. PASS writes `G2_artifacts/verified_prototype.md`.
+- **`templates/agents/`** — Subagent bodies. `vsil-verifier.md` is the one shared body of the G2 verifier; `codeanvil create` writes it per runtime (`.claude/agents/`, `.opencode/agents/`, `.codex/agents/`) as listed under `subagents` in `config.yaml`.
 - **`templates/backups/`** — Retired in v3 and kept for later: `custody-chain/`, `G1_start_design/` and `G1_SRS.md`. Not scaffolded and not shipped in the wheel.
 
 ### `src/codeanvil/` — The delivery tool (serves the methodology)
@@ -96,7 +98,10 @@ codeanvil-gcpds/                  ← repo root
 │   │   ├── G0_valid_req_and_GT/
 │   │   ├── S1_design_services/
 │   │   ├── G1_design_review/
+│   │   ├── S2_implement_services/
+│   │   ├── G2_adaptive_verification/
 │   │   └── RFD_request_for_deviation/
+│   ├── agents/vsil-verifier.md   ← shared body of the G2 verifier subagent
 │   ├── backups/                  ← retired skills (custody-chain, G1_start_design)
 │   ├── GT/                       ← GT reference templates (IEEE 29148)
 │   ├── AGENTS/TEMPLATE_AGENT.md  ← AGENTS.md Jinja template
@@ -113,7 +118,7 @@ codeanvil-gcpds/                  ← repo root
 ### 2. A scaffolded user project (what `codeanvil create` produces)
 
 The agent is a **user** running the V-SIL methodology. The working directory is the
-project folder — it has no `src/`, no `templates/`, no `pyproject.toml`.
+project folder — it has no `templates/`, and no `src/`, `verification/` or `pyproject.toml` until S2 builds the code.
 
 ```
 /path/to/project/                 ← project root (anywhere on disk)
@@ -135,12 +140,15 @@ project folder — it has no `src/`, no `templates/`, no `pyproject.toml`.
 │   │   ├── S0_normalise_build_package/   ← own blueprints in templates/
 │   │   ├── S1_design_services/           ← references/ + assets/ (vis-network)
 │   │   ├── G1_design_review/
+│   │   ├── S2_implement_services/        ← references/ (project layout, loggers)
+│   │   ├── G2_adaptive_verification/     ← references/verified_prototype.md
 │   │   ├── RFD_request_for_deviation/
 │   │   └── marconi-*/SKILL.md    ← (if --mcp marconi) 6 RF/SDR skills
 │   └── mcp.yaml                  ← (if --mcp) agent-agnostic MCP manifest
 ├── .mcp.json                     ← (if --mcp) Claude Code MCP server definition
 ├── .claude/
 │   ├── skills -> ../.agents/skills
+│   ├── agents/vsil-verifier.md   ← generated (also .opencode/agents/, .codex/agents/*.toml)
 │   ├── settings.json             ← (if --mcp) enabledMcpjsonServers
 │   └── settings.local.json       ← (if --mcp) enabledMcpjsonServers
 ├── .github/skills -> ../.agents/skills

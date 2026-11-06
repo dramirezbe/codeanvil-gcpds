@@ -632,7 +632,7 @@ Deliver the whole document as one file, `G0_StRS.md`, ending with `<!-- END G0_S
 | **Parameter** | the BP specification name |
 | **Method** | the BP method / values text, verbatim |
 | **Traces to** | every BP "derives from" token resolved to the block IDs assigned in Step 1, BP order |
-| **Standard(s)** | the BP standard, verbatim; a SYS block must cite one, so a BP row with none gets `_standard_` and a missing-information row |
+| **Standard(s)** | the BP standard, verbatim; use `—` when the BP gives none, and add a missing-information row if `Traces to` names an `NRM-` block |
 | **Acceptance Criteria** | the BP acceptance cell split into `N. [ ]` conditions, values verbatim |
 | **Notes** | BP row prose not consumed by another field, verbatim; omit when none |
 
@@ -651,7 +651,7 @@ Verification or Compliance).
 | **Parameter**          | <parameter> |
 | **Method**             | <method / values> |
 | **Traces to**          | `STK-…`, `NRM-…`, `HWC-…` |
-| **Standard(s)**        | <standard> |
+| **Standard(s)**        | <standard or —> |
 
 **Acceptance Criteria:**
 

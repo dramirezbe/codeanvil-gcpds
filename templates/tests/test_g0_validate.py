@@ -1126,9 +1126,51 @@ class TestCrossDocument(unittest.TestCase):
     def test_sys_without_standard_reported(self):
         doc = MINIMAL_SYRS.replace("| **Standard(s)** | ITU-R SM.1537 |\n", "")
         _, _, g0x = check_pair(MINIMAL_STRS, doc)
-        hit = [f for f in errors(g0x) if "no normative source cited" in f.message]
+        hit = [f for f in errors(g0x) if "missing required field 'Standard(s)'" in f.message]
         self.assertEqual(len(hit), 1, messages(g0x))
         self.assertEqual(hit[0].doc, "SyRS")
+
+    def test_project_method_may_have_no_normative_source(self):
+        doc = MINIMAL_SYRS.replace(
+            "| **Standard(s)** | ITU-R SM.1537 |",
+            "| **Standard(s)** | — |",
+        )
+        _, _, g0x = check_pair(MINIMAL_STRS, doc)
+        self.assertEqual(errors(g0x), [], messages(g0x))
+
+    def test_normative_trace_requires_concrete_source(self):
+        doc = MINIMAL_SYRS.replace(
+            "| **Traces to** | `STK-ANAL-001` |",
+            "| **Traces to** | `STK-ANAL-001`, `NRM-STD-001` |",
+        ).replace(
+            "| **Standard(s)** | ITU-R SM.1537 |",
+            "| **Standard(s)** | — |",
+        )
+        _, _, g0x = check_pair(MINIMAL_STRS, doc)
+        hit = [f for f in errors(g0x) if "no normative source cited" in f.message]
+        self.assertEqual(len(hit), 1, messages(g0x))
+        self.assertEqual(hit[0].block_id, "SYS-ANAL-001")
+
+    def test_normative_trace_rejects_standard_placeholder(self):
+        doc = MINIMAL_SYRS.replace(
+            "| **Traces to** | `STK-ANAL-001` |",
+            "| **Traces to** | `STK-ANAL-001`, `NRM-STD-001` |",
+        ).replace(
+            "| **Standard(s)** | ITU-R SM.1537 |",
+            "| **Standard(s)** | _standard_ |",
+        )
+        _, _, g0x = check_pair(MINIMAL_STRS, doc)
+        hit = [f for f in errors(g0x) if "no normative source cited" in f.message]
+        self.assertEqual(len(hit), 1, messages(g0x))
+
+    def test_non_normative_blank_standard_requires_explicit_dash(self):
+        doc = MINIMAL_SYRS.replace(
+            "| **Standard(s)** | ITU-R SM.1537 |",
+            "| **Standard(s)** |  |",
+        )
+        _, _, g0x = check_pair(MINIMAL_STRS, doc)
+        hit = [f for f in errors(g0x) if "must use —" in f.message]
+        self.assertEqual(len(hit), 1, messages(g0x))
 
     def test_multi_trace_covers_each_target(self):
         """A comma-separated Traces to cell covers every named STK."""

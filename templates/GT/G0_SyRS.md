@@ -34,7 +34,8 @@
 > **Note:** The SyRS is the detailed per-measurand technical specification derived
 > from the G0-validated StRS. Every SYS- block carries a `Traces to` field pointing
 > at the StRS block(s) it derives from, and a `Standard(s)` field citing its
-> normative source. Compliance traceability is inline: §2.3 maps each normative
+> normative source when it traces to an NRM- obligation (otherwise `—`).
+> Compliance traceability is inline: §2.3 maps each normative
 > source to the methods that realize it (this replaces a standalone compliance
 > matrix).
 
@@ -131,7 +132,7 @@ SYS-[SUB]-[NNN]
 | `parameter`      | yes      | string            | The measurand / parameter being specified                       |
 | `method`         | yes      | string            | The method that realizes it (see §2.2)                          |
 | `traces_to`      | yes      | string[]          | StRS block ID(s) this block derives from (`NRM-`, `HWC-`, `STK-`) |
-| `standard(s)`    | yes      | string            | Normative source for this specification (never —)               |
+| `standard(s)`    | yes      | string            | Normative source when tracing to NRM-; otherwise `—` if none applies |
 | `acceptance_criteria` | yes  | string[]          | Verifiable conditions (≥ 1)                                     |
 | `notes`          | no       | string            | Technical remarks                                               |
 
@@ -149,7 +150,7 @@ Each block is a self-contained block:
 | **Parameter**          | _measurand or parameter being specified_                  |
 | **Method**             | _selected method (see §2.2)_                               |
 | **Traces to**          | `STK-…`                                                   |
-| **Standard(s)**        | _normative source_                                         |
+| **Standard(s)**        | _normative source or —_                                    |
 
 **Acceptance Criteria:**
 
@@ -175,7 +176,9 @@ _Place SYS- blocks here, grouped by measurand or method family._
 
 _Per-block correction chains (antenna factor, cable loss, impedance matching, …).
 Structure: source → correction term → uncertainty contribution. MVP scope: the
-section must exist; completeness of each chain is a G0 v2 check._
+section must exist; completeness of each chain is a G0 v2 check.
+Optional. Filled only when the Build Package supplies lab inputs (used by the Real HW HAL
+in `mock+real`). Otherwise: `Not applicable: no lab inputs in the Build Package.`_
 
 | Block        | Correction        | Model / Source          | Applied Where       |
 |--------------|-------------------|-------------------------|---------------------|
@@ -186,7 +189,9 @@ section must exist; completeness of each chain is a G0 v2 check._
 ## 5. Uncertainty Budgets
 
 _GUM uncertainty budgets per measurand/component. MVP scope: this section must
-exist (placeholders acceptable); budget structure and completeness are G0 v2 checks._
+exist (placeholders acceptable); budget structure and completeness are G0 v2 checks.
+Optional. Filled only when the Build Package supplies lab inputs (used by the Real HW HAL
+in `mock+real`). Otherwise: `Not applicable: no lab inputs in the Build Package.`_
 
 | Measurand | Component        | Source u(x) | Distribution | Sensitivity c | Standard u |
 |-----------|------------------|-------------|--------------|---------------|------------|
@@ -196,7 +201,9 @@ exist (placeholders acceptable); budget structure and completeness are G0 v2 che
 
 ## 6. Field Measurement Protocols
 
-_Field procedures: setup, calibration, execution, and recording for each protocol._
+_Field procedures: setup, calibration, execution, and recording for each protocol.
+Optional. Filled only when the Build Package supplies lab inputs (used by the Real HW HAL
+in `mock+real`). Otherwise: `Not applicable: no lab inputs in the Build Package.`_
 
 | Protocol ID | Applies To (Blocks)  | Setup | Calibration | Execution |
 |-------------|----------------------|-------|-------------|-----------|
