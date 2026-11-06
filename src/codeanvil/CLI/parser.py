@@ -180,6 +180,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Agent to launch in the sandbox",
     )
 
+    sub.add_parser(
+        "upgrade",
+        help="Upgrade codeanvil to the latest version from GitHub",
+        description="Reinstalls codeanvil from the main branch using uv. Works on Linux, macOS and Windows.",
+    )
+
     return parser
 
 

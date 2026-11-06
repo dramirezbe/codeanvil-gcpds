@@ -196,6 +196,7 @@ codeanvil sync (inside a clone)            → register the project in the local
 codeanvil list                             → registered projects (short UUID + local path)
 codeanvil status [myproj]                  → cycles and latest HITL per gate (.codeanvil/report/)
 codeanvil now [--machine]                  → timestamp: human-readable / filename-safe
+codeanvil upgrade                          → reinstall from latest main (detects OS, uses uv)
 codeanvil sandbox <agent>                  → launch agent (claude|pi|opencode|codex) with only project-local settings
 ```
 

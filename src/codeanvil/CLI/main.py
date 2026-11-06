@@ -10,6 +10,7 @@ from codeanvil.CLI.commands import (
     cmd_sandbox,
     cmd_status,
     cmd_sync,
+    cmd_upgrade,
 )
 from codeanvil.CLI.parser import argparser
 
@@ -36,6 +37,8 @@ def choose_option(args: argparse.Namespace) -> None:
             cmd_now(tz=args.tz, machine=args.machine)
         case "sandbox":
             cmd_sandbox(args.agent)
+        case "upgrade":
+            cmd_upgrade()
 
 
 def main() -> None:

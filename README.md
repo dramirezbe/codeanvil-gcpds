@@ -132,6 +132,7 @@ evidence, not a new G2 verdict.
 | `codeanvil status [name]` | Latest report per stage/gate in flow order, with `delivered`, `stale` and `closed` markers (from cwd, or by project name) |
 | `codeanvil list` | Registered projects (short UUID + local path) |
 | `codeanvil now [--machine]` | System timestamp: human-readable or filename-safe |
+| `codeanvil upgrade` | Reinstall codeanvil from the latest main branch (detects OS, uses uv) |
 
 ## MCP server integration (optional)
 
