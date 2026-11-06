@@ -14,10 +14,6 @@ from codeanvil.config.paths import CONFIG
 
 log = get_logger(__name__)
 
-# Legacy gate report filenames: <gate>_<machine-timestamp>.md
-# (e.g. G0_2026-10-21_16-23-45-123.md), written before cycle-scoped reports.
-_REPORT_RE = re.compile(r"^(?P<gate>.+)_(?P<ts>\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}-\d{3})\.md$")
-
 # Cycle-scoped reports: .codeanvil/report/<cycle>/<gate>.md with appended
 # "## Iteration N" sections and a | HITL | PASS|FEEDBACK | row per iteration.
 _ITERATION_RE = re.compile(r"^## Iteration (\d+)\s*$", re.MULTILINE)
@@ -82,8 +78,15 @@ def cycle_reports(report_dir: Path) -> dict[str, dict[str, ReportState]]:
 
 # `codeanvil backup` folder names: <stage>_iter<N> under a producing cycle, or
 # <stage>_<machine-timestamp> under backups/unknown/.
-_BACKUP_ITER_RE = re.compile(r"^(?P<stage>S0|S1|S2|G2)_iter(?P<iteration>\d+)$")
-_BACKUP_UNKNOWN_RE = re.compile(r"^(?P<stage>S0|S1|S2|G2)_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}-\d{3}$")
+# Backups of a file with no resolvable producer live under this folder; the
+# name is reserved, so `backup` refuses a cycle with the same name.
+UNKNOWN_PRODUCER = "unknown"
+
+# Stage alternatives come from `backup_targets` in config.yaml, the single
+# source of truth for which stages `codeanvil backup` accepts.
+_STAGES = "|".join(re.escape(stage) for stage in CONFIG.get("backup_targets", {}))
+_BACKUP_ITER_RE = re.compile(rf"^(?P<stage>{_STAGES})_iter(?P<iteration>\d+)$")
+_BACKUP_UNKNOWN_RE = re.compile(rf"^(?P<stage>{_STAGES})_\d{{4}}-\d{{2}}-\d{{2}}_\d{{2}}-\d{{2}}-\d{{2}}-\d{{3}}$")
 
 
 def backup_entries(backups_dir: Path) -> dict[str, list[tuple[str, int | None, str]]]:
@@ -91,32 +94,30 @@ def backup_entries(backups_dir: Path) -> dict[str, list[tuple[str, int | None, s
 
     `folder` is relative to the backups directory, so callers print it with the
     project-relative prefix. Unknown-producer folders live under `unknown/`."""
-    best: dict[tuple[str, str], tuple[int | str, str]] = {}
+    # Order key: (1, iteration) for producer folders, (0, timestamp) for
+    # unknown-producer ones, so the two kinds never compare int against str.
+    best: dict[tuple[str, str], tuple[tuple[int, int | str], str]] = {}
     if not backups_dir.is_dir():
         return {}
     for cycle_dir in sorted(path for path in backups_dir.iterdir() if path.is_dir()):
         for folder in cycle_dir.iterdir():
             if not folder.is_dir():
                 continue
-            match = _BACKUP_ITER_RE.match(folder.name)
-            if match:
-                stage = match.group("stage")
-                iteration: int | None = int(match.group("iteration"))
-                order: int | str = iteration
-            elif cycle_dir.name == "unknown" and _BACKUP_UNKNOWN_RE.match(folder.name):
-                stage, iteration = folder.name.split("_", 1)[0], None
-                order = folder.name
-            else:
+            unknown = cycle_dir.name == UNKNOWN_PRODUCER
+            match = (_BACKUP_UNKNOWN_RE if unknown else _BACKUP_ITER_RE).match(folder.name)
+            if match is None:
                 continue
+            stage = match.group("stage")
+            order: tuple[int, int | str] = (
+                (0, folder.name) if unknown else (1, int(match.group("iteration")))
+            )
             relative = f"{cycle_dir.name}/{folder.name}"
             key = (cycle_dir.name, stage)
-            # Same key always holds one kind: an iteration int, or the
-            # timestamp in an unknown-producer folder name.
             if key not in best or order > best[key][0]:
                 best[key] = (order, relative)
     entries: dict[str, list[tuple[str, int | None, str]]] = {}
     for (cycle, stage), (order, relative) in best.items():
-        iteration = order if isinstance(order, int) else None
+        iteration = order[1] if order[0] == 1 else None
         entries.setdefault(cycle, []).append((stage, iteration, relative))
     for values in entries.values():
         values.sort(key=lambda entry: gate_order(entry[0]))

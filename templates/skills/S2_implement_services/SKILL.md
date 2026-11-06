@@ -150,8 +150,9 @@ Before step 1 of every iteration, ask the pause schedule as **Pause Schedule** s
    input.
    Implement §0.5 and write a VL-0 smoke test that starts the actual entry point, connects the
    real service processes, observes a valid update, and shuts down cleanly. Run the documented
-   command with runtime dependencies only (`uv sync --frozen --no-dev` for Python). Record the
-   command, URL and observed result in `test_run.md`.
+   command with runtime dependencies only (`uv sync --frozen --no-dev` for Python). Keep the
+   command, URL and observed result for `test_run.md`; do not touch `test_run.md` before step 6
+   has backed up the previous one.
 5. **VL-1 tests, written, not claimed.** For every module and `PATH-*` with `required_vl` VL-1 or
    higher, write a test fed by the Mock HAL synthetic generator that measures the metric against
    its `SYS-*` threshold, with the telemetry collector attached. Run them only to check they
@@ -166,13 +167,14 @@ Before step 1 of every iteration, ask the pause schedule as **Pause Schedule** s
 
 Rework, module defect: a G2 iteration with `Verdict: module defect` names the modules to fix,
 including a missing VL-1 test. Redo step 3 (unit, bottom-up and sandwich) or 5 for them, then
-step 7.
+steps 6 and 7.
 
 Rework, design defect: a G2 iteration with `Verdict: design defect` routes through S1 and G1; S2
 runs again only after G1 passes. Work from the latest G1 PASS iteration's impact map and go
 bottom-up: revise the affected contract and its stub first, then the owning module (unit,
 bottom-up, sandwich), then replace the stub. Preserve every module the impact map does not name.
-Rerun the affected `PATH-*` and the changed VL-1 tests, then the full VL-0 floor (step 7). Record
+Rerun the affected `PATH-*` and the changed VL-1 tests, then back up and run the full VL-0 floor
+(steps 6 and 7). Record
 in `S2.md` the changed IDs, files, commands, results and the G2 iteration it answers.
 
 ## Test Run Contract

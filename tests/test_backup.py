@@ -154,25 +154,42 @@ def test_backup_prints_nothing_to_back_up_when_no_target_exists(tmp_path, monkey
     assert not (project / PROJECT_BACKUPS).exists()
 
 
-def test_backup_refuses_an_existing_folder_with_different_content(
+def test_backup_keeps_the_folder_when_an_interrupted_pass_resumes(
     tmp_path, monkeypatch, capsys
 ):
-    log = _capture_errors(monkeypatch)
+    """A pass that backed up, rewrote the design and died before its iteration
+    re-runs with the same producer: the folder already holds that iteration's
+    files, so the command keeps it, never overwrites it, and lets the pass go on."""
     project = _make_project(tmp_path)
     monkeypatch.chdir(project)
     _write_report(project, "01_run", "S1", [(1, "PASS")])
     design = _design(project)
     cmd_backup("S1")
-    (design / "SDD.md").write_text("# SDD edited outside the flow\n", encoding="utf-8")
+    (design / "SDD.md").write_text("# SDD half rewritten by the interrupted pass\n", encoding="utf-8")
+    capsys.readouterr()
+
+    cmd_backup("S1")
+
+    out = capsys.readouterr().out
+    assert "already backed up: .codeanvil/backups/01_run/S1_iter1/" in out
+    assert "resuming an interrupted pass" in out
+    assert (project / PROJECT_BACKUPS / "01_run" / "S1_iter1" / "SDD.md").read_text(
+        encoding="utf-8"
+    ) == "# SDD\n"
+
+
+def test_backup_refuses_a_cycle_named_like_the_unknown_bucket(tmp_path, monkeypatch):
+    log = _capture_errors(monkeypatch)
+    project = _make_project(tmp_path, cycle="unknown")
+    monkeypatch.chdir(project)
+    _design(project)
 
     with pytest.raises(SystemExit) as exc:
         cmd_backup("S1")
 
     assert exc.value.code == 1
-    assert "different content" in log.errors[0]
-    assert (project / PROJECT_BACKUPS / "01_run" / "S1_iter1" / "SDD.md").read_text(
-        encoding="utf-8"
-    ) == "# SDD\n"
+    assert "reserved" in log.errors[0]
+    assert not (project / PROJECT_BACKUPS).exists()
 
 
 def test_backup_expands_the_active_cycle_for_s2(tmp_path, monkeypatch, capsys):
@@ -211,3 +228,19 @@ def test_backup_requires_a_project_manifest(tmp_path, monkeypatch):
 
     assert exc.value.code == 1
     assert "no .codeanvil/project.yaml" in log.errors[0]
+
+
+def test_backup_entries_never_mix_iteration_and_timestamp_orders(tmp_path):
+    """An `unknown/` bucket that also holds an `_iter` folder (a cycle once named
+    `unknown`) must not crash `status` with an int-versus-str comparison."""
+    from codeanvil.reports import backup_entries
+
+    unknown = tmp_path / "unknown"
+    (unknown / "S1_iter1").mkdir(parents=True)
+    (unknown / "S1_2026-11-06_14-10-00-123").mkdir()
+    (tmp_path / "01_run" / "S1_iter2").mkdir(parents=True)
+
+    entries = backup_entries(tmp_path)
+
+    assert entries["unknown"] == [("S1", None, "unknown/S1_2026-11-06_14-10-00-123")]
+    assert entries["01_run"] == [("S1", 2, "01_run/S1_iter2")]

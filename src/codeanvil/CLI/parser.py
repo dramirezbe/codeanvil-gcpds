@@ -8,6 +8,8 @@ import argparse
 from collections.abc import Sequence
 from pathlib import Path
 
+from codeanvil.config.paths import CONFIG
+
 
 def build_parser() -> argparse.ArgumentParser:
     """Build the full `codeanvil` parser (subcommands included)."""
@@ -158,7 +160,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     backup.add_argument(
         "stage",
-        choices=["S0", "S1", "S2", "G2"],
+        choices=list(CONFIG.get("backup_targets", {})),
         help="Stage whose artifacts to back up",
     )
 

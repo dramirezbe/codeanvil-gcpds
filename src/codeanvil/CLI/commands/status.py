@@ -13,7 +13,7 @@ from codeanvil.config.paths import (
 from codeanvil.db.projects import get_project_by_id, get_project_by_name, sync_project
 from codeanvil.db.schema import db_exists
 from codeanvil.db.utils import connect_db
-from codeanvil.reports import ReportState, backup_entries, cycle_reports
+from codeanvil.reports import UNKNOWN_PRODUCER, ReportState, backup_entries, cycle_reports
 
 log = get_logger(__name__)
 
@@ -152,7 +152,7 @@ def cmd_status(name: str | None = None) -> None:
                     label = f"{stage} iteration {iteration}" if iteration is not None else stage
                     print(f"  Backups: {label} → {backups_prefix}/{folder}/")
 
-        unknown = backups.get("unknown")
+        unknown = backups.get(UNKNOWN_PRODUCER)
         if unknown:
             print("Backups without a producing cycle:")
             for stage, _iteration, folder in unknown:

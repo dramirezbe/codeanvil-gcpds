@@ -15,12 +15,9 @@ import yaml
 from codeanvil.config.logger import get_logger
 from codeanvil.config.paths import CONFIG, PROJECT_BACKUPS, PROJECT_REPORT, find_manifest
 from codeanvil.config.time import format_timestamp, format_timestamp_machine
-from codeanvil.reports import ReportState, cycle_reports
+from codeanvil.reports import UNKNOWN_PRODUCER, ReportState, cycle_reports
 
 log = get_logger(__name__)
-
-BACKUP_STAGES = ("S0", "S1", "S2", "G2")
-
 
 class BackupError(Exception):
     """A precondition failed; the message tells the agent what to fix."""
@@ -130,6 +127,11 @@ def _run(stage: str) -> None:
     project_dir = manifest_path.parent.parent
     active = identity.get("cycle")
     active = active if isinstance(active, str) and active else None
+    if active == UNKNOWN_PRODUCER:
+        raise BackupError(
+            f"cycle name '{UNKNOWN_PRODUCER}' is reserved for backups without a producer"
+            " — rename the cycle in .codeanvil/project.yaml"
+        )
 
     targets = _targets(stage, active)
     sources = [target for target in targets if (project_dir / target).is_file()]
@@ -141,7 +143,7 @@ def _run(stage: str) -> None:
     producer = _producer(cycles, active, stage)
     backups_dir = project_dir / PROJECT_BACKUPS
     if producer is None:
-        folder = backups_dir / "unknown" / f"{stage}_{format_timestamp_machine()}"
+        folder = backups_dir / UNKNOWN_PRODUCER / f"{stage}_{format_timestamp_machine()}"
     else:
         folder = backups_dir / producer[0] / f"{stage}_iter{producer[1]}"
 
@@ -151,19 +153,24 @@ def _run(stage: str) -> None:
     ]
 
     if folder.exists():
+        # The producer's iteration has not advanced since this folder was
+        # written, so it already holds that iteration's files. A different
+        # working copy means a pass was interrupted (or stopped) after its
+        # backup and is being resumed: keep the folder, never overwrite it.
         if _manifest_digests(folder) == {entry["source"]: entry["sha256"] for entry in files}:
             print(f"already backed up: {_relative(folder, project_dir)}")
-            return
-        raise BackupError(
-            f"backup already exists with different content: {_relative(folder, project_dir)}"
-            " — a file was edited outside the flow; stop and show this to the human"
-        )
+        else:
+            print(
+                f"already backed up: {_relative(folder, project_dir)}"
+                " (the working copy changed since; resuming an interrupted pass)"
+            )
+        return
 
     manifest = {
         "created": format_timestamp(),
         "active_cycle": active,
         "producer": {
-            "cycle": producer[0] if producer else "unknown",
+            "cycle": producer[0] if producer else UNKNOWN_PRODUCER,
             "stage": stage,
             "iteration": producer[1] if producer else "unknown",
         },
