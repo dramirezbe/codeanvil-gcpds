@@ -8,7 +8,7 @@ import sys
 
 import pytest
 
-EXPECTED_SUBCOMMANDS = {"init", "create", "list", "sync", "status", "now", "backup", "runtime", "python", "sandbox", "upgrade"}
+EXPECTED_SUBCOMMANDS = {"init", "create", "list", "sync", "status", "now", "backup", "runtime", "python", "mcp", "sandbox", "upgrade"}
 
 
 def _run_cli(*args: str) -> subprocess.CompletedProcess:
@@ -98,3 +98,10 @@ def test_python_subcommand_exists():
     result = _run_cli("python", "--help")
     assert result.returncode == 0, f"python not recognized: {result.stderr}"
     assert "script" in result.stdout
+
+
+def test_mcp_subcommand_exposes_its_actions():
+    result = _run_cli("mcp", "--help")
+    assert result.returncode == 0, f"mcp not recognized: {result.stderr}"
+    for action in ("add", "update", "remove", "list", "doctor", "run", "enable", "disable"):
+        assert action in result.stdout, f"action '{action}' missing from 'mcp --help'"

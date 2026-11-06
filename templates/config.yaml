@@ -175,19 +175,41 @@ sandbox_agents:
     args: ["--no-daemon"]
     auth_files: ["installation_id"]
 
-# MCP servers — optional external tool integrations.
-# Installed globally during `codeanvil init --mcp <name>`,
-# wired into projects during `codeanvil create --mcp <name>`.
+# OS-installed Python packages that pip cannot provide (compiled against one
+# system Python). `probe` runs in the target interpreter: an import, never a
+# folder check. `install` is keyed by OS family: os-release ID / ID_LIKE
+# (arch, debian, fedora), then darwin and win32. The -dev/-devel packages are
+# for building out-of-tree modules, not for running GNU Radio.
+system_packages:
+  gnuradio:
+    probe: "from gnuradio import gr; print(gr.version())"
+    install:
+      arch: "sudo pacman -S gnuradio"
+      debian: "sudo apt install gnuradio"
+      fedora: "sudo dnf install gnuradio"
+      darwin: "brew install gnuradio"
+      win32: "Use WSL with a Linux install of gnuradio (native Windows via radioconda is unverified)"
+
+# MCP servers — optional external tool integrations, one pinned venv each
+# under ~/.codeanvil-config/mcp/<name>/ (never the methodology runtime).
+# `codeanvil mcp add <name>` clones the repo, checks out `ref` (a tag or
+# commit, never a branch head) and runs `uv sync <sync_args>`. A server with
+# system_packages gets a venv on the exact system interpreter those packages
+# were built for, with --system-site-packages. Projects call every server
+# through `codeanvil mcp run <name>`, which expands {install_path},
+# {venv_bin} and {project_dir} at start-up, so configs hold no absolute path.
 mcp_servers:
   marconi:
     repo: "https://github.com/yoelbassin/gr-mcp.git"
+    ref: "533bae4268e35e4324d03a1c0cd1a624516db56e"
     install_dir: "mcp/marconi"
-    command: "uv"
-    args: ["--directory", "{install_path}", "run", "--extra", "mcp", "marconi-mcp"]
+    sync_args: ["--extra", "mcp"]
+    command: "{venv_bin}/marconi-mcp"
+    args: []
     env:
       MARCONI_WORKSPACE: "{project_dir}"
     skills_subdir: "skills"
     skill_prefix: "marconi"
     description: "LLM-driven GNU Radio — spectrum survey, receiver building, simulation"
-    requires: ["uv"]
+    requires: ["uv", "git"]
     system_packages: ["gnuradio"]

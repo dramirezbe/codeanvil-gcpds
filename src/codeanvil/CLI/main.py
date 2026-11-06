@@ -7,6 +7,7 @@ from codeanvil.CLI.commands import (
     cmd_create,
     cmd_init,
     cmd_list,
+    cmd_mcp,
     cmd_now,
     cmd_python,
     cmd_runtime,
@@ -40,6 +41,8 @@ def choose_option(args: argparse.Namespace) -> None:
             cmd_backup(args.stage)
         case "runtime":
             cmd_runtime(args.action, getattr(args, "packages", None))
+        case "mcp":
+            cmd_mcp(args.action, getattr(args, "names", None), getattr(args, "yes", False))
         case "python":
             cmd_python(args.script, args.args)
         case "now":
