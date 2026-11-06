@@ -540,4 +540,10 @@ After Phase 5:
   `sync.py:33` `_migrate_provenance` targets `.codeanvil/custody/`; `tests/test_create.py:357` asserts
   it) and the registry-prune row (checked: `codeanvil list` shows 10 rows, 8 with missing paths). No
   code changed; `~/.codeanvil-config/db` untouched. Evidence: 267 pytest + 97 unittest green.
-- **Next:** Unit 3 (v0.5.0 bump and release notes).
+- **2026-11-06 — Unit 3: version bump to v0.5.0.** `pyproject.toml`, `CLAUDE.md` and `README.md`
+  (current-release links), and `AGENTS.md` ("Where to start" heading and table row). `uv.lock` also
+  records the project version and the v0.4.4 bump did not update it, so it was regenerated with
+  `uv lock` (one line changed). Release notes drafted at
+  `odd/tasks/t3-holdout-refactor/v0.5.0_release_notes.md` (breaking changes, features). Evidence:
+  267 pytest + 97 unittest green.
+- **Next:** Unit 4 (final verification on the last commit, Release Smoke scratch run, cleanup).
