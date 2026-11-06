@@ -8,7 +8,7 @@ import sys
 
 import pytest
 
-EXPECTED_SUBCOMMANDS = {"init", "create", "list", "sync", "status", "now", "sandbox"}
+EXPECTED_SUBCOMMANDS = {"init", "create", "list", "sync", "status", "now", "sandbox", "upgrade"}
 
 
 def _run_cli(*args: str) -> subprocess.CompletedProcess:
@@ -58,6 +58,14 @@ def test_init_has_mcp_flag():
     result = _run_cli("init", "--help")
     assert result.returncode == 0, result.stderr
     assert "--mcp" in result.stdout, "--mcp flag missing from 'init --help'"
+
+
+def test_upgrade_subcommand_exists():
+    result = _run_cli("upgrade", "--help")
+    assert result.returncode == 0, f"upgrade not recognized: {result.stderr}"
+    assert "uv" in result.stdout.lower() or "reinstall" in result.stdout.lower(), (
+        "upgrade help should mention reinstalling via uv"
+    )
 
 
 def test_version_flag():
