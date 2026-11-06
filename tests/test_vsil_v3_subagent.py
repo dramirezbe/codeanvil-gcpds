@@ -1,9 +1,13 @@
 """T9: `codeanvil create` ships the read-only `vsil-verifier` subagent per runtime."""
 
-import tomllib
 from pathlib import Path
 
 import yaml
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # Python 3.10
+    import tomli as tomllib
 
 from codeanvil.CLI.commands.create import cmd_create
 from codeanvil.config.paths import TEMPLATES_DIR

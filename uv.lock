@@ -18,7 +18,7 @@ wheels = [
 
 [[package]]
 name = "codeanvil"
-version = "0.4.0"
+version = "0.4.1"
 source = { editable = "." }
 dependencies = [
     { name = "beaupy" },
@@ -28,6 +28,7 @@ dependencies = [
 [package.optional-dependencies]
 dev = [
     { name = "pytest" },
+    { name = "tomli", marker = "python_full_version < '3.11'" },
 ]
 
 [package.metadata]
@@ -35,6 +36,7 @@ requires-dist = [
     { name = "beaupy", specifier = ">=4.0.1" },
     { name = "pytest", marker = "extra == 'dev'" },
     { name = "pyyaml" },
+    { name = "tomli", marker = "python_full_version < '3.11' and extra == 'dev'" },
 ]
 provides-extras = ["dev"]
 
