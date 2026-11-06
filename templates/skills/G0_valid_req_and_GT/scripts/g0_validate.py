@@ -185,7 +185,7 @@ _NUMBERED_RE = re.compile(r"^\d+\.")
 _BLOCK_HEADING_RE = re.compile(r"^\*\*`([^`]+)`\s*[\u2014\u2013-]\s*(.+?)\*\*\s*$")
 
 _EMPTY_VALUES = frozenset({"", "\u2014", "\u2013", "-", "--"})
-_NA_VALUES = frozenset({"n/a", "na", "none", "null", "tbd"})
+_NA_VALUES = frozenset({"n/a", "na", "none", "null", "tbd", "_standard_"})
 
 
 def cell_text(raw: str) -> str:
@@ -964,7 +964,8 @@ def validate_cross_document(
     - Every STK- StRS block is covered by at least one SYS- `Traces to`.
     - Every `Traces to` value resolves to a real StRS block (NRM-/HWC-/STK-).
     - Block IDs form one namespace: no ID appears in both documents.
-    - Every SYS- block cites a normative source (`Standard(s)` never unset).
+    - Every SYS- block has a `Standard(s)` row; a concrete citation is required
+      when `Traces to` names an NRM- obligation. Other blocks may use an em dash.
     """
     findings: List[Finding] = []
     strs_ids = {block.id for block in strs_blocks}
@@ -973,6 +974,7 @@ def validate_cross_document(
 
     for block in syrs_blocks:
         raw = block.fields.get("Traces to", ("", block.line))[0]
+        targets: List[str] = []
         if not is_unset(raw):
             targets = _STRS_TOKEN_RE.findall(cell_text(raw))
             if not targets:
@@ -1003,14 +1005,36 @@ def validate_cross_document(
                     )
 
         std_raw = block.fields.get("Standard(s)", ("", block.line))[0]
-        if "Standard(s)" not in block.fields or is_unset(std_raw):
+        if "Standard(s)" not in block.fields:
             findings.append(
                 Finding(
                     severity="ERROR",
                     line=block.line,
                     block_id=block.id,
-                    message="no normative source cited — 'Standard(s)' is missing or unset",
+                    message="missing required field 'Standard(s)'",
+                    expected="a Standard(s) row; use — when no normative source applies",
+                    doc="SyRS",
+                )
+            )
+        elif any(target.startswith("NRM-") for target in targets) and is_unset(std_raw):
+            findings.append(
+                Finding(
+                    severity="ERROR",
+                    line=block.line,
+                    block_id=block.id,
+                    message="no normative source cited — 'Standard(s)' is unset",
                     expected="a concrete normative reference",
+                    doc="SyRS",
+                )
+            )
+        elif is_unset(std_raw) and cell_text(std_raw) != "—":
+            findings.append(
+                Finding(
+                    severity="ERROR",
+                    line=block.line,
+                    block_id=block.id,
+                    message="'Standard(s)' must use — when no normative source applies",
+                    expected="a concrete normative reference or —",
                     doc="SyRS",
                 )
             )

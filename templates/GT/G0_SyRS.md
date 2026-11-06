@@ -34,7 +34,8 @@
 > **Note:** The SyRS is the detailed per-measurand technical specification derived
 > from the G0-validated StRS. Every SYS- block carries a `Traces to` field pointing
 > at the StRS block(s) it derives from, and a `Standard(s)` field citing its
-> normative source. Compliance traceability is inline: §2.3 maps each normative
+> normative source when it traces to an NRM- obligation (otherwise `—`).
+> Compliance traceability is inline: §2.3 maps each normative
 > source to the methods that realize it (this replaces a standalone compliance
 > matrix).
 
@@ -131,7 +132,7 @@ SYS-[SUB]-[NNN]
 | `parameter`      | yes      | string            | The measurand / parameter being specified                       |
 | `method`         | yes      | string            | The method that realizes it (see §2.2)                          |
 | `traces_to`      | yes      | string[]          | StRS block ID(s) this block derives from (`NRM-`, `HWC-`, `STK-`) |
-| `standard(s)`    | yes      | string            | Normative source for this specification (never —)               |
+| `standard(s)`    | yes      | string            | Normative source when tracing to NRM-; otherwise `—` if none applies |
 | `acceptance_criteria` | yes  | string[]          | Verifiable conditions (≥ 1)                                     |
 | `notes`          | no       | string            | Technical remarks                                               |
 
@@ -149,7 +150,7 @@ Each block is a self-contained block:
 | **Parameter**          | _measurand or parameter being specified_                  |
 | **Method**             | _selected method (see §2.2)_                               |
 | **Traces to**          | `STK-…`                                                   |
-| **Standard(s)**        | _normative source_                                         |
+| **Standard(s)**        | _normative source or —_                                    |
 
 **Acceptance Criteria:**
 

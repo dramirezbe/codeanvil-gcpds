@@ -163,7 +163,8 @@ Run automatically when both files are provided.
 | Trace resolvability | Every ID token in a SYS- `Traces to` exists as an NRM-/HWC-/STK- block in the StRS | ERROR |
 | Trace token present | A non-empty `Traces to` cell contains at least one well-formed StRS block ID | ERROR |
 | Shared namespace | No block ID appears in both documents | ERROR |
-| Normative citation | Every SYS- block cites a non-unset `Standard(s)` | ERROR |
+| Standard(s) row | Every SYS- block has a `Standard(s)` row; use `—` when no normative source applies | ERROR |
+| Normative citation | A SYS- block tracing to an NRM- block cites a concrete `Standard(s)` | ERROR |
 
 `Traces to` may list several StRS IDs (comma-separated, backticked); each is extracted and
 checked.

@@ -338,8 +338,10 @@ already determined.
   StRS block ID (`NRM-…`, `HWC-…`, or `STK-…`). Report empty token lists as **ERROR**.
 - **Shared namespace:** no block ID may appear in both documents. Report collisions as
   **ERROR**.
-- **Normative citation:** every `SYS-` block must cite a concrete **Standard(s)** (never an em
-  dash). Report missing citations as **ERROR**.
+- **Normative citation:** every `SYS-` block must have a **Standard(s)** row. A block whose
+  **Traces to** names an `NRM-` block must cite a concrete source; otherwise `—` is valid
+  when no normative source applies. Report missing rows and missing required citations as
+  **ERROR**.
 
 Tag every G0-X finding with the offending document (`[StRS]` or `[SyRS]`) and the block ID.
 

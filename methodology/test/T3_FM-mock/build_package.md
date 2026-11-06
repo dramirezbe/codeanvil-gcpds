@@ -14,7 +14,7 @@
 |------|-------|
 | Project | FM Spectrum, Waterfall and Channel Detection (RTL-SDR → Raspberry Pi) · acronym FMSWD |
 | Organisation | GCPDS — Universidad Nacional de Colombia |
-| Classification | PUBLIC · version 2.0.0 · date 2026-11-05 |
+| Classification | PUBLIC · version 2.0.1 · date 2026-11-05 |
 | Stakeholder / author | D. Ramírez · reviewer and approver: GCPDS lab lead |
 | Objectives | OBJ-001 see the live spectrum of a 2 MHz slice of the FM band · OBJ-002 see its last minute as a waterfall · OBJ-003 know which FM channels in the slice are on air · OBJ-004 simple enough to build and verify in one cycle |
 
@@ -102,7 +102,7 @@ latency (ms). Power is relative to ADC full scale.
 | Y1 | Capture | MEASUREMENT | fs 2.4 MS/s; one fixed centre fc, default 98.0 MHz, allowed values 89.0–107.0 MHz on even tenths; only the central ±1.0 MHz is used; one update every 0.5 s | R1, N1, H1, H2 | ITU RR Art. 5 | slice fc ± 1.0 MHz inside 88.0–108.0 MHz; an fc outside the allowed values is refused at start |
 | Y2 | Sample conversion | PROCESSING | interleaved uint8 (I,Q) → complex64, x = ((I − 127.5) + j(Q − 127.5))/127.5 | H3 | — | golden vector GV-1 |
 | Y3 | Power spectrum | PROCESSING | per update, the K = 64 most recent non-overlapping frames of N = 1024 samples; Hann window; P_k = 10·log10(mean over frames of \|X_k\|²/(Σw)²), FFT-shifted; bin spacing 2.344 kHz; output the 853 bins with \|offset\| ≤ 1.0 MHz | R1, R3, N3 | ITU-R BS.450-4 | golden vector GV-2; RBW = 1.5·fs/N = 3.52 kHz ≤ 25 kHz |
-| Y4 | DC spike placement | PROCESSING | an fc on an even tenth puts the DC bin midway between two channel centres, 100 kHz from each, so no channel window (±90 kHz) contains the DC bins N/2 ± 2 | H4, N2 | — | no channel window contains bins N/2 ± 2 for any allowed fc |
+| Y4 | DC spike placement | PROCESSING | an fc on an even tenth puts the DC bin midway between two channel centres, 100 kHz from each, so no channel window (±90 kHz) contains the DC bins N/2 ± 2 | H4, N2 | 47 CFR §73.201 (channel raster only) | no channel window contains bins N/2 ± 2 for any allowed fc |
 | Y5 | Channel power | PROCESSING | for channel n (n = 0…9, centre fc − 0.9 + 0.2·n MHz), mean in linear power of P_k over the bins within ±90 kHz of the centre (77 bins), in dBFS | R3, N2 | 47 CFR §73.201 | 10 channel powers per update; golden vector GV-3 |
 | Y6 | Detection | PROCESSING | noise floor = 10th percentile of the 853 used bins of the update; channel occupied in an update when its power − floor ≥ 10 dB; occupancy = occupied updates / updates in the last 60 s (120 updates, fewer during the first minute) | R3 | — | golden vector GV-4; every labelled scene of B.3 |
 | Y7 | Waterfall | PROCESSING | ring buffer of the last 120 spectra (60 s), newest first | R2 | — | after 130 updates the buffer holds exactly the last 120, in order |
@@ -110,6 +110,11 @@ latency (ms). Power is relative to ADC full scale.
 | Y9 | UI views | QUALITY | one page: spectrum line plot (−80…−20 dBFS) with the 10 channel centres marked and occupied channels highlighted; waterfall canvas of 120 rows, colour scale −80…−20 dBFS; channel table with frequency, occupied flag and occupancy in %; reconnects automatically every 2 s when the WebSocket drops | R5 | ISO/IEC 25010:2023 | the three views update after every message, with no reload |
 | Y10 | Latency budget | QUALITY | capture end → message sent ≤ 200 ms + LAN ≤ 100 ms + render ≤ 200 ms = 500 ms, margin 500 ms | R4, C1 | ISO/IEC 25010:2023 | p95 ≤ 1.0 s over 60 s; each term reported |
 | Y11 | Software platform | QUALITY | DSP service: Python ≥ 3.12 + numpy, one SDR access path behind the HAL; UI service: TypeScript in the browser; libraries chosen at S1 | R6, C1 | ISO/IEC 25010:2023 | manifests list Python ≥ 3.12 and numpy for the DSP service, TypeScript for the UI |
+
+An em dash in `Standard` means no external normative source prescribes that method; its
+values and acceptance criteria are specified by this Build Package. Y4 cites §73.201 only
+for the 200 kHz FM channel raster. Keeping the DC bins outside the channel windows is a
+project method, not a requirement of §73.201.
 
 ### B.2 Mock HAL signal model
 
