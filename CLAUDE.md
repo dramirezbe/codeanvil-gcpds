@@ -11,7 +11,7 @@ CodeAnvil is an **agent-agnostic harness** that implements the V-SIL methodology
 This is the **CodeAnvil source repo**, so edit `src/codeanvil/` for delivery
 code and `templates/` for methodology. Read [`AGENTS.md`](AGENTS.md) for the
 active stage contracts and source-versus-scaffold distinction. The current
-release is [v0.4.1](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.4.1).
+release is [v0.4.3](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.4.3).
 
 For the first complete S0 → G2 run, start with the
 [`T3_FM-mock` snapshot guide](methodology/test/T3_FM-mock/FIRST_FULL_FLOW_SNAPSHOT.md),
@@ -92,13 +92,15 @@ its remaining failure probes are future regression work, not recorded as PASS.
 | Scaffold CLI         | `odd/tasks/2026-10-21_1423_scaffold_cli_plan.md`   | pyproject.toml, skill dir convention (.agents/skills/ + symlinks), path rewriting, GT inside skills |
 | AGENTS.md template   | `odd/tasks/2026-10-14_1514_agents_md_template_plan.md` | Config-driven scaffold: YAML config, AGENTS.md template with dynamic skills, multi-agent symlinks |
 | V-SIL v3 full flow | `odd/tasks/2026-11-05_1421_vsil_v3_full_flow.md` | S0 → G2 implementation, T3 full-flow run, v0.4.1 release; deferred probes documented |
+| Windows support    | `odd/tasks/` (v0.4.2)                              | PowerShell installer, symlink fallback, tzdata/pathsep fixes, validated on Windows |
 
 ## Installation
 
-Two install paths:
+Cross-platform (Linux, macOS, Windows). Two install paths:
 
-- **End users**: `curl -fsSL https://raw.githubusercontent.com/dramirezbe/codeanvil-gcpds/main/install.sh | bash` — installs `uv` if needed, then `uv tool install` from GitHub. Shell detection (bash/zsh/fish) + PATH injection with sentinel comments.
-- **Developers**: `uv pip install -e .` from a local clone. Templates resolved from the source tree via `_find_templates_dir()`.
+- **End users (Linux/macOS)**: `curl -fsSL https://raw.githubusercontent.com/dramirezbe/codeanvil-gcpds/main/install.sh | bash` — installs `uv` if needed, then `uv tool install` from GitHub. Shell detection (bash/zsh/fish) + PATH injection with sentinel comments.
+- **End users (Windows)**: `irm https://raw.githubusercontent.com/dramirezbe/codeanvil-gcpds/main/install.ps1 | iex` — installs `uv` if needed, adds `%USERPROFILE%\.local\bin` to user PATH. On Windows, symlinks fall back to directory junctions or file copies when Developer Mode is not enabled.
+- **Developers** (all platforms): `uv pip install -e .` from a local clone. Templates resolved from the source tree via `_find_templates_dir()`.
 
 Templates are bundled into the wheel via hatch `force-include` (`pyproject.toml`), so non-editable installs work.
 
@@ -127,7 +129,8 @@ codeanvil-gcpds/                  ← repo root
 │   ├── GT/                       ← GT reference templates (IEEE 29148)
 │   ├── AGENTS/TEMPLATE_AGENT.md  ← AGENTS.md Jinja template
 │   └── config.yaml               ← single source of truth for scaffold
-├── install.sh                    ← curl installer
+├── install.sh                    ← Linux/macOS installer
+├── install.ps1                   ← Windows installer
 ├── CLAUDE.md                     ← THIS FILE (dev instructions)
 └── AGENTS.md                     ← repo-level agent instructions
 ```

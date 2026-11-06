@@ -4,9 +4,9 @@
 
 Agent-agnostic project scaffolding, templates, and agent definitions for the **V-SIL methodology** (V-model at the SIL tier, made continuous). Develops, tests, and validates software on COTS hardware — informed by Ground Truth documents — through the V-SIL v3 flow `S0 → G0 → S1 → G1 → S2 → G2`: agent-driven stages, one deterministic gate (G0) and human review gates, ending in a Verified Prototype.
 
-Works with any AI coding agent: Claude, Codex, OpenCode, Pi, or others.
+Works with any AI coding agent: Claude, Codex, OpenCode, Pi, or others. Runs on **Linux, macOS and Windows**.
 
-**Current release:** [v0.4.2](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.4.2). The first realistic complete run, including a G2 → S1 rework loop, is archived under [`methodology/test/T3_FM-mock/`](methodology/test/T3_FM-mock/). Its [snapshot guide](methodology/test/T3_FM-mock/FIRST_FULL_FLOW_SNAPSHOT.md), [prototype run instructions](methodology/test/T3_FM-mock/first_full_flow_2026-11-05/RUN.md), and [review holdout](methodology/test/T3_FM-mock/S1_G1_review_holdout_2026-11-05.md) show the result and its limits.
+**Current release:** [v0.4.3](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.4.3). The first realistic complete run, including a G2 → S1 rework loop, is archived under [`methodology/test/T3_FM-mock/`](methodology/test/T3_FM-mock/). Its [snapshot guide](methodology/test/T3_FM-mock/FIRST_FULL_FLOW_SNAPSHOT.md), [prototype run instructions](methodology/test/T3_FM-mock/first_full_flow_2026-11-05/RUN.md), and [review holdout](methodology/test/T3_FM-mock/S1_G1_review_holdout_2026-11-05.md) show the result and its limits.
 
 > This methodology does not design hardware. It targets software running on Commercial Off-The-Shelf devices (not necessarily out-of-the-box), where the GT defines what constraints that hardware imposes.
 
@@ -305,7 +305,8 @@ codeanvil-gcpds/
 │
 ├── odd/tasks/               # Archived plans and task logs (date-prefixed)
 │
-├── install.sh               # curl one-liner installer (uv tool install from GitHub)
+├── install.sh               # Linux/macOS installer (curl one-liner)
+├── install.ps1              # Windows installer (PowerShell one-liner)
 ├── pyproject.toml            # PEP 621 packaging (hatch, templates bundled in wheel)
 ├── CLAUDE.md                # Development context for AI coding agents
 └── AGENTS.md                # Agent architecture documentation
@@ -314,7 +315,7 @@ codeanvil-gcpds/
 ## Tech stack
 
 - **Python packaging** — `uv` + hatch (templates bundled via `force-include`)
-- **Installer** — `install.sh` (curl one-liner, installs `uv` if needed, shell detection for PATH injection)
+- **Installer** — `install.sh` (Linux/macOS) and `install.ps1` (Windows); both install `uv` if needed and inject PATH
 - **UI** — PySide6 (planned)
 - **Database** — SQLite (local, `~/.codeanvil-config/db/codeanvil.db`)
 - **Agent runtime** — agent-agnostic (Claude, Codex, OpenCode, Pi, etc.)
