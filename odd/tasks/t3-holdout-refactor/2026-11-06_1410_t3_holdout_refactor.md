@@ -477,3 +477,11 @@ After Phase 5:
   with `MANIFEST.yaml`, second printed `already backed up`, and `status` printed
   `Backups: S1 iteration 1 → .codeanvil/backups/01_run/S1_iter1/`.
 - **Next:** Phase 3 (WU-C1 paths and scaffold), then Phase 4 (WU-L4 and WU-L6 decisions are open).
+- **2026-11-06 — Phase 3 complete.** `PROJECT_GT` and `PROJECT_DESIGN` added; `create` now writes
+  `.codeanvil/GT/` (README only), `.codeanvil/design/`, `.codeanvil/backups/` and no project-root
+  `GT/`; the manifest points to `.codeanvil/GT/StRS.md` and `.codeanvil/GT/SyRS.md`; parser help
+  text updated. Evidence: 246 pytest + 97 unittest green; scratch `create --name "Test Refactor"`
+  produced the new tree with no root `GT/`, and `g0_validate.py` passed (exit 0) on a real GT pair
+  placed at `.codeanvil/GT/`.
+- **Next:** Phase 4 — ask the owner the two open decisions (WU-L4 pause schedule, WU-L6 telemetry
+  collector dependency) before implementing those units.

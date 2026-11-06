@@ -9,7 +9,13 @@ import yaml
 from codeanvil.config.logger import get_logger
 from codeanvil.config.paths import (
     CONFIG,
+    PROJECT_BACKUPS,
+    PROJECT_CODEANVIL,
+    PROJECT_CUSTODY,
+    PROJECT_DESIGN,
+    PROJECT_GT,
     PROJECT_MANIFEST,
+    PROJECT_REPORT,
     SKILLS_DIRNAME,
     TEMPLATES_DIR,
 )
@@ -70,8 +76,8 @@ def scaffold_project(
     _copy_skills(project_dir)
     _copy_gt_reference_templates(project_dir)
     _rewrite_skill_paths(project_dir / SKILLS_DIRNAME)
-    _create_gt_dir(project_dir)
     _create_codeanvil_dirs(project_dir)
+    _create_gt_dir(project_dir)
 
     if mcp_servers:
         from codeanvil.init.mcp import (
@@ -135,9 +141,10 @@ def _rewrite_skill_paths(skills_root: Path) -> None:
 
 
 def _create_gt_dir(project_dir: Path) -> None:
-    """User GT directory: empty except a README. Users write their own GT files."""
-    gt_dir = project_dir / "GT"
-    gt_dir.mkdir(exist_ok=True)
+    """Ground Truth directory under .codeanvil/: a README only. Users write
+    their own GT files; S0 writes the pair from the Build Package."""
+    gt_dir = project_dir / PROJECT_GT
+    gt_dir.mkdir(parents=True, exist_ok=True)
     readme = gt_dir / "README.md"
     if not readme.exists():
         template = (TEMPLATES_DIR / "GT" / "README.md.template").read_text(encoding="utf-8")
@@ -145,12 +152,16 @@ def _create_gt_dir(project_dir: Path) -> None:
 
 
 def _create_codeanvil_dirs(project_dir: Path) -> None:
-    """Machine-generated methodology artifacts: project.yaml, custody, reports.
-    GT stays at the project root — never created under .codeanvil/."""
-    from codeanvil.config.paths import PROJECT_CODEANVIL, PROJECT_CUSTODY, PROJECT_REPORT
-    (project_dir / PROJECT_CODEANVIL).mkdir(exist_ok=True)
-    (project_dir / PROJECT_CUSTODY).mkdir(exist_ok=True)
-    (project_dir / PROJECT_REPORT).mkdir(exist_ok=True)
+    """The methodology tree: identity, GT, design, reports, backups, custody."""
+    for path in (
+        PROJECT_CODEANVIL,
+        PROJECT_GT,
+        PROJECT_DESIGN,
+        PROJECT_REPORT,
+        PROJECT_BACKUPS,
+        PROJECT_CUSTODY,
+    ):
+        (project_dir / path).mkdir(parents=True, exist_ok=True)
 
 
 def read_manifest_id(project_dir: Path) -> str | None:
@@ -186,8 +197,8 @@ def write_project_manifest(project_dir: Path, project_id: str, name: str) -> Non
         "id": project_id,
         "name": name,
         "gt": {
-            "strs": "GT/G0_StRS.md",
-            "syrs": "GT/G0_SyRS.md",
+            "strs": ".codeanvil/GT/StRS.md",
+            "syrs": ".codeanvil/GT/SyRS.md",
         },
     }
     dest.parent.mkdir(parents=True, exist_ok=True)

@@ -349,6 +349,26 @@ def test_create_makes_report_dir_without_cycle_subdir(tmp_path, db_path):
     assert list(report.iterdir()) == []
 
 
+def test_create_scaffolds_the_methodology_tree_under_codeanvil(tmp_path, db_path):
+    cmd_create(None, tmp_path, project_name="Proj")
+
+    project = tmp_path / "proj"
+    for rel in (".codeanvil/GT", ".codeanvil/design", ".codeanvil/backups",
+                ".codeanvil/report", ".codeanvil/custody"):
+        assert (project / rel).is_dir(), rel
+    assert (project / ".codeanvil/GT/README.md").is_file()
+    assert not (project / "GT").exists()
+
+
+def test_create_manifest_points_to_the_new_gt_pair(tmp_path, db_path):
+    cmd_create(None, tmp_path, project_name="Proj")
+
+    assert _manifest(tmp_path / "proj")["gt"] == {
+        "strs": ".codeanvil/GT/StRS.md",
+        "syrs": ".codeanvil/GT/SyRS.md",
+    }
+
+
 def _agents_md(tmp_path, db_path) -> str:
     cmd_create(None, tmp_path, project_name="Proj")
     return (tmp_path / "proj" / "AGENTS.md").read_text(encoding="utf-8")

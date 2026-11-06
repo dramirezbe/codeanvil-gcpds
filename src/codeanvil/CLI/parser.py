@@ -28,17 +28,17 @@ def build_parser() -> argparse.ArgumentParser:
             "  2. codeanvil create                 Interactive prompts: project and folder name\n"
             "     codeanvil create myproj          ...or non-interactive, legacy positional name\n"
             "     codeanvil create --name 'My Lab' ...or flags for agents and scripts (no TUI)\n"
-            "  3. Write the Build Package           GT/build_package.md (S0 normalises it into the GT pair)\n"
+            "  3. Write the Build Package           .codeanvil/GT/build_package.md (S0 normalises it into the GT pair)\n"
             "  4. codeanvil status myproj           Check gate progress (or 'status' inside a project)"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("-v", "--version", action="version", version=f"%(prog)s {__version__}")
     parser.epilog = (
-            "GT files (Ground Truth):\n"
+            "GT files (Ground Truth, under .codeanvil/GT/):\n"
             "  build_package.md     Your Build Package (the only input you write)\n"
-            "  G0_StRS.md           Stakeholder Requirements Specification (IEEE 29148 §9.4)\n"
-            "  G0_SyRS.md           System Requirements Specification (IEEE 29148 §9.5)\n"
+            "  StRS.md              Stakeholder Requirements Specification (IEEE 29148 §9.4)\n"
+            "  SyRS.md              System Requirements Specification (IEEE 29148 §9.5)\n"
             "\n"
             "Flow (RFD can be raised from any stage):\n"
             "  S0 -> G0 -> S1 -> G1 -> S2 -> G2\n"
