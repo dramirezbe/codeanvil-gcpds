@@ -34,6 +34,12 @@ curl -fsSL https://raw.githubusercontent.com/dramirezbe/codeanvil-gcpds/main/ins
 irm https://raw.githubusercontent.com/dramirezbe/codeanvil-gcpds/main/install.ps1 | iex
 ```
 
+**Manual install / reinstall** (if the one-liner fails or you need to update):
+
+```powershell
+uv tool install --force-reinstall --python 3.11 "git+https://github.com/dramirezbe/codeanvil-gcpds.git"
+```
+
 **Uninstall**:
 
 ```powershell
