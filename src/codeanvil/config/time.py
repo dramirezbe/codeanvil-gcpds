@@ -1,28 +1,38 @@
 """Unified system timestamp for human-facing output."""
 
-from datetime import datetime, timezone
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+from datetime import datetime, timezone, tzinfo
 
 _FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
-def get_system_timezone(tz_name: str | None = None) -> ZoneInfo:
+def _try_zoneinfo(name: str) -> tzinfo | None:
+    """Return a ZoneInfo for *name*, or None when tzdata is missing (Windows)."""
+    try:
+        from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+        return ZoneInfo(name)
+    except (ImportError, ZoneInfoNotFoundError, KeyError):
+        return None
+
+
+def get_system_timezone(tz_name: str | None = None) -> tzinfo:
     """Resolve timezone: explicit arg > config > UTC fallback."""
     if tz_name:
-        try:
-            return ZoneInfo(tz_name)
-        except (ZoneInfoNotFoundError, KeyError):
-            raise ValueError(f"unknown timezone: {tz_name}")
+        tz = _try_zoneinfo(tz_name)
+        if tz is not None:
+            return tz
+        raise ValueError(f"unknown timezone: {tz_name}")
 
     try:
         from codeanvil.config.paths import CONFIG
         configured = CONFIG.get("defaults", {}).get("country", "")
         if configured:
-            return ZoneInfo(configured)
+            tz = _try_zoneinfo(configured)
+            if tz is not None:
+                return tz
     except Exception:
         pass
 
-    return ZoneInfo("UTC")
+    return timezone.utc
 
 
 def format_timestamp(dt: datetime | None = None, tz_name: str | None = None) -> str:
