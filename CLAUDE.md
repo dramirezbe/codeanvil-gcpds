@@ -11,7 +11,7 @@ CodeAnvil is an **agent-agnostic harness** that implements the V-SIL methodology
 This is the **CodeAnvil source repo**, so edit `src/codeanvil/` for delivery
 code and `templates/` for methodology. Read [`AGENTS.md`](AGENTS.md) for the
 active stage contracts and source-versus-scaffold distinction. The current
-release is [v0.4.3](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.4.3).
+release is [v0.4.4](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.4.4).
 
 For the first complete S0 → G2 run, start with the
 [`T3_FM-mock` snapshot guide](methodology/test/T3_FM-mock/FIRST_FULL_FLOW_SNAPSHOT.md),
