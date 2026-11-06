@@ -527,4 +527,11 @@ After Phase 5:
   - **Gap:** the repo root `README.md` still shows the old layout (`GT/G0_StRS.md`, `S1_artifacts/`)
     in about 15 places. It is outside Phase 5's file list and the grep, so it was not changed.
   - Evidence: 267 pytest + 97 unittest green.
-- **Next:** Phase 6 (v0.5.0), owner confirmation required before push.
+- **2026-11-06 — Unit 1: root README.** Branch `feat/t3-holdout-refactor` (from `main`, 8 commits
+  ahead of origin). README Quick Start, command table (`codeanvil backup <S0|S1|S2|G2>`, status
+  backups line), "How it works" tree (`.codeanvil/{GT,design,backups,report}`, `StRS.md`/`SyRS.md`),
+  artifacts paragraph (`design/`, backup rule, no migration) and the repo tree (`StRS.md`/`SyRS.md`
+  templates, `reports.py`). Old-path grep with `README.md` added: 7 hits left, all legitimate
+  (`GT/` nested under `.codeanvil/` in two trees, `templates/GT/` blueprints folder, and the
+  deferred `GT/SRS.md` and nested GT references). Evidence: 267 pytest + 97 unittest green.
+- **Next:** Unit 2 (deferred table rows, no code), then Unit 3 (v0.5.0 bump and release notes).
