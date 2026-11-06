@@ -419,6 +419,8 @@ a breaking change bumps the minor version.
 | `validation_levels.md` and reader-facing `reports/` | Later G2 enhancement |
 | Optional `SRS.md` | No evidence it is needed yet |
 | `codeanvil migrate` for old projects | Old projects finish their cycle on old paths |
+| Retire `.codeanvil/custody/` | `sync.py` `_migrate_provenance` still targets it and `test_create.py` asserts it, so retire them together |
+| `codeanvil list --missing` / prune for registry rows whose path is gone | 8 of 10 rows on the dev machine point at missing paths (checked 2026-11-06); there is no removal command, so a stale row can only be cleared by hand |
 
 ---
 
@@ -534,4 +536,8 @@ After Phase 5:
   templates, `reports.py`). Old-path grep with `README.md` added: 7 hits left, all legitimate
   (`GT/` nested under `.codeanvil/` in two trees, `templates/GT/` blueprints folder, and the
   deferred `GT/SRS.md` and nested GT references). Evidence: 267 pytest + 97 unittest green.
-- **Next:** Unit 2 (deferred table rows, no code), then Unit 3 (v0.5.0 bump and release notes).
+- **2026-11-06 — Unit 2: deferred rows.** Added the custody retirement row (checked:
+  `sync.py:33` `_migrate_provenance` targets `.codeanvil/custody/`; `tests/test_create.py:357` asserts
+  it) and the registry-prune row (checked: `codeanvil list` shows 10 rows, 8 with missing paths). No
+  code changed; `~/.codeanvil-config/db` untouched. Evidence: 267 pytest + 97 unittest green.
+- **Next:** Unit 3 (v0.5.0 bump and release notes).
