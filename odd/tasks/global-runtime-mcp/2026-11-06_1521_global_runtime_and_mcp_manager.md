@@ -457,3 +457,38 @@ Only after every verification check passes on the final commit.
    `methodology/test/mcp_sandbox_probe.md`, including the "nothing became
    global" checks.
 8. Steps 2–5 repeated on Windows, including the launcher stdio round trip.
+
+## Log
+
+- **2026-11-06 — Phase 1 complete (WU-RT1–RT7)** on `feat/global-runtime-mcp`.
+  - RT1: `config.yaml` `runtime.{dir,python,base,system_packages}`. The shipped
+    `templates/runtime/pyproject.toml` is rendered from `runtime.base` by the
+    same function `sync` uses, and a test keeps the two in step. The universal
+    `uv.lock` and the wheel force-include are in place (checked in a built wheel).
+  - RT2: `codeanvil runtime sync|add|remove|list|path` (`init/runtime.py`).
+    uv errors raise with uv's stderr. `user.yaml` survives re-syncs. Base
+    packages cannot be removed. `runtime.system_packages` is bridged with
+    `codeanvil-system.pth`. Detection moved to `init/system_packages.py`.
+  - RT3: `codeanvil python` runs with `-I` from the project root. It uses
+    `os.execv` on POSIX and `subprocess.run` on Windows, and logs to stderr
+    only.
+  - RT4: `metadata.runtime` is parsed by the shared `codeanvil/skills.py`. A
+    missing package stops the run with `Run codeanvil runtime add <pkg>.`, or
+    `... runtime sync.` for a base package.
+  - RT5: G0 runs through `codeanvil python` (skill v3.2, `runtime: []`).
+  - RT6: `init` runs `runtime sync`. `upgrade` runs the new binary's
+    `runtime sync`.
+  - RT7: the collector is in `S2_implement_services/scripts/`, uses psutil
+    only and is never copied. `run.sh` starts it with
+    `codeanvil python ... --pid $$`. It excludes itself, and the kit's dev
+    group drops psutil (S2 v1.1, `runtime: ["psutil"]`).
+  - Evidence: 303 pytest + 97 unittest green.
+    - The real `~/.codeanvil-config/runtime/` reports Python 3.12.15,
+      psutil 7.2.2 and pyyaml 6.0.3.
+    - In a scratch project, G0 through `codeanvil python` printed the same
+      report as the direct call (exit 0).
+    - A simulated `run.sh` gave 4 samples with `pid` = run.sh, 2 processes
+      (the collector excluded), CPU ≈ 99 % under load and Tctl temperature
+      from psutil.
+- **Next:** Phase 2 (WU-M1–M6). WU-M5 repairs the deliberately broken marconi
+  venv. WU-M6 Level 2 runs a real sandboxed Claude session, which costs tokens.
