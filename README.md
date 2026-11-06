@@ -6,7 +6,7 @@ Agent-agnostic project scaffolding, templates, and agent definitions for the **V
 
 Works with any AI coding agent: Claude, Codex, OpenCode, Pi, or others.
 
-**Current release:** [v0.4.1](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.4.1). The first realistic complete run, including a G2 → S1 rework loop, is archived under [`methodology/test/T3_FM-mock/`](methodology/test/T3_FM-mock/). Its [snapshot guide](methodology/test/T3_FM-mock/FIRST_FULL_FLOW_SNAPSHOT.md), [prototype run instructions](methodology/test/T3_FM-mock/first_full_flow_2026-11-05/RUN.md), and [review holdout](methodology/test/T3_FM-mock/S1_G1_review_holdout_2026-11-05.md) show the result and its limits.
+**Current release:** [v0.4.2](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.4.2). The first realistic complete run, including a G2 → S1 rework loop, is archived under [`methodology/test/T3_FM-mock/`](methodology/test/T3_FM-mock/). Its [snapshot guide](methodology/test/T3_FM-mock/FIRST_FULL_FLOW_SNAPSHOT.md), [prototype run instructions](methodology/test/T3_FM-mock/first_full_flow_2026-11-05/RUN.md), and [review holdout](methodology/test/T3_FM-mock/S1_G1_review_holdout_2026-11-05.md) show the result and its limits.
 
 > This methodology does not design hardware. It targets software running on Commercial Off-The-Shelf devices (not necessarily out-of-the-box), where the GT defines what constraints that hardware imposes.
 
