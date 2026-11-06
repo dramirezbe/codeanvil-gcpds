@@ -17,6 +17,22 @@ until S2 writes the delivered code there. The user's AGENTS.md (generated from
 `templates/AGENTS/TEMPLATE_AGENT.md`) never mentions this repository: it names only the
 `codeanvil` CLI, the skills and `GT/`. Do not confuse the two environments.
 
+## Where to start (v0.4.1)
+
+| Need | Source of truth |
+|------|-----------------|
+| Change a stage, gate or artifact contract | The matching `templates/skills/<stage>/SKILL.md` and its `references/`; register scaffold changes in `templates/config.yaml` |
+| Understand the first complete V-SIL v3 run | [`methodology/test/T3_FM-mock/FIRST_FULL_FLOW_SNAPSHOT.md`](methodology/test/T3_FM-mock/FIRST_FULL_FLOW_SNAPSHOT.md) and [`first_full_flow_2026-11-05/`](methodology/test/T3_FM-mock/first_full_flow_2026-11-05/) |
+| Run the archived Mock HAL prototype | [`first_full_flow_2026-11-05/RUN.md`](methodology/test/T3_FM-mock/first_full_flow_2026-11-05/RUN.md) (`uv sync --frozen --no-dev`, then `./run-demo SC-2`) |
+| Review findings and pending proposals | [`S1_G1_review_holdout_2026-11-05.md`](methodology/test/T3_FM-mock/S1_G1_review_holdout_2026-11-05.md) |
+| See release and completed work | [`v0.4.1`](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.4.1) and [`2026-11-05_1421_vsil_v3_full_flow.md`](odd/tasks/2026-11-05_1421_vsil_v3_full_flow.md) |
+
+The T3 snapshot completed S0 → G2 with a G2 design-defect feedback loop through
+S1, G1 and S2. Its original G2 PASS predates the later runnable-entry-point
+correction; `RUN.md` records that correction's separate smoke evidence. Do not
+present it as a new G2 verdict. The holdout is an observation log, not an
+implemented skill contract.
+
 ## Overview
 
 CodeAnvil implements the V-SIL v3 flow `S0 → G0 → S1 → G1 → S2 → G2` as a chain of stages and gates, with RFD raisable from any stage. G0 is the only deterministic gate; Gate H, G1 and G2 are human verdicts, and the stages are run by AI coding agents. The harness is **agent-agnostic**: it works with any coding agent runtime (Claude, Codex, OpenCode, Pi, etc.). `src/` scaffolds and tracks state.
@@ -71,13 +87,14 @@ checks its predecessor's report before it runs:
 
 ## Test GT cases (V-SIL system inputs)
 
-`methodology/test/T<n>_<name>/` — numbered test cases containing real-world project materials from which the GT pair is derived. They are the methodology's integration tests. See [`methodology/test/README.md`](methodology/test/README.md) for the full catalog and the **end-to-end manual test procedure** (clean install → scaffold → Build Package → S0 → G0 → S1 → G1, with sandboxed agent prompts).
+`methodology/test/T<n>_<name>/` — numbered test cases containing real-world project materials from which the GT pair is derived. They are the methodology's integration tests. See [`methodology/test/README.md`](methodology/test/README.md) for the catalog and manual test procedure; T3 contains the first archived full-flow run.
 
 | Test | Domain | GT-ready | Contents |
 |------|--------|----------|----------|
 | **T0_ANE-Lap2** | SDR spectrum monitoring (ANE edge sensor) | **Yes** | `just-edge/StRS.md` + `just-edge/SyRS.md` — copy as `G0_StRS.md`/`G0_SyRS.md` |
 | **T1_FM-monitoring** | SDR-based FM broadcast compliance monitoring | No (raw) | LaTeX specification (RAG-informed from FCC Part 73, ANE Res. 105, ITU-R BS.412/450/SM.2152, ISO/IEC 17025) |
 | **T2_IoT-Indoor** | Indoor IoT radio environment mapping, 2.4 GHz ISM (GCPDS) | No (raw) | Hermes proposal, radio environment mapping literature, variable adaptation design doc |
+| **T3_FM-mock** | FM occupancy, Raspberry Pi + RTL-SDR target | Build Package | Mock-only S0 → G2 run, copied project, runnable preview and review holdout |
 
 ## Gate details
 
@@ -106,6 +123,7 @@ Pure Python script. No LLM, no AI agent — just `g0_validate.py`.
 
 - **Skill**: `templates/skills/S1_design_services/SKILL.md`, with the design template and graph template in `references/` and vis-network in `assets/`.
 - **Output**: `.codeanvil/report/<cycle>/S1_artifacts/S1_design.md` and `S1_graph.html` (one spider per service). `S1.md` is the only state.
+- **Runnable contract**: design §0.5 names one project-root command, the services and runtime HAL it starts, URL, visible result and clean shutdown. G1 checks this in G1.15.
 
 ### G1 — Human design review
 
@@ -114,11 +132,11 @@ Pure Python script. No LLM, no AI agent — just `g0_validate.py`.
 ### S2 — Implement services (agent)
 
 - **Skill**: `templates/skills/S2_implement_services/SKILL.md`, with `references/project_layout.md` and the locked loggers `references/logger.py` and `references/logger.ts`.
-- **Output**: the delivered code in `src/<service>/`, the verification kit in `verification/`, the root manifests, `S2.md` and `S2_artifacts/test_run.md` (the two `verification/run.sh vl0|vl1` commands and `Possible infeasibility`). Only S2 writes code; a design defect is a `Verdict: design defect` iteration routed to S1.
+- **Output**: the delivered code in `src/<service>/`, the verification kit in `verification/`, the root manifests, `S2.md` and `S2_artifacts/test_run.md` (the two `verification/run.sh vl0|vl1` commands and `Possible infeasibility`). S2 implements §0.5 and a VL-0 smoke test of the actual entry point, including the URL and observed result. Only S2 writes code; a design defect is a `Verdict: design defect` iteration routed to S1.
 
 ### G2 — Adaptive verification (human verdict)
 
-- **Skill**: `templates/skills/G2_adaptive_verification/SKILL.md` and `references/verified_prototype.md`. G2 declares the levels, delegates the `test_run.md` commands to the `vsil-verifier` subagent, presents the results and records the human's PASS, FEEDBACK (`Verdict: module defect` → S2, `Verdict: design defect` → S1) or RFD. On PASS it writes `G2_artifacts/verified_prototype.md`.
+- **Skill**: `templates/skills/G2_adaptive_verification/SKILL.md` and `references/verified_prototype.md`. G2 declares the levels, delegates the `test_run.md` commands to the `vsil-verifier` subagent, checks the entry-point smoke evidence, presents the results and records the human's PASS, FEEDBACK (`Verdict: module defect` → S2, `Verdict: design defect` → S1) or RFD. On PASS it writes `G2_artifacts/verified_prototype.md` with run instructions.
 
 ### `vsil-verifier` subagent
 
@@ -153,10 +171,20 @@ predecessor's name when it is missing or its latest iteration is not
 - G2: requires `S2.md` latest `PASS`; the `vsil-verifier` subagent runs, the human answers.
 - Every iteration of G0, S1, G1, S2 and G2 starts with `Based on: <predecessor> iteration <N>`, so
   `codeanvil status` can mark a report `stale` after its predecessor was reworked.
+- After G2 `FEEDBACK` for a design defect, rework S1 in the same cycle, obtain a new G1 verdict, re-deliver S2 against that design and rerun G2. `codeanvil status` shows downstream reports as stale until re-delivered.
 
 State lives in the GT files, the cycle reports, and `.codeanvil/`, not in the
 tool. The `codeanvil` CLI only scaffolds and registers projects; it never drives
 gates.
+
+### Proposed follow-ups, not active paths
+
+The T3 holdout proposes `GT/StRS.md`, `GT/SyRS.md`, optional `GT/SRS.md`,
+`design/SDD.md`, reader-facing `reports/`, a shipped telemetry collector, S2
+pause schedules and module-scoped subagents, and a later VL-2 machine interface.
+Those paths and features have **not** replaced the current `G0_*`,
+`S1_artifacts/` and `G2_artifacts/` contracts. Change the skills, scaffold,
+documentation and tests together before treating a proposal as implemented.
 
 ## Agent contract
 

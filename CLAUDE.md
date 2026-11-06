@@ -6,6 +6,23 @@ CodeAnvil is an **agent-agnostic harness** that implements the V-SIL methodology
 
 **Scope**: develops, tests, and validates **software on COTS hardware** (not necessarily OOTB) — it does not design hardware. All hardware is assumed commercial off-the-shelf; the GT informs what constraints that hardware imposes.
 
+## First read for current work
+
+This is the **CodeAnvil source repo**, so edit `src/codeanvil/` for delivery
+code and `templates/` for methodology. Read [`AGENTS.md`](AGENTS.md) for the
+active stage contracts and source-versus-scaffold distinction. The current
+release is [v0.4.1](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.4.1).
+
+For the first complete S0 → G2 run, start with the
+[`T3_FM-mock` snapshot guide](methodology/test/T3_FM-mock/FIRST_FULL_FLOW_SNAPSHOT.md),
+then the [archived project's `RUN.md`](methodology/test/T3_FM-mock/first_full_flow_2026-11-05/RUN.md)
+and [review holdout](methodology/test/T3_FM-mock/S1_G1_review_holdout_2026-11-05.md).
+The snapshot includes a G2 design-defect FEEDBACK → S1/G1/S2 rework → G2 PASS.
+The later entry-point fix has separate smoke evidence; the original G2 verdict
+does not cover that correction. The holdout's document renames, report moves,
+telemetry collector, pause policy and VL-2 interface are proposals, not
+current scaffold behavior.
+
 The repo has two sides with very different roles:
 
 ### `templates/` — The methodology (the real product)
@@ -15,15 +32,15 @@ The V-SIL pipeline encoded as executable artifacts:
 - **`templates/GT/`** — Ground Truth document templates. GT is the methodology's input: human-authored `.md` files (not raw PDFs) that define the contract a project must satisfy, following the IEEE/ISO/IEC 29148:2018 document family:
   1. **StRS** (`G0_StRS.md`) — Stakeholder Requirements Specification (§9.4): stakeholder requirements (`STK-`), COTS hardware constraints (`HWC-`), and normative obligations (`NRM-` with inline compliance traceability)
   2. **SyRS** (`G0_SyRS.md`) — System Requirements Specification (§9.5): per-measurand system requirements (`SYS-`) — methods, correction chains, uncertainty budgets — tracing to StRS blocks
-  The author writes a Build Package (`GT/build_package.md`); the S0 skill casts it into the two blueprints. There is no SRS in v3: the S1 design document replaces it.
+  The author writes a Build Package (`GT/build_package.md`); the S0 skill casts it into the two blueprints. The current scaffold has no `GT/SRS.md`; S1 writes a design document under `.codeanvil/report/<cycle>/S1_artifacts/`. A distinct software SRS and `design/SDD.md` are proposals in the T3 holdout.
 - **`templates/skills/`** — Skills for each stage and gate of the V-SIL v3 flow `S0 → G0 → S1 → G1 → S2 → G2`; RFD can be raised from any stage. Each skill is self-contained: its templates, scripts and assets live in its own folder.
   - `S0_normalise_build_package/` — **Stage**: casts `GT/build_package.md` into `G0_StRS.md` and `G0_SyRS.md` in one pass, with no judgement. Writes `S0.md`.
   - `G0_valid_req_and_GT/` — **Deterministic structural validation** of the GT pair (StRS + SyRS) plus the G0-X cross-document rules. No AI — pure script (`scripts/g0_validate.py`) — followed by the human Gate H. `SKILL.md` is the agent contract, `references/RULES.md` the full rule tables.
-  - `S1_design_services/` — **Stage**: designs a system of layered services (`S1_artifacts/S1_design.md`) and its dependency graph (`S1_artifacts/S1_graph.html`, vis-network vendored in `assets/`).
-  - `G1_design_review/` — **Human gate**: no script. The agent fills a checklist and recommends; the human answers PASS, FEEDBACK or RFD.
+  - `S1_design_services/` — **Stage**: designs a system of layered services (`S1_artifacts/S1_design.md`) and its dependency graph (`S1_artifacts/S1_graph.html`, vis-network vendored in `assets/`). Design §0.5 defines one runnable entry point for the complete system.
+  - `G1_design_review/` — **Human gate**: no script. The agent fills a checklist, including G1.15 for the runnable entry point, and recommends; the human answers PASS, FEEDBACK or RFD.
   - `RFD_request_for_deviation/` — Outside the chain: decision document when requirements are infeasible on the declared COTS platform. Suspends the cycle until the author decides.
-  - `S2_implement_services/` — **Stage**: builds the services under `src/<service>/`, the verification kit under `verification/` (Mock HAL, golden vectors, telemetry companion) and the VL-1 tests, from `references/project_layout.md` and the locked loggers (`references/logger.py`, `references/logger.ts`). Writes `S2.md` and `S2_artifacts/test_run.md`.
-  - `G2_adaptive_verification/` — **Human gate**: delegates the `test_run.md` commands to the `vsil-verifier` subagent, presents the results and records PASS, FEEDBACK (`Verdict: module defect` → S2, `Verdict: design defect` → S1) or RFD. PASS writes `G2_artifacts/verified_prototype.md`.
+  - `S2_implement_services/` — **Stage**: builds the services under `src/<service>/`, the verification kit under `verification/` (Mock HAL, golden vectors, telemetry companion), the runnable §0.5 entry point and its VL-0 smoke test. Uses `references/project_layout.md` and the locked loggers (`references/logger.py`, `references/logger.ts`). Writes `S2.md` and `S2_artifacts/test_run.md`.
+  - `G2_adaptive_verification/` — **Human gate**: delegates the `test_run.md` commands to the `vsil-verifier` subagent, checks the entry-point smoke evidence, presents the results and records PASS, FEEDBACK (`Verdict: module defect` → S2, `Verdict: design defect` → S1) or RFD. PASS writes `G2_artifacts/verified_prototype.md` with run instructions.
 - **`templates/agents/`** — Subagent bodies. `vsil-verifier.md` is the one shared body of the G2 verifier; `codeanvil create` writes it per runtime (`.claude/agents/`, `.opencode/agents/`, `.codex/agents/`) as listed under `subagents` in `config.yaml`.
 - **`templates/backups/`** — Retired in v3 and kept for later: `custody-chain/`, `G1_start_design/` and `G1_SRS.md`. Not scaffolded and not shipped in the wheel.
 
@@ -53,6 +70,7 @@ CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks stat
   - **T0_ANE-Lap2** — SDR spectrum monitoring edge sensor (ANE). **GT-ready**: `just-edge/StRS.md` + `just-edge/SyRS.md` are valid GT files that can be copied directly into a project as `G0_StRS.md` / `G0_SyRS.md`.
   - **T1_FM-monitoring** — SDR-based FM broadcast compliance monitoring system. Raw LaTeX spec (GT must be derived). RAG-informed from regulatory docs (FCC Part 73, ANE Res. 105, ITU-R BS.412/450/SM.2152, ISO/IEC 17025).
   - **T2_IoT-Indoor** — Indoor IoT radio environment mapping at 2.4 GHz ISM (Proyecto Hermes / GCPDS). Raw proposal + literature (GT must be derived).
+  - **T3_FM-mock** — ready Build Package and an archived mock-only full-flow run. The snapshot contains GT, code, verification kit and cycle reports; `RUN.md` starts the corrected preview.
 - **Stage (Sn) and gate (Gn)**: stages produce, gates judge. Sequential — each needs its predecessor's report at `HITL: PASS`. G0 is the only deterministic gate (script); Gate H, G1 and G2 are human. A stage's PASS means "delivered".
 - **Skill**: `SKILL.md` + optional scripts that define what happens at a gate. Agent-agnostic — any coding agent that reads markdown can execute them. Live in `templates/skills/` (repo) and `.agents/skills/` (scaffolded projects).
 - **Gate progress**: tracked by the harness via the GT files and cycle-scoped reports (`.codeanvil/report/<cycle>/<gate>.md`), not by the tool. There is no orchestrator advancing a stored session — each skill checks its predecessor's report, and the agent asks for the cycle on project open.
@@ -64,13 +82,16 @@ The formal methodology paper lives at `methodology/V-SIL-v2/V-SIL.tex` (+ compil
 
 ## Archived plans
 
-Plans moved to `odd/tasks/` with commit-date prefixes. All are DONE.
+Completed plans live in `odd/tasks/` with date prefixes. The 2026-11-05
+full-flow plan is [complete](odd/tasks/2026-11-05_1421_vsil_v3_full_flow.md);
+its remaining failure probes are future regression work, not recorded as PASS.
 
 | Plan                 | Path                                              | Description                                                        |
 |----------------------|---------------------------------------------------|--------------------------------------------------------------------|
 | G0 validation script | `odd/tasks/2026-10-13_1227_g0_skill_plan.md`      | Deterministic Python script to structurally validate the GT documents against IEEE 29148 templates |
 | Scaffold CLI         | `odd/tasks/2026-10-21_1423_scaffold_cli_plan.md`   | pyproject.toml, skill dir convention (.agents/skills/ + symlinks), path rewriting, GT inside skills |
 | AGENTS.md template   | `odd/tasks/2026-10-14_1514_agents_md_template_plan.md` | Config-driven scaffold: YAML config, AGENTS.md template with dynamic skills, multi-agent symlinks |
+| V-SIL v3 full flow | `odd/tasks/2026-11-05_1421_vsil_v3_full_flow.md` | S0 → G2 implementation, T3 full-flow run, v0.4.1 release; deferred probes documented |
 
 ## Installation
 

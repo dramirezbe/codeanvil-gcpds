@@ -6,6 +6,8 @@ Agent-agnostic project scaffolding, templates, and agent definitions for the **V
 
 Works with any AI coding agent: Claude, Codex, OpenCode, Pi, or others.
 
+**Current release:** [v0.4.1](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.4.1). The first realistic complete run, including a G2 → S1 rework loop, is archived under [`methodology/test/T3_FM-mock/`](methodology/test/T3_FM-mock/). Its [snapshot guide](methodology/test/T3_FM-mock/FIRST_FULL_FLOW_SNAPSHOT.md), [prototype run instructions](methodology/test/T3_FM-mock/first_full_flow_2026-11-05/RUN.md), and [review holdout](methodology/test/T3_FM-mock/S1_G1_review_holdout_2026-11-05.md) show the result and its limits.
+
 > This methodology does not design hardware. It targets software running on Commercial Off-The-Shelf devices (not necessarily out-of-the-box), where the GT defines what constraints that hardware imposes.
 
 ## Install
@@ -57,7 +59,7 @@ codeanvil create myproject -p ~/projects
 
 # Validate the GT pair yourself (deterministic, no AI; the G0 skill runs the same script)
 cd myproject
-python .agents/skills/G0_valid_req_and_GT/scripts/g0_validate.py GT/G0_StRS.md GT/G0_SyRS.md
+python3 .agents/skills/G0_valid_req_and_GT/scripts/g0_validate.py GT/G0_StRS.md GT/G0_SyRS.md
 
 # Check project status (reads .codeanvil/report/ from the current directory)
 codeanvil status
@@ -68,6 +70,30 @@ codeanvil sync
 # Filename-safe timestamp (report filenames, machine identifiers)
 codeanvil now --machine
 ```
+
+The **agent** runs the stages and gates from `.agents/skills/`; there is no
+`codeanvil run` command. G0 runs its deterministic script, while Gate H, G1
+and G2 need a human verdict. After a G2 design-defect FEEDBACK, the same cycle
+repeats S1 → G1 → S2 → G2; `codeanvil status` shows stale downstream reports.
+
+### Try the completed FM mock example
+
+From this repository, with Python 3.12+, `uv`, Node and `pnpm` installed:
+
+```bash
+cd methodology/test/T3_FM-mock/first_full_flow_2026-11-05
+uv sync --frozen --no-dev
+./run-demo SC-2
+```
+
+Open the local Vite URL printed by the launcher (normally
+<http://127.0.0.1:5173/>). The spectrum and waterfall update, and scene SC-2
+shows three occupied channels. Ctrl-C stops both services. This is a **Mock HAL
+preview with a VL-1 ceiling**; it does not validate the RTL-SDR or Raspberry Pi.
+See [RUN.md](methodology/test/T3_FM-mock/first_full_flow_2026-11-05/RUN.md)
+for separate-terminal commands and smoke evidence. The archived G2 PASS was
+recorded before the entry-point correction; that correction has separate smoke
+evidence, not a new G2 verdict.
 
 ### Commands
 
@@ -174,11 +200,16 @@ GT reference templates are **locked** inside the skills that use them (`.agents/
 1. **Write your Build Package** — `GT/build_package.md`. A hand-written StRS + SyRS pair is also accepted.
 2. **S0 normalises** — an agent casts the Build Package into the locked StRS and SyRS blueprints, in one pass, inventing nothing.
 3. **G0 validates structure** — a deterministic script checks that both GT documents follow the expected format and that the pair is cross-consistent (G0-X). Hard pass/fail, no LLM. Then a human answers Gate H: *Requirements complete, bounded, and verifiable?*
-4. **S1 designs** — an agent writes the design of a system of layered services and its dependency graph.
-5. **G1 reviews** — a human decides whether all implementation-critical design choices are resolved (PASS, FEEDBACK or RFD).
-6. **S2 implements** — an agent builds the services under `src/`, the verification kit under `verification/` (Mock HAL, golden vectors, mandatory telemetry companion) and the VL-1 tests, and records the two test commands.
-7. **G2 verifies** — the `vsil-verifier` subagent re-runs those commands in a fresh, read-only context; a human answers PASS, FEEDBACK (module or design defect) or RFD. PASS writes the Verified Prototype.
+4. **S1 designs** — an agent writes the design and dependency graph. Design §0.5 defines one runnable project-root entry point, selected HAL, URL, visible result and shutdown.
+5. **G1 reviews** — a human decides whether all implementation-critical design choices, including the entry point, are resolved (PASS, FEEDBACK or RFD).
+6. **S2 implements** — an agent builds services under `src/`, the kit under `verification/`, the entry point and a VL-0 smoke test of the complete system. It records the `verification/run.sh vl0` and `vl1` commands.
+7. **G2 verifies** — the `vsil-verifier` subagent re-runs those commands in a fresh, read-only context, including entry-point smoke evidence; a human answers PASS, FEEDBACK (module or design defect) or RFD. PASS writes the Verified Prototype with run instructions.
 8. **RFD** — when a requirement is infeasible on the declared COTS platform, a decision document suspends the cycle until the Build Package author decides.
+
+Today, S1 design and G2 Verified Prototype artifacts live under
+`.codeanvil/report/<cycle>/S1_artifacts/` and `G2_artifacts/`. The T3 holdout
+records proposals to use `GT/StRS.md`, `GT/SyRS.md`, optional `GT/SRS.md`,
+`design/SDD.md` and reader-facing `reports/`; those paths are not active yet.
 
 ## Definitions
 
@@ -226,7 +257,8 @@ codeanvil-gcpds/
 ├── methodology/test/        # Test GT cases (V-SIL system inputs)
 │   ├── T0_ANE-Lap2/        # ANE edge sensor (StRS + SyRS examples, Phase 2)
 │   ├── T1_FM-monitoring/    # SDR-based FM compliance monitoring (LaTeX spec)
-│   └── T2_IoT-Indoor/      # Indoor IoT radio environment (Hermes/GCPDS)
+│   ├── T2_IoT-Indoor/      # Indoor IoT radio environment (Hermes/GCPDS)
+│   └── T3_FM-mock/        # Build Package + archived first full V-SIL v3 run
 │
 ├── templates/               # The methodology (the real product)
 │   ├── GT/                  # Ground Truth document templates (IEEE 29148)
@@ -235,15 +267,16 @@ codeanvil-gcpds/
 │   │   ├── README.md
 │   │   └── legacy/         # Old template versions (v1, v2, v3)
 │   ├── backups/             # Retired skills (custody-chain, G1_start_design, G1_SRS.md)
+│   ├── agents/vsil-verifier.md  # Shared G2 verifier body, rendered per runtime
+│   ├── config.yaml           # Scaffold skill chain and subagent configuration
 │   └── skills/              # Stage and gate skills (self-contained)
 │       ├── S0_normalise_build_package/
+│       ├── G0_valid_req_and_GT/      # + deterministic g0_validate.py and RULES.md
 │       ├── S1_design_services/     # + references/ and assets/ (vis-network)
 │       ├── G1_design_review/       # + references/G1_CHECKLIST.md
-│       ├── RFD_request_for_deviation/
-│       ├── G0_valid_req_and_GT/
-│       │   ├── SKILL.md            # Agent contract (agentskills.io format)
-│       │   ├── references/RULES.md # Full Phase 1-4 rule tables
-│       │   └── scripts/g0_validate.py  # Deterministic validator (stdlib only)
+│       ├── S2_implement_services/  # + project layout and logger references
+│       ├── G2_adaptive_verification/  # + Verified Prototype reference
+│       └── RFD_request_for_deviation/
 │
 ├── odd/tasks/               # Archived plans and task logs (date-prefixed)
 │

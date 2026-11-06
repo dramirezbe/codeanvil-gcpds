@@ -10,19 +10,28 @@ methodology pipeline. They are the methodology's integration tests.
 | **T0_ANE-Lap2** | SDR spectrum monitoring (ANE edge sensor) | **Yes** — `just-edge/StRS.md` + `just-edge/SyRS.md` are valid GT files | Also has `full-system/StRS_APPROVED.md` (broader scope, historical snapshot) |
 | **T1_FM-monitoring** | SDR-based FM broadcast compliance | No — raw LaTeX spec, GT must be derived | `00_sdr_spectrum_sensor_design/` (RAG-informed from FCC/ANE/ITU) |
 | **T2_IoT-Indoor** | Indoor IoT radio environment mapping, 2.4 GHz | No — raw proposal + literature | Hermes proposal, radio env mapping papers, variable adaptation doc |
-| **T3_FM-mock** | FM spectrum + waterfall + channel detection, RTL-SDR → Raspberry Pi DSP service + browser UI | Build Package — `build_package.md`, S0 writes the GT pair | Full-flow fixture for `mock-only` (S0 → G2, VL-1, no lab inputs, ML localisation only as future work) |
+| **T3_FM-mock** | FM spectrum + waterfall + channel detection, RTL-SDR → Raspberry Pi DSP service + browser UI | Build Package — `build_package.md`, S0 writes the GT pair | Archived `mock-only` S0 → G2 run, copied project, runnable preview and review holdout |
 
 Only **T0** has ready-to-use GT files for the pipeline, and **T3** a ready-to-use Build
 Package. T1 and T2 are raw project materials from which GT files would be authored.
+
+The first complete run is preserved in
+[`T3_FM-mock/first_full_flow_2026-11-05/`](T3_FM-mock/first_full_flow_2026-11-05/).
+Read the [snapshot guide](T3_FM-mock/FIRST_FULL_FLOW_SNAPSHOT.md),
+[run instructions](T3_FM-mock/first_full_flow_2026-11-05/RUN.md) and
+[review holdout](T3_FM-mock/S1_G1_review_holdout_2026-11-05.md).
+Its original G2 PASS predates the corrected runnable entry point; the latter
+has separate smoke evidence in `RUN.md`.
 
 ---
 
 ## End-to-End Manual Test Procedure
 
-This procedure validates the full CodeAnvil flow from a clean install through
-the Build Package → S0 → G0 → S1 → G1, using the FM Build Package under
+This earlier procedure covers the clean install and Build Package → S0 → G0 →
+S1 → G1 portion of the flow, using the FM Build Package under
 `templates/no-tools-skills/v3/test-inputs/` as the test input. T0 stays usable as a
 hand-written GT pair (S0 passes it through as normalised input).
+For the S2 → G2 continuation and a runnable result, use the T3 archive above.
 
 ### Prerequisites
 
@@ -92,7 +101,7 @@ Verify:
 # Project structure
 ls /tmp/smoke-test/AGENTS.md          # generated
 ls /tmp/smoke-test/CLAUDE.md          # symlink → AGENTS.md
-ls /tmp/smoke-test/.agents/skills/    # S0, G0, S1, G1, RFD
+ls /tmp/smoke-test/.agents/skills/    # S0, G0, S1, G1, S2, G2, RFD
 
 # .codeanvil/ machine-generated dir
 ls /tmp/smoke-test/.codeanvil/project.yaml   # UUIDv7 identity manifest
