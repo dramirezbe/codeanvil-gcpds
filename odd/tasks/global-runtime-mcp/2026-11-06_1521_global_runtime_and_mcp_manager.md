@@ -530,3 +530,14 @@ Only after every verification check passes on the final commit.
 - **Next:** the owner runs `methodology/test/runtime_mcp_probe.md` (A, then B,
   then C) and records the results. Then the PR leaves draft and Phase 4
   (v0.6.0) runs. Windows (Verification 8) stays manual.
+- **2026-11-06 — Paused. Pending, in order:**
+  1. The owner runs `methodology/test/runtime_mcp_probe.md` parts A, B and C on
+     the dev machine and fills its Results table. The real marconi venv is still
+     broken on purpose: B1 must FAIL, then B2 (`codeanvil mcp update marconi`)
+     fixes it.
+  2. Code review of PR #8 (it was started, then stopped at the owner's request;
+     nothing from it was applied).
+  3. Fix whatever 1 and 2 find. Take PR #8 out of draft, merge it with a merge
+     commit, then Phase 4 (v0.6.0: bump, tag the merge commit, release, smoke
+     test from `@v0.6.0`).
+  4. Verification 8 (Windows) is still manual.
