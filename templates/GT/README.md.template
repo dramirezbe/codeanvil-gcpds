@@ -20,7 +20,7 @@ must hold, before S1 runs. The S1 design document is produced later by S1 in
 Validate your GT pair (deterministic, no AI):
 
 ```bash
-python .agents/skills/{skill}/scripts/g0_validate.py .codeanvil/GT/StRS.md .codeanvil/GT/SyRS.md
+codeanvil python .agents/skills/{skill}/scripts/g0_validate.py .codeanvil/GT/StRS.md .codeanvil/GT/SyRS.md
 ```
 
 Exit code `0` means the structure passes; `1` means structural errors (or an incomplete pair)
