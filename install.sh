@@ -15,16 +15,19 @@ warn()  { echo "[$TOOL_NAME] WARNING: $*" >&2; }
 error() { echo "[$TOOL_NAME] ERROR: $*" >&2; exit 1; }
 
 # ── 1. Check Python ────────────────────────────────────────────────────
+PYTHON_VERSION=""
 check_python() {
     if ! command -v python3 &>/dev/null; then
-        error "python3 not found. Install Python ${MIN_PYTHON}+ first."
+        info "No system Python found — uv will download one."
+        return
     fi
     local ver
     ver="$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")"
     if python3 -c "import sys; exit(0 if sys.version_info >= (3,10) else 1)"; then
-        info "Python ${ver} found."
+        PYTHON_VERSION="$ver"
+        info "Python ${ver} found — will use it."
     else
-        error "Python ${MIN_PYTHON}+ required (found ${ver})."
+        info "Python ${ver} found but too old (${MIN_PYTHON}+ required) — uv will download one."
     fi
 }
 
@@ -95,14 +98,16 @@ inject_path() {
 
 # ── 5. Install ─────────────────────────────────────────────────────────
 install() {
+    local py_flag="--python"
+    local py_ver="${PYTHON_VERSION:-3.12}"
     if uv tool list 2>/dev/null | grep -q "^${TOOL_NAME} "; then
         info "Upgrading ${TOOL_NAME}..."
-        uv tool install --force-reinstall --python 3.12 "git+${REPO}"
+        uv tool install --force-reinstall "$py_flag" "$py_ver" "git+${REPO}"
         info "Upgraded."
         codeanvil --version 2>/dev/null || true
     else
         info "Installing ${TOOL_NAME}..."
-        uv tool install --python 3.12 "git+${REPO}"
+        uv tool install "$py_flag" "$py_ver" "git+${REPO}"
         info "Installed."
         codeanvil --version 2>/dev/null || true
     fi

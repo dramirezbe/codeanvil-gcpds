@@ -22,15 +22,24 @@ function Write-Warn($msg) { Write-Warning "[$ToolName] $msg" }
 function Write-Err($msg) { Write-Error "[$ToolName] $msg"; exit 1 }
 
 # ── 1. Check Python ──────────────────────────────────────────────────
+$script:PythonVersion = $null
+
 function Test-Python {
     $py = Get-Command python -ErrorAction SilentlyContinue
     if (-not $py) { $py = Get-Command python3 -ErrorAction SilentlyContinue }
-    if (-not $py) { Write-Err "Python $MinPython+ not found. Install from https://python.org" }
+    if (-not $py) {
+        Write-Status "No system Python found — uv will download one."
+        return
+    }
 
     $ver = & $py.Source -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"
-    $ok  = & $py.Source -c "import sys; exit(0 if sys.version_info >= (3,10) else 1)" 2>$null
-    if ($LASTEXITCODE -ne 0) { Write-Err "Python $MinPython+ required (found $ver)." }
-    Write-Status "Python $ver found."
+    & $py.Source -c "import sys; exit(0 if sys.version_info >= (3,10) else 1)" 2>$null
+    if ($LASTEXITCODE -eq 0) {
+        $script:PythonVersion = $ver
+        Write-Status "Python $ver found — will use it."
+    } else {
+        Write-Status "Python $ver found but too old ($MinPython+ required) — uv will download one."
+    }
 }
 
 # ── 2. Ensure uv ─────────────────────────────────────────────────────
@@ -50,13 +59,14 @@ function Install-Uv {
 
 # ── 3. Install ────────────────────────────────────────────────────────
 function Install-Tool {
+    $pyFlag = if ($script:PythonVersion) { @("--python", $script:PythonVersion) } else { @("--python", "3.12") }
     $installed = uv tool list 2>$null | Select-String "^$ToolName "
     if ($installed) {
         Write-Status "Upgrading $ToolName..."
-        uv tool install --force-reinstall --python 3.12 "git+$Repo"
+        uv tool install --force-reinstall @pyFlag "git+$Repo"
     } else {
         Write-Status "Installing $ToolName..."
-        uv tool install --python 3.12 "git+$Repo"
+        uv tool install @pyFlag "git+$Repo"
     }
     if ($LASTEXITCODE -ne 0) { Write-Err "Installation failed." }
     Write-Status "Installed."
