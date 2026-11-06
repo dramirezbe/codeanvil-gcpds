@@ -89,3 +89,8 @@ def _load_config() -> dict:
 
 
 CONFIG = _load_config()
+
+# Global methodology runtime (one uv venv shared by every project) and the
+# shipped spec it is built from.
+RUNTIME_DIR = WORKDIR / CONFIG.get("runtime", {}).get("dir", "runtime")
+RUNTIME_SPEC_DIR = TEMPLATES_DIR / "runtime"

@@ -8,8 +8,6 @@ import argparse
 from collections.abc import Sequence
 from pathlib import Path
 
-from codeanvil.config.paths import CONFIG
-
 
 def build_parser() -> argparse.ArgumentParser:
     """Build the full `codeanvil` parser (subcommands included)."""
@@ -163,6 +161,38 @@ def build_parser() -> argparse.ArgumentParser:
         choices=list(CONFIG.get("backup_targets", {})),
         help="Stage whose artifacts to back up",
     )
+
+    runtime = sub.add_parser(
+        "runtime",
+        help="Manage the global methodology runtime (one venv for every project)",
+        description=(
+            "The methodology runtime is one uv venv under ~/.codeanvil-config/runtime/,\n"
+            "shared by every project. Skill scripts run on it with 'codeanvil python'.\n"
+            "Packages you add live in runtime/user.yaml and survive 'codeanvil upgrade'."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    runtime_sub = runtime.add_subparsers(dest="action", required=True, title="actions")
+    runtime_sub.add_parser("sync", help="Create or update the runtime venv from the shipped spec + your packages")
+    for action, verb in (("add", "Add"), ("remove", "Remove")):
+        action_parser = runtime_sub.add_parser(action, help=f"{verb} packages, then sync")
+        action_parser.add_argument("packages", nargs="+", metavar="PACKAGE", help="Requirement, e.g. torch or 'numpy>=2'")
+    runtime_sub.add_parser("list", help="Base and user packages with their installed versions")
+    runtime_sub.add_parser("path", help="Print the runtime's Python interpreter")
+
+    python_parser = sub.add_parser(
+        "python",
+        help="Run a script on the methodology runtime",
+        description=(
+            "Runs <script> with the runtime's Python (-I) from the project root.\n"
+            "A script under .agents/skills/<skill>/ is checked against the skill's\n"
+            "metadata.runtime packages first. Every argument after the script is\n"
+            "passed to it unchanged."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    python_parser.add_argument("script", help="Path to the Python script")
+    python_parser.add_argument("args", nargs=argparse.REMAINDER, help="Arguments for the script")
 
     now_parser = sub.add_parser(
         "now",

@@ -8,7 +8,7 @@ import sys
 
 import pytest
 
-EXPECTED_SUBCOMMANDS = {"init", "create", "list", "sync", "status", "now", "backup", "sandbox", "upgrade"}
+EXPECTED_SUBCOMMANDS = {"init", "create", "list", "sync", "status", "now", "backup", "runtime", "python", "sandbox", "upgrade"}
 
 
 def _run_cli(*args: str) -> subprocess.CompletedProcess:
@@ -85,3 +85,16 @@ def test_version_short_flag():
     result = _run_cli("-v")
     assert result.returncode == 0, result.stderr
     assert "codeanvil" in result.stdout
+
+
+def test_runtime_subcommand_exposes_its_actions():
+    result = _run_cli("runtime", "--help")
+    assert result.returncode == 0, f"runtime not recognized: {result.stderr}"
+    for action in ("sync", "add", "remove", "list", "path"):
+        assert action in result.stdout, f"action '{action}' missing from 'runtime --help'"
+
+
+def test_python_subcommand_exists():
+    result = _run_cli("python", "--help")
+    assert result.returncode == 0, f"python not recognized: {result.stderr}"
+    assert "script" in result.stdout

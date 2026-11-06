@@ -8,6 +8,8 @@ from codeanvil.CLI.commands import (
     cmd_init,
     cmd_list,
     cmd_now,
+    cmd_python,
+    cmd_runtime,
     cmd_sandbox,
     cmd_status,
     cmd_sync,
@@ -36,6 +38,10 @@ def choose_option(args: argparse.Namespace) -> None:
             cmd_status(args.name)
         case "backup":
             cmd_backup(args.stage)
+        case "runtime":
+            cmd_runtime(args.action, getattr(args, "packages", None))
+        case "python":
+            cmd_python(args.script, args.args)
         case "now":
             cmd_now(tz=args.tz, machine=args.machine)
         case "sandbox":

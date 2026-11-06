@@ -43,6 +43,19 @@ backup_targets:
   S2: [".codeanvil/report/{cycle}/S2_artifacts/test_run.md"]
   G2: [".codeanvil/report/{cycle}/G2_artifacts/verified_prototype.md"]
 
+# Global methodology runtime: one uv venv under ~/.codeanvil-config/<dir>/,
+# shared by every project, built from templates/runtime/ plus user additions
+# (`codeanvil runtime add`). Skill scripts run on it via `codeanvil python`.
+# system_packages: OS-installed Python packages (e.g. gnuradio) bridged into
+# the venv with a .pth file.
+runtime:
+  dir: "runtime"
+  python: "3.12"
+  # Shipped base; templates/runtime/pyproject.toml and uv.lock are generated
+  # from it (a test keeps them in step). psutil: S2 telemetry collector.
+  base: ["psutil", "pyyaml"]
+  system_packages: []
+
 # Skill directory symlinks — agent runtimes that discover skills
 # via a directory convention.
 agent_skill_links:

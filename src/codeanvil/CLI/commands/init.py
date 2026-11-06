@@ -1,4 +1,5 @@
-"""`codeanvil init` — create the workdir and database, optionally install MCP servers."""
+"""`codeanvil init` — create the workdir, the database and the methodology runtime;
+optionally install MCP servers."""
 
 import sys
 
@@ -20,6 +21,13 @@ def cmd_init(mcp_servers: list[str] | None = None) -> None:
         log.info("CodeAnvil initialized")
     else:
         log.info("already initialized")
+
+    from codeanvil.init.runtime import RuntimeSetupError, sync
+    try:
+        sync()
+    except RuntimeSetupError as exc:
+        log.error("%s", exc)
+        sys.exit(1)
 
     if mcp_servers:
         from codeanvil.config.paths import CONFIG
