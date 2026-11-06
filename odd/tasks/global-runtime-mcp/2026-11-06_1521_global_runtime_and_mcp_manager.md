@@ -367,7 +367,7 @@ skipped when marconi is not installed):
    protocol channel).
 
 **Level 2 — sandboxed Claude session** (manual script
-`methodology/test/mcp_sandbox_probe.md` with exact commands and expected
+`methodology/test/runtime_mcp_probe.md` with exact commands and expected
 output; record each run's result there):
 1. **Only project servers are visible.** Run the sandbox recipe
    non-interactively in the project:
@@ -454,7 +454,7 @@ Only after every verification check passes on the final commit.
 6. WU-M5: on the dev machine, `codeanvil mcp doctor marconi` reports the
    ABI mismatch before the fix and `ok` after `codeanvil mcp update marconi`.
 7. WU-M6 Level 1 passes; Level 2 steps 1–5 are recorded as PASS in
-   `methodology/test/mcp_sandbox_probe.md`, including the "nothing became
+   `methodology/test/runtime_mcp_probe.md`, including the "nothing became
    global" checks.
 8. Steps 2–5 repeated on Windows, including the launcher stdio round trip.
 
