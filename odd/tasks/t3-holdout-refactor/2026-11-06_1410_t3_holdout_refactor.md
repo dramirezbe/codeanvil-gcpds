@@ -199,8 +199,11 @@ change. `backup` must not import from another command module.
    - The latest backup of that stage has the same digests → print
      `already backed up: <path>`, exit 0.
    - Never overwrite an existing backup folder. If the folder exists with
-     different digests, exit nonzero: it signals a file edited outside the
-     flow, and the skill stops for the human.
+     different digests, the producer's iteration has not advanced since the
+     backup was taken: a pass was interrupted or stopped and is resuming.
+     Keep the folder, print `already backed up: <path> (the working copy
+     changed since; resuming an interrupted pass)` and exit 0. (Changed in the
+     PR #6 review: the original "exit nonzero" rule blocked every resumed pass.)
 5. **Errors.** Any failure (no manifest, no active cycle for S2/G2, I/O error)
    → short diagnostic, exit nonzero.
 6. **Output.** One line with the backup path, so the agent can cite it in
@@ -419,6 +422,7 @@ a breaking change bumps the minor version.
 | `validation_levels.md` and reader-facing `reports/` | Later G2 enhancement |
 | Optional `SRS.md` | No evidence it is needed yet |
 | `codeanvil migrate` for old projects | Old projects finish their cycle on old paths |
+| Backup label for artifact-less iterations | `codeanvil backup` labels a folder with the stage's latest iteration; a FEEDBACK iteration that wrote no artifact (S2 `design defect`) makes the next backup carry its number although the file came from the iteration before. Needs reports to record which iteration wrote each artifact |
 | Retire `.codeanvil/custody/` | `sync.py` `_migrate_provenance` still targets it and `test_create.py` asserts it, so retire them together |
 | `codeanvil list --missing` / prune for registry rows whose path is gone | 8 of 10 rows on the dev machine point at missing paths (checked 2026-11-06); there is no removal command, so a stale row can only be cleared by hand |
 
@@ -560,3 +564,22 @@ After Phase 5:
   checklist. Not done, by instruction: merge, `v0.5.0` tag, GitHub release.
 - **Next:** owner review and merge of PR #6; then the after-merge checklist (tag `v0.5.0`, release
   from the notes, `codeanvil upgrade`, Release Smoke create).
+- **2026-11-06 — PR #6 review fixes.** A high-effort code review found seven confirmed defects,
+  fixed on `feat/t3-holdout-refactor` before the merge:
+  - S2 step 4 wrote `test_run.md` before the step 6 backup, and both rework paths skipped the
+    backup. Step 4 now keeps the results for step 7, and both reworks run steps 6 and 7.
+  - `codeanvil backup` exited 1 on every resumed pass, because the folder existed with different
+    content. It now keeps the folder and exits 0 with a resume note (rule 4 updated).
+  - The `unknown` bucket mixed int and str sort orders, so `status` crashed. A cycle named
+    `unknown` is now refused, and orders are typed tuples.
+  - Backup stages are derived from `backup_targets` (parser `choices` and `reports.py` regexes).
+    The dead `BACKUP_STAGES` and the duplicate `_REPORT_RE` are gone.
+  - The collector sampled itself. It now measures `--pid` (default: its parent) plus every
+    descendant. The first sample waits one interval after priming instead of reporting 0.0. A
+    non-UTF-8 counters file is reported as unavailable. The default output name has
+    milliseconds and the PID.
+  Not changed: the missing v0.4 migration is by design (release notes), and the collector's
+  direct `datetime` use is required because the copied file cannot import the tool. The
+  mislabelled backup iteration is now in Deferred. Evidence: 272 pytest + 97 unittest green
+  (6 new or rewritten tests: resumed backup, reserved cycle, mixed bucket order, collector
+  parent tree, `--pid` tree with real CPU, non-UTF-8 counters).
