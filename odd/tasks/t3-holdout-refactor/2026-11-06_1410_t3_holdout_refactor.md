@@ -546,4 +546,11 @@ After Phase 5:
   `uv lock` (one line changed). Release notes drafted at
   `odd/tasks/t3-holdout-refactor/v0.5.0_release_notes.md` (breaking changes, features). Evidence:
   267 pytest + 97 unittest green.
-- **Next:** Unit 4 (final verification on the last commit, Release Smoke scratch run, cleanup).
+- **2026-11-06 — Unit 4: final verification on `67cc0be`.** Evidence:
+  - Tests: 267 pytest + 97 unittest green.
+  - Old-path grep (plan Verification 5, README.md added): 7 hits, all legitimate, same as Unit 1.
+  - Skills (Verification 6): no `S1_artifacts`, `G0_*`, `S1_design.md` or `S1_graph` names in any skill or agent template; each of S0, S1, S2 and G2 runs `codeanvil backup <stage>`; S0/G0 use `.codeanvil/GT/StRS.md` and S1/G1 use `.codeanvil/design/SDD.md`.
+  - Phase 2 scratch backup: the first run wrote `backups/01_run/S1_iter1/` with `MANIFEST.yaml`; the second printed `already backed up`; `status` printed `Backups: S1 iteration 1 → .codeanvil/backups/01_run/S1_iter1/`; after a design edit outside the flow it exited 1 with the "edited outside the flow" message and wrote nothing.
+  - Phase 3 `codeanvil create --name "Release Smoke"`: `.codeanvil/{GT,design,backups,custody,report}`, `project.yaml` points to `.codeanvil/GT/StRS.md` and `SyRS.md`, no root `GT/`. The T0 pair copied to `.codeanvil/GT/` passed `python3 -I g0_validate.py` with exit 0.
+  - Scratch folder deleted. It left one registry row, `Release Smoke` at a deleted path, in the local DB; the owner's DB was not otherwise touched.
+- **Next:** Unit 5 (push `feat/t3-holdout-refactor` and open the PR; no merge, no tag, no release).
