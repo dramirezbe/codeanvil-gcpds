@@ -81,32 +81,36 @@ One manager under `~/.codeanvil-config/`, two kinds of environment:
 
 The refactor in
 [`odd/tasks/t3-holdout-refactor/2026-11-06_1410_t3_holdout_refactor.md`](../t3-holdout-refactor/2026-11-06_1410_t3_holdout_refactor.md)
-is being implemented by another agent (Phases 1–4 committed; Phase 5 docs and
-Phase 6 `v0.5.0` tag pending at the time of writing).
+is complete: `v0.5.0` is tagged on `main` (`027acd4`, PR #6), so the start rule
+below is met and this plan runs on `feat/global-runtime-mcp`.
 
 **Start rule.** Begin this plan only after `v0.5.0` is tagged on `main`.
 Branch `feat/global-runtime-mcp` from that tag. If the refactor gets
 follow-up commits, rebase before touching a shared file.
 
-**Shared files.** Both plans edit these; never edit them while the refactor
-is open:
+**Shared files.** Both plans edit these. The refactor has merged, so they are
+free to edit; the table records what v0.5.0 already put there:
 
 | File | Refactor touches | This plan touches |
 |------|------------------|-------------------|
 | `templates/config.yaml` | `backup_targets`, GT paths | `runtime`, `mcp_servers.*.ref` |
 | `src/codeanvil/config/paths.py` | `PROJECT_GT`, `PROJECT_DESIGN`, `PROJECT_BACKUPS` | `RUNTIME_DIR` |
-| `src/codeanvil/CLI/parser.py`, `main.py`, `commands/__init__.py` | `backup` | `runtime`, `python`, `mcp` |
+| `src/codeanvil/CLI/parser.py`, `main.py`, `commands/__init__.py` | `backup` (its `choices` come from `CONFIG["backup_targets"]`) | `runtime`, `python`, `mcp`, following the same config-derived pattern |
 | `tests/test_cli.py` | `EXPECTED_SUBCOMMANDS` + `backup` | + `runtime`, `python`, `mcp` |
 | `src/codeanvil/init/create.py` | GT/design/backups dirs | MCP config generation |
 | `templates/AGENTS/TEMPLATE_AGENT.md` | command list, layout | command list |
 | `CLAUDE.md`, `AGENTS.md` | Phase 5 docs | Phase 4 docs |
 
-**Non-goals (to avoid stepping on the refactor):**
-- Do not move `templates/skills/S2_implement_services/references/telemetry_collector.py`
-  to the runtime. It runs inside the project's verification kit, in the
-  project's own environment, not in the methodology runtime.
+**Non-goals:**
 - Do not change stage or gate logic. The only skill edits are the
-  `metadata.runtime` declarations and the G0 script invocation (WU-RT5).
+  `metadata.runtime` declarations, the G0 script invocation (WU-RT5) and the
+  telemetry collector's move to the runtime (WU-RT7).
+
+**Owner decision (2026-11-06, after v0.5.0):** the telemetry collector moves to
+the methodology runtime and uses psutil only (WU-RT7). This reverses the
+earlier non-goal. Cost: a delivered project's `run.sh` needs `codeanvil` on
+PATH to record telemetry, the same self-containment trade the runtime already
+makes for skill scripts.
 
 ---
 
@@ -115,8 +119,11 @@ is open:
 ### WU-RT1: Shipped runtime spec
 
 - New `templates/runtime/pyproject.toml`: project `codeanvil-runtime`,
-  `requires-python = ">=3.12"`, base dependencies kept minimal (`pyyaml`).
-  It is already bundled in the wheel through the `templates/` force-include.
+  `requires-python = ">=3.12"`, base dependencies kept minimal (`pyyaml`,
+  `psutil` for WU-RT7), `[tool.uv] package = false`.
+- `pyproject.toml` force-includes paths one by one, so add
+  `"templates/runtime" = "codeanvil/templates/runtime"`; without it a wheel
+  install has no runtime spec.
 - New `templates/runtime/uv.lock`: generated with `uv lock`, which resolves
   for every platform at once. This is the single lock maintained for Linux,
   macOS and Windows.
@@ -125,6 +132,7 @@ is open:
   ```yaml
   runtime:
     dir: "runtime"              # under ~/.codeanvil-config/
+    python: "3.12"              # same interpreter pin as install.sh / upgrade
     system_packages: []         # e.g. ["gnuradio"], bridged via a .pth file
   ```
 
@@ -156,7 +164,9 @@ New `src/codeanvil/CLI/commands/runtime.py` plus `src/codeanvil/init/runtime.py`
 - Resolve the project root with `find_manifest(cwd)`; fall back to cwd.
 - Run `<RUNTIME_DIR>/.venv/bin/python -I <script> [args]`
   (`.venv\Scripts\python.exe` on Windows) with cwd = project root. Forward
-  the exit code.
+  the exit code. On POSIX `os.execv` replaces the launcher, so the script's
+  parent is the caller (`run.sh`), which the telemetry collector relies on.
+  On Windows the launcher stays as the parent (`subprocess.run`).
 - Missing runtime → exit nonzero with `Runtime not installed. Run codeanvil runtime sync.`
 - Logging goes to stderr only; stdout belongs to the script.
 
@@ -191,6 +201,22 @@ New `src/codeanvil/CLI/commands/runtime.py` plus `src/codeanvil/init/runtime.py`
 - `codeanvil upgrade` runs the **new** binary's `codeanvil runtime sync` as a
   subprocess after a successful reinstall, so a changed shipped lock takes
   effect at once.
+
+### WU-RT7: Telemetry collector on the runtime (psutil only)
+
+- Move `S2_implement_services/references/telemetry_collector.py` to
+  `S2_implement_services/scripts/telemetry_collector.py`. It stays locked, but
+  S2 no longer copies it into the project: `run.sh` runs it in place with
+  `codeanvil python .agents/skills/S2_implement_services/scripts/telemetry_collector.py --pid $$ --output verification/telemetry/<level>-<timestamp>.jsonl &`.
+- S2 frontmatter declares `metadata.runtime: ["psutil"]`; `psutil` joins the
+  runtime base. The collector imports psutil unconditionally: the "psutil
+  missing → every metric unavailable" branch goes away, and a missing psutil
+  is caught by `codeanvil python` before the run (WU-RT4).
+- The collector excludes its own PID from the measured tree.
+- `project_layout.md`: drop `psutil` from the kit's dev group;
+  `verification/telemetry/` keeps only the JSONL runs. G1, G2, the SDD
+  template and the verifier keep the §1.7 "telemetry companion" design
+  contract; only the collector's location and launch change.
 
 **Tests (Phase 1)**: new `tests/test_runtime.py` with `uv` calls mocked
 (pyproject merge of base + user packages, `user.yaml` survives a re-sync,
