@@ -492,3 +492,41 @@ Only after every verification check passes on the final commit.
       from psutil.
 - **Next:** Phase 2 (WU-M1–M6). WU-M5 repairs the deliberately broken marconi
   venv. WU-M6 Level 2 runs a real sandboxed Claude session, which costs tokens.
+- **2026-11-06 — Phase 2 and Phase 3 complete (WU-M1–M6, docs).**
+  - Root cause of the broken dev venv: it was created on mise's floating `latest`
+    Python. `pyvenv.cfg` still says 3.14.8, but the symlink now resolves to
+    3.15.2. WU-M5 therefore builds a server venv on the system interpreter by
+    explicit path (`/usr/bin/python3.14`) with `--system-site-packages`, never a
+    version shim. The probe cache is keyed by the interpreter's *real* path.
+  - M1: `marconi.ref = 533bae4…`. Add and update run `git checkout --detach <ref>`,
+    and every git and uv failure raises with its stderr.
+  - M2: `codeanvil mcp add|update|remove|list|doctor`. `remove` refuses while
+    registered projects use the server (`--yes` overrides).
+  - M3: `codeanvil mcp run` expands `{install_path}`, `{venv_bin}` and
+    `{project_dir}` at start-up and strips `PYTHONPATH`. It uses `execvpe` on
+    POSIX and stays the parent on Windows. It writes nothing to stdout.
+  - M4: all four configs and `.agents/mcp.yaml` hold
+    `codeanvil mcp run <name>`, with no path and no env.
+    `codeanvil mcp enable|disable` rewrites old configs and the AGENTS.md MCP
+    table. The sandbox recipes keep the caller's PATH, so `codeanvil` resolves
+    inside them.
+  - M5: the probe reports ok, missing (with the OS-family command), mismatch or
+    broken. Install commands are data in `system_packages`, with no `-dev`
+    packages. The probe fails fast in add, update, doctor and run.
+  - M6: Level 1 is `tests/test_mcp_e2e.py`, opt-in with `CODEANVIL_MCP_E2E=1`.
+    Level 2 is `methodology/test/runtime_mcp_probe.md` part B.
+  - Collector fix found by the tutorial dry run: sensor reads stretched the
+    interval to 1.06 s. Samples now sit on a fixed monotonic grid (1.00 s).
+  - Evidence: 332 pytest (1 opt-in skip) + 97 unittest green.
+    - Real `codeanvil mcp doctor marconi` reports the 3.14/3.15 mismatch, exit 1.
+    - On a scratch copy of the install, `update` rebuilt the venv on
+      `/usr/bin/python3.14` in about 3 s, and the probe then gave
+      `gnuradio 3.10.12.0`. The Level 1 session through the launcher ran a real
+      flowgraph (4096 samples).
+    - `create --mcp marconi` writes launcher configs only.
+    - A 10 s idle run gave 10 samples at 1.00 s on psutil, tree = the shell
+      alone, and Tctl present.
+  - The real install was left broken on purpose: the owner runs B1 → B2.
+- **Next:** the owner runs `methodology/test/runtime_mcp_probe.md` (A, then B,
+  then C) and records the results. Then the PR leaves draft and Phase 4
+  (v0.6.0) runs. Windows (Verification 8) stays manual.
