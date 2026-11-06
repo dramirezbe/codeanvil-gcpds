@@ -104,15 +104,15 @@ s0_skill: "S0_normalise_build_package"
 g0_skill: "G0_valid_req_and_GT"
 
 gt_reference_templates:
-  - "G0_StRS.md"
-  - "G0_SyRS.md"
+  - "StRS.md"
+  - "SyRS.md"
 
 # Repo-root paths inside SKILL.md / RULES.md become project-relative after
 # copy. Order matters: applied in insertion order.
 path_replacements:
   "templates/skills/": ".agents/skills/"
-  "templates/GT/G0_StRS.md": ".agents/skills/G0_valid_req_and_GT/templates/G0_StRS.md"
-  "templates/GT/G0_SyRS.md": ".agents/skills/G0_valid_req_and_GT/templates/G0_SyRS.md"
+  "templates/GT/StRS.md": ".agents/skills/G0_valid_req_and_GT/templates/StRS.md"
+  "templates/GT/SyRS.md": ".agents/skills/G0_valid_req_and_GT/templates/SyRS.md"
   "(repository-root relative)": "(project-root relative)"
 
 # Never copy build artifacts or legacy empty scripts into a project.

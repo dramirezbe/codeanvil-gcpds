@@ -2,7 +2,7 @@
 name: s1-design-services
 description: "Trigger: S1, design services, architecture, service topology, contracts, stubs, dependency graph. From a passed G0 pair, write the S1 design document (layered services, contracts with stubs, traceability, decisions, risks) and its dependency graph."
 license: Apache-2.0
-compatibility: "No network access, no scripts. Reads GT/G0_StRS.md, GT/G0_SyRS.md and .codeanvil/project.yaml. Writes .codeanvil/report/<cycle-name>/S1.md and S1_artifacts/."
+compatibility: "No network access, no scripts. Reads .codeanvil/GT/StRS.md, .codeanvil/GT/SyRS.md and .codeanvil/project.yaml. Writes .codeanvil/design/SDD.md, .codeanvil/design/dependency_graph.html and .codeanvil/report/<cycle-name>/S1.md."
 metadata:
   author: "gcpds"
   version: "1.0"
@@ -41,16 +41,16 @@ rework, or by the user.
 
 | | Path | Notes |
 |---|------|-------|
-| Input | `GT/G0_StRS.md`, `GT/G0_SyRS.md` | Read-only |
+| Input | `.codeanvil/GT/StRS.md`, `.codeanvil/GT/SyRS.md` | Read-only |
 | Input | `.codeanvil/project.yaml` | Read-only; its keys are copied as text into the graph |
 | Input (optional) | Supplied ML package | Only if the design uses ML or the GT requires it |
 | Input (rework) | Latest `G1.md` FEEDBACK, or `S2.md` / `G2.md` FEEDBACK with `Verdict: design defect` | Named sections to rework |
-| Template | `templates/skills/S1_design_services/references/S1_design.md` | This skill's locked template |
-| Output | `.codeanvil/report/<cycle-name>/S1_artifacts/S1_design.md` | Overwritten on rework |
-| Output | `.codeanvil/report/<cycle-name>/S1_artifacts/S1_graph.html` | Dependency graph; overwritten on rework |
+| Template | `templates/skills/S1_design_services/references/SDD.md` | This skill's locked template |
+| Output | `.codeanvil/design/SDD.md` | Overwritten on rework |
+| Output | `.codeanvil/design/dependency_graph.html` | Dependency graph; overwritten on rework |
 | Output | `.codeanvil/report/<cycle-name>/S1.md` | Iterative report: the only state of this stage |
 
-Working files live in `S1_artifacts/`, never directly in the cycle folder.
+Working files live in `.codeanvil/design/`, outside the cycle report folder.
 
 ## Hard Rules
 
@@ -83,9 +83,9 @@ Working files live in `S1_artifacts/`, never directly in the cycle folder.
 
 ## Steps (one pass)
 
-1. Copy the template to `S1_artifacts/S1_design.md`. Record the GT digests in the Meta
+1. Copy the template to `.codeanvil/design/SDD.md`. Record the GT digests in the Meta
    "G0 approved" row (information only, never a block), computed with:
-   `python -c "import hashlib,sys;[print(hashlib.sha256(open(p,'rb').read()).hexdigest(),p) for p in sys.argv[1:]]" GT/G0_StRS.md GT/G0_SyRS.md`
+   `python -c "import hashlib,sys;[print(hashlib.sha256(open(p,'rb').read()).hexdigest(),p) for p in sys.argv[1:]]" .codeanvil/GT/StRS.md .codeanvil/GT/SyRS.md`
 2. Allocate `SYS-*` to services and paths: §0.4, §1.1, §4.1.
 3. Fill the COTS envelope from the `HWC-*` blocks: §0.1–0.3. In §0.5, define
    one project-root command that starts the complete runnable system, its HAL
@@ -119,8 +119,8 @@ The graph is a reading aid: **a full dependency graph, each service drawn as a s
 base at the center, its modules on the spokes), delivered as one HTML file using vis-network, with
 the manifest as text to tell designs apart.
 
-Copy `templates/skills/S1_design_services/references/S1_graph_template.html` to
-`.codeanvil/report/<cycle-name>/S1_artifacts/S1_graph.html` and change **only the `DATA` block at
+Copy `templates/skills/S1_design_services/references/dependency_graph_template.html` to
+`.codeanvil/design/dependency_graph.html` and change **only the `DATA` block at
 the top**. Never edit below it and never write the page by hand: the fixed rendering code makes
 every agent runtime draw the same graph. It loads `assets/vis-network.min.js` from this skill's
 own folder by relative path, so it needs no network, but it must stay inside the project.

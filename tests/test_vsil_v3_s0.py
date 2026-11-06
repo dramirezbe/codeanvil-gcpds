@@ -31,7 +31,7 @@ def test_scaffolded_syrs_blueprint_marks_lab_sections_optional(tmp_path, db_path
     cmd_create(None, tmp_path, project_name="Proj")
 
     for skill in ("S0_normalise_build_package", "G0_valid_req_and_GT"):
-        text = _scaffold_skill(tmp_path, skill, "templates", "G0_SyRS.md").read_text(encoding="utf-8")
+        text = _scaffold_skill(tmp_path, skill, "templates", "SyRS.md").read_text(encoding="utf-8")
         for heading in LAB_HEADINGS:
             body = text.split(heading, 1)[1].split("\n## ", 1)[0]
             assert NOT_APPLICABLE in body, (skill, heading)

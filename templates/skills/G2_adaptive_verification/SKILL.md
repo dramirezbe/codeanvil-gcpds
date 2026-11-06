@@ -38,8 +38,8 @@ Check, in this order, writing **no iteration** when you stop:
 | Path | Role |
 |------|------|
 | `.codeanvil/report/<cycle-name>/S2_artifacts/test_run.md` | The only commands G2 runs: `verification/run.sh vl0` and `verification/run.sh vl1`; `Possible infeasibility` entries |
-| `.codeanvil/report/<cycle-name>/S1_artifacts/S1_design.md` | Meta `HAL mode` and `Toolchain`, `required_vl` per module and `PATH-*`, §1.6 HAL ladder, §1.7 telemetry envelope |
-| `GT/G0_SyRS.md` | Read-only: `SYS-*` thresholds; §6 `PROTO-*`, §4 correction chains, §5 tolerances for VL-2 |
+| `.codeanvil/design/SDD.md` | Meta `HAL mode` and `Toolchain`, `required_vl` per module and `PATH-*`, §1.6 HAL ladder, §1.7 telemetry envelope |
+| `.codeanvil/GT/SyRS.md` | Read-only: `SYS-*` thresholds; §6 `PROTO-*`, §4 correction chains, §5 tolerances for VL-2 |
 | `templates/skills/G2_adaptive_verification/references/verified_prototype.md` | The Verified Prototype template |
 
 ## Hard Rules

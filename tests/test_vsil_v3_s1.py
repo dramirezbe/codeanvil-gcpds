@@ -4,7 +4,7 @@ from test_create import TEMPLATES_DIR, _skill_text
 
 
 def _design_template() -> str:
-    path = TEMPLATES_DIR / "skills" / "S1_design_services" / "references" / "S1_design.md"
+    path = TEMPLATES_DIR / "skills" / "S1_design_services" / "references" / "SDD.md"
     return path.read_text(encoding="utf-8")
 
 

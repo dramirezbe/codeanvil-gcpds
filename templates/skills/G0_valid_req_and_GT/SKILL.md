@@ -54,8 +54,8 @@ metrological rigor, and do not use it for the design: that is S1 and G1.
 - **Errors block; warnings do not.** Report every ERROR. Never downgrade or suppress one.
 - **Never edit a GT document inside G0.** A fix goes back to S0 (or to the author, for a
   hand-written pair).
-- **Validate against the templates**, never assumptions: `templates/GT/G0_StRS.md`,
-  `templates/GT/G0_SyRS.md`.
+- **Validate against the templates**, never assumptions: `templates/GT/StRS.md`,
+  `templates/GT/SyRS.md`.
 - The validator is **stdlib-only and side-effect free** — it reads GT files and prints to
   stdout; never patch it to write to the documents it checks. The skill (the agent)
   captures the output and writes the report.
@@ -97,8 +97,9 @@ Write exactly one file: `.codeanvil/report/<cycle-name>/G0.md`.
 ## Execution Steps
 
 1. Resolve the active cycle and ensure the report directory exists.
-2. Confirm both target files exist: the StRS (`## Stakeholder Requirements Specification (StRS)`
-   heading) and the SyRS (`## System Requirements Specification (SyRS)` heading).
+2. Confirm both target files exist: the StRS `.codeanvil/GT/StRS.md` (`## Stakeholder Requirements
+   Specification (StRS)` heading) and the SyRS `.codeanvil/GT/SyRS.md` (`## System Requirements
+   Specification (SyRS)` heading).
 3. From the project root, run the validator with **both** files in one invocation.
 4. Capture **stdout** (per-document reports plus the G0-X cross-document report) and the
    **exit code**.
@@ -127,5 +128,5 @@ Return all five:
   sections, enum values, block/field formats, the report format, and the script's internal
   architecture.
 - `scripts/g0_validate.py` — the deterministic validator (Python 3.9+, stdlib only).
-- `templates/GT/G0_StRS.md`, `templates/GT/G0_SyRS.md` — the authoritative structure
+- `templates/GT/StRS.md`, `templates/GT/SyRS.md` — the authoritative structure
   definitions (repository-root relative).

@@ -27,8 +27,8 @@ packages = ["src/codeanvil"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "templates/skills" = "codeanvil/templates/skills"
-"templates/GT/G0_StRS.md" = "codeanvil/templates/GT/G0_StRS.md"
-"templates/GT/G0_SyRS.md" = "codeanvil/templates/GT/G0_SyRS.md"
+"templates/GT/StRS.md" = "codeanvil/templates/GT/StRS.md"
+"templates/GT/SyRS.md" = "codeanvil/templates/GT/SyRS.md"
 "templates/GT/README.md.template" = "codeanvil/templates/GT/README.md.template"
 "templates/config.yaml" = "codeanvil/templates/config.yaml"
 "templates/AGENTS" = "codeanvil/templates/AGENTS"

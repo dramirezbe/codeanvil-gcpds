@@ -39,8 +39,8 @@ _TEMPLATES = _TESTS_DIR.parent           # templates/
 _REPO_ROOT = _TEMPLATES.parent           # repository root
 
 SCRIPT = _TEMPLATES / "skills" / "G0_valid_req_and_GT" / "scripts" / "g0_validate.py"
-TEMPLATE_STRS = _TEMPLATES / "GT" / "G0_StRS.md"
-TEMPLATE_SYRS = _TEMPLATES / "GT" / "G0_SyRS.md"
+TEMPLATE_STRS = _TEMPLATES / "GT" / "StRS.md"
+TEMPLATE_SYRS = _TEMPLATES / "GT" / "SyRS.md"
 FIXTURE_STRS = (
     _REPO_ROOT / "methodology" / "test" / "T0_ANE-Lap2" / "just-edge" / "StRS.md"
 )
@@ -619,7 +619,7 @@ class TestReferenceTemplates(unittest.TestCase):
             self.assertIn(
                 heading, text,
                 f"StRS template lost required heading {heading!r}; update "
-                "templates/GT/G0_StRS.md or STRS_REQUIRED in g0_validate.py",
+                "templates/GT/StRS.md or STRS_REQUIRED in g0_validate.py",
             )
 
     def test_every_syrs_required_heading_is_in_the_template(self):
@@ -628,7 +628,7 @@ class TestReferenceTemplates(unittest.TestCase):
             self.assertIn(
                 heading, text,
                 f"SyRS template lost required heading {heading!r}; update "
-                "templates/GT/G0_SyRS.md or SYRS_REQUIRED in g0_validate.py",
+                "templates/GT/SyRS.md or SYRS_REQUIRED in g0_validate.py",
             )
 
     def test_strs_template_has_no_missing_sections(self):

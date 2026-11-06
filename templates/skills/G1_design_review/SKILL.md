@@ -42,9 +42,9 @@ writing **no iteration** when you stop:
 
 | Path | Role |
 |------|------|
-| `.codeanvil/report/<cycle-name>/S1_artifacts/S1_design.md` | The design under review |
-| `.codeanvil/report/<cycle-name>/S1_artifacts/S1_graph.html` | Reading aid, named in `S1.md` |
-| `GT/G0_StRS.md`, `GT/G0_SyRS.md` | Read-only: requirements the design must cover |
+| `.codeanvil/design/SDD.md` | The design under review |
+| `.codeanvil/design/dependency_graph.html` | Reading aid, named in `S1.md` |
+| `.codeanvil/GT/StRS.md`, `.codeanvil/GT/SyRS.md` | Read-only: requirements the design must cover |
 | `templates/skills/G1_design_review/references/G1_CHECKLIST.md` | This skill's checklist and filled form |
 
 ## Hard Rules
@@ -74,8 +74,8 @@ writing **no iteration** when you stop:
    chat. Install it only after a yes, at user level with the tool's documented installer, and
    never with `sudo` unless the user says so; then run `--version` again. A refused or failed
    install is an `open` G1.14 finding.
-4. Recompute the GT digests with the system's hash command (`sha256sum GT/G0_StRS.md
-   GT/G0_SyRS.md`; `shasum -a 256` on macOS, `Get-FileHash` in PowerShell) and show the human
+4. Recompute the GT digests with the system's hash command (`sha256sum .codeanvil/GT/StRS.md
+   .codeanvil/GT/SyRS.md`; `shasum -a 256` on macOS, `Get-FileHash` in PowerShell) and show the human
    whether they match the design's Meta row. Information only: it never blocks.
 5. Present the findings, `open` first, and a recommendation. When the G1.8 test points to RFD,
    the recommendation names it.

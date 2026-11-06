@@ -40,7 +40,7 @@ def test_agents_md_drops_the_repository_context_and_software_section(tmp_path, d
 def test_agents_md_on_project_open_points_to_status_skills_and_gt(tmp_path, db_path):  # noqa: F811
     section = _section(_agents_md(tmp_path, db_path), "On Project Open")
 
-    for needle in ("codeanvil status", "codeanvil now", ".agents/skills/", "GT/"):
+    for needle in ("codeanvil status", "codeanvil now", ".agents/skills/", ".codeanvil/GT/"):
         assert needle in section, needle
 
 

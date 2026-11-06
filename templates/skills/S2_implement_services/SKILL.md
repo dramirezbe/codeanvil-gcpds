@@ -2,7 +2,7 @@
 name: s2-implement-services
 description: "Trigger: S2, implement services, build the code, verification kit, VL-0. From a G1-passed design, build the services and the verification kit, prove the VL-0 floor and write the VL-1 tests."
 license: Apache-2.0
-compatibility: "No scripts of its own. Reads the S1 design, GT/G0_SyRS.md and .codeanvil/project.yaml. Writes src/, verification/, root manifests, .codeanvil/report/<cycle-name>/S2.md and S2_artifacts/."
+compatibility: "No scripts of its own. Reads the S1 design, .codeanvil/GT/SyRS.md and .codeanvil/project.yaml. Writes src/, verification/, root manifests, .codeanvil/report/<cycle-name>/S2.md and S2_artifacts/."
 metadata:
   author: "gcpds"
   version: "1.0"
@@ -38,8 +38,8 @@ writing **no iteration** when you stop:
 
 | Path | Role |
 |------|------|
-| `.codeanvil/report/<cycle-name>/S1_artifacts/S1_design.md` | Read-only: Meta `HAL mode` and `Toolchain`, §1.3.4 kit, §1.5, §1.6 HAL ladder, §1.7 telemetry, §2.2 order, §3 contracts and vectors, §4 traceability |
-| `GT/G0_SyRS.md` | Read-only: `SYS-*` thresholds for the VL-1 tests |
+| `.codeanvil/design/SDD.md` | Read-only: Meta `HAL mode` and `Toolchain`, §1.3.4 kit, §1.5, §1.6 HAL ladder, §1.7 telemetry, §2.2 order, §3 contracts and vectors, §4 traceability |
+| `.codeanvil/GT/SyRS.md` | Read-only: `SYS-*` thresholds for the VL-1 tests |
 | `.codeanvil/report/<cycle-name>/G2.md` | Rework only: latest iteration with `Verdict: module defect` |
 | `templates/skills/S2_implement_services/references/project_layout.md` | Locked trees: Python, TypeScript, root manifests, kit |
 | `templates/skills/S2_implement_services/references/logger.py` | Locked Python logger, copied unchanged |
