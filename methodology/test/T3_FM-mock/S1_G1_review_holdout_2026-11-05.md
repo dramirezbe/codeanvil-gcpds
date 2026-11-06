@@ -450,3 +450,22 @@ not be completed to close the original plan, but the runnable entry point is
 already an explicit T8 acceptance criterion. Keep the plan open until that
 criterion is met, T8 evidence is recorded, and T11 is delivered or explicitly
 removed from scope by the plan owner.
+
+### Closure follow-up: executable entry point
+
+The original project, including its G2 PASS reports, is preserved at commit
+`2b760da`. Commit `af07b4f` corrects the copied project: `fm_edge` now starts a
+runtime Mock HAL without importing `verification/`, and `./run-demo SC-2`
+starts the backend and dashboard together. A connected-process smoke test
+received a valid WebSocket update. With only production Python dependencies,
+the package entry point started and exited cleanly; the project Python suite
+passed 18 tests, dashboard build passed, and its VL-0/VL-1 suites passed 6+4
+tests. A manual launcher run returned HTTP 200 and an update with 853 spectrum
+bins and 10 channel rows. `RUN.md` in the copied project gives the commands.
+
+The entry-point contract is now in the S1 template, G1 checklist, S2 skill and
+G2 Verified Prototype template for subsequent projects. The original G2 PASS
+does not cover this post-G2 correction; the smoke run is separate evidence.
+T8's remaining failure probes were not performed and are retained as a future
+regression matrix. The feature still needs its planned `main` merge and T11
+release before the day plan can be marked closed.

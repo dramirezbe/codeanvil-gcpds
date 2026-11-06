@@ -31,3 +31,13 @@ Recommended, not required: run step 5 on the Raspberry Pi so the telemetry compa
 ## Acceptance
 
 Each row's expectation observed and recorded in the feature document's Log, with the agent runtime used. A failing step reopens the task of the skill that failed (S4: rewrite that skill rather than patch around it).
+
+### First-run closure decision (2026-11-05)
+
+The OpenCode run completed the six-step chain, including one real G2 design-defect FEEDBACK loop
+back through S1, G1 and S2. The first generated package entry point only logged instructions;
+the archived copy now starts a runtime Mock HAL and the two-service `run-demo` launcher has a
+working WebSocket smoke test. The exact evidence is in the feature plan L18 and
+`methodology/test/T3_FM-mock/S1_G1_review_holdout_2026-11-05.md`. The user asked to close this
+first realistic run with that entry-point correction. The failure probes above were not all
+performed; keep them as an explicit future regression matrix, never count them as observed PASS.
