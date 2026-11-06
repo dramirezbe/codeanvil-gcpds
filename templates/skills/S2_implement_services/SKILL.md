@@ -62,6 +62,10 @@ writing **no iteration** when you stop:
   Python dependencies go only in the dev group, so `uv sync --frozen --no-dev` starts every
   service without them; no service `package.json` lists a kit package. The telemetry companion is
   mandatory in every test run and never lives under `src/`.
+- Implement design §0.5 as a real system entry point. Every service's package entry point starts
+  its runtime loop, and a multi-service launcher starts the complete system and stops its children.
+  In `mock-only`, ship a runtime Mock HAL or explicit demo bundle; the only working entry point
+  must not import the non-shipped verification kit. A command that only logs instructions fails S2.
 - Expected values come from the design's §3 vectors and `verification/golden/manifest.md`, never
   computed by the agent. Changing a vector invalidates the evidence that used it.
 - In `mock+real`, the Real HW HAL's VL-0 tests use the fake device API; S2 never needs the hardware.
@@ -89,6 +93,10 @@ writing **no iteration** when you stop:
    **bottom-up** test with a driver through the base, then replace its stub.
 4. **Services and paths.** Producer and consumer contract tests with fake peers, then each
    `PATH-*` with the real service processes and Mock HAL input.
+   Implement §0.5 and write a VL-0 smoke test that starts the actual entry point, connects the
+   real service processes, observes a valid update, and shuts down cleanly. Run the documented
+   command with runtime dependencies only (`uv sync --frozen --no-dev` for Python). Record the
+   command, URL and observed result in `test_run.md`.
 5. **VL-1 tests, written, not claimed.** For every module and `PATH-*` with `required_vl` VL-1 or
    higher, write a test fed by the Mock HAL synthetic generator that measures the metric against
    its `SYS-*` threshold, with the telemetry companion attached. Run them only to check they
@@ -106,6 +114,8 @@ Write `.codeanvil/report/<cycle-name>/S2_artifacts/test_run.md`, overwritten on 
 
 - the two commands G2 runs, exactly `verification/run.sh vl0` and `verification/run.sh vl1`;
 - the last VL-0 run: command, exit code, passed, failed and skipped counts per service;
+- the §0.5 runnable entry point, its smoke-test command and result, and the URL and visible
+  behaviour a user should expect;
 - the environment: OS, CPU, language and tool versions, `HAL mode`;
 - the telemetry companion's summary for that run;
 - `Possible infeasibility`: requirement IDs and the run that shows it, or `None`.

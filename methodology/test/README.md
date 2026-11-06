@@ -327,9 +327,9 @@ codeanvil sandbox claude    # or opencode, codex; pi only for the fresh-session 
 | Step | Prompt | Expect |
 |------|--------|--------|
 | 1 | Run S0, then G0 | SyRS §4–§6 hold the "not applicable" line; GT pair passes `g0_validate.py`; human Gate H |
-| 2 | Run S1 | `HAL mode: mock-only`; `Toolchain` per service (DSP and UI); §1.3.4 with D2 paths, §1.6 Mock HAL following B.2 with SC-1–SC-6 and GV-1–GV-5 as its vectors, §1.7 filled; no §1.5; no `hw_dependency: true`; no label invented beyond B.3 |
-| 3 | Run G1, answer PASS | No script runs; checklist with G1.11–G1.14 and the kit row (incl. `Toolchain`); G1.14 runs the `--version` checks and asks before installing; returns `G1 passed. Run the S2 skill.` |
-| 4 | Run S2 | D2 tree: `src/fm_edge/` (Python, `__main__.py`) and `src/dashboard/` (TS), `pyproject.toml` + `uv.lock`, `package.json` + `pnpm-workspace.yaml` + `pnpm-lock.yaml`, `verification/` with `run.sh`, `golden/` (manifest lists SC-1–SC-6 and GV-1–GV-5 with the B.3 labels copied as expected output), `telemetry/`, `fm_edge/`, `dashboard/`; kit and base first, then modules, paths and VL-1 tests; `verification/run.sh vl0` green with telemetry; `test_run.md` has the two `run.sh` commands; `grep -r codeanvil src/` is empty; edge logs show `[YYYY-MM-DD HH:MM:SS.mmm] LEVEL name.funcName message` in colour; `uv sync --frozen --no-dev && uv run fm_edge` starts without kit dependencies |
+| 2 | Run S1 | `HAL mode: mock-only`; `Toolchain` per service (DSP and UI); §0.5 names a runnable system entry point; §1.3.4 with D2 paths, §1.6 Mock HAL following B.2 with SC-1–SC-6 and GV-1–GV-5 as its vectors, §1.7 filled; no §1.5; no `hw_dependency: true`; no label invented beyond B.3 |
+| 3 | Run G1, answer PASS | No script runs; checklist with G1.11–G1.15 and the kit row (incl. `Toolchain`); G1.14 runs the `--version` checks and asks before installing; G1.15 checks the entry point; returns `G1 passed. Run the S2 skill.` |
+| 4 | Run S2 | D2 tree: `src/fm_edge/` (Python, `__main__.py`) and `src/dashboard/` (TS), `pyproject.toml` + `uv.lock`, `package.json` + `pnpm-workspace.yaml` + `pnpm-lock.yaml`, `verification/` with `run.sh`, `golden/` (manifest lists SC-1–SC-6 and GV-1–GV-5 with the B.3 labels copied as expected output), `telemetry/`, `fm_edge/`, `dashboard/`; kit and base first, then modules, paths and VL-1 tests; `verification/run.sh vl0` green with telemetry and a system-entry-point smoke test; `test_run.md` has the two `run.sh` commands and the entry-point evidence; `grep -r codeanvil src/` is empty; edge logs show `[YYYY-MM-DD HH:MM:SS.mmm] LEVEL name.funcName message` in colour; `uv sync --frozen --no-dev && uv run fm_edge` starts without kit dependencies |
 | 5 | Run G2, declare VL-1 for DSP and the edge → UI path | Runs delegated to `vsil-verifier` (Claude Code, OpenCode); source tree unchanged after them; only the `test_run.md` commands run; a VL-2 request is refused; `verified_prototype.md` written on PASS |
 | 6 | `codeanvil status` | S0–S2 `delivered`, G0–G2 `PASS` |
 
@@ -348,6 +348,14 @@ Failure probes:
 Recommended, not required: run step 5 on the Raspberry Pi so the telemetry companion records
 the real compute unit. Record each row's observation, with the agent runtime used, in the
 feature document's Log; a failing step reopens the task of the skill that failed.
+
+The first OpenCode result of this procedure, including its hidden scaffold files,
+GT, reports, services and verification kit, is archived at
+`T3_FM-mock/first_full_flow_2026-11-05/`. Its original state is commit
+`2b760da`; the corrected runnable entry point and replay instructions are in
+that directory's `RUN.md`. See `T3_FM-mock/FIRST_FULL_FLOW_SNAPSHOT.md` for the
+copy exclusions and `T3_FM-mock/S1_G1_review_holdout_2026-11-05.md` for the
+review.
 
 ### 6. Cleanup
 

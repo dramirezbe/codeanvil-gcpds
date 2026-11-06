@@ -143,6 +143,22 @@ flowchart LR
      carecer de HWC-* propio. Indicar los límites reales de proceso, red y
      fallo. No tratar un módulo en el mismo proceso como otro servicio. -->
 
+### 0.5 Punto de entrada ejecutable del sistema
+
+| Campo | Valor |
+|-------|-------|
+| Comando desde la raíz del proyecto | {{un comando que arranca el sistema completo}} |
+| Modo HAL de demostración | {{Mock HAL o Real HW HAL}} |
+| Servicios que arranca | {{procesos y servicios}} |
+| URL o endpoint local | {{dirección y puerto}} |
+| Resultado visible | {{qué debe actualizarse al funcionar}} |
+| Apagado | {{cómo se detienen todos los procesos}} |
+
+<!-- S2 implementa este contrato y G2 ejecuta su prueba de arranque. En modo
+     mock-only, el Mock HAL necesario para la demostración debe estar en el
+     paquete ejecutable o en un bundle de demostración; no puede depender
+     únicamente del kit verification/ que no se entrega. -->
+
 ---
 
 ## 1. Vista de Bloques de Construcción (Building Block View)
@@ -1072,6 +1088,17 @@ solo `hw_dependency: true`; la corrección debe depender de ese hardware.
 | ¿Responde el gestor de paquetes de cada servicio (versión registrada)? | |
 | ¿Las versiones cumplen lo que exige el diseño? | |
 | Herramientas instaladas tras el sí del usuario, o rechazadas | |
+
+## G1.15 — Punto de entrada ejecutable
+
+| Verificación | Resultado |
+|--------------|-----------|
+| ¿§0.5 define un comando desde la raíz que arranca todos los servicios? | |
+| ¿Se identifica el HAL, la URL, el resultado visible y el apagado? | |
+| ¿Puede ejecutarse sin importar el kit `verification/` no entregado? | |
+
+**Hallazgo abierto:** el comando solo escribe instrucciones o falta una
+dependencia de ejecución para poner el sistema en marcha.
 
 ---
 

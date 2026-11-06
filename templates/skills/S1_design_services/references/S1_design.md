@@ -80,6 +80,22 @@ flowchart LR
 <!-- One machine may host several services; a service may have no HWC-* of its own. State the
      real process, network and failure boundaries. A module in the same process is not a service. -->
 
+### 0.5 Runnable system entry point
+
+| Field | Value |
+|-------|-------|
+| Project-root command | {{one command that starts the complete system; for multiple services, a launcher}} |
+| HAL mode for preview | {{mock-only or mock+real; name the selected runtime HAL}} |
+| Services started | {{service IDs and processes}} |
+| Local URL / endpoint | {{address and port a user can open}} |
+| Visible result | {{what appears or updates when the system is working}} |
+| Shutdown | {{how all child processes stop cleanly}} |
+
+<!-- This is an implementation contract for S2. A package entry point must actually start its
+     pipeline; a function that merely logs instructions does not count. If the preview uses a
+     Mock HAL, its runtime implementation belongs in the runnable package or an explicit demo
+     bundle, never solely in the non-shipped verification kit. -->
+
 ---
 
 ## 1. Building block view

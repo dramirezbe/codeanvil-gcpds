@@ -55,6 +55,7 @@ pnpm-lock.yaml
 .env.example               # committed; .env is git-ignored
 cmd/                       # install and deploy scripts, only when the design deploys to a host
 daemon/                    # systemd units, only when the design deploys to a host
+run-demo                   # multi-service preview launcher when design §0.5 names one
 ```
 
 `pyproject.toml`, one for all Python services:
@@ -89,6 +90,10 @@ has the same name as `src/<package>/` and would be shadowed by it. Write
 `from verification.<package>.mock_hal import ...` and `from <package>.hal.port import ...`.
 
 No `sys.path` bootstrap. Deploy with `uv sync --frozen --no-dev`, start with `uv run <package>`.
+The `<package>.main:main` function must instantiate a runtime HAL and run the service; logging
+startup instructions without starting the loop is not a working entry point. In `mock-only`, the
+runtime Mock HAL required for a preview lives in the package or a shipped demo bundle, while the
+independent vectors and test drivers stay under `verification/`.
 A uv workspace is allowed only when two Python services deploy to different hosts with conflicting
 dependencies, and only as a recorded design decision.
 

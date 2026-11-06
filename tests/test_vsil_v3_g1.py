@@ -66,7 +66,7 @@ def test_g1_reviews_the_kit_and_the_toolchain():
 def test_g1_skill_fills_the_new_rows_and_routes_a_pass_to_s2():
     text = _skill_text("G1_design_review")
 
-    assert "Fill the checklist, including G1.11–G1.14 and the kit row." in text
+    assert "Fill the checklist, including G1.11–G1.15 and the kit row." in text
     assert "G1 passed. Run the S2 skill." in text
     assert "S2 is not available in this release" not in text
 

@@ -87,7 +87,9 @@ Working files live in `S1_artifacts/`, never directly in the cycle folder.
    "G0 approved" row (information only, never a block), computed with:
    `python -c "import hashlib,sys;[print(hashlib.sha256(open(p,'rb').read()).hexdigest(),p) for p in sys.argv[1:]]" GT/G0_StRS.md GT/G0_SyRS.md`
 2. Allocate `SYS-*` to services and paths: §0.4, §1.1, §4.1.
-3. Fill the COTS envelope from the `HWC-*` blocks: §0.1–0.3.
+3. Fill the COTS envelope from the `HWC-*` blocks: §0.1–0.3. In §0.5, define
+   one project-root command that starts the complete runnable system, its HAL
+   mode, processes, URL, visible result and clean shutdown.
 4. For each service: its base (§1.3) and module cards (§1.4), each with the full verification profile.
    Set `HAL mode` and `Toolchain` in the Meta, then fill the verification kit (§1.3.4), the HAL
    substitution ladder (§1.6) and the Telemetry companion (§1.7).

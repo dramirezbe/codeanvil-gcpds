@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Start both services for a local Mock HAL preview. Ctrl-C stops them.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT"
+
+pnpm install --frozen-lockfile
+pnpm -C src/dashboard build
+
+uv run --no-dev fm_edge --scene "${1:-SC-2}" &
+EDGE_PID=$!
+cleanup() {
+  kill -TERM "$EDGE_PID" 2>/dev/null || true
+  wait "$EDGE_PID" 2>/dev/null || true
+}
+trap cleanup EXIT INT TERM
+
+sleep 1
+if ! kill -0 "$EDGE_PID" 2>/dev/null; then
+  echo "fm_edge stopped before the dashboard could start" >&2
+  exit 1
+fi
+
+echo "Mock HAL preview: open http://127.0.0.1:5173/ after Vite starts"
+echo "Press Ctrl-C to stop the preview"
+pnpm -C src/dashboard dev --host 127.0.0.1

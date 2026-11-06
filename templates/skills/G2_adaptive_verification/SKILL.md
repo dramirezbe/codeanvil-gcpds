@@ -47,6 +47,9 @@ Check, in this order, writing **no iteration** when you stop:
 - The agent recommends; **only the human's answer sets `HITL`**. Never write `PASS` without it.
 - Run only the commands of `test_run.md`. Never write, edit or fix a test, the code or the design.
   A declared VL-1 module or path with no VL-1 test is a **module defect** routed to S2.
+- The VL-0 run must include a smoke test of the runnable system entry point from design §0.5:
+  the real processes start, exchange one valid update and shut down cleanly. A missing or failing
+  entry-point smoke test is a module defect routed to S2, even when other tests pass.
 - Never reuse S2's results: always re-run.
 - Levels by HAL mode: `mock-only` caps every claim at VL-1, so refuse a VL-2 declaration and state
   that no claim rests on real hardware. `mock+real` allows VL-2 per module or path; a Real HW HAL
@@ -69,6 +72,7 @@ In a fresh session that did not run S2, G2 runs steps 2–5 itself and records
 1. **Declare levels.** Show each module and `PATH-*` with its `required_vl`. The human declares
    the level for this cycle (default VL-0).
 2. **G2.0, always.** Fresh run of `verification/run.sh vl0` with the telemetry companion.
+   Check its §0.5 entry-point smoke result and the exact command recorded in `test_run.md`.
 3. **G2.1, when VL-1 is declared.** Run `verification/run.sh vl1`: Mock HAL synthetic inputs per
    §1.6, metrics against the `SYS-*` thresholds.
 4. **G2.2, when VL-2 is declared in `mock+real`.** The SyRS §6 `PROTO-*` procedures cited by design
@@ -80,7 +84,8 @@ In a fresh session that did not run S2, G2 runs steps 2–5 itself and records
    result that confirms or refutes it. When the defect-or-RFD test points to RFD, the
    recommendation names it.
 7. **Present** one table per module and path (declared level, environment, result, telemetry
-   flag), the draft honesty declaration and a recommendation. Ask the human: **PASS**,
+   flag), the entry-point smoke result, the draft honesty declaration and a recommendation. Ask
+   the human: **PASS**,
    **FEEDBACK** or **RFD**, as **Asking the human** says below.
 8. Write the iteration with the results table and the answer verbatim, including
    `Decided by: <name>`.

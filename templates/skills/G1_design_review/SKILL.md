@@ -65,7 +65,7 @@ writing **no iteration** when you stop:
 
 1. Give the human the graph's path from `S1.md`: its spiders support the topology and
    runtime-loop review (G1.9); the build order is reviewed in the design's §2 (G1.1).
-2. Fill the checklist, including G1.11–G1.14 and the kit row.
+2. Fill the checklist, including G1.11–G1.15 and the kit row.
 3. **Validate the toolchain (G1.14).** For every `Toolchain` entry, run the `--version` of its
    language runtime and package manager yourself (for example `python3`, `uv`, `node`, `pnpm`,
    and `tsc` for TypeScript); the test runner comes with S2's lock. Record each version. When a

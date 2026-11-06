@@ -68,3 +68,17 @@ the envelope with the human's decision on it.
 ## 11. Future work (optional)
 
 <Loose ends the human wants to record for the next cycle, or delete this line>.
+
+## 12. Run the verified prototype
+
+| Field | Value |
+|-------|-------|
+| System entry point | `<project-root command from design §0.5, exercised by the VL-0 smoke test>` |
+| HAL mode | `<Mock HAL preview or Real HW HAL; state the evidence ceiling>` |
+| Local URL / endpoint | `<address and port to open>` |
+| Expected result | `<what the user should see updating>` |
+| Stop | `<how to stop all processes>` |
+| Smoke evidence | `<exact test ID, command, exit code and result>` |
+
+Give the exact prerequisite install/build commands and then the system entry point. If the
+preview uses the Mock HAL, say so plainly; do not imply real-hardware validation.
