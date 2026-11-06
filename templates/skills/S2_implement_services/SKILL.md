@@ -81,16 +81,22 @@ writing **no iteration** when you stop:
 
 1. **ML (future work).** If design §1.5 exists, stop before any code with exactly
    `ML integration is future work. Remove design §1.5 for this round.` and write no iteration.
-2. **Initial layer: every tool first.** Create the trees and root manifests of `project_layout.md`
-   for the design's `Toolchain`, lock dependencies (`uv lock`, `pnpm install`) and copy the logger
-   to every service's `config/`. Build `verification/run.sh` and every tool of design §1.3.4 before
-   any module: Mock HAL with its VL-0 vectors and VL-1 synthetic generator, golden vectors with
-   `verification/golden/manifest.md`, the telemetry companion, one stub or fake peer per contract,
-   drivers, and the Real HW HAL with a fake device API only in `mock+real`. Then build the base
-   layer of each service and run its unit tests and the **top-down** test (base + all stubs) with
-   the telemetry companion recording.
+2. **Initial layer: all placeholders before any module.** Create the trees and root manifests of
+   `project_layout.md` for the design's `Toolchain`, lock dependencies (`uv lock`, `pnpm install`)
+   and copy the logger to every service's `config/`. Build `verification/run.sh` and every tool of
+   design §1.3.4 before any module: Mock HAL with its VL-0 vectors and VL-1 synthetic generator,
+   golden vectors with `verification/golden/manifest.md`, the telemetry companion, one stub or fake
+   peer per contract, drivers, and the Real HW HAL with a fake device API only in `mock+real`. Then
+   build the base layer of each service and run its unit tests and the **top-down** test (base + all
+   stubs) with the telemetry companion recording. Finally, run a **cross-service placeholder
+   integration**: start every service with its stubs connected through the real inter-service
+   interfaces and verify that the contract handshakes succeed end-to-end (types, formats, ports and
+   protocols). No module code runs yet — this proves the interface scaffolding is sound before step 3
+   invests in real implementations. A type or format mismatch at this point is a design defect.
 3. **Modules in DAG order (§2.2).** Per module: implement against its contract, unit test, then the
-   **bottom-up** test with a driver through the base, then replace its stub.
+   **bottom-up** test with a driver through the base, then the **sandwich** test (base → module →
+   base: the real base calls the real module and the module calls back through the real base,
+   verifying that types, formats and contracts match in both directions), then replace its stub.
 4. **Services and paths.** Producer and consumer contract tests with fake peers, then each
    `PATH-*` with the real service processes and Mock HAL input.
    Implement §0.5 and write a VL-0 smoke test that starts the actual entry point, connects the
@@ -106,7 +112,7 @@ writing **no iteration** when you stop:
 7. Write the iteration and return `S2 complete. Run the G2 skill.`
 
 Rework: a G2 iteration with `Verdict: module defect` names the modules to fix, including a missing
-VL-1 test. Redo step 3 or 5 for them, then step 6.
+VL-1 test. Redo step 3 (unit, bottom-up and sandwich) or 5 for them, then step 6.
 
 ## Test Run Contract
 
