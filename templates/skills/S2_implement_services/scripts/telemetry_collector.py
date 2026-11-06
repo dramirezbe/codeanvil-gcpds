@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
 """Locked V-SIL telemetry collector.
 
-S2 copies this file unchanged to ``verification/telemetry/telemetry_collector.py``.
+It runs in place on the CodeAnvil methodology runtime, never copied into a project:
+``verification/run.sh`` starts it with ``codeanvil python <this file> --pid $$ ...``.
 It samples the host and the verification process tree once per interval and appends
 one JSON object per line to a file, one file per VL run. The tree is ``--pid`` (default:
-the collector's parent, e.g. ``run.sh``) plus every descendant, so the services and
-test processes that ``run.sh`` starts are measured, not the collector itself. A reading that cannot be taken
-is written as ``{"unavailable": "<reason>"}``; it is never invented and never
-reported as zero.
+the collector's parent, e.g. ``run.sh``) plus every descendant except the collector
+itself, so the services and test processes that ``run.sh`` starts are measured. A
+reading that cannot be taken is written as ``{"unavailable": "<reason>"}``; it is
+never invented and never reported as zero.
 
 Application counters (dropped buffers, queue depth, scheduling latency) are not
 measured here: the collector copies them from the JSON object the HAL or the
 service instrumentation writes to ``--counters``.
 
-psutil supplies CPU, memory and temperature. Without psutil every metric that
-needs it is reported as unavailable and the collector keeps running.
+psutil is the only measurement source (CPU, memory, temperature, CPU count).
+The runtime provides it; without it the collector exits 2 before writing anything,
+and ``codeanvil python`` refuses to start it in the first place.
 """
 
 from __future__ import annotations
@@ -31,15 +33,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 COLLECTOR_NAME = "vsil-telemetry"
-COLLECTOR_VERSION = "1.0.0"
+COLLECTOR_VERSION = "1.1.0"
 
 try:
     import psutil
-except ImportError as exc:  # the run continues with every psutil metric unavailable
-    psutil = None
-    _PSUTIL_ERROR = f"psutil is not installed: {exc}"
-else:
-    _PSUTIL_ERROR = ""
+except ImportError as exc:  # the methodology runtime always ships psutil
+    print(f"telemetry collector: psutil is not installed ({exc}); run codeanvil runtime sync",
+          file=sys.stderr)
+    sys.exit(2)
 
 
 def _unavailable(reason: str) -> dict:
@@ -64,13 +65,13 @@ def _device_model():
 
 
 def _host_profile() -> dict:
-    cpu_count = os.cpu_count()
+    cpu_count = _reading(lambda: psutil.cpu_count(logical=True))
     return {
         "system": platform.system(),
         "release": platform.release(),
         "machine": platform.machine(),
         "python": platform.python_version(),
-        "cpu_count": cpu_count if cpu_count is not None else _unavailable("os.cpu_count() returned None"),
+        "cpu_count": cpu_count if cpu_count is not None else _unavailable("psutil.cpu_count() returned None"),
         "device_model": _device_model(),
     }
 
@@ -85,6 +86,7 @@ class _ProcessTree:
 
     def __init__(self, root):
         self.root = root
+        self.own_pid = os.getpid()
         self.handles = {}
         self.sample()  # primes every handle; the first real sample comes later
 
@@ -94,7 +96,7 @@ class _ProcessTree:
             members.extend(self.root.children(recursive=True))
         except psutil.Error:
             pass
-        return members
+        return [member for member in members if member.pid != self.own_pid]
 
     def sample(self) -> dict:
         if not self.root.is_running():
@@ -134,16 +136,12 @@ class _ProcessTree:
 
 
 def _process_block(tree) -> dict:
-    if psutil is None:
-        return _unavailable(_PSUTIL_ERROR)
     if isinstance(tree, dict):
         return tree
     return _reading(tree.sample)
 
 
 def _system_block() -> dict:
-    if psutil is None:
-        return _unavailable(_PSUTIL_ERROR)
     cpu = _reading(lambda: psutil.cpu_percent(interval=None))
     memory = _reading(psutil.virtual_memory)
     if isinstance(memory, dict):
@@ -162,8 +160,6 @@ def _system_block() -> dict:
 
 
 def _temperature() -> dict:
-    if psutil is None:
-        return _unavailable(_PSUTIL_ERROR)
     sensors = getattr(psutil, "sensors_temperatures", None)
     if sensors is None:
         return _unavailable(f"temperature sensors are not exposed on {platform.system()}")
@@ -202,7 +198,7 @@ def _sample(tree, counters_path) -> dict:
         "collector": {"name": COLLECTOR_NAME, "version": COLLECTOR_VERSION},
         "timestamp": datetime.now(timezone.utc).isoformat(timespec="milliseconds"),
         "monotonic_s": round(time.monotonic(), 3),
-        "measurement_source": "psutil" if psutil is not None else "unavailable",
+        "measurement_source": "psutil",
         "host": _host_profile(),
         "process": _process_block(tree),
         "system": _system_block(),
@@ -221,14 +217,15 @@ def _default_output() -> Path:
     # same second (vl0 and vl1) from sharing one file.
     now = datetime.now(timezone.utc)
     stamp = f"{now:%Y%m%dT%H%M%S}{now.microsecond // 1000:03d}Z"
-    return Path(__file__).resolve().parent / f"telemetry-{stamp}-{os.getpid()}.jsonl"
+    # cwd is the project root: `codeanvil python` runs every script from there.
+    return Path.cwd() / "verification" / "telemetry" / f"telemetry-{stamp}-{os.getpid()}.jsonl"
 
 
 def _parse_args(argv):
     parser = argparse.ArgumentParser(
         description="Sample host and process telemetry into a JSON-lines file.")
     parser.add_argument("--output", type=Path, default=None,
-                        help="output JSON-lines file (default: next to this script, one per run)")
+                        help="output JSON-lines file (default: verification/telemetry/ under the cwd, one per run)")
     parser.add_argument("--interval", type=float, default=1.0,
                         help="seconds between samples (default: 1.0)")
     parser.add_argument("--duration", type=float, default=0.0,
@@ -249,12 +246,10 @@ def main(argv=None) -> int:
     args = _parse_args(argv)
     output = args.output or _default_output()
 
-    tree = None
-    if psutil is not None:
-        pid = args.pid if args.pid is not None else os.getppid()
-        root = _reading(lambda: psutil.Process(pid))
-        tree = root if isinstance(root, dict) else _reading(lambda: _ProcessTree(root))
-        psutil.cpu_percent(interval=None)
+    pid = args.pid if args.pid is not None else os.getppid()
+    root = _reading(lambda: psutil.Process(pid))
+    tree = root if isinstance(root, dict) else _reading(lambda: _ProcessTree(root))
+    psutil.cpu_percent(interval=None)
 
     stop = threading.Event()
 
