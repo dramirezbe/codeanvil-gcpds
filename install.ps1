@@ -60,8 +60,10 @@ function Install-Uv {
 # ── 3. Install ────────────────────────────────────────────────────────
 function Install-Tool {
     $pyFlag = if ($script:PythonVersion) { @("--python", $script:PythonVersion) } else { @("--python", "3.12") }
-    $installed = uv tool list 2>$null | Select-String "^$ToolName "
-    if ($installed) {
+    $toolOutput = $null
+    try { $toolOutput = uv tool list 2>&1 | Out-String } catch {}
+    $isUpgrade = $toolOutput -and ($toolOutput -match "(?m)^$ToolName ")
+    if ($isUpgrade) {
         Write-Status "Upgrading $ToolName..."
         uv tool install --force-reinstall @pyFlag "git+$Repo"
     } else {
