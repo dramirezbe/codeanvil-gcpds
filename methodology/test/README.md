@@ -36,23 +36,37 @@ For the S2 → G2 continuation and a runnable result, use the T3 archive above.
 ### Prerequisites
 
 - Python 3.10+
-- `curl`
+- `curl` (Linux/macOS) or PowerShell (Windows)
 - Agent CLI: `claude`, `pi`, or `opencode` (for sandboxed agent test)
-- Internet access (for curl install from GitHub)
+- Internet access (for install from GitHub)
 
 ### 1. Install or upgrade
 
 #### Remote (GitHub `main` — no clone needed)
 
-The same curl command installs fresh or upgrades an existing installation:
+**Linux / macOS:**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/dramirezbe/codeanvil-gcpds/main/install.sh | bash
 source ~/.zshrc  # or ~/.bashrc
 ```
 
-If codeanvil is already installed, this auto-detects it and runs
+**Windows (PowerShell):**
+
+```powershell
+irm https://raw.githubusercontent.com/dramirezbe/codeanvil-gcpds/main/install.ps1 | iex
+```
+
+If codeanvil is already installed, both installers auto-detect it and run
 `--force-reinstall` to pull the latest commit from `main`.
+
+#### Upgrade (if codeanvil is already installed)
+
+```bash
+codeanvil upgrade
+```
+
+Cross-platform — detects the OS and reinstalls from the latest `main` via `uv`.
 
 #### Local repository (development or testing unreleased changes)
 
@@ -61,33 +75,42 @@ From the root of this repository:
 ```bash
 uv tool install --force-reinstall .
 # or run the local installer:
-bash install.sh
+bash install.sh          # Linux/macOS
+# .\install.ps1          # Windows
 ```
 
 Verify:
 ```bash
-codeanvil --help                      # should show: init, create, list, sync, status, now, sandbox
+codeanvil --help                      # should show: init, create, list, sync, status, now, sandbox, upgrade
 codeanvil sandbox --help              # shows supported agents: claude, codex, opencode, pi
 codeanvil now                         # timestamp works
 ```
 
 ### 1b. Clean slate (optional — only for full reset testing)
 
+**Linux / macOS:**
+
 ```bash
-# Remove existing installation and state
 bash install.sh uninstall 2>/dev/null || true
 rm -rf ~/.codeanvil-config
 rm -rf ~/.codeanvil  # legacy state — would be auto-migrated back on init
 hash -r  # refresh shell command cache
 ```
 
-Verify:
-```bash
-command -v codeanvil && echo "FAIL: still installed" || echo "OK: clean"
-ls ~/.codeanvil-config 2>&1 | grep -q "No such" && echo "OK: no state" || echo "FAIL: state remains"
+**Windows (PowerShell):**
+
+```powershell
+.\install.ps1 -Uninstall
+Remove-Item -Recurse -Force "$env:USERPROFILE\.codeanvil-config" -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force "$env:USERPROFILE\.codeanvil" -ErrorAction SilentlyContinue
 ```
 
-Then install fresh with the curl command from step 1.
+Verify (any OS):
+```bash
+command -v codeanvil && echo "FAIL: still installed" || echo "OK: clean"
+```
+
+Then install fresh with the appropriate command from step 1.
 
 ### 2. Initialize and create project
 
