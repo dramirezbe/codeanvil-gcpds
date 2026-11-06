@@ -492,3 +492,19 @@ After Phase 5:
   input and works contract+stub → module → stub, preserving unlisted modules. Evidence: 251 pytest
   + 97 unittest green.
 - **Next:** WU-L4 and WU-L6 wait on the owner's decisions recorded below.
+- **2026-11-06 — WU-L4–L6 complete.** Owner decisions: pause schedule default **Per layer**, asked
+  at the start of **every** iteration; the telemetry collector may use dependencies, so it uses
+  **psutil** (CPU, memory and Linux temperature) and reports every psutil metric as `unavailable`
+  with a reason when psutil is missing. S2 gained a `## Pause Schedule` section (three options, one
+  extra pause after cross-service integration and before the `PATH-*` tests, `continue|rework|stop`
+  recorded as checkpoint lines, `stop` writes no iteration) and a `## Module Subagents` section
+  (parent keeps kit, bases, contracts, integration and pauses; one module per subagent; default
+  concurrency 1; S2 works without subagents). The locked `references/telemetry_collector.py` writes
+  JSON lines per VL run (timestamp, host profile, process and system CPU/memory, temperature,
+  measurement source, collector version, and counters copied from `--counters`), stays quiet and
+  exits nonzero on I/O errors; `project_layout.md` and the S2/G2 skills now use it, and G2 rejects a
+  constant or placeholder reading. `psutil` joined the repo dev extra and the project kit dev group.
+  Evidence: 267 pytest + 97 unittest green; manual runs showed `measurement_source: unavailable`
+  under system python3 and `psutil` with a Tctl temperature under the venv.
+- **Next:** Phase 5 docs (`CLAUDE.md`, repo `AGENTS.md`, `methodology/test/README.md`) and the
+  old-path grep.

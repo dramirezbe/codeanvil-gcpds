@@ -45,6 +45,7 @@ writing **no iteration** when you stop:
 | `templates/skills/S2_implement_services/references/project_layout.md` | Locked trees: Python, TypeScript, root manifests, kit |
 | `templates/skills/S2_implement_services/references/logger.py` | Locked Python logger, copied unchanged |
 | `templates/skills/S2_implement_services/references/logger.ts` | Locked TypeScript logger, copied unchanged |
+| `templates/skills/S2_implement_services/references/telemetry_collector.py` | Locked telemetry collector, copied unchanged to `verification/telemetry/` |
 
 ## Hard Rules
 
@@ -56,12 +57,13 @@ writing **no iteration** when you stop:
   npm or yarn lockfile.
 - Each service is `src/<package>/`, exactly as `project_layout.md` shows.
 - Delivered code never depends on the scaffolding tool. Copy `logger.py` to every Python service's
-  `config/logger.py` and `logger.ts` to every TypeScript service's `config/logger.ts`, unchanged,
-  and never edit them. Every Python module logs with `log = get_logger(__name__)`; every TypeScript
-  module with `getLogger("<package>.<module>")`. No `print`, no bare `console.log`.
+  `config/logger.py`, `logger.ts` to every TypeScript service's `config/logger.ts`, and
+  `telemetry_collector.py` to `verification/telemetry/`, unchanged, and never edit them. Every
+  Python module logs with `log = get_logger(__name__)`; every TypeScript module with
+  `getLogger("<package>.<module>")`. No `print`, no bare `console.log`.
 - The kit is never shipped: no service imports or depends on anything under `verification/`. Kit
   Python dependencies go only in the dev group, so `uv sync --frozen --no-dev` starts every
-  service without them; no service `package.json` lists a kit package. The telemetry companion is
+  service without them; no service `package.json` lists a kit package. The telemetry collector is
   mandatory in every test run and never lives under `src/`.
 - Implement design §0.5 as a real system entry point. Every service's package entry point starts
   its runtime loop, and a multi-service launcher starts the complete system and stops its children.
@@ -78,7 +80,52 @@ writing **no iteration** when you stop:
   `verification/`: re-run its tests, keep what passes, build what is missing. Never rewrite working
   code to start over.
 
+## Pause Schedule
+
+Ask the pause schedule at the start of **every** iteration, before any code, with your runtime's
+native question tool (`AskUserQuestion` in Claude Code): one single-select question in English, with
+no option preselected.
+
+| Option | Pauses |
+|--------|--------|
+| Per layer and module | Per service: after the kit and its base, after each module and its tests, after integration |
+| Per layer (recommended) | Per service: after the kit and its base, once after all its modules, after integration |
+| Per service | Once after each completed service |
+
+Recommend **Per layer** in one line: it pauses where a wrong contract is cheapest to catch, without
+one stop per module. In the Steps below, the kit and its base end step 2, the modules end step 3, and
+the integration is the producer and consumer contract tests at the start of step 4. If the runtime
+has no question tool, ask the same question in chat and wait for the reply; never assume or default
+an answer. A rework asks again.
+
+Every schedule adds one pause after cross-service integration and before the `PATH-*` tests. At each
+pause the human answers `continue`, `rework` or `stop`, through the same question tool or in chat
+when it is unavailable.
+
+- `continue`: go on to the next pause.
+- `rework`: fix what the human names in the current layer or module, re-run its tests, then pause
+  again.
+- `stop`: write no iteration and return
+  `S2 stopped at the human's request. Run the S2 skill to resume.`
+
+Record every answer as a checkpoint line in the iteration's Description, never as a gate verdict:
+`Checkpoint: <pause point> — <continue|rework|stop> — <note>`. A `stop` writes no `S2.md`; the next
+run resumes from `src/` under **Resume, do not restart**.
+
+## Module Subagents
+
+S2 works without subagents. When the runtime has them, the parent may delegate one module at a time;
+it keeps the kit, the bases, the contracts, the integration and the pause schedule.
+
+- One subagent gets one module, its contract and its vectors. It implements the module, runs its
+  unit, bottom-up and sandwich tests, and edits no file outside that module.
+- It returns the changed files, every command it ran and pass/fail per test.
+- Run modules in parallel only when their §2.2 dependencies are ready and their files do not
+  overlap. Default concurrency is 1.
+
 ## Steps
+
+Before step 1 of every iteration, ask the pause schedule as **Pause Schedule** says above.
 
 1. **ML (future work).** If design §1.5 exists, stop before any code with exactly
    `ML integration is future work. Remove design §1.5 for this round.` and write no iteration.
@@ -86,10 +133,10 @@ writing **no iteration** when you stop:
    `project_layout.md` for the design's `Toolchain`, lock dependencies (`uv lock`, `pnpm install`)
    and copy the logger to every service's `config/`. Build `verification/run.sh` and every tool of
    design §1.3.4 before any module: Mock HAL with its VL-0 vectors and VL-1 synthetic generator,
-   golden vectors with `verification/golden/manifest.md`, the telemetry companion, one stub or fake
+   golden vectors with `verification/golden/manifest.md`, the telemetry collector, one stub or fake
    peer per contract, drivers, and the Real HW HAL with a fake device API only in `mock+real`. Then
    build the base layer of each service and run its unit tests and the **top-down** test (base + all
-   stubs) with the telemetry companion recording. Finally, run a **cross-service placeholder
+   stubs) with the telemetry collector recording. Finally, run a **cross-service placeholder
    integration**: start every service with its stubs connected through the real inter-service
    interfaces and verify that the contract handshakes succeed end-to-end (types, formats, ports and
    protocols). No module code runs yet — this proves the interface scaffolding is sound before step 3
@@ -98,21 +145,22 @@ writing **no iteration** when you stop:
    **bottom-up** test with a driver through the base, then the **sandwich** test (base → module →
    base: the real base calls the real module and the module calls back through the real base,
    verifying that types, formats and contracts match in both directions), then replace its stub.
-4. **Services and paths.** Producer and consumer contract tests with fake peers, then each
-   `PATH-*` with the real service processes and Mock HAL input.
+4. **Services and paths.** Producer and consumer contract tests with fake peers, then the pause
+   after cross-service integration, then each `PATH-*` with the real service processes and Mock HAL
+   input.
    Implement §0.5 and write a VL-0 smoke test that starts the actual entry point, connects the
    real service processes, observes a valid update, and shuts down cleanly. Run the documented
    command with runtime dependencies only (`uv sync --frozen --no-dev` for Python). Record the
    command, URL and observed result in `test_run.md`.
 5. **VL-1 tests, written, not claimed.** For every module and `PATH-*` with `required_vl` VL-1 or
    higher, write a test fed by the Mock HAL synthetic generator that measures the metric against
-   its `SYS-*` threshold, with the telemetry companion attached. Run them only to check they
+   its `SYS-*` threshold, with the telemetry collector attached. Run them only to check they
    execute; never report their result as evidence. The VL-1 claim belongs to G2.
 6. **Back up the last test run before overwriting it.** Run `codeanvil backup S2` from the project
    root. If it exits nonzero, stop and show its message; write no iteration. Cite the printed
    backup path in the iteration's Description. Backups never cover `src/` or `verification/`:
    code recovery relies on git.
-7. **Floor run.** Run `verification/run.sh vl0`: the whole VL-0 suite with the telemetry companion
+7. **Floor run.** Run `verification/run.sh vl0`: the whole VL-0 suite with the telemetry collector
    attached. Fix failures (step 3) until it exits 0. Write `test_run.md`.
 8. Write the iteration and return `S2 complete. Run the G2 skill.`
 
@@ -136,7 +184,7 @@ Write `.codeanvil/report/<cycle-name>/S2_artifacts/test_run.md`, overwritten on 
 - the §0.5 runnable entry point, its smoke-test command and result, and the URL and visible
   behaviour a user should expect;
 - the environment: OS, CPU, language and tool versions, `HAL mode`;
-- the telemetry companion's summary for that run;
+- the telemetry collector's summary for that run;
 - `Possible infeasibility`: requirement IDs and the run that shows it, or `None`.
 
 ## Report Contract

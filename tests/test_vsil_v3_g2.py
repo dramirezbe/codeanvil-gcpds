@@ -94,3 +94,13 @@ def test_g2_prerequisite_splits_the_rework_route_by_verdict():
 
     assert ("return exactly `S2 must rework first. Run the S2 skill.` for `Verdict: module defect`, "
             "or `S1 must rework first. Run the S1 skill.` for `Verdict: design defect`.") in text
+
+
+# --- placeholder telemetry is not evidence (2026-11-06, WU-L6) -------------
+
+
+def test_g2_rejects_placeholder_telemetry_as_measured_evidence():
+    text = " ".join(_skill_text("G2_adaptive_verification").split())
+
+    assert "A constant or placeholder telemetry reading is not measured evidence" in text
+    assert "Reject a constant or placeholder reading as measured evidence" in text

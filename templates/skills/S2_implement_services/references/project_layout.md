@@ -70,7 +70,7 @@ dependencies = []                 # runtime dependencies of the services only
 <package> = "<package>.main:main" # one entry per Python service
 
 [dependency-groups]
-dev = ["pytest"]                  # plus every kit dependency; never in [project] dependencies
+dev = ["pytest", "psutil"]        # plus every kit dependency; never in [project] dependencies
 
 [build-system]
 requires = ["hatchling"]
@@ -90,6 +90,9 @@ has the same name as `src/<package>/` and would be shadowed by it. Write
 `from verification.<package>.mock_hal import ...` and `from <package>.hal.port import ...`.
 
 No `sys.path` bootstrap. Deploy with `uv sync --frozen --no-dev`, start with `uv run <package>`.
+The telemetry collector (`verification/telemetry/telemetry_collector.py`, copied unchanged from
+`references/telemetry_collector.py`) needs `psutil` in the dev group; without it every psutil
+metric is reported as `unavailable` and the run continues.
 The `<package>.main:main` function must instantiate a runtime HAL and run the service; logging
 startup instructions without starting the loop is not a working entry point. In `mock-only`, the
 runtime Mock HAL required for a preview lives in the package or a shipped demo bundle, while the
@@ -106,7 +109,7 @@ verification/
 │   ├── manifest.md        # one row per vector: id, SHA-256, generation parameters,
 │   │                      #   simulated condition, expected output
 │   └── <vector files>
-├── telemetry/             # the telemetry companion: a separate Python process, any service language
+├── telemetry/             # telemetry_collector.py (locked) and one JSONL file per run
 └── <package>/             # one folder per service, in that service's language
     ├── mock_hal/          # VL-0 vectors and the VL-1 synthetic generator
     ├── stubs/             # one stub per contract of a module not built yet
@@ -121,7 +124,8 @@ HAL's VL-0 tests use.
 
 `verification/run.sh <vl0|vl1>`:
 
-1. starts the telemetry companion;
+1. starts the telemetry collector with `--output verification/telemetry/<level>-<timestamp>.jsonl`,
+   the design §1.7 interval, and `--counters` when the HAL or services expose counters;
 2. runs `uv run pytest -m <level>` when a Python service exists;
 3. runs `pnpm -r --filter "./verification/*" test:<level>` when a TS service exists;
 4. stops the companion and attaches its readings to the run output;
@@ -151,7 +155,7 @@ src/
 ├── fm_edge/       __init__.py __main__.py main.py config/ hal/ dsp/ decision/ output/ lib/
 └── dashboard/     package.json tsconfig.json main.tsx index.html vite.config.ts config/ hal/ views/ lib/
 verification/
-├── run.sh   golden/manifest.md   telemetry/
+├── run.sh   golden/manifest.md   telemetry/telemetry_collector.py
 ├── fm_edge/       mock_hal/ stubs/ fakes/ drivers/ test/
 └── dashboard/     package.json mock_hal/ stubs/ fakes/ drivers/ test/
 ```

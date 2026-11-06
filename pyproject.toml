@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "tomli; python_version < '3.11'"]
+dev = ["pytest", "psutil", "tomli; python_version < '3.11'"]
 
 [project.scripts]
 codeanvil = "codeanvil.CLI.main:main"

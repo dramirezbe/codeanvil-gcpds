@@ -56,6 +56,8 @@ Check, in this order, writing **no iteration** when you stop:
   that no claim rests on real hardware. `mock+real` allows VL-2 per module or path; a Real HW HAL
   declared at VL-0 for this cycle means G2.2 does not fire, and the honesty declaration says so.
 - A result outside the §1.7 telemetry envelope is shown flagged, never silently accepted.
+- A constant or placeholder telemetry reading is not measured evidence: report it as a module
+  defect, never as an envelope result.
 - No model is measured this round (FW-ML-4): the Verified Prototype has no ML evidence.
 
 ## Who runs what
@@ -80,7 +82,8 @@ In a fresh session that did not run S2, G2 runs steps 2–5 itself and records
    §1.6, on the Real HW HAL, with the §4 correction chains and §5 tolerances. The subagent prepares
    the procedure; if no hardware is reachable from the session, the human runs it and pastes the
    measurements.
-5. **Telemetry check.** Flag every result produced outside the §1.7 envelope.
+5. **Telemetry check.** Flag every result produced outside the §1.7 envelope. Reject a constant or
+   placeholder reading as measured evidence: it is a module defect.
 6. **Infeasibility.** Show every `Possible infeasibility` entry from `test_run.md` next to the G2
    result that confirms or refutes it. When the defect-or-RFD test points to RFD, the
    recommendation names it.
