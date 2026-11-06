@@ -270,15 +270,21 @@ def main(argv=None) -> int:
     deadline = time.monotonic() + args.duration if args.duration > 0 else None
     try:
         with stream:
-            # One interval after priming, so the first CPU reading covers a real
-            # interval instead of a near-zero delta that psutil reports as 0.0.
+            # Samples sit on a fixed monotonic grid (start + k * interval), so the
+            # time a sample takes never stretches the interval. The first one is
+            # one interval after priming: a real CPU delta, not psutil's 0.0.
+            next_at = time.monotonic() + args.interval
             stop.wait(args.interval)
             while not stop.is_set():
                 stream.write(json.dumps(_sample(tree, args.counters), ensure_ascii=False) + "\n")
                 stream.flush()
-                if deadline is not None and time.monotonic() >= deadline:
+                now = time.monotonic()
+                if deadline is not None and now >= deadline:
                     break
-                stop.wait(args.interval)
+                next_at += args.interval
+                if next_at < now:  # a slow sample: skip the missed slots, never burst
+                    next_at = now + args.interval
+                stop.wait(next_at - now)
     except OSError as exc:
         print(f"telemetry collector: write failed: {exc}", file=sys.stderr)
         return 1

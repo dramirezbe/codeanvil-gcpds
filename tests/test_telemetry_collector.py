@@ -228,3 +228,16 @@ def test_collector_reports_non_utf8_counters_as_unavailable(collector, tmp_path)
 
     assert result.returncode == 0, result.stderr
     assert "unavailable" in _lines(output)[0]["counters"]
+
+
+def test_collector_keeps_the_interval_on_a_fixed_grid(collector, tmp_path):
+    """Sampling time (sensor reads) must not stretch the interval."""
+    _needs_psutil()
+    output = tmp_path / "run.jsonl"
+
+    result = _run(collector, output, "--interval", "0.2", "--duration", "2")
+
+    assert result.returncode == 0, result.stderr
+    stamps = [line["monotonic_s"] for line in _lines(output)]
+    mean = (stamps[-1] - stamps[0]) / (len(stamps) - 1)
+    assert abs(mean - 0.2) < 0.01, f"mean interval {mean:.4f} s"
