@@ -12,10 +12,10 @@ V-SIL methodology.
 - Changes here affect the tool and methodology — they do NOT run against any user's GT.
 
 A **scaffolded user project** (produced by `codeanvil create`) is a different thing:
-it has `.agents/skills/`, `GT/`, `.codeanvil/`, and no `templates/`; it has no `src/`
-until S2 writes the delivered code there. The user's AGENTS.md (generated from
+it has `.agents/skills/`, `.codeanvil/` (GT, design, backups and reports), and no `templates/`;
+it has no `src/` until S2 writes the delivered code there. The user's AGENTS.md (generated from
 `templates/AGENTS/TEMPLATE_AGENT.md`) never mentions this repository: it names only the
-`codeanvil` CLI, the skills and `GT/`. Do not confuse the two environments.
+`codeanvil` CLI, the skills and `.codeanvil/`. Do not confuse the two environments.
 
 ## Where to start (v0.4.4)
 
@@ -30,8 +30,10 @@ until S2 writes the delivered code there. The user's AGENTS.md (generated from
 The T3 snapshot completed S0 → G2 with a G2 design-defect feedback loop through
 S1, G1 and S2. Its original G2 PASS predates the later runnable-entry-point
 correction; `RUN.md` records that correction's separate smoke evidence. Do not
-present it as a new G2 verdict. The holdout is an observation log, not an
-implemented skill contract.
+present it as a new G2 verdict. The holdout is an observation log; the refactor plan
+[`2026-11-06_1410_t3_holdout_refactor.md`](odd/tasks/t3-holdout-refactor/2026-11-06_1410_t3_holdout_refactor.md)
+implements its document renames, telemetry collector and pause policy, while the
+VL-2 machine interface remains a proposal.
 
 ## Overview
 
@@ -50,8 +52,7 @@ codeanvil create ──► scaffold project anywhere
                        ├─ .opencode/skills → ../.agents/skills
                        ├─ .codex/skills → ../.agents/skills
                        ├─ .claude/agents/, .opencode/agents/, .codex/agents/  (vsil-verifier)
-                       ├─ GT/README.md         (user writes build_package.md; S0 writes G0_StRS.md, G0_SyRS.md)
-                       ├─ .codeanvil/          (project.yaml + report/)
+                       ├─ .codeanvil/          (GT/ + build_package, design/, backups/, project.yaml, report/)
                        └─ DB registration (idempotent)
 codeanvil sync ─────► register/move a cloned project in the local DB
                        (reads the project's .codeanvil/project.yaml — no re-scaffold)
@@ -91,7 +92,7 @@ checks its predecessor's report before it runs:
 
 | Test | Domain | GT-ready | Contents |
 |------|--------|----------|----------|
-| **T0_ANE-Lap2** | SDR spectrum monitoring (ANE edge sensor) | **Yes** | `just-edge/StRS.md` + `just-edge/SyRS.md` — copy as `G0_StRS.md`/`G0_SyRS.md` |
+| **T0_ANE-Lap2** | SDR spectrum monitoring (ANE edge sensor) | **Yes** | `just-edge/StRS.md` + `just-edge/SyRS.md` — copy as `.codeanvil/GT/StRS.md`/`SyRS.md` |
 | **T1_FM-monitoring** | SDR-based FM broadcast compliance monitoring | No (raw) | LaTeX specification (RAG-informed from FCC Part 73, ANE Res. 105, ITU-R BS.412/450/SM.2152, ISO/IEC 17025) |
 | **T2_IoT-Indoor** | Indoor IoT radio environment mapping, 2.4 GHz ISM (GCPDS) | No (raw) | Hermes proposal, radio environment mapping literature, variable adaptation design doc |
 | **T3_FM-mock** | FM occupancy, Raspberry Pi + RTL-SDR target | Build Package | Mock-only S0 → G2 run, copied project, runnable preview and review holdout |
@@ -105,10 +106,10 @@ Pure Python script. No LLM, no AI agent — just `g0_validate.py`.
 - **Purpose**: hard gate ensuring the GT pair (StRS + SyRS) has the required structure before any agent gate runs.
 - **Script**: `templates/skills/G0_valid_req_and_GT/scripts/g0_validate.py` (repo), `.agents/skills/G0_valid_req_and_GT/scripts/g0_validate.py` (scaffolded project)
 - **Spec**: `SKILL.md` documents the expected structure; `references/RULES.md` holds the full rule tables.
-- **GT reference templates**: locked inside the skill at `.agents/skills/G0_valid_req_and_GT/templates/` (G0_StRS.md, G0_SyRS.md)
+- **GT reference templates**: locked inside the skill at `.agents/skills/G0_valid_req_and_GT/templates/` (StRS.md, SyRS.md)
 - **Inputs** (the Ground Truth **pair**, human-authored, IEEE 29148:2018 family):
-  1. **StRS** (`G0_StRS.md`, §9.4) — stakeholder requirements (`STK-`), COTS hardware constraints (`HWC-`), normative obligations (`NRM-` with inline compliance traceability)
-  2. **SyRS** (`G0_SyRS.md`, §9.5) — per-measurand system requirements (`SYS-`) tracing to StRS block IDs
+  1. **StRS** (`.codeanvil/GT/StRS.md`, §9.4) — stakeholder requirements (`STK-`), COTS hardware constraints (`HWC-`), normative obligations (`NRM-` with inline compliance traceability)
+  2. **SyRS** (`.codeanvil/GT/SyRS.md`, §9.5) — per-measurand system requirements (`SYS-`) tracing to StRS block IDs
 - **G0-X**: cross-document consistency — STK coverage, trace resolvability, shared-ID namespace, normative citations.
 - **Output**: per-document reports + G0-X report + gate report; pass/fail with exact listing of missing/malformed sections.
 - **Property**: deterministic — same input, same result. No interpretation.
@@ -116,13 +117,13 @@ Pure Python script. No LLM, no AI agent — just `g0_validate.py`.
 ### S0 — Normalise the Build Package (agent, one pass)
 
 - **Skill**: `templates/skills/S0_normalise_build_package/SKILL.md`; its locked blueprints are copied into `templates/` inside the skill on scaffold.
-- **Input**: `GT/build_package.md`. **Output**: `GT/G0_StRS.md`, `GT/G0_SyRS.md` and `S0.md` (inventory, missing list, trace).
+- **Input**: `.codeanvil/GT/build_package.md`. **Output**: `.codeanvil/GT/StRS.md`, `.codeanvil/GT/SyRS.md` and `S0.md` (inventory, missing list, trace).
 - **Property**: normalises only; invents nothing. A hand-written pair is accepted as a no-op iteration.
 
 ### S1 — Design of layered services (agent)
 
 - **Skill**: `templates/skills/S1_design_services/SKILL.md`, with the design template and graph template in `references/` and vis-network in `assets/`.
-- **Output**: `.codeanvil/report/<cycle>/S1_artifacts/S1_design.md` and `S1_graph.html` (one spider per service). `S1.md` is the only state.
+- **Output**: `.codeanvil/design/SDD.md` and `.codeanvil/design/dependency_graph.html` (one spider per service). `S1.md` is the only state.
 - **Runnable contract**: design §0.5 names one project-root command, the services and runtime HAL it starts, URL, visible result and clean shutdown. G1 checks this in G1.15.
 
 ### G1 — Human design review
@@ -131,7 +132,7 @@ Pure Python script. No LLM, no AI agent — just `g0_validate.py`.
 
 ### S2 — Implement services (agent)
 
-- **Skill**: `templates/skills/S2_implement_services/SKILL.md`, with `references/project_layout.md` and the locked loggers `references/logger.py` and `references/logger.ts`.
+- **Skill**: `templates/skills/S2_implement_services/SKILL.md`, with `references/project_layout.md` and the locked `references/logger.py`, `references/logger.ts` and `references/telemetry_collector.py`.
 - **Output**: the delivered code in `src/<service>/`, the verification kit in `verification/`, the root manifests, `S2.md` and `S2_artifacts/test_run.md` (the two `verification/run.sh vl0|vl1` commands and `Possible infeasibility`). S2 implements §0.5 and a VL-0 smoke test of the actual entry point, including the URL and observed result. Only S2 writes code; a design defect is a `Verdict: design defect` iteration routed to S1.
 
 ### G2 — Adaptive verification (human verdict)
@@ -177,14 +178,18 @@ State lives in the GT files, the cycle reports, and `.codeanvil/`, not in the
 tool. The `codeanvil` CLI only scaffolds and registers projects; it never drives
 gates.
 
-### Proposed follow-ups, not active paths
+### Deferred proposals, not active paths
 
-The T3 holdout proposes `GT/StRS.md`, `GT/SyRS.md`, optional `GT/SRS.md`,
-`design/SDD.md`, reader-facing `reports/`, a shipped telemetry collector, S2
-pause schedules and module-scoped subagents, and a later VL-2 machine interface.
-Those paths and features have **not** replaced the current `G0_*`,
-`S1_artifacts/` and `G2_artifacts/` contracts. Change the skills, scaffold,
-documentation and tests together before treating a proposal as implemented.
+The T3 holdout's `.codeanvil/` layout, `codeanvil backup`, bounded S1/G1/S2
+rework, S2 pause schedule, module subagents and telemetry collector are
+implemented on `main` (unreleased until v0.5.0). The plan and its Log are in
+`odd/tasks/t3-holdout-refactor/2026-11-06_1410_t3_holdout_refactor.md`.
+
+Still deferred, and **not** implemented: the VL-2 machine interface, reader-facing
+`reports/` (`verified_prototype.md` stays in `report/<cycle>/G2_artifacts/`),
+`validation_levels.md`, optional `GT/SRS.md` and an MCP telemetry facade. Change
+the skills, scaffold, documentation and tests together before treating a
+deferred proposal as implemented.
 
 ## Agent contract
 
@@ -254,27 +259,31 @@ After `codeanvil create myproj`, the project has this layout:
 myproj/
 ├── AGENTS.md                        ← generated (canonical agent instructions)
 ├── CLAUDE.md → AGENTS.md            ← symlink
-├── GT/
-│   ├── README.md                    ← write build_package.md here
-│   ├── build_package.md             ← user-authored; S0 reads it
-│   ├── G0_StRS.md                   ← written by S0 (IEEE 29148 §9.4)
-│   └── G0_SyRS.md                   ← written by S0 (IEEE 29148 §9.5)
-├── .codeanvil/                      ← machine-generated methodology artifacts
-│   ├── project.yaml                 ← project identity (UUIDv7, name, GT pointers)
+├── .codeanvil/                      ← every methodology-owned artifact
+│   ├── GT/                          ← ground truth (human-authored, plus S0 output)
+│   │   ├── README.md                ← write build_package.md here
+│   │   ├── build_package.md         ← user-authored; S0 reads it
+│   │   ├── StRS.md                  ← written by S0 (IEEE 29148 §9.4)
+│   │   └── SyRS.md                  ← written by S0 (IEEE 29148 §9.5)
+│   ├── design/                      ← S1 working copy: SDD.md, dependency_graph.html
+│   ├── backups/                     ← written only by `codeanvil backup <stage>`
+│   ├── custody/                     ← empty; left from the retired custody chain, unused
+│   ├── project.yaml                 ← project identity (UUIDv7, name, GT pointers, cycle)
 │   └── report/                      ← per-cycle iterative reports (<cycle>/<id>.md)
+│       └── <cycle>/S2_artifacts/test_run.md, G2_artifacts/verified_prototype.md
 ├── .agents/
 │   ├── skills/                      ← canonical skill store
 │   │   ├── G0_valid_req_and_GT/
 │   │   │   ├── SKILL.md             ← paths rewritten to project-relative
-│   │   │   ├── templates/           ← locked IEEE 29148 reference templates
-│   │   │   │   ├── G0_StRS.md
-│   │   │   │   └── G0_SyRS.md
+│   │   │   ├── templates/           ← locked IEEE 29148 blueprints
+│   │   │   │   ├── StRS.md
+│   │   │   │   └── SyRS.md
 │   │   │   ├── references/RULES.md  ← paths rewritten
 │   │   │   └── scripts/g0_validate.py
-│   │   ├── S0_normalise_build_package/   ← own blueprints in templates/
-│   │   ├── S1_design_services/           ← references/ + assets/ (vis-network)
+│   │   ├── S0_normalise_build_package/   ← templates/ (StRS.md, SyRS.md blueprints)
+│   │   ├── S1_design_services/           ← references/ (SDD.md, dependency_graph_template.html) + assets/ (vis-network)
 │   │   ├── G1_design_review/             ← references/G1_CHECKLIST.md
-│   │   ├── S2_implement_services/        ← references/ (project_layout, loggers)
+│   │   ├── S2_implement_services/        ← references/ (project_layout.md, logger.py/.ts, telemetry_collector.py)
 │   │   ├── G2_adaptive_verification/     ← references/verified_prototype.md
 │   │   ├── RFD_request_for_deviation/
 │   │   └── marconi-*/               ← (if --mcp marconi) 6 RF/SDR skills

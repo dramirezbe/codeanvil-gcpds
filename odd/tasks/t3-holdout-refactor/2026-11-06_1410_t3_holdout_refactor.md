@@ -508,3 +508,23 @@ After Phase 5:
   under system python3 and `psutil` with a Tctl temperature under the venv.
 - **Next:** Phase 5 docs (`CLAUDE.md`, repo `AGENTS.md`, `methodology/test/README.md`) and the
   old-path grep.
+- **2026-11-06 — Phase 5 complete (docs).** `CLAUDE.md` was updated in the previous session; this run
+  checked it only by the old-path grep below (its remaining hits are legitimate), not line by line.
+  Repo `AGENTS.md`: the "Proposed follow-ups" section now lists
+  only the four still-deferred items (VL-2 interface, reader-facing `reports/`, `validation_levels.md`,
+  optional `GT/SRS.md`, MCP telemetry facade) and points here for what landed; the scaffold tree
+  matches a fresh `codeanvil create` output (checked in a scratch project, not from memory).
+  `methodology/test/README.md`: GT paths moved to `.codeanvil/GT/`, S1 outputs to `.codeanvil/design/`,
+  `S1_graph.html` → `dependency_graph.html`, `telemetry companion` → `telemetry collector`, and two
+  checks for `codeanvil backup <stage>` on rework (no new step: the skills run it themselves).
+  - **Old-path grep** (Verification 5): 5 hits left, all legitimate: `AGENTS.md:55` and
+    `CLAUDE.md:154` (`GT/` nested under `.codeanvil/`); `AGENTS.md:263` (same, scaffold tree);
+    `CLAUDE.md:131` (`templates/GT/`, repo-side blueprints folder); `AGENTS.md:190` (`GT/SRS.md`,
+    named as a deferred, unimplemented proposal).
+  - **Finding:** `create` also makes an empty `.codeanvil/custody/` (`PROJECT_CUSTODY`), which the
+    target layout above does not list. No skill uses it. Documented in the repo `AGENTS.md` tree as
+    "empty; left from the retired custody chain". Removing it is a code change, deferred to the owner.
+  - **Gap:** the repo root `README.md` still shows the old layout (`GT/G0_StRS.md`, `S1_artifacts/`)
+    in about 15 places. It is outside Phase 5's file list and the grep, so it was not changed.
+  - Evidence: 267 pytest + 97 unittest green.
+- **Next:** Phase 6 (v0.5.0), owner confirmation required before push.
