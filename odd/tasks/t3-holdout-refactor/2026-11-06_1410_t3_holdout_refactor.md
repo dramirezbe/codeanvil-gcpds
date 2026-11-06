@@ -485,3 +485,10 @@ After Phase 5:
   placed at `.codeanvil/GT/`.
 - **Next:** Phase 4 — ask the owner the two open decisions (WU-L4 pause schedule, WU-L6 telemetry
   collector dependency) before implementing those units.
+- **2026-11-06 — Phase 4, WU-L1–L3 complete.** G2 prerequisite 3 splits the unchanged-code stop by
+  verdict (`module defect` → S2, `design defect` → S1). S1 writes a bounded design change set and
+  the final `SDD.md` digest; G1 reviews the change set, records the reviewed digest and produces an
+  impact map, with new checklist row G1.16. S2 takes the latest G1 PASS impact map as a rework
+  input and works contract+stub → module → stub, preserving unlisted modules. Evidence: 251 pytest
+  + 97 unittest green.
+- **Next:** WU-L4 and WU-L6 wait on the owner's decisions recorded below.

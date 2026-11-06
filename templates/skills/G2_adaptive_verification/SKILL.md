@@ -29,9 +29,10 @@ Check, in this order, writing **no iteration** when you stop:
    `S2 must pass first. Run the S2 skill.`
 3. G2's own latest iteration is `FEEDBACK`. With `Verdict: RFD`, return exactly
    `Cycle suspended by RFD. Run the RFD skill.`, unless the latest `RFD.md` iteration states
-   `Outcome: Withdrawn`. Otherwise, if its `Based on` line names the current latest S2 iteration,
-   the code was not reworked: return exactly `S2 must rework first. Run the S2 skill.` Unchanged
-   code is never verified twice.
+   `Outcome: Withdrawn`. Otherwise, when its `Based on` line names the current latest S2 iteration,
+   the code was not reworked: return exactly `S2 must rework first. Run the S2 skill.` for
+   `Verdict: module defect`, or `S1 must rework first. Run the S1 skill.` for
+   `Verdict: design defect`. Unchanged code is never verified twice.
 
 ## Inputs
 

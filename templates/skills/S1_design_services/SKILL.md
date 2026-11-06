@@ -109,6 +109,19 @@ Working files live in `.codeanvil/design/`, outside the cycle report folder.
 12. Write the iteration with the row `| HITL | PASS |` and the graph's path in the Description.
     Return the design path and `S1 complete. Run the G1 skill.`
 
+## Rework (bounded)
+
+On rework, the old baseline is the folder printed by `codeanvil backup S1` and cited in the
+iteration's Description. Change only what the feedback names, and record the change so G1 can
+review its impact instead of re-reading the whole design:
+
+1. Write a **design change set** in the iteration's Description: one row per changed `SYS-*`,
+   contract, service, module or `PATH-*` ID, with the old decision, the new decision, the reason
+   and whether the interface changed. A graph-only change is marked `no code impact`.
+2. Keep the IDs of unchanged elements stable. Renumbering hides the impact from G1.
+3. Record the SHA-256 of the final `SDD.md`:
+   `python -c "import hashlib,sys;print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" .codeanvil/design/SDD.md`
+
 ## Infeasibility
 
 If the design shows that no partitioning can meet a requirement on the declared COTS platform
@@ -161,7 +174,9 @@ Write exactly one file: `.codeanvil/report/<cycle-name>/S1.md`, append-only.
   `| HITL | PASS |` or `| HITL | FEEDBACK |` (never both in one row, which `codeanvil status`
   reads as `UNKNOWN`). Then `### Description`.
 - The Description starts with the exact line `Based on: G0 iteration <N>`, where `N` is the latest
-  G0 iteration when the work starts, followed by the design and graph paths.
+  G0 iteration when the work starts, followed by the design and graph paths and the SHA-256 of
+  `.codeanvil/design/SDD.md` (command in `## Rework (bounded)`). On rework it also carries the
+  design change set.
 - S1 is a **stage**: `PASS` means "output delivered". The human verdict belongs to G1.
 
 ## Output Contract

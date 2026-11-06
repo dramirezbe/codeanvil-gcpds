@@ -85,3 +85,12 @@ def test_g2_skill_backs_up_before_overwriting_the_verified_prototype():
 
     assert "codeanvil backup G2" in text
     assert "If it exits nonzero, stop and show its message; write no iteration." in text
+
+
+# --- rework route split by verdict (2026-11-06) -----------------------------
+
+def test_g2_prerequisite_splits_the_rework_route_by_verdict():
+    text = " ".join(_skill_text("G2_adaptive_verification").split())
+
+    assert ("return exactly `S2 must rework first. Run the S2 skill.` for `Verdict: module defect`, "
+            "or `S1 must rework first. Run the S1 skill.` for `Verdict: design defect`.") in text

@@ -64,3 +64,15 @@ def test_s1_skill_backs_up_before_overwriting_the_design():
 
     assert "codeanvil backup S1" in text
     assert "If it exits nonzero, stop and show its message; write no iteration." in text
+
+
+# --- bounded rework: design change set and SDD digest (2026-11-06) ----------
+
+def test_s1_skill_writes_a_bounded_design_change_set_on_rework():
+    text = " ".join(_skill_text("S1_design_services").split())
+
+    assert "design change set" in text
+    assert "old decision, the new decision, the reason" in text
+    assert "no code impact" in text
+    assert "Keep the IDs of unchanged elements stable" in text
+    assert "SHA-256 of the final `SDD.md`" in text

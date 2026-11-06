@@ -41,6 +41,7 @@ writing **no iteration** when you stop:
 | `.codeanvil/design/SDD.md` | Read-only: Meta `HAL mode` and `Toolchain`, §1.3.4 kit, §1.5, §1.6 HAL ladder, §1.7 telemetry, §2.2 order, §3 contracts and vectors, §4 traceability |
 | `.codeanvil/GT/SyRS.md` | Read-only: `SYS-*` thresholds for the VL-1 tests |
 | `.codeanvil/report/<cycle-name>/G2.md` | Rework only: latest iteration with `Verdict: module defect` |
+| `.codeanvil/report/<cycle-name>/G1.md` | Rework only: the latest PASS iteration's impact map (files to edit vs paths to retest only) |
 | `templates/skills/S2_implement_services/references/project_layout.md` | Locked trees: Python, TypeScript, root manifests, kit |
 | `templates/skills/S2_implement_services/references/logger.py` | Locked Python logger, copied unchanged |
 | `templates/skills/S2_implement_services/references/logger.ts` | Locked TypeScript logger, copied unchanged |
@@ -115,8 +116,16 @@ writing **no iteration** when you stop:
    attached. Fix failures (step 3) until it exits 0. Write `test_run.md`.
 8. Write the iteration and return `S2 complete. Run the G2 skill.`
 
-Rework: a G2 iteration with `Verdict: module defect` names the modules to fix, including a missing
-VL-1 test. Redo step 3 (unit, bottom-up and sandwich) or 5 for them, then step 6.
+Rework, module defect: a G2 iteration with `Verdict: module defect` names the modules to fix,
+including a missing VL-1 test. Redo step 3 (unit, bottom-up and sandwich) or 5 for them, then
+step 7.
+
+Rework, design defect: a G2 iteration with `Verdict: design defect` routes through S1 and G1; S2
+runs again only after G1 passes. Work from the latest G1 PASS iteration's impact map and go
+bottom-up: revise the affected contract and its stub first, then the owning module (unit,
+bottom-up, sandwich), then replace the stub. Preserve every module the impact map does not name.
+Rerun the affected `PATH-*` and the changed VL-1 tests, then the full VL-0 floor (step 7). Record
+in `S2.md` the changed IDs, files, commands, results and the G2 iteration it answers.
 
 ## Test Run Contract
 

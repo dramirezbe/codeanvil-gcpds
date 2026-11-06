@@ -243,3 +243,14 @@ def test_s2_skill_backs_up_before_overwriting_the_test_run():
 
     assert "codeanvil backup S2" in text
     assert "If it exits nonzero, stop and show its message; write no iteration." in text
+
+
+# --- design-defect rework from the G1 impact map (2026-11-06) --------------
+
+def test_s2_skill_uses_the_g1_impact_map_for_design_defect_rework():
+    text = " ".join(_skill_text("S2_implement_services").split())
+
+    assert "latest PASS iteration's impact map" in text
+    assert "Rework, design defect" in text
+    assert "revise the affected contract and its stub first" in text
+    assert "Preserve every module the impact map does not name" in text
