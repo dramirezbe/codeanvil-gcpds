@@ -3,8 +3,11 @@
 from pathlib import Path
 
 from codeanvil.config.paths import (
+    PROJECT_BACKUPS,
     PROJECT_CODEANVIL,
     PROJECT_CUSTODY,
+    PROJECT_DESIGN,
+    PROJECT_GT,
     PROJECT_MANIFEST,
     PROJECT_REPORT,
     _migrate_legacy_workdir,
@@ -14,6 +17,9 @@ from codeanvil.config.paths import (
 
 def test_project_constants():
     assert PROJECT_CODEANVIL == Path(".codeanvil")
+    assert PROJECT_GT == Path(".codeanvil/GT")
+    assert PROJECT_DESIGN == Path(".codeanvil/design")
+    assert PROJECT_BACKUPS == Path(".codeanvil/backups")
     assert PROJECT_CUSTODY == Path(".codeanvil/custody")
     assert PROJECT_REPORT == Path(".codeanvil/report")
     assert PROJECT_MANIFEST == Path(".codeanvil/project.yaml")

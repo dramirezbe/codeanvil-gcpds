@@ -8,7 +8,7 @@ import sys
 
 import pytest
 
-EXPECTED_SUBCOMMANDS = {"init", "create", "list", "sync", "status", "now", "sandbox", "upgrade"}
+EXPECTED_SUBCOMMANDS = {"init", "create", "list", "sync", "status", "now", "backup", "sandbox", "upgrade"}
 
 
 def _run_cli(*args: str) -> subprocess.CompletedProcess:
@@ -58,6 +58,13 @@ def test_init_has_mcp_flag():
     result = _run_cli("init", "--help")
     assert result.returncode == 0, result.stderr
     assert "--mcp" in result.stdout, "--mcp flag missing from 'init --help'"
+
+
+def test_backup_subcommand_exists():
+    result = _run_cli("backup", "--help")
+    assert result.returncode == 0, f"backup not recognized: {result.stderr}"
+    for stage in ("S0", "S1", "S2", "G2"):
+        assert stage in result.stdout, f"stage '{stage}' missing from 'backup --help'"
 
 
 def test_upgrade_subcommand_exists():

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "codeanvil"
-version = "0.4.4"
+version = "0.5.0"
 requires-python = ">=3.10"
 description = "Agent-agnostic harness that takes a hardware spec to a verified prototype — any AI coding agent, any OS"
 license = "Apache-2.0"
@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "tomli; python_version < '3.11'"]
+dev = ["pytest", "psutil", "tomli; python_version < '3.11'"]
 
 [project.scripts]
 codeanvil = "codeanvil.CLI.main:main"
@@ -27,8 +27,8 @@ packages = ["src/codeanvil"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "templates/skills" = "codeanvil/templates/skills"
-"templates/GT/G0_StRS.md" = "codeanvil/templates/GT/G0_StRS.md"
-"templates/GT/G0_SyRS.md" = "codeanvil/templates/GT/G0_SyRS.md"
+"templates/GT/StRS.md" = "codeanvil/templates/GT/StRS.md"
+"templates/GT/SyRS.md" = "codeanvil/templates/GT/SyRS.md"
 "templates/GT/README.md.template" = "codeanvil/templates/GT/README.md.template"
 "templates/config.yaml" = "codeanvil/templates/config.yaml"
 "templates/AGENTS" = "codeanvil/templates/AGENTS"

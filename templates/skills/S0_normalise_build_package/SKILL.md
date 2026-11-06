@@ -1,8 +1,8 @@
 ---
 name: s0-normalise-build-package
-description: "Trigger: S0, Build Package, normalise, StRS, SyRS. Cast GT/build_package.md into the two IEEE 29148 blueprints (G0_StRS.md, G0_SyRS.md) in one pass, with no judgement, and write the S0 report."
+description: "Trigger: S0, Build Package, normalise, StRS, SyRS. Cast .codeanvil/GT/build_package.md into the two IEEE 29148 blueprints (StRS.md, SyRS.md) in one pass, with no judgement, and write the S0 report."
 license: Apache-2.0
-compatibility: "No network access, no scripts. Writes GT/G0_StRS.md, GT/G0_SyRS.md and .codeanvil/report/<cycle-name>/S0.md."
+compatibility: "No network access, no scripts. Writes .codeanvil/GT/StRS.md, .codeanvil/GT/SyRS.md and .codeanvil/report/<cycle-name>/S0.md."
 metadata:
   author: "gcpds"
   version: "1.0"
@@ -27,29 +27,29 @@ S0 has **no prerequisite**: it is the entry point of the V-SIL chain.
 3. Create `.codeanvil/report/<cycle-name>/` when it does not exist.
 4. **After an RFD:** if another cycle's latest `RFD.md` iteration holds
    `Superseded by cycle: <this cycle>`, this is the re-entry cycle and the whole flow is redone from
-   here. Compute the SHA-256 of `GT/build_package.md`
-   (`python -c "import hashlib,sys;print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" GT/build_package.md`).
+   here. Compute the SHA-256 of `.codeanvil/GT/build_package.md`
+   (`python -c "import hashlib,sys;print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" .codeanvil/GT/build_package.md`).
    If it equals that RFD's `Build Package digest:` line, return exactly
-   `Build Package unchanged since the RFD. Update GT/build_package.md first.` and write nothing.
+   `Build Package unchanged since the RFD. Update .codeanvil/GT/build_package.md first.` and write nothing.
    A digest of `none` (the RFD was decided on a hand-written pair) skips this check.
 
 ## Inputs
 
 | Path | Role |
 |------|------|
-| `GT/build_package.md` | User-authored. The only content source |
-| `templates/skills/S0_normalise_build_package/templates/G0_StRS.md`, `.../G0_SyRS.md` | This skill's locked blueprints. Never edit them |
+| `.codeanvil/GT/build_package.md` | User-authored. The only content source |
+| `templates/skills/S0_normalise_build_package/templates/StRS.md`, `.../SyRS.md` | This skill's locked blueprints. Never edit them |
 | `.codeanvil/report/<cycle-name>/G0.md` | Re-entry only: the latest FEEDBACK |
 
 ## Decision Table
 
 | Situation | Action |
 |-----------|--------|
-| `GT/build_package.md` present, no GT pair | Normalise |
+| `.codeanvil/GT/build_package.md` present, no GT pair | Normalise |
 | Build Package present, GT pair present, an `S0.md` exists in **any** cycle | Re-normalise, applying the latest G0 feedback (an RFD re-entry lands here) |
 | Build Package present, GT pair present, no `S0.md` in any cycle | Hand-written pair: ask once before overwriting it |
-| No Build Package, GT pair present | No-op iteration: "pair supplied as normalised input". Write nothing to `GT/` |
-| Neither | Stop and ask the user for `GT/build_package.md` |
+| No Build Package, GT pair present | No-op iteration: "pair supplied as normalised input". Write nothing to `.codeanvil/GT/` |
+| Neither | Stop and ask the user for `.codeanvil/GT/build_package.md` |
 
 ## Hard Rules
 
@@ -61,22 +61,26 @@ S0 has **no prerequisite**: it is the entry point of the V-SIL chain.
 - Copy `Status`, `Compliance` and STK `Standard(s)` from the Build Package; never infer
   them. Where the blueprint has an enum marker, use `PENDING` or `PROPOSED`. Never fill a
   field by vocabulary heuristic.
-- Laboratory procedures, calibration and tolerances go into `GT/G0_SyRS.md`: procedures to
+- Laboratory procedures, calibration and tolerances go into `.codeanvil/GT/SyRS.md`: procedures to
   §6 as `PROTO-NNN` rows, calibration to §4, tolerances to §5. Never invent one. When the
   Build Package has none for a section, write exactly
   `Not applicable: no lab inputs in the Build Package.` under its heading and keep the heading.
 - Give no verdict and no comment on sufficiency, realism or scope.
-- Write only the two GT files and `S0.md`. Never touch `GT/build_package.md`.
+- Write only the two GT files and `S0.md`. Never touch `.codeanvil/GT/build_package.md`.
 
 ## Steps
 
 1. Inventory every statement of the Build Package as `STK | HWC | NRM | SYS | not mapped`.
-2. Fill the StRS blueprint.
-3. Fill the SyRS blueprint, including `Traces to` from the Build Package's own links.
-4. Build the report Description: the inventory, the **missing list** (every placeholder
+2. **Back up before overwriting.** Run `codeanvil backup S0` from the project root. If it exits
+   nonzero, stop and show its message; write no iteration. Cite the printed backup path in the
+   iteration's Description. Backups never cover `src/` or `verification/`: code recovery relies
+   on git.
+3. Fill the StRS blueprint.
+4. Fill the SyRS blueprint, including `Traces to` from the Build Package's own links.
+5. Build the report Description: the inventory, the **missing list** (every placeholder
    left, as `<file> · <block ID> · <field>`) and the trace from each block to its
    Build Package line.
-5. Write the iteration with the row `| HITL | PASS |` (see `## Report Contract`) and return:
+6. Write the iteration with the row `| HITL | PASS |` (see `## Report Contract`) and return:
    `S0 complete. Run the G0 skill.`
 
 ## Re-entry
@@ -92,7 +96,7 @@ Write exactly one file: `.codeanvil/report/<cycle-name>/S0.md`, append-only.
 
 - First run: write the header and `## Iteration 1`. Later runs append `## Iteration <N>`.
 - Header: a `| Field | Value |` table with `Gate` = `S0`, `Cycle`, `Document`
-  (`GT/build_package.md`) and `Created` = `codeanvil now`.
+  (`.codeanvil/GT/build_package.md`) and `Created` = `codeanvil now`.
 - Iteration: a `| Field | Value |` table with `Date` = `codeanvil now`, `Timestamp` =
   `codeanvil now --machine`, `Iteration`, `Cycle`, and exactly one verdict row,
   written as `| HITL | PASS |` (never `PASS | FEEDBACK` in one row, which

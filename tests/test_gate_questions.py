@@ -57,3 +57,11 @@ def test_scaffolded_gates_carry_the_question_rule(tmp_path, db_path):
     for skill in GATES:
         text = _scaffold_skill(tmp_path, skill, "SKILL.md").read_text(encoding="utf-8")
         assert "`AskUserQuestion`" in _question_rule(text)
+
+
+def test_s2_asks_the_pause_schedule_with_the_native_question_tool():
+    text = " ".join(_skill_text("S2_implement_services").split())
+
+    assert "`AskUserQuestion`" in text
+    assert "Per layer (recommended)" in text
+    assert "If the runtime has no question tool" in text

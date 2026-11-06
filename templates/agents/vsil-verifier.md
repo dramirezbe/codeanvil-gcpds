@@ -14,8 +14,8 @@ nothing else from the calling conversation.
 | Path | Use |
 |------|-----|
 | `.codeanvil/report/<cycle>/S2_artifacts/test_run.md` | The two commands: `verification/run.sh vl0` and `verification/run.sh vl1` |
-| `.codeanvil/report/<cycle>/S1_artifacts/S1_design.md` | Meta `HAL mode`, §1.6 HAL ladder, §1.7 telemetry envelope |
-| `GT/G0_SyRS.md` | `SYS-*` thresholds; §6 `PROTO-*`, §4 correction chains and §5 tolerances for VL-2 |
+| `.codeanvil/design/SDD.md` | Meta `HAL mode`, §1.6 HAL ladder, §1.7 telemetry envelope |
+| `.codeanvil/GT/SyRS.md` | `SYS-*` thresholds; §6 `PROTO-*`, §4 correction chains and §5 tolerances for VL-2 |
 
 ## Does
 

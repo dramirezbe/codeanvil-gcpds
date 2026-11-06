@@ -12,11 +12,14 @@ DB_DIR = WORKDIR / "db"
 DB_PATH = DB_DIR / "codeanvil.db"
 MCP_DIR = WORKDIR / "mcp"
 
-# Project-local constants — machine-generated methodology artifacts live
-# under <project>/.codeanvil/. Human-authored GT stays at the project root.
+# Project-local constants — every methodology-owned artifact lives under
+# <project>/.codeanvil/: identity, GT, design, reports and backups.
 PROJECT_CODEANVIL = Path(".codeanvil")
+PROJECT_GT = PROJECT_CODEANVIL / "GT"
+PROJECT_DESIGN = PROJECT_CODEANVIL / "design"
 PROJECT_CUSTODY = PROJECT_CODEANVIL / "custody"
 PROJECT_REPORT = PROJECT_CODEANVIL / "report"
+PROJECT_BACKUPS = PROJECT_CODEANVIL / "backups"
 PROJECT_MANIFEST = PROJECT_CODEANVIL / "project.yaml"
 
 

@@ -1,6 +1,6 @@
 # S1 — Design of a System of Layered Services
 
-<!-- V-SIL v3 · stage S1. Input: GT/G0_StRS.md + GT/G0_SyRS.md (passed G0 + Gate H).
+<!-- V-SIL v3 · stage S1. Input: .codeanvil/GT/StRS.md + .codeanvil/GT/SyRS.md (passed G0 + Gate H).
      Output: this document, reviewed by a human at G1.
      Structure: arc42 §5 Building Block View, IEEE 1016 viewpoints, IEEE 29148 traceability,
      MADR decisions, plus COTS envelope, per-module verification profile and stub recipes.
@@ -14,7 +14,7 @@
 | Cycle          | {{cycle name}}                                              |
 | Date           | {{YYYY-MM-DD}}                                              |
 | Author         | {{name / role}}                                             |
-| G0 approved    | {{SHA-256 of G0_StRS.md and G0_SyRS.md; information only}}  |
+| G0 approved    | {{SHA-256 of StRS.md and SyRS.md; information only}}  |
 | Gate H         | {{date + who authorised, copied from G0.md}}                |
 | Services       | {{service IDs; a single service is valid}}                  |
 | HAL mode       | {{mock-only / mock+real}}                                   |
@@ -45,7 +45,7 @@
 
 <!-- A COTS device is bought, not designed. "Key constraints" = what limits the software:
      frequency range, sample rate, ADC resolution, insertion loss, clock accuracy, bus
-     throughput, RAM, available interfaces. Every ID traces to an HWC-* block of G0_StRS.md. -->
+     throughput, RAM, available interfaces. Every ID traces to an HWC-* block of StRS.md. -->
 
 ### 0.2 Physical topology
 
@@ -269,9 +269,9 @@ flowchart LR
 |-------|-------|
 | Base-layer port | <!-- same contract as the Mock HAL --> |
 | COTS device | <!-- HWC-NNN --> |
-| Lab procedures | <!-- PROTO-* rows of G0_SyRS.md §6 it executes --> |
-| Correction chains | <!-- G0_SyRS.md §4 terms it applies --> |
-| Declared tolerances | <!-- G0_SyRS.md §5 budgets it applies --> |
+| Lab procedures | <!-- PROTO-* rows of SyRS.md §6 it executes --> |
+| Correction chains | <!-- SyRS.md §4 terms it applies --> |
+| Declared tolerances | <!-- SyRS.md §5 budgets it applies --> |
 | Calibration grade | <!-- development-team screening grade, not normative --> |
 | Fake device API | <!-- how the Real HW HAL runs at VL-0 without the device --> |
 
@@ -468,7 +468,7 @@ flowchart LR
 
 ## 4. Traceability
 
-<!-- Every SYS-* of G0_SyRS.md traces to a module or to a cross-service path with responsible
+<!-- Every SYS-* of SyRS.md traces to a module or to a cross-service path with responsible
      modules. A SYS-* without a module is an uncovered requirement; a module without a SYS-* is
      orphan code (question it). -->
 

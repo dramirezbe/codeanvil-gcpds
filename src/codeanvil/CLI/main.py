@@ -3,6 +3,7 @@
 import argparse
 
 from codeanvil.CLI.commands import (
+    cmd_backup,
     cmd_create,
     cmd_init,
     cmd_list,
@@ -33,6 +34,8 @@ def choose_option(args: argparse.Namespace) -> None:
             cmd_sync()
         case "status":
             cmd_status(args.name)
+        case "backup":
+            cmd_backup(args.stage)
         case "now":
             cmd_now(tz=args.tz, machine=args.machine)
         case "sandbox":

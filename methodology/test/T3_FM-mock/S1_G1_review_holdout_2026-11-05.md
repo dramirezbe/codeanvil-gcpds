@@ -483,3 +483,32 @@ closed in the 2026-11-05 feature plan.
 The unrun T8 failure probes and the separate proposals above remain explicit
 future work. No additional G2 human verdict was invented for the corrected
 entry point; its evidence is the post-cycle startup and WebSocket smoke test.
+
+## Applied: placeholder layer and sandwich verification — 2026-11-06
+
+**Observation.** T3's F2 (HAL type mismatch: `complex64` vs `uint8`) was not
+caught until a human supplied it during G2. S2 Step 2 built stubs and ran a
+per-service top-down test, but never verified that the stubs could talk to each
+other through the real inter-service interfaces. S2 Step 3 ran unit and
+bottom-up tests per module but never checked that a module fits back into its
+base in both directions (base → module → base).
+
+**Changes applied to `templates/skills/S2_implement_services/SKILL.md`:**
+
+1. **Step 2 — cross-service placeholder integration.** After building every
+   stub, base and kit tool, and after the per-service top-down test, S2 must now
+   start every service with its stubs connected through the real inter-service
+   interfaces and verify that the contract handshakes succeed end-to-end (types,
+   formats, ports and protocols). No module code runs yet; a mismatch at this
+   point is a design defect. This is the **placeholder layer**: the whole system
+   runs with zero real modules before Step 3 begins.
+
+2. **Step 3 — sandwich verification.** After the bottom-up test for each module,
+   S2 must now run a **sandwich** test (base → module → base) that verifies the
+   real base calls the real module and the module calls back through the real
+   base, checking types, formats and contracts in both directions. The stub is
+   replaced only after the sandwich passes.
+
+These two additions would have caught F2 at Step 2 (placeholder integration)
+and again at Step 3 (sandwich) before any downstream module depended on the
+wrong type assumption.

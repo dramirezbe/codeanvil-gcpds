@@ -236,3 +236,89 @@ def test_layout_tsconfig_declares_the_console_types():
 
     assert '"lib"' in text and '"DOM"' in text
     assert "@types/node" in text
+
+
+def test_s2_skill_backs_up_before_overwriting_the_test_run():
+    text = " ".join(_skill_text("S2_implement_services").split())
+
+    assert "codeanvil backup S2" in text
+    assert "If it exits nonzero, stop and show its message; write no iteration." in text
+
+
+# --- design-defect rework from the G1 impact map (2026-11-06) --------------
+
+def test_s2_skill_uses_the_g1_impact_map_for_design_defect_rework():
+    text = " ".join(_skill_text("S2_implement_services").split())
+
+    assert "latest PASS iteration's impact map" in text
+    assert "Rework, design defect" in text
+    assert "revise the affected contract and its stub first" in text
+    assert "Preserve every module the impact map does not name" in text
+
+
+# --- pause schedule and module subagents (2026-11-06, WU-L4/L5) -------------
+
+
+def _section(title: str) -> str:
+    text = _skill_text(SKILL)
+    start = text.index(f"## {title}")
+    return " ".join(text[start:text.index("\n## ", start + 1)].split())
+
+
+def test_s2_pause_schedule_offers_the_three_options_and_the_extra_pause():
+    section = _section("Pause Schedule")
+
+    assert "Per layer and module" in section
+    assert "Per layer (recommended)" in section
+    assert "Per service" in section
+    assert "one pause after cross-service integration and before the `PATH-*` tests" in section
+
+
+def test_s2_pause_schedule_asks_every_iteration_with_the_native_question_tool():
+    section = _section("Pause Schedule")
+
+    assert "`AskUserQuestion`" in section
+    assert "native question tool" in section
+    assert "start of **every** iteration" in section
+    assert "ask the same question in chat and wait for the reply" in section
+    assert "never assume or default an answer" in section
+
+
+def test_s2_pause_schedule_records_checkpoints_not_verdicts():
+    section = _section("Pause Schedule")
+
+    assert "checkpoint line" in section
+    assert "never as a gate verdict" in section
+    for answer in ("`continue`", "`rework`", "`stop`"):
+        assert answer in section
+    assert "write no iteration" in section
+    assert "Resume, do not restart" in section
+
+
+def test_s2_module_subagents_are_optional_and_bounded():
+    section = _section("Module Subagents")
+
+    assert "S2 works without subagents" in section
+    assert "one module at a time" in section
+    assert "unit, bottom-up and sandwich tests" in section
+    assert "Default concurrency is 1" in section
+    assert "their files do not overlap" in section
+
+
+# --- locked telemetry collector (2026-11-06, WU-L6) -------------------------
+
+
+def test_s2_skill_copies_the_locked_telemetry_collector():
+    text = " ".join(_skill_text(SKILL).split())
+
+    assert "telemetry_collector.py" in text
+    assert "verification/telemetry/" in text
+    assert "never edit them" in text
+
+
+def test_layout_names_the_locked_telemetry_collector():
+    text = _layout_text()
+
+    assert "telemetry_collector.py (locked)" in text
+    assert "psutil" in text
+    assert "--counters" in text

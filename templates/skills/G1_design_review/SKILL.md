@@ -42,9 +42,9 @@ writing **no iteration** when you stop:
 
 | Path | Role |
 |------|------|
-| `.codeanvil/report/<cycle-name>/S1_artifacts/S1_design.md` | The design under review |
-| `.codeanvil/report/<cycle-name>/S1_artifacts/S1_graph.html` | Reading aid, named in `S1.md` |
-| `GT/G0_StRS.md`, `GT/G0_SyRS.md` | Read-only: requirements the design must cover |
+| `.codeanvil/design/SDD.md` | The design under review |
+| `.codeanvil/design/dependency_graph.html` | Reading aid, named in `S1.md` |
+| `.codeanvil/GT/StRS.md`, `.codeanvil/GT/SyRS.md` | Read-only: requirements the design must cover |
 | `templates/skills/G1_design_review/references/G1_CHECKLIST.md` | This skill's checklist and filled form |
 
 ## Hard Rules
@@ -65,7 +65,7 @@ writing **no iteration** when you stop:
 
 1. Give the human the graph's path from `S1.md`: its spiders support the topology and
    runtime-loop review (G1.9); the build order is reviewed in the design's §2 (G1.1).
-2. Fill the checklist, including G1.11–G1.15 and the kit row.
+2. Fill the checklist, including G1.11–G1.16 and the kit row.
 3. **Validate the toolchain (G1.14).** For every `Toolchain` entry, run the `--version` of its
    language runtime and package manager yourself (for example `python3`, `uv`, `node`, `pnpm`,
    and `tsc` for TypeScript); the test runner comes with S2's lock. Record each version. When a
@@ -74,9 +74,11 @@ writing **no iteration** when you stop:
    chat. Install it only after a yes, at user level with the tool's documented installer, and
    never with `sudo` unless the user says so; then run `--version` again. A refused or failed
    install is an `open` G1.14 finding.
-4. Recompute the GT digests with the system's hash command (`sha256sum GT/G0_StRS.md
-   GT/G0_SyRS.md`; `shasum -a 256` on macOS, `Get-FileHash` in PowerShell) and show the human
-   whether they match the design's Meta row. Information only: it never blocks.
+4. Recompute the GT digests with the system's hash command (`sha256sum .codeanvil/GT/StRS.md
+   .codeanvil/GT/SyRS.md`; `shasum -a 256` on macOS, `Get-FileHash` in PowerShell) and show the human
+   whether they match the design's Meta row. Information only: it never blocks. Compute the
+   `SDD.md` digest the same way and record it in the iteration: S2 and G2 use it to detect a design
+   changed after this review.
 5. Present the findings, `open` first, and a recommendation. When the G1.8 test points to RFD,
    the recommendation names it.
 6. Ask the human: **PASS**, **FEEDBACK** or **RFD**, as **Asking the human** says below.
@@ -90,6 +92,18 @@ writing **no iteration** when you stop:
 
 **Asking the human.** Ask with your runtime's native question tool (`AskUserQuestion` in Claude Code): one single-select question with the options `PASS`, `FEEDBACK` and `RFD`, and a free-text answer allowed (the tool's type-your-own-answer choice). If the runtime has no question tool, ask the same question in chat and wait for the reply; never assume or default an answer. Any answer is recorded verbatim; a typed answer that does not choose `PASS` or `RFD` counts as `FEEDBACK`, never as `PASS`, and its text is the feedback. Then ask who is deciding, unless the human already said.
 
+## Rework review (bounded)
+
+When `S1.md`'s latest iteration carries a design change set, review the change instead of the whole
+design again:
+
+1. Trace each changed contract to its producers, consumers, stubs and tests along the §2.2 DAG. An
+   interface change reaches every caller; a changed field reaches every stub, fake peer and vector.
+2. Produce an **impact map** in the iteration's Description: the files S2 must edit, and the
+   `PATH-*` and VL-1 tests it must retest only.
+3. An impact the change set does not explain is an `open` finding (row G1.16). An empty impact map
+   on a changed interface is always `open`.
+
 ## Report Contract
 
 Write exactly one file: `.codeanvil/report/<cycle-name>/G1.md`, append-only.
@@ -102,7 +116,8 @@ Write exactly one file: `.codeanvil/report/<cycle-name>/G1.md`, append-only.
   `| HITL | PASS |` or `| HITL | FEEDBACK |` (never both in one row, which `codeanvil status`
   reads as `UNKNOWN`). Then `### Description`.
 - The Description starts with the exact line `Based on: S1 iteration <N>`, where `N` is the latest
-  S1 iteration when the review starts, followed by the filled checklist form.
+  S1 iteration when the review starts, followed by the filled checklist form and the SHA-256 of the
+  `SDD.md` it reviewed. On rework it also carries the impact map.
 - G1 is a **gate**: its `PASS` is the human's verdict.
 
 ## Output Contract

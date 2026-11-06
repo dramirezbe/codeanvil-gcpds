@@ -66,7 +66,7 @@ def test_g1_reviews_the_kit_and_the_toolchain():
 def test_g1_skill_fills_the_new_rows_and_routes_a_pass_to_s2():
     text = _skill_text("G1_design_review")
 
-    assert "Fill the checklist, including G1.11–G1.15 and the kit row." in text
+    assert "Fill the checklist, including G1.11–G1.16 and the kit row." in text
     assert "G1 passed. Run the S2 skill." in text
     assert "S2 is not available in this release" not in text
 
@@ -125,3 +125,24 @@ def test_g1_frontmatter_allows_network_only_for_consented_installs():
 
     assert "No network access" not in text
     assert "No scripts." in text
+
+
+# --- bounded rework: change set, impact map, G1.16 (2026-11-06) --------------
+
+def test_g1_reviews_the_s1_change_set_and_produces_an_impact_map():
+    text = " ".join(_skill_text("G1_design_review").split())
+
+    assert "design change set" in text
+    assert "impact map" in text
+    assert "files S2 must edit" in text
+    assert "retest only" in text
+    assert "row G1.16" in text
+
+
+def test_g1_checklist_has_the_change_impact_row():
+    checklist = _checklist_text()
+    row = next(line for line in checklist.splitlines() if line.startswith("| G1.16"))
+
+    assert "design change set" in row
+    assert "impact map" in row
+    assert "interface" in row

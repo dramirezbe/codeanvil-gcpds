@@ -3,68 +3,23 @@
 import re
 import sys
 from pathlib import Path
-from typing import NamedTuple
 
 import yaml
 
 from codeanvil.config.logger import get_logger
-from codeanvil.config.paths import CONFIG, DB_PATH, PROJECT_REPORT, find_manifest
+from codeanvil.config.paths import (
+    CONFIG, DB_PATH, PROJECT_BACKUPS, PROJECT_REPORT, find_manifest,
+)
 from codeanvil.db.projects import get_project_by_id, get_project_by_name, sync_project
 from codeanvil.db.schema import db_exists
 from codeanvil.db.utils import connect_db
+from codeanvil.reports import UNKNOWN_PRODUCER, ReportState, backup_entries, cycle_reports
 
 log = get_logger(__name__)
 
 # Legacy gate report filenames: <gate>_<machine-timestamp>.md
 # (e.g. G0_2026-10-21_16-23-45-123.md), written before cycle-scoped reports.
 _REPORT_RE = re.compile(r"^(?P<gate>.+)_(?P<ts>\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}-\d{3})\.md$")
-
-# Cycle-scoped reports: .codeanvil/report/<cycle>/<gate>.md with appended
-# "## Iteration N" sections and a | HITL | PASS|FEEDBACK | row per iteration.
-_ITERATION_RE = re.compile(r"^## Iteration (\d+)\s*$", re.MULTILINE)
-# Exactly two cells: the schema placeholder "| HITL | PASS | FEEDBACK |" is not
-# a verdict and must not be read as PASS.
-_HITL_RE = re.compile(r"^\|\s*HITL\s*\|\s*(PASS|FEEDBACK)\s*\|\s*$", re.MULTILINE)
-
-
-# Chain links, read only from the latest iteration of a report.
-_BASED_ON_RE = re.compile(r"^Based on: (\S+) iteration (\d+)\s*$", re.MULTILINE)
-_SUPERSEDED_RE = re.compile(r"^Superseded by cycle: (\S+)\s*$", re.MULTILINE)
-
-
-class ReportState(NamedTuple):
-    iteration: int | None
-    hitl: str | None
-    based_on: tuple[str, int] | None = None
-    superseded_by: str | None = None
-
-
-def _report_state(report_file: Path) -> ReportState:
-    """Latest iteration number, HITL verdict and chain links in one report."""
-    try:
-        text = report_file.read_text(encoding="utf-8")
-    except OSError as exc:
-        log.warning("cannot read %s: %s", report_file, exc)
-        return ReportState(None, None)
-    headings = list(_ITERATION_RE.finditer(text))
-    verdicts = _HITL_RE.findall(text)
-    latest = text[headings[-1].end():] if headings else ""
-    based_on = _BASED_ON_RE.search(latest)
-    superseded = _SUPERSEDED_RE.search(latest)
-    return ReportState(
-        max(int(match.group(1)) for match in headings) if headings else None,
-        verdicts[-1] if verdicts else None,
-        (based_on.group(1), int(based_on.group(2))) if based_on else None,
-        superseded.group(1) if superseded else None,
-    )
-
-
-def _gate_order(gate: str) -> tuple[int, int, str]:
-    """Chain gates first, in flow order; any other id follows alphabetically."""
-    order = CONFIG.get("report_order", [])
-    if gate in order:
-        return (0, order.index(gate), gate)
-    return (1, 0, gate)
 
 
 def _stale_reason(
@@ -86,21 +41,6 @@ def _stale_reason(
     if _stale_reason(predecessor, gates, seen + (gate,)):
         return f"{predecessor} is stale"
     return None
-
-
-def _cycle_reports(report_dir: Path) -> dict[str, dict[str, ReportState]]:
-    """Cycle -> gate -> report state for the cycle-scoped layout."""
-    cycles: dict[str, dict[str, ReportState]] = {}
-    if not report_dir.is_dir():
-        return cycles
-    for cycle_dir in sorted(path for path in report_dir.iterdir() if path.is_dir()):
-        gates = {
-            report.stem: _report_state(report)
-            for report in sorted(cycle_dir.glob("*.md"), key=lambda p: _gate_order(p.stem))
-        }
-        if gates:
-            cycles[cycle_dir.name] = gates
-    return cycles
 
 
 def _latest_reports(report_dir: Path) -> dict[str, str]:
@@ -175,10 +115,12 @@ def cmd_status(name: str | None = None) -> None:
         print(f"Path:    {project_dir.resolve()}")
 
         report_dir = project_dir / PROJECT_REPORT
-        cycles = _cycle_reports(report_dir)
+        cycles = cycle_reports(report_dir)
         legacy = _latest_reports(report_dir)
+        backups = backup_entries(project_dir / PROJECT_BACKUPS)
+        backups_prefix = PROJECT_BACKUPS.as_posix()
 
-        if not cycles and not legacy:
+        if not cycles and not legacy and not backups:
             print("Reports: none yet (.codeanvil/report/ is empty)")
             return
 
@@ -206,6 +148,15 @@ def cmd_status(name: str | None = None) -> None:
                     if stale:
                         state += f" [stale: {stale}]"
                     print(f"    {gate}: {state}")
+                for stage, iteration, folder in backups.get(cycle, []):
+                    label = f"{stage} iteration {iteration}" if iteration is not None else stage
+                    print(f"  Backups: {label} → {backups_prefix}/{folder}/")
+
+        unknown = backups.get(UNKNOWN_PRODUCER)
+        if unknown:
+            print("Backups without a producing cycle:")
+            for stage, _iteration, folder in unknown:
+                print(f"  {stage}: {backups_prefix}/{folder}/")
 
         if legacy:
             print("Legacy reports (pre-cycle layout):")

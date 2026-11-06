@@ -39,7 +39,7 @@ sub-gate of G2.
 Write `.codeanvil/report/<cycle-name>/RFD_artifacts/RFD-NNN.md` (one per deviation,
 numbered from 001, overwritten only by the same RFD) with these sections, in this order:
 
-1. Conflicting requirements, each with its source block ID in `GT/`.
+1. Conflicting requirements, each with its source block ID in `.codeanvil/GT/`.
 2. Evidence, naming the stage and verification level. At S1 the evidence is
    `ANALYSIS (no VL)`: nothing has been measured yet.
 3. Trade-off options. They may include design changes that need S1 rework.
@@ -49,7 +49,7 @@ numbered from 001, overwritten only by the same RFD) with these sections, in thi
 ## Hard Rules
 
 - Never invent or round a measurement.
-- Never edit GT or `GT/build_package.md`.
+- Never edit GT or `.codeanvil/GT/build_package.md`.
 - The agent recommends; **the author decides**. Record the decision verbatim and
   `Decided by: <name>`.
 - Never write `PASS` without the author's answer.
@@ -84,12 +84,12 @@ iteration (not Withdrawn):
    under `.codeanvil/report/`: ask again if it does. Never reuse or invent a name.
 2. Set `cycle:` in `.codeanvil/project.yaml`. Update only that key.
 3. Add these exact lines to the Description: `Superseded by cycle: <name>` and
-   `Build Package digest: <sha256 of GT/build_package.md, or none when there is no Build Package>`
+   `Build Package digest: <sha256 of .codeanvil/GT/build_package.md, or none when there is no Build Package>`
    (compute it with
-   `python -c "import hashlib,sys;print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" GT/build_package.md`).
+   `python -c "import hashlib,sys;print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" .codeanvil/GT/build_package.md`).
    `codeanvil status` then shows the old cycle as closed. It stays read-only, and the chain skills
    refuse to run in it.
-4. Return: "Update `GT/build_package.md`, then run the S0 skill in cycle `<name>`." The S0 skill
+4. Return: "Update `.codeanvil/GT/build_package.md`, then run the S0 skill in cycle `<name>`." The S0 skill
    refuses to start while the Build Package digest is unchanged.
 
 ## Output Contract

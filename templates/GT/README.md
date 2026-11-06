@@ -7,11 +7,10 @@ satisfy. S0 casts the author's Build Package into them. Based on **IEEE/ISO/IEC 
 
 | File         | Document type                          | IEEE 29148 section | Stage |
 |--------------|----------------------------------------|--------------------|-------|
-| `G0_StRS.md` | Stakeholder Requirements Specification | §9.4               | S0 output, G0 input |
-| `G0_SyRS.md` | System Requirements Specification      | §9.5               | S0 output, G0 input |
+| `StRS.md`    | Stakeholder Requirements Specification | §9.4               | S0 output, G0 input |
+| `SyRS.md`    | System Requirements Specification      | §9.5               | S0 output, G0 input |
 
-The `G0` prefix indicates the gate that validates the document: **G0** is the
-deterministic structural check of the StRS + SyRS pair (including the G0-X
+**G0** is the deterministic structural check of the StRS + SyRS pair (including the G0-X
 cross-document rules), followed by a human Gate H. The design (S1) is not an IEEE 29148
 GT document; the retired `G1_SRS.md` template lives in `templates/backups/`.
 
@@ -25,8 +24,8 @@ block IDs.
 
 ## How to use
 
-1. Either write `GT/build_package.md` and run the S0 skill, or copy `G0_StRS.md` and
-   `G0_SyRS.md` into your project's `GT/` directory by hand.
+1. Either write `.codeanvil/GT/build_package.md` and run the S0 skill, or copy `StRS.md`
+   and `SyRS.md` into your project's `.codeanvil/GT/` directory by hand.
 2. Replace placeholders (`_project_name_`, `_YYYY-MM-DD_`, etc.) with real content.
 3. Write stakeholder requirements, hardware constraints, and normative obligations
    (StRS) and the per-measurand system specifications (SyRS) following the block
@@ -34,10 +33,11 @@ block IDs.
 4. Validate the pair (deterministic, no AI):
 
    ```bash
-   python templates/skills/G0_valid_req_and_GT/scripts/g0_validate.py GT/G0_StRS.md GT/G0_SyRS.md
+   python templates/skills/G0_valid_req_and_GT/scripts/g0_validate.py .codeanvil/GT/StRS.md .codeanvil/GT/SyRS.md
    ```
 
-5. After G0 passes (script and Gate H), the S1 skill writes the design document.
+5. After G0 passes (script and Gate H), the S1 skill writes the design document to
+   `.codeanvil/design/`.
 
 The templates assume that hardware constraints have already been incorporated into the
 StRS — every requirement is feasible within the hardware envelope. The documents do
@@ -46,11 +46,14 @@ not contain reconciliation machinery; they are final, reviewed IEEE 29148 artifa
 ## Naming convention
 
 ```
-G<n>_<NAME>.md
+<NAME>.md
 ```
 
-- `G<n>` — the gate that validates this document (`G0`).
 - `<NAME>` — the document type (`StRS`, `SyRS`).
+
+The former `G<n>_<NAME>.md` prefix was retired when the GT pair moved under
+`.codeanvil/GT/`; the gate that validates a document is recorded in the flow, not in
+its filename.
 
 ## Working examples
 

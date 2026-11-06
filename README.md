@@ -6,7 +6,7 @@ Agent-agnostic project scaffolding, templates, and agent definitions for the **V
 
 Works with any AI coding agent: Claude, Codex, OpenCode, Pi, or others. Runs on **Linux, macOS and Windows**.
 
-**Current release:** [v0.4.4](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.4.4). The first realistic complete run, including a G2 → S1 rework loop, is archived under [`methodology/test/T3_FM-mock/`](methodology/test/T3_FM-mock/). Its [snapshot guide](methodology/test/T3_FM-mock/FIRST_FULL_FLOW_SNAPSHOT.md), [prototype run instructions](methodology/test/T3_FM-mock/first_full_flow_2026-11-05/RUN.md), and [review holdout](methodology/test/T3_FM-mock/S1_G1_review_holdout_2026-11-05.md) show the result and its limits.
+**Current release:** [v0.5.0](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.5.0). Breaking: GT and design moved under `.codeanvil/`; see the release notes. The first realistic complete run, including a G2 → S1 rework loop, is archived under [`methodology/test/T3_FM-mock/`](methodology/test/T3_FM-mock/). Its [snapshot guide](methodology/test/T3_FM-mock/FIRST_FULL_FLOW_SNAPSHOT.md), [prototype run instructions](methodology/test/T3_FM-mock/first_full_flow_2026-11-05/RUN.md), and [review holdout](methodology/test/T3_FM-mock/S1_G1_review_holdout_2026-11-05.md) show the result and its limits.
 
 > This methodology does not design hardware. It targets software running on Commercial Off-The-Shelf devices (not necessarily out-of-the-box), where the GT defines what constraints that hardware imposes.
 
@@ -76,15 +76,15 @@ codeanvil create myproject
 # ...or in a specific path
 codeanvil create myproject -p ~/projects
 
-# Write your Build Package in myproject/GT/build_package.md, then ask your agent to run
+# Write your Build Package in myproject/.codeanvil/GT/build_package.md, then ask your agent to run
 # the S0 skill. It writes the GT pair (IEEE 29148):
-#   G0_StRS.md  — Stakeholder Requirements Specification (§9.4)
-#   G0_SyRS.md  — System Requirements Specification (§9.5)
+#   .codeanvil/GT/StRS.md  — Stakeholder Requirements Specification (§9.4)
+#   .codeanvil/GT/SyRS.md  — System Requirements Specification (§9.5)
 # Reference templates: .agents/skills/S0_normalise_build_package/templates/
 
 # Validate the GT pair yourself (deterministic, no AI; the G0 skill runs the same script)
 cd myproject
-python3 .agents/skills/G0_valid_req_and_GT/scripts/g0_validate.py GT/G0_StRS.md GT/G0_SyRS.md
+python3 .agents/skills/G0_valid_req_and_GT/scripts/g0_validate.py .codeanvil/GT/StRS.md .codeanvil/GT/SyRS.md
 
 # Check project status (reads .codeanvil/report/ from the current directory)
 codeanvil status
@@ -129,7 +129,8 @@ evidence, not a new G2 verdict.
 | `codeanvil create --name <label> [--folder <dir>] [-p <path>] [--mcp <name>]` | Scaffold non-interactively (agents, scripts, CI); folder defaults to the derived snake_case name |
 | `codeanvil create <name> [-p <path>] [--mcp <name>]` | Legacy form: name is both project label and folder name (deprecated) |
 | `codeanvil sync` | Register or move a cloned project (reads `.codeanvil/project.yaml`) |
-| `codeanvil status [name]` | Latest report per stage/gate in flow order, with `delivered`, `stale` and `closed` markers (from cwd, or by project name) |
+| `codeanvil status [name]` | Latest report per stage/gate in flow order, with `delivered`, `stale`, `closed` markers and the latest backup per stage (from cwd, or by project name) |
+| `codeanvil backup <S0\|S1\|S2\|G2>` | Copy the stage's current outputs to `.codeanvil/backups/<cycle>/<stage>_iter<N>/` with `MANIFEST.yaml` before a skill overwrites them; a no-op when nothing exists |
 | `codeanvil list` | Registered projects (short UUID + local path) |
 | `codeanvil now [--machine]` | System timestamp: human-readable or filename-safe |
 | `codeanvil upgrade` | Reinstall codeanvil from the latest main branch (detects OS, uses uv) |
@@ -184,21 +185,23 @@ codeanvil create [<name> | --name <label> [--folder <dir>]] [-p <path>] [--mcp m
   <path>/<folder>/                  (default: ./<name>/, folder derived from label)
        ├── AGENTS.md                 ← generated (canonical agent instructions)
        ├── CLAUDE.md → AGENTS.md     ← symlink
-       ├── GT/
-       │    ├── README.md            ← instructions: write build_package.md here
-       │    ├── build_package.md     ← you author; S0 reads it
-       │    ├── G0_StRS.md           ← written by S0 (IEEE 29148 §9.4)
-       │    └── G0_SyRS.md           ← written by S0 (IEEE 29148 §9.5)
-       ├── .codeanvil/               ← machine-generated methodology artifacts
-       │    ├── project.yaml         ← project identity (UUIDv7, no machine paths)
-       │    └── report/              ← per-cycle iterative reports (<cycle>/<id>.md)
+       ├── .codeanvil/               ← every methodology-owned artifact
+       │    ├── GT/
+       │    │    ├── README.md            ← instructions: write build_package.md here
+       │    │    ├── build_package.md     ← you author; S0 reads it
+       │    │    ├── StRS.md              ← written by S0 (IEEE 29148 §9.4)
+       │    │    └── SyRS.md              ← written by S0 (IEEE 29148 §9.5)
+       │    ├── design/                    ← S1 working design: SDD.md, dependency_graph.html
+       │    ├── backups/                   ← written only by `codeanvil backup <stage>`
+       │    ├── project.yaml              ← project identity (UUIDv7, no machine paths)
+       │    └── report/                    ← per-cycle iterative reports (<cycle>/<id>.md)
        ├── .agents/
        │    ├── skills/             ← canonical skill store
        │    │    ├── G0_valid_req_and_GT/
        │    │    │    ├── SKILL.md           ← agent contract (paths rewritten)
        │    │    │    ├── templates/         ← locked IEEE 29148 reference templates
-       │    │    │    │    ├── G0_StRS.md
-       │    │    │    │    └── G0_SyRS.md
+       │    │    │    │    ├── StRS.md
+       │    │    │    │    └── SyRS.md
        │    │    │    ├── references/RULES.md
        │    │    │    └── scripts/g0_validate.py
        │    │    ├── S0_normalise_build_package/   ← own blueprints in templates/
@@ -221,9 +224,9 @@ The `vsil-verifier` subagent (one shared body, one file per runtime) is used onl
 
 Skills live in `.agents/skills/` — the single source of truth. Agent runtime directories (`.claude/skills/`, `.opencode/skills/`, `.codex/skills/`) are symlinks, so every runtime discovers the same skills automatically.
 
-GT reference templates are **locked** inside the skills that use them (`.agents/skills/S0_.../templates/` and `.agents/skills/G0_.../templates/`). Users write their Build Package in `GT/`.
+GT reference templates are **locked** inside the skills that use them (`.agents/skills/S0_.../templates/` and `.agents/skills/G0_.../templates/`). Users write their Build Package in `.codeanvil/GT/`.
 
-1. **Write your Build Package** — `GT/build_package.md`. A hand-written StRS + SyRS pair is also accepted.
+1. **Write your Build Package** — `.codeanvil/GT/build_package.md`. A hand-written StRS + SyRS pair is also accepted.
 2. **S0 normalises** — an agent casts the Build Package into the locked StRS and SyRS blueprints, in one pass, inventing nothing.
 3. **G0 validates structure** — a deterministic script checks that both GT documents follow the expected format and that the pair is cross-consistent (G0-X). Hard pass/fail, no LLM. Then a human answers Gate H: *Requirements complete, bounded, and verifiable?*
 4. **S1 designs** — an agent writes the design and dependency graph. Design §0.5 defines one runnable project-root entry point, selected HAL, URL, visible result and shutdown.
@@ -232,10 +235,11 @@ GT reference templates are **locked** inside the skills that use them (`.agents/
 7. **G2 verifies** — the `vsil-verifier` subagent re-runs those commands in a fresh, read-only context, including entry-point smoke evidence; a human answers PASS, FEEDBACK (module or design defect) or RFD. PASS writes the Verified Prototype with run instructions.
 8. **RFD** — when a requirement is infeasible on the declared COTS platform, a decision document suspends the cycle until the Build Package author decides.
 
-Today, S1 design and G2 Verified Prototype artifacts live under
-`.codeanvil/report/<cycle>/S1_artifacts/` and `G2_artifacts/`. The T3 holdout
-records proposals to use `GT/StRS.md`, `GT/SyRS.md`, optional `GT/SRS.md`,
-`design/SDD.md` and reader-facing `reports/`; those paths are not active yet.
+The S1 design lives in `.codeanvil/design/` (`SDD.md` and `dependency_graph.html`, a single working copy).
+G2's Verified Prototype stays under `.codeanvil/report/<cycle>/G2_artifacts/`. Before S0, S1, S2 or G2 overwrites
+its outputs, it runs `codeanvil backup <stage>`. Code under `src/` and `verification/` is not backed up; use git for it.
+Projects scaffolded before v0.5.0 keep their old paths for the cycle they are in; there is no migration.
+Reader-facing `reports/`, `validation_levels.md` and an optional `SRS.md` are not implemented.
 
 ## Definitions
 
@@ -264,6 +268,7 @@ codeanvil-gcpds/
 │   │   ├── parser.py        # argparse definitions
 │   │   ├── prompts.py       # interactive create TUI (beaupy + Rich)
 │   │   └── commands/        # one module per subcommand (create, init, list, ...)
+│   ├── reports.py           # Report parser shared by `status` and `backup`
 │   ├── UI/ui.py             # PySide6 graphical interface (planned)
 │   ├── config/
 │   │   ├── paths.py         # Canonical paths (~/.codeanvil-config/)
@@ -288,8 +293,8 @@ codeanvil-gcpds/
 │
 ├── templates/               # The methodology (the real product)
 │   ├── GT/                  # Ground Truth document templates (IEEE 29148)
-│   │   ├── G0_StRS.md      # StRS template (§9.4 — merged stakeholder + HW + normativity)
-│   │   ├── G0_SyRS.md      # SyRS template (§9.5 — per-measurand system requirements)
+│   │   ├── StRS.md         # StRS template (§9.4 — merged stakeholder + HW + normativity)
+│   │   ├── SyRS.md         # SyRS template (§9.5 — per-measurand system requirements)
 │   │   ├── README.md
 │   │   └── legacy/         # Old template versions (v1, v2, v3)
 │   ├── backups/             # Retired skills (custody-chain, G1_start_design, G1_SRS.md)

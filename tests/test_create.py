@@ -349,6 +349,26 @@ def test_create_makes_report_dir_without_cycle_subdir(tmp_path, db_path):
     assert list(report.iterdir()) == []
 
 
+def test_create_scaffolds_the_methodology_tree_under_codeanvil(tmp_path, db_path):
+    cmd_create(None, tmp_path, project_name="Proj")
+
+    project = tmp_path / "proj"
+    for rel in (".codeanvil/GT", ".codeanvil/design", ".codeanvil/backups",
+                ".codeanvil/report", ".codeanvil/custody"):
+        assert (project / rel).is_dir(), rel
+    assert (project / ".codeanvil/GT/README.md").is_file()
+    assert not (project / "GT").exists()
+
+
+def test_create_manifest_points_to_the_new_gt_pair(tmp_path, db_path):
+    cmd_create(None, tmp_path, project_name="Proj")
+
+    assert _manifest(tmp_path / "proj")["gt"] == {
+        "strs": ".codeanvil/GT/StRS.md",
+        "syrs": ".codeanvil/GT/SyRS.md",
+    }
+
+
 def _agents_md(tmp_path, db_path) -> str:
     cmd_create(None, tmp_path, project_name="Proj")
     return (tmp_path / "proj" / "AGENTS.md").read_text(encoding="utf-8")
@@ -453,7 +473,7 @@ def test_scaffold_ships_the_v3_chain_and_not_the_retired_skills(tmp_path, db_pat
 def test_s0_blueprints_match_the_g0_copies(tmp_path, db_path):
     cmd_create(None, tmp_path, project_name="Proj")
 
-    for name in ("G0_StRS.md", "G0_SyRS.md"):
+    for name in ("StRS.md", "SyRS.md"):
         s0 = _scaffold_skill(tmp_path, "S0_normalise_build_package", "templates", name)
         g0 = _scaffold_skill(tmp_path, "G0_valid_req_and_GT", "templates", name)
         assert s0.read_bytes() == g0.read_bytes()
@@ -462,13 +482,13 @@ def test_s0_blueprints_match_the_g0_copies(tmp_path, db_path):
 def test_scaffolded_s1_ships_its_graph_template_and_library(tmp_path, db_path):
     cmd_create(None, tmp_path, project_name="Proj")
 
-    template = _scaffold_skill(tmp_path, "S1_design_services", "references", "S1_graph_template.html")
+    template = _scaffold_skill(tmp_path, "S1_design_services", "references", "dependency_graph_template.html")
     library = _scaffold_skill(tmp_path, "S1_design_services", "assets", "vis-network.min.js")
     assert template.is_file() and library.is_file()
     html = template.read_text(encoding="utf-8")
     assert "// === DATA" in html
     assert "https://" not in html.split("<style>")[0]
-    assert _scaffold_skill(tmp_path, "S1_design_services", "references", "S1_design.md").is_file()
+    assert _scaffold_skill(tmp_path, "S1_design_services", "references", "SDD.md").is_file()
     assert _scaffold_skill(tmp_path, "G1_design_review", "references", "G1_CHECKLIST.md").is_file()
 
 
@@ -499,18 +519,18 @@ def test_s0_skill_is_the_entry_point_and_normalises_the_build_package():
     text = _skill_text("S0_normalise_build_package")
 
     assert ".codeanvil/report/<cycle-name>/S0.md" in text
-    assert "GT/build_package.md" in text
+    assert ".codeanvil/GT/build_package.md" in text
     assert "no prerequisite" in text.lower()
     assert "| HITL | PASS |" in text
     assert "S0 complete. Run the G0 skill." in text
     assert "in **any** cycle" in text  # RFD re-entry is not a hand-written pair
 
 
-def test_s1_skill_writes_the_design_and_graph_to_s1_artifacts():
+def test_s1_skill_writes_the_design_and_graph_to_the_design_dir():
     text = _skill_text("S1_design_services")
 
     assert ".codeanvil/report/<cycle-name>/S1.md" in text
-    assert "S1_artifacts/S1_design.md" in text
+    assert ".codeanvil/design/SDD.md" in text
     assert "G0 must pass first. Run the G0 skill." in text
     assert "Based on: G0 iteration" in text
     assert "| HITL | PASS |" in text
@@ -521,15 +541,15 @@ def test_s1_skill_writes_the_design_and_graph_to_s1_artifacts():
 def test_s1_skill_builds_the_spider_graph_from_its_own_template():
     text = _skill_text("S1_design_services")
 
-    assert "S1_artifacts/S1_graph.html" in text
-    assert "S1_graph_template.html" in text
+    assert ".codeanvil/design/dependency_graph.html" in text
+    assert "dependency_graph_template.html" in text
     assert "spider" in text
     assert ".codeanvil/project.yaml" in text
     assert "DATA" in text
 
 
 def test_s1_graph_template_is_offline_and_ships_the_vendored_library():
-    template = _skill_file("S1_design_services", "references", "S1_graph_template.html")
+    template = _skill_file("S1_design_services", "references", "dependency_graph_template.html")
     library = _skill_file("S1_design_services", "assets", "vis-network.min.js")
 
     html = template.read_text(encoding="utf-8")
@@ -540,7 +560,7 @@ def test_s1_graph_template_is_offline_and_ships_the_vendored_library():
 
 
 def test_s1_design_template_keeps_the_numbered_sections():
-    text = _skill_file("S1_design_services", "references", "S1_design.md").read_text(encoding="utf-8")
+    text = _skill_file("S1_design_services", "references", "SDD.md").read_text(encoding="utf-8")
 
     for heading in ("## 0. COTS envelope", "## 1. Building block view", "### 2.2 Topological",
                     "### 3.4 Service → service contracts", "## 4. Traceability",
@@ -557,7 +577,7 @@ def test_g1_skill_is_a_human_review_with_no_script():
     assert "Cycle suspended by RFD. Run the RFD skill." in text
     assert "Based on: S1 iteration" in text
     assert "PASS" in text and "FEEDBACK" in text and "RFD" in text
-    assert "S1_graph.html" in text
+    assert "dependency_graph.html" in text
     assert "Decided by:" in text
     assert "g1_check" not in text
     assert not (TEMPLATES_DIR / "skills" / "G1_design_review" / "scripts").exists()
@@ -594,7 +614,7 @@ def test_rfd_skill_requires_a_new_unique_cycle_name_and_records_the_build_packag
 def test_s0_skill_requires_an_updated_build_package_after_an_rfd():
     text = _skill_text("S0_normalise_build_package")
 
-    assert "Build Package unchanged since the RFD. Update GT/build_package.md first." in text
+    assert "Build Package unchanged since the RFD. Update .codeanvil/GT/build_package.md first." in text
     assert "Build Package digest:" in text
 
 
@@ -818,6 +838,35 @@ def test_status_always_prints_the_active_cycle_even_without_reports(tmp_path, db
 
     out = capsys.readouterr().out
     assert "02_new (active)" in out
+
+
+def test_status_shows_the_latest_backup_per_stage(tmp_path, db_path, capsys):
+    cmd_create(None, tmp_path, project_name="Proj")
+    project = tmp_path / "proj"
+    _set_cycle(project, "01_c")
+    _write_report(project, "01_c", "S1", [(1, "PASS")])
+    backups = project / ".codeanvil" / "backups" / "01_c"
+    (backups / "S1_iter1").mkdir(parents=True)
+    (backups / "S1_iter2").mkdir()
+
+    cmd_status("Proj")
+
+    out = capsys.readouterr().out
+    assert "  Backups: S1 iteration 2 → .codeanvil/backups/01_c/S1_iter2/" in out
+    assert "S1_iter1" not in out
+
+
+def test_status_lists_backups_without_a_producing_cycle(tmp_path, db_path, capsys):
+    cmd_create(None, tmp_path, project_name="Proj")
+    project = tmp_path / "proj"
+    folder = project / ".codeanvil" / "backups" / "unknown" / "S2_2026-11-06_14-10-00-123"
+    folder.mkdir(parents=True)
+
+    cmd_status("Proj")
+
+    out = capsys.readouterr().out
+    assert "Backups without a producing cycle:" in out
+    assert "S2: .codeanvil/backups/unknown/S2_2026-11-06_14-10-00-123/" in out
 
 
 def test_g0_validator_is_side_effect_free_and_maps_exit_codes(tmp_path):

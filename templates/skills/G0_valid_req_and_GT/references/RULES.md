@@ -1,7 +1,7 @@
 # G0 Validation Rules — Reference
 
 Full detail behind [SKILL.md](../SKILL.md). The authoritative structure definitions are the
-templates: `templates/GT/G0_StRS.md` and `templates/GT/G0_SyRS.md` (repository-root relative).
+templates: `templates/GT/StRS.md` and `templates/GT/SyRS.md` (repository-root relative).
 
 G0 answers one question: **do the two Ground Truth documents follow the IEEE 29148:2018
 structure defined in the templates?** The StRS is the stakeholder view (IEEE 29148 §9.4,

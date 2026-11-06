@@ -4,7 +4,7 @@ from test_create import TEMPLATES_DIR, _skill_text
 
 
 def _design_template() -> str:
-    path = TEMPLATES_DIR / "skills" / "S1_design_services" / "references" / "S1_design.md"
+    path = TEMPLATES_DIR / "skills" / "S1_design_services" / "references" / "SDD.md"
     return path.read_text(encoding="utf-8")
 
 
@@ -57,3 +57,22 @@ def test_s1_design_template_has_toolchain_hal_ladder_and_telemetry():
     assert "### 1.7 Telemetry companion" in text
     assert text.index("### 1.5 Supplied ML model") < text.index("### 1.6 HAL") \
         < text.index("### 1.7 Telemetry") < text.index("## 2. Dependency view")
+
+
+def test_s1_skill_backs_up_before_overwriting_the_design():
+    text = " ".join(_skill_text("S1_design_services").split())
+
+    assert "codeanvil backup S1" in text
+    assert "If it exits nonzero, stop and show its message; write no iteration." in text
+
+
+# --- bounded rework: design change set and SDD digest (2026-11-06) ----------
+
+def test_s1_skill_writes_a_bounded_design_change_set_on_rework():
+    text = " ".join(_skill_text("S1_design_services").split())
+
+    assert "design change set" in text
+    assert "old decision, the new decision, the reason" in text
+    assert "no code impact" in text
+    assert "Keep the IDs of unchanged elements stable" in text
+    assert "SHA-256 of the final `SDD.md`" in text

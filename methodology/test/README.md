@@ -130,8 +130,10 @@ ls /tmp/smoke-test/.agents/skills/    # S0, G0, S1, G1, S2, G2, RFD
 ls /tmp/smoke-test/.codeanvil/project.yaml   # UUIDv7 identity manifest
 ls /tmp/smoke-test/.codeanvil/report/        # empty — populated by gate reports
 
-# GT dir — user-authored, outside .codeanvil/
-ls /tmp/smoke-test/GT/README.md       # empty GT dir with instructions
+# GT dir — user-authored, inside .codeanvil/ with the other methodology artifacts
+ls /tmp/smoke-test/.codeanvil/GT/README.md   # GT dir with instructions
+ls /tmp/smoke-test/.codeanvil/design/        # empty — S1 writes SDD.md and dependency_graph.html here
+ls /tmp/smoke-test/.codeanvil/backups/       # empty — written only by `codeanvil backup <stage>`
 ```
 
 ### 2b. Verify project identity and status
@@ -174,14 +176,14 @@ Verify:
 
 ```bash
 # From the codeanvil repo:
-cp templates/no-tools-skills/v3/test-inputs/build_package.md /tmp/smoke-test/GT/build_package.md
+cp templates/no-tools-skills/v3/test-inputs/build_package.md /tmp/smoke-test/.codeanvil/GT/build_package.md
 ```
 
 Alternative (hand-written pair, S0 runs as a no-op): copy the T0 pair instead.
 
 ```bash
-cp methodology/test/T0_ANE-Lap2/just-edge/StRS.md /tmp/smoke-test/GT/G0_StRS.md
-cp methodology/test/T0_ANE-Lap2/just-edge/SyRS.md /tmp/smoke-test/GT/G0_SyRS.md
+cp methodology/test/T0_ANE-Lap2/just-edge/StRS.md /tmp/smoke-test/.codeanvil/GT/StRS.md
+cp methodology/test/T0_ANE-Lap2/just-edge/SyRS.md /tmp/smoke-test/.codeanvil/GT/SyRS.md
 ```
 
 ### 4. Enter sandboxed Claude session in the project
@@ -280,7 +282,7 @@ Run G1
 Run S0
 ```
 
-**Expected:** one pass, no questions. Writes `GT/G0_StRS.md`, `GT/G0_SyRS.md` and
+**Expected:** one pass, no questions. Writes `.codeanvil/GT/StRS.md`, `.codeanvil/GT/SyRS.md` and
 `.codeanvil/report/<cycle>/S0.md` with `| HITL | PASS |`, the inventory and the missing
 list. Returns `S0 complete. Run the G0 skill.`
 
@@ -300,8 +302,10 @@ records the answer, the date and `Decided by:`.
 Run S1
 ```
 
-**Expected:** writes `S1_artifacts/S1_design.md` (GT digests in Meta) and
-`S1_artifacts/S1_graph.html`, then `S1.md` with `| HITL | PASS |` naming the graph path.
+**Expected:** writes `.codeanvil/design/SDD.md` (GT digests in Meta) and
+`.codeanvil/design/dependency_graph.html`, then `S1.md` with `| HITL | PASS |` naming the graph path.
+On a rework of an existing design, S1 first runs `codeanvil backup S1` and the iteration cites the
+printed `.codeanvil/backups/<cycle>/S1_iter<N>/` path (or `nothing to back up` on the first run).
 Open the graph: spiders, one per service, with the manifest text and no network needed.
 
 #### Prompt 6 — Run G1 (human review)
@@ -335,7 +339,7 @@ Cycles:
 | G1 FEEDBACK → S1 | Remove a stub recipe in the design | Finding marked `open`; S1 re-run reads the FEEDBACK |
 | Rework routed from reports | Answer FEEDBACK at G1, run G1 again without S1 | `S1 must rework first. Run the S1 skill.`; no iteration written |
 | Stale PASS | After G1 PASS, re-run S1, then `codeanvil status` | `G1: PASS (iteration 1) [stale: based on S1 iteration 1, S1 is at 2]` |
-| Reports drive the chain | Delete `S1_graph.html`, run G1 | Prerequisite still passes; finding marked `advisory` |
+| Reports drive the chain | Delete `.codeanvil/design/dependency_graph.html`, run G1 | Prerequisite still passes; finding marked `advisory` |
 | Graph differs from design | Remove a module from the graph's `DATA`, run G1 | Finding marked `open` |
 | RFD closes the cycle | Answer RFD at G1, decide it, name a new cycle | Old cycle shows `(closed: superseded by <name>)`; G1 before the decision returns `Cycle suspended by RFD. Run the RFD skill.` |
 
@@ -352,7 +356,7 @@ is future work only, so the design has no §1.5. Plan:
 ROOT="$(mktemp -d)"
 codeanvil create --name "FM Occupancy Mock" -p "$ROOT"
 cd "$ROOT"/fm_occupancy_mock
-cp <repo>/methodology/test/T3_FM-mock/build_package.md GT/build_package.md
+cp <repo>/methodology/test/T3_FM-mock/build_package.md .codeanvil/GT/build_package.md
 codeanvil sandbox claude    # or opencode, codex; pi only for the fresh-session probe
 ```
 
@@ -377,7 +381,7 @@ Failure probes:
 | Interrupted S2 | Interrupt S2 mid-module and re-run it | Finished modules kept |
 | Runtime without subagents | Run G2 in Pi or Copilot | Fresh-session request; no runs |
 
-Recommended, not required: run step 5 on the Raspberry Pi so the telemetry companion records
+Recommended, not required: run step 5 on the Raspberry Pi so the telemetry collector records
 the real compute unit. Record each row's observation, with the agent runtime used, in the
 feature document's Log; a failing step reopens the task of the skill that failed.
 
@@ -409,7 +413,9 @@ After running the full flow, note:
 - [ ] Did `.codeanvil/` contain `project.yaml` (with `cycle:`) and an empty `report/`?
 - [ ] Did each step write one iterative `<cycle>/<id>.md` report, and did G0 and G1 wait for
       the human's answer?
-- [ ] Did S1 write the design and graph to `.codeanvil/report/<cycle>/S1_artifacts/`?
+- [ ] Did S1 write the design and graph to `.codeanvil/design/` (`SDD.md`, `dependency_graph.html`)?
+- [ ] On any rework, did S0, S1, S2 and G2 run `codeanvil backup <stage>` before overwriting, and did
+      each iteration cite the backup path (or `nothing to back up`)?
 - [ ] Did `codeanvil status` show stages as `delivered` and mark a reworked chain `stale`?
 - [ ] Did `codeanvil sync` register a cloned project without re-scaffolding?
 - [ ] Did G0 run with the correct project-relative path (`.agents/skills/...`)?

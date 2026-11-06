@@ -29,17 +29,18 @@ Check, in this order, writing **no iteration** when you stop:
    `S2 must pass first. Run the S2 skill.`
 3. G2's own latest iteration is `FEEDBACK`. With `Verdict: RFD`, return exactly
    `Cycle suspended by RFD. Run the RFD skill.`, unless the latest `RFD.md` iteration states
-   `Outcome: Withdrawn`. Otherwise, if its `Based on` line names the current latest S2 iteration,
-   the code was not reworked: return exactly `S2 must rework first. Run the S2 skill.` Unchanged
-   code is never verified twice.
+   `Outcome: Withdrawn`. Otherwise, when its `Based on` line names the current latest S2 iteration,
+   the code was not reworked: return exactly `S2 must rework first. Run the S2 skill.` for
+   `Verdict: module defect`, or `S1 must rework first. Run the S1 skill.` for
+   `Verdict: design defect`. Unchanged code is never verified twice.
 
 ## Inputs
 
 | Path | Role |
 |------|------|
 | `.codeanvil/report/<cycle-name>/S2_artifacts/test_run.md` | The only commands G2 runs: `verification/run.sh vl0` and `verification/run.sh vl1`; `Possible infeasibility` entries |
-| `.codeanvil/report/<cycle-name>/S1_artifacts/S1_design.md` | Meta `HAL mode` and `Toolchain`, `required_vl` per module and `PATH-*`, §1.6 HAL ladder, §1.7 telemetry envelope |
-| `GT/G0_SyRS.md` | Read-only: `SYS-*` thresholds; §6 `PROTO-*`, §4 correction chains, §5 tolerances for VL-2 |
+| `.codeanvil/design/SDD.md` | Meta `HAL mode` and `Toolchain`, `required_vl` per module and `PATH-*`, §1.6 HAL ladder, §1.7 telemetry envelope |
+| `.codeanvil/GT/SyRS.md` | Read-only: `SYS-*` thresholds; §6 `PROTO-*`, §4 correction chains, §5 tolerances for VL-2 |
 | `templates/skills/G2_adaptive_verification/references/verified_prototype.md` | The Verified Prototype template |
 
 ## Hard Rules
@@ -55,6 +56,8 @@ Check, in this order, writing **no iteration** when you stop:
   that no claim rests on real hardware. `mock+real` allows VL-2 per module or path; a Real HW HAL
   declared at VL-0 for this cycle means G2.2 does not fire, and the honesty declaration says so.
 - A result outside the §1.7 telemetry envelope is shown flagged, never silently accepted.
+- A constant or placeholder telemetry reading is not measured evidence: report it as a module
+  defect, never as an envelope result.
 - No model is measured this round (FW-ML-4): the Verified Prototype has no ML evidence.
 
 ## Who runs what
@@ -79,7 +82,8 @@ In a fresh session that did not run S2, G2 runs steps 2–5 itself and records
    §1.6, on the Real HW HAL, with the §4 correction chains and §5 tolerances. The subagent prepares
    the procedure; if no hardware is reachable from the session, the human runs it and pastes the
    measurements.
-5. **Telemetry check.** Flag every result produced outside the §1.7 envelope.
+5. **Telemetry check.** Flag every result produced outside the §1.7 envelope. Reject a constant or
+   placeholder reading as measured evidence: it is a module defect.
 6. **Infeasibility.** Show every `Possible infeasibility` entry from `test_run.md` next to the G2
    result that confirms or refutes it. When the defect-or-RFD test points to RFD, the
    recommendation names it.
@@ -87,7 +91,11 @@ In a fresh session that did not run S2, G2 runs steps 2–5 itself and records
    flag), the entry-point smoke result, the draft honesty declaration and a recommendation. Ask
    the human: **PASS**,
    **FEEDBACK** or **RFD**, as **Asking the human** says below.
-8. Write the iteration with the results table and the answer verbatim, including
+8. **Back up the previous Verified Prototype before overwriting it.** Run `codeanvil backup G2`
+   from the project root. If it exits nonzero, stop and show its message; write no iteration.
+   Cite the printed backup path in the iteration's Description. Backups never cover `src/` or
+   `verification/`: code recovery relies on git.
+9. Write the iteration with the results table and the answer verbatim, including
    `Decided by: <name>`.
 
 | Human answer | Row written | Route |

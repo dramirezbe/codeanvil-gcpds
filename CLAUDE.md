@@ -11,7 +11,7 @@ CodeAnvil is an **agent-agnostic harness** that implements the V-SIL methodology
 This is the **CodeAnvil source repo**, so edit `src/codeanvil/` for delivery
 code and `templates/` for methodology. Read [`AGENTS.md`](AGENTS.md) for the
 active stage contracts and source-versus-scaffold distinction. The current
-release is [v0.4.4](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.4.4).
+release is [v0.5.0](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.5.0).
 
 For the first complete S0 → G2 run, start with the
 [`T3_FM-mock` snapshot guide](methodology/test/T3_FM-mock/FIRST_FULL_FLOW_SNAPSHOT.md),
@@ -20,8 +20,9 @@ and [review holdout](methodology/test/T3_FM-mock/S1_G1_review_holdout_2026-11-05
 The snapshot includes a G2 design-defect FEEDBACK → S1/G1/S2 rework → G2 PASS.
 The later entry-point fix has separate smoke evidence; the original G2 verdict
 does not cover that correction. The holdout's document renames, report moves,
-telemetry collector, pause policy and VL-2 interface are proposals, not
-current scaffold behavior.
+telemetry collector and pause policy are implemented by the
+[T3 holdout refactor](odd/tasks/t3-holdout-refactor/2026-11-06_1410_t3_holdout_refactor.md);
+the VL-2 machine interface remains a proposal.
 
 The repo has two sides with very different roles:
 
@@ -30,16 +31,16 @@ The repo has two sides with very different roles:
 The V-SIL pipeline encoded as executable artifacts:
 
 - **`templates/GT/`** — Ground Truth document templates. GT is the methodology's input: human-authored `.md` files (not raw PDFs) that define the contract a project must satisfy, following the IEEE/ISO/IEC 29148:2018 document family:
-  1. **StRS** (`G0_StRS.md`) — Stakeholder Requirements Specification (§9.4): stakeholder requirements (`STK-`), COTS hardware constraints (`HWC-`), and normative obligations (`NRM-` with inline compliance traceability)
-  2. **SyRS** (`G0_SyRS.md`) — System Requirements Specification (§9.5): per-measurand system requirements (`SYS-`) — methods, correction chains, uncertainty budgets — tracing to StRS blocks
-  The author writes a Build Package (`GT/build_package.md`); the S0 skill casts it into the two blueprints. The current scaffold has no `GT/SRS.md`; S1 writes a design document under `.codeanvil/report/<cycle>/S1_artifacts/`. A distinct software SRS and `design/SDD.md` are proposals in the T3 holdout.
+  1. **StRS** (`StRS.md`) — Stakeholder Requirements Specification (§9.4): stakeholder requirements (`STK-`), COTS hardware constraints (`HWC-`), and normative obligations (`NRM-` with inline compliance traceability)
+  2. **SyRS** (`SyRS.md`) — System Requirements Specification (§9.5): per-measurand system requirements (`SYS-`) — methods, correction chains, uncertainty budgets — tracing to StRS blocks
+  The author writes a Build Package (`.codeanvil/GT/build_package.md`); the S0 skill casts it into the two blueprints. The scaffold has no `SRS.md`; S1 writes `.codeanvil/design/SDD.md` and `.codeanvil/design/dependency_graph.html`.
 - **`templates/skills/`** — Skills for each stage and gate of the V-SIL v3 flow `S0 → G0 → S1 → G1 → S2 → G2`; RFD can be raised from any stage. Each skill is self-contained: its templates, scripts and assets live in its own folder.
-  - `S0_normalise_build_package/` — **Stage**: casts `GT/build_package.md` into `G0_StRS.md` and `G0_SyRS.md` in one pass, with no judgement. Writes `S0.md`.
+  - `S0_normalise_build_package/` — **Stage**: casts `.codeanvil/GT/build_package.md` into `.codeanvil/GT/StRS.md` and `SyRS.md` in one pass, with no judgement. Writes `S0.md`.
   - `G0_valid_req_and_GT/` — **Deterministic structural validation** of the GT pair (StRS + SyRS) plus the G0-X cross-document rules. No AI — pure script (`scripts/g0_validate.py`) — followed by the human Gate H. `SKILL.md` is the agent contract, `references/RULES.md` the full rule tables.
-  - `S1_design_services/` — **Stage**: designs a system of layered services (`S1_artifacts/S1_design.md`) and its dependency graph (`S1_artifacts/S1_graph.html`, vis-network vendored in `assets/`). Design §0.5 defines one runnable entry point for the complete system.
+  - `S1_design_services/` — **Stage**: designs a system of layered services (`.codeanvil/design/SDD.md`) and its dependency graph (`.codeanvil/design/dependency_graph.html`, vis-network vendored in `assets/`). Design §0.5 defines one runnable entry point for the complete system.
   - `G1_design_review/` — **Human gate**: no script. The agent fills a checklist, including G1.15 for the runnable entry point, and recommends; the human answers PASS, FEEDBACK or RFD.
   - `RFD_request_for_deviation/` — Outside the chain: decision document when requirements are infeasible on the declared COTS platform. Suspends the cycle until the author decides.
-  - `S2_implement_services/` — **Stage**: builds the services under `src/<service>/`, the verification kit under `verification/` (Mock HAL, golden vectors, telemetry companion), the runnable §0.5 entry point and its VL-0 smoke test. Uses `references/project_layout.md` and the locked loggers (`references/logger.py`, `references/logger.ts`). Writes `S2.md` and `S2_artifacts/test_run.md`.
+  - `S2_implement_services/` — **Stage**: builds the services under `src/<service>/`, the verification kit under `verification/` (Mock HAL, golden vectors, telemetry collector), the runnable §0.5 entry point and its VL-0 smoke test. Uses `references/project_layout.md` and the locked `references/logger.py`, `references/logger.ts` and `references/telemetry_collector.py`. Writes `S2.md` and `S2_artifacts/test_run.md`.
   - `G2_adaptive_verification/` — **Human gate**: delegates the `test_run.md` commands to the `vsil-verifier` subagent, checks the entry-point smoke evidence, presents the results and records PASS, FEEDBACK (`Verdict: module defect` → S2, `Verdict: design defect` → S1) or RFD. PASS writes `G2_artifacts/verified_prototype.md` with run instructions.
 - **`templates/agents/`** — Subagent bodies. `vsil-verifier.md` is the one shared body of the G2 verifier; `codeanvil create` writes it per runtime (`.claude/agents/`, `.opencode/agents/`, `.codex/agents/`) as listed under `subagents` in `config.yaml`.
 - **`templates/backups/`** — Retired in v3 and kept for later: `custody-chain/`, `G1_start_design/` and `G1_SRS.md`. Not scaffolded and not shipped in the wheel.
@@ -49,7 +50,8 @@ The V-SIL pipeline encoded as executable artifacts:
 CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks state:
 
 - **`__main__.py`** — entry point (`python -m codeanvil`)
-- **`CLI/`** — argparse CLI: `main.py` (entry point + dispatch), `parser.py` (argument definitions), `prompts.py` (interactive `create` TUI via beaupy/Rich), `commands/` (one module per subcommand: `init`, `create`, `list`, `sync`, `status`, `now`, `sandbox`)
+- **`CLI/`** — argparse CLI: `main.py` (entry point + dispatch), `parser.py` (argument definitions), `prompts.py` (interactive `create` TUI via beaupy/Rich), `commands/` (one module per subcommand: `init`, `create`, `list`, `sync`, `status`, `now`, `backup`, `sandbox`)
+- **`reports.py`** — shared report parser (`ReportState`, `_report_state()`, `_cycle_reports()`, `_gate_order()`, `backup_entries()`): the gate reports `status` reads and the backups `backup` resolves; command modules never import from each other
 - **`UI/ui.py`** — PySide6 graphical interface (planned; see `UI/README.md` for scope)
 - **`config/logger.py`** — cross-platform colored logger (`get_logger(__name__)`)
 - **`config/paths.py`** — canonical paths (`WORKDIR`, `DB_PATH`) + `ensure_dirs()` (with one-time `~/.codeanvil/` → `~/.codeanvil-config/` migration) + `find_manifest()` + project-local `PROJECT_*` constants. Projects live wherever the user creates them, not under `~/.codeanvil-config/`.
@@ -59,7 +61,7 @@ CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks stat
 - **`db/projects.py`** — registry CRUD: `register_project()` (idempotent by UUID), `sync_project()` (register/no-op/moved upsert), `get_project_by_id()`, `get_project_by_name()`, `list_projects()`. The gate chain is report-driven (each skill checks its predecessor's report), not tool code — no orchestrator rows.
 - **`db/utils.py`** — `connect_db()` (WAL mode, row factory, foreign keys) + `health_db()`
 - **`init/check.py`** — `preflight()` (workdir + DB checks) + `check_project_path()`
-- **`init/create.py`** — `scaffold_project()` (copies skills to `.agents/skills/`, embeds GT reference templates inside skills, rewrites repo-root paths, creates agent symlinks, writes user `GT/` dir + `.codeanvil/` dirs) + `write_project_manifest()`. Templates located via `_find_templates_dir()` (editable install: source tree; wheel install: `importlib.resources`)
+- **`init/create.py`** — `scaffold_project()` (copies skills to `.agents/skills/`, embeds GT reference templates inside skills, rewrites repo-root paths, creates agent symlinks, writes `.codeanvil/GT/`, `.codeanvil/design/`, `.codeanvil/backups/`) + `write_project_manifest()`. Templates located via `_find_templates_dir()` (editable install: source tree; wheel install: `importlib.resources`)
 - **`init/sync.py`** — `run_sync()` (clone/move flow: read manifest → migrate `.provenance/` → upsert DB) + `_migrate_provenance()`
 - **`init/mcp.py`** — MCP server lifecycle: `install_mcp_server()` (clone + prewarm), `copy_mcp_skills()` (prefix + gate frontmatter), `generate_agent_mcp_configs()` (per-agent JSON: `.mcp.json`, `.vscode/`, `.opencode/`, `.codex/`), `_detect_system_site_packages()` (bridges system packages like gnuradio into uv venvs via `PYTHONPATH`)
 
@@ -67,7 +69,7 @@ CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks stat
 
 - **GT (Ground Truth)**: the pair of human-authored `.md` files (StRS + SyRS) that define what "correct" means. Human-authored, not raw PDFs. Normativity lives inline in the StRS as `NRM-` blocks. S0 produces the pair from the author's Build Package.
 - **T# (Test GT)**: numbered test cases (`methodology/test/T<n>_<name>/`) that serve as V-SIL system inputs — real-world GT instances used to validate and stress-test the methodology pipeline end-to-end. See [`methodology/test/README.md`](methodology/test/README.md) for the full test catalog and end-to-end manual test procedure.
-  - **T0_ANE-Lap2** — SDR spectrum monitoring edge sensor (ANE). **GT-ready**: `just-edge/StRS.md` + `just-edge/SyRS.md` are valid GT files that can be copied directly into a project as `G0_StRS.md` / `G0_SyRS.md`.
+  - **T0_ANE-Lap2** — SDR spectrum monitoring edge sensor (ANE). **GT-ready**: `just-edge/StRS.md` + `just-edge/SyRS.md` are valid GT files that can be copied directly into a project as `.codeanvil/GT/StRS.md` / `SyRS.md`.
   - **T1_FM-monitoring** — SDR-based FM broadcast compliance monitoring system. Raw LaTeX spec (GT must be derived). RAG-informed from regulatory docs (FCC Part 73, ANE Res. 105, ITU-R BS.412/450/SM.2152, ISO/IEC 17025).
   - **T2_IoT-Indoor** — Indoor IoT radio environment mapping at 2.4 GHz ISM (Proyecto Hermes / GCPDS). Raw proposal + literature (GT must be derived).
   - **T3_FM-mock** — ready Build Package and an archived mock-only full-flow run. The snapshot contains GT, code, verification kit and cycle reports; `RUN.md` starts the corrected preview.
@@ -148,11 +150,15 @@ project folder — it has no `templates/`, and no `src/`, `verification/` or `py
 /path/to/project/                 ← project root (anywhere on disk)
 ├── AGENTS.md                     ← generated from TEMPLATE_AGENT.md (canonical)
 ├── CLAUDE.md -> AGENTS.md        ← symlink
-├── GT/                           ← user-authored ground truth
-│   ├── build_package.md          ← the author's input; S0 reads it
-│   ├── G0_StRS.md                ← written by S0
-│   └── G0_SyRS.md                ← written by S0
-├── .codeanvil/                   ← machine-generated methodology artifacts
+├── .codeanvil/                   ← every methodology-owned artifact
+│   ├── GT/                       ← user-authored ground truth
+│   │   ├── build_package.md      ← the author's input; S0 reads it
+│   │   ├── StRS.md               ← written by S0
+│   │   └── SyRS.md               ← written by S0
+│   ├── design/                   ← S1 working copy
+│   │   ├── SDD.md
+│   │   └── dependency_graph.html
+│   ├── backups/                  ← `codeanvil backup <stage>`; never overwritten
 │   ├── project.yaml              ← project identity (UUIDv7, name, GT pointers)
 │   └── report/                   ← per-cycle iterative reports (<cycle>/<gate>.md)
 ├── .agents/
@@ -164,7 +170,7 @@ project folder — it has no `templates/`, and no `src/`, `verification/` or `py
 │   │   ├── S0_normalise_build_package/   ← own blueprints in templates/
 │   │   ├── S1_design_services/           ← references/ + assets/ (vis-network)
 │   │   ├── G1_design_review/
-│   │   ├── S2_implement_services/        ← references/ (project layout, loggers)
+│   │   ├── S2_implement_services/        ← references/ (layout, loggers, collector)
 │   │   ├── G2_adaptive_verification/     ← references/verified_prototype.md
 │   │   ├── RFD_request_for_deviation/
 │   │   └── marconi-*/SKILL.md    ← (if --mcp marconi) 6 RF/SDR skills
@@ -195,6 +201,7 @@ codeanvil create myproj --mcp marconi       → + marconi-* skills, MCP configs,
 codeanvil sync (inside a clone)            → register the project in the local DB
 codeanvil list                             → registered projects (short UUID + local path)
 codeanvil status [myproj]                  → cycles and latest HITL per gate (.codeanvil/report/)
+codeanvil backup S0|S1|S2|G2               → copy the stage's files to .codeanvil/backups/<cycle>/
 codeanvil now [--machine]                  → timestamp: human-readable / filename-safe
 codeanvil upgrade                          → reinstall from latest main (detects OS, uses uv)
 codeanvil sandbox <agent>                  → launch agent (claude|pi|opencode|codex) with only project-local settings
