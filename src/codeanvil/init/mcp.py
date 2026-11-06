@@ -1,5 +1,6 @@
 import glob
 import json
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -216,7 +217,7 @@ def write_mcp_manifest(servers: list[str], project_dir: Path) -> None:
             if sp and sp not in sys_paths:
                 sys_paths.append(sp)
         if sys_paths:
-            env["PYTHONPATH"] = ":".join(sys_paths)
+            env["PYTHONPATH"] = os.pathsep.join(sys_paths)
 
         manifest[name] = {
             "command": cfg["command"],
@@ -252,7 +253,7 @@ def generate_agent_mcp_configs(servers: list[str], project_dir: Path) -> None:
             if sp and sp not in sys_paths:
                 sys_paths.append(sp)
         if sys_paths:
-            env["PYTHONPATH"] = ":".join(sys_paths)
+            env["PYTHONPATH"] = os.pathsep.join(sys_paths)
 
         entries[name] = {"command": cfg["command"], "args": args, "env": env}
 

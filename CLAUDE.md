@@ -197,20 +197,25 @@ codeanvil sandbox <agent>                  → launch agent (claude|pi|opencode|
 ```
 
 The scaffold copies `templates/skills/` → `.agents/skills/`, runs `path_replacements`
-on `.md` files, generates `AGENTS.md` from the template, creates symlinks, and registers
-the project in the DB. With `--mcp`, it also copies MCP skills (prefixed), generates
-per-agent MCP configs, and bridges system packages (like gnuradio) via `PYTHONPATH`.
-After that the project is self-contained — it does not depend on the repo at runtime.
+on `.md` files, generates `AGENTS.md` from the template, creates links, and registers
+the project in the DB. On Windows, symlinks fall back to directory junctions or file
+copies when Developer Mode is not enabled. With `--mcp`, it also copies MCP skills
+(prefixed), generates per-agent MCP configs, and bridges system packages (like gnuradio)
+via `PYTHONPATH`. After that the project is self-contained — it does not depend on the
+repo at runtime.
 
 ### Installation paths
 
-- **End users**: `curl -fsSL https://raw.githubusercontent.com/dramirezbe/codeanvil-gcpds/main/install.sh | bash`
+- **Linux/macOS**: `curl -fsSL https://raw.githubusercontent.com/dramirezbe/codeanvil-gcpds/main/install.sh | bash`
   - Installs `uv` if needed, then `uv tool install` from GitHub (Python 3.12)
   - Injects `~/.local/bin` into PATH (bash/zsh/fish), idempotent
   - Templates bundled in the wheel via hatch `force-include`
-- **Developers**: `uv pip install -e .` from a local clone
+- **Windows**: `irm https://raw.githubusercontent.com/dramirezbe/codeanvil-gcpds/main/install.ps1 | iex`
+  - Same `uv tool install` flow; adds `%USERPROFILE%\.local\bin` to user PATH
+  - Uninstall: `.\install.ps1 -Uninstall`
+- **Developers** (all platforms): `uv pip install -e .` from a local clone
   - Templates resolved from source tree via `_find_templates_dir()`
-- **Uninstall**: `bash install.sh uninstall` (removes tool + PATH entry)
+- **Uninstall** (Linux/macOS): `bash install.sh uninstall` (removes tool + PATH entry)
 
 ## Development rules
 

@@ -12,24 +12,43 @@ Works with any AI coding agent: Claude, Codex, OpenCode, Pi, or others.
 
 ## Install
 
+### Linux / macOS
+
 **One-liner** (installs `uv` if needed, then `codeanvil` from GitHub):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/dramirezbe/codeanvil-gcpds/main/install.sh | bash
 ```
 
-**Developer install** (editable, from a local clone):
+**Uninstall**:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/dramirezbe/codeanvil-gcpds/main/install.sh | bash -s uninstall
+```
+
+### Windows
+
+**PowerShell one-liner** (installs `uv` if needed, then `codeanvil` from GitHub):
+
+```powershell
+irm https://raw.githubusercontent.com/dramirezbe/codeanvil-gcpds/main/install.ps1 | iex
+```
+
+**Uninstall**:
+
+```powershell
+.\install.ps1 -Uninstall
+```
+
+> On Windows, project symlinks fall back to directory junctions (no special
+> privileges required) or file copies when Developer Mode is not enabled.
+
+### Developer install (all platforms)
 
 ```bash
 git clone https://github.com/dramirezbe/codeanvil-gcpds.git
 cd codeanvil-gcpds
 uv pip install -e .
-```
-
-**Uninstall**:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/dramirezbe/codeanvil-gcpds/main/install.sh | bash -s uninstall
 ```
 
 ## Quick start

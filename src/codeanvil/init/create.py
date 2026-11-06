@@ -1,6 +1,7 @@
 import json
 import re
 import shutil
+import sys
 from pathlib import Path
 
 import yaml
@@ -14,6 +15,42 @@ from codeanvil.config.paths import (
 )
 
 log = get_logger(__name__)
+
+_IS_WIN = sys.platform == "win32"
+
+
+def _is_junction(path: Path) -> bool:
+    """Path.is_junction() requires Python 3.12+; fall back for 3.10/3.11."""
+    if hasattr(path, "is_junction"):
+        return path.is_junction()
+    if not _IS_WIN:
+        return False
+    import ctypes
+    attrs = ctypes.windll.kernel32.GetFileAttributesW(str(path))  # type: ignore[attr-defined]
+    _REPARSE = 0x400
+    return attrs != -1 and bool(attrs & _REPARSE)
+
+
+def _make_link(link: Path, target: Path) -> None:
+    """Create a symlink, falling back on Windows when unprivileged.
+
+    Directory targets fall back to a junction (no special privileges);
+    file targets fall back to a copy (junctions only work for directories).
+    """
+    try:
+        link.symlink_to(target)
+        return
+    except OSError:
+        if not _IS_WIN:
+            raise
+    resolved = (link.parent / target).resolve()
+    if resolved.is_dir():
+        import _winapi
+        _winapi.CreateJunction(str(resolved), str(link))
+        log.debug("junction %s -> %s (symlink unavailable)", link, resolved)
+    else:
+        shutil.copy2(resolved, link)
+        log.debug("copied %s -> %s (symlink unavailable)", link, resolved)
 
 
 def scaffold_project(
@@ -164,22 +201,24 @@ def write_project_manifest(project_dir: Path, project_id: str, name: str) -> Non
 
 
 def _link_agent_skill_dirs(project_dir: Path) -> None:
-    """Symlink each configured agent runtime skill dir to the canonical store."""
+    """Link each configured agent runtime skill dir to the canonical store.
+
+    Uses symlinks where possible; falls back to junctions on Windows."""
     for link_rel, target_str in CONFIG["agent_skill_links"].items():
         link = project_dir / link_rel
         target = Path(target_str)  # relative to the link's parent
         link.parent.mkdir(parents=True, exist_ok=True)
 
-        if link.is_symlink():
-            if link.readlink() == target:
+        if link.is_symlink() or (_IS_WIN and _is_junction(link)):
+            if link.is_symlink() and link.readlink() == target:
                 continue
             link.unlink()
         elif link.exists():
             log.warning("%s exists and is not a symlink — skipping", link)
             continue
 
-        link.symlink_to(target)
-        log.debug("symlinked %s -> %s", link, target)
+        _make_link(link, target)
+        log.debug("linked %s -> %s", link, target)
 
 
 # Frontmatter block at the very start of a SKILL.md file.
@@ -352,16 +391,16 @@ def _link_agent_configs(project_dir: Path) -> None:
         target = Path(target_str)
         link.parent.mkdir(parents=True, exist_ok=True)
 
-        if link.is_symlink():
-            if link.readlink() == target:
+        if link.is_symlink() or (_IS_WIN and _is_junction(link)):
+            if link.is_symlink() and link.readlink() == target:
                 continue
             link.unlink()
         elif link.exists():
             log.warning("%s exists and is not a symlink — skipping", link)
             continue
 
-        link.symlink_to(target)
-        log.debug("symlinked %s -> %s", link, target)
+        _make_link(link, target)
+        log.debug("linked %s -> %s", link, target)
 
     for file_rel, pointer_text in CONFIG["agent_pointer_files"].items():
         pointer = project_dir / file_rel
