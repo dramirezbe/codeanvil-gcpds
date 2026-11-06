@@ -137,3 +137,59 @@ def test_collector_rejects_a_nonpositive_interval(collector, tmp_path):
 
     assert result.returncode != 0
     assert "greater than 0" in result.stderr
+
+
+def _needs_psutil():
+    if importlib.util.find_spec("psutil") is None:
+        pytest.skip("psutil is not installed")
+
+
+def test_collector_measures_its_parent_tree_not_itself(collector, tmp_path):
+    """Default root is the parent (here: pytest), so the collector's own
+    near-idle process is never reported as the verification process."""
+    _needs_psutil()
+    output = tmp_path / "run.jsonl"
+
+    result = _run(collector, output)
+
+    assert result.returncode == 0, result.stderr
+    process = _lines(output)[0]["process"]
+    assert process["pid"] == os.getpid()
+    assert process["processes"] >= 1
+
+
+def test_collector_measures_the_tree_under_pid(collector, tmp_path):
+    _needs_psutil()
+    busy = subprocess.Popen(
+        [sys.executable, "-c",
+         "import subprocess,sys,time;"
+         "c=subprocess.Popen([sys.executable,'-c','import time;time.sleep(30)']);"
+         "end=time.time()+30\nwhile time.time()<end: pass"],
+    )
+    try:
+        output = tmp_path / "run.jsonl"
+        result = _run(collector, output, "--pid", str(busy.pid),
+                      "--interval", "0.3", "--duration", "0.6")
+    finally:
+        for child in __import__("psutil").Process(busy.pid).children(recursive=True):
+            child.kill()
+        busy.kill()
+        busy.wait()
+
+    assert result.returncode == 0, result.stderr
+    first = _lines(output)[0]["process"]
+    assert first["pid"] == busy.pid
+    assert first["processes"] == 2
+    # A busy loop over a real interval is far from the 0.0 a near-zero delta gives.
+    assert first["cpu_percent"] > 10
+
+
+def test_collector_reports_non_utf8_counters_as_unavailable(collector, tmp_path):
+    counters = tmp_path / "counters.json"
+    counters.write_bytes(b'{"dropped_buffers": "\xff\xfe"}')
+    output = tmp_path / "run.jsonl"
+
+    result = _run(collector, output, "--counters", str(counters))
+
+    assert result.returncode == 0, result.stderr
+    assert "unavailable" in _lines(output)[0]["counters"]

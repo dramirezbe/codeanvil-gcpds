@@ -2,8 +2,10 @@
 """Locked V-SIL telemetry collector.
 
 S2 copies this file unchanged to ``verification/telemetry/telemetry_collector.py``.
-It samples the host and the verification process once per interval and appends one
-JSON object per line to a file, one file per VL run. A reading that cannot be taken
+It samples the host and the verification process tree once per interval and appends
+one JSON object per line to a file, one file per VL run. The tree is ``--pid`` (default:
+the collector's parent, e.g. ``run.sh``) plus every descendant, so the services and
+test processes that ``run.sh`` starts are measured, not the collector itself. A reading that cannot be taken
 is written as ``{"unavailable": "<reason>"}``; it is never invented and never
 reported as zero.
 
@@ -73,17 +75,70 @@ def _host_profile() -> dict:
     }
 
 
-def _process_block(process) -> dict:
+class _ProcessTree:
+    """The root process plus its descendants, sampled as one sum.
+
+    psutil's ``cpu_percent(interval=None)`` measures since the previous call on
+    the same handle, so handles are kept between samples. A process first seen
+    in a sample is primed and counted from the next sample on; the count of such
+    processes is reported so a low first reading is never mistaken for idle."""
+
+    def __init__(self, root):
+        self.root = root
+        self.handles = {}
+        self.sample()  # primes every handle; the first real sample comes later
+
+    def _members(self):
+        members = [self.root]
+        try:
+            members.extend(self.root.children(recursive=True))
+        except psutil.Error:
+            pass
+        return members
+
+    def sample(self) -> dict:
+        if not self.root.is_running():
+            return _unavailable(f"process {self.root.pid} is no longer running")
+        cpu = 0.0
+        rss = 0
+        memory = 0.0
+        measured = 0
+        new = 0
+        alive = {}
+        for member in self._members():
+            handle = self.handles.get(member.pid, member)
+            try:
+                with handle.oneshot():
+                    value = handle.cpu_percent(interval=None)
+                    info = handle.memory_info()
+                    percent = handle.memory_percent()
+            except psutil.Error:
+                continue
+            alive[member.pid] = handle
+            rss += info.rss
+            memory += percent
+            if member.pid in self.handles:
+                cpu += value
+                measured += 1
+            else:
+                new += 1
+        self.handles = alive
+        return {
+            "pid": self.root.pid,
+            "processes": len(alive),
+            "cpu_percent": round(cpu, 2),
+            "cpu_unmeasured_new_processes": new,
+            "rss_bytes": rss,
+            "memory_percent": round(memory, 3),
+        }
+
+
+def _process_block(tree) -> dict:
     if psutil is None:
         return _unavailable(_PSUTIL_ERROR)
-    if process is None:
-        return _unavailable("process handle unavailable")
-    return {
-        "pid": _reading(lambda: process.pid),
-        "cpu_percent": _reading(lambda: process.cpu_percent(interval=None)),
-        "rss_bytes": _reading(lambda: process.memory_info().rss),
-        "memory_percent": _reading(lambda: process.memory_percent()),
-    }
+    if isinstance(tree, dict):
+        return tree
+    return _reading(tree.sample)
 
 
 def _system_block() -> dict:
@@ -135,21 +190,21 @@ def _counters(path):
         payload = json.loads(Path(path).read_text(encoding="utf-8"))
     except OSError as exc:
         return _unavailable(f"counters file unreadable: {exc}")
-    except json.JSONDecodeError as exc:
-        return _unavailable(f"counters file is not JSON: {exc}")
+    except ValueError as exc:  # JSONDecodeError and UnicodeDecodeError
+        return _unavailable(f"counters file is not UTF-8 JSON: {exc}")
     if not isinstance(payload, dict) or not payload:
         return _unavailable("counters file holds no JSON object")
     return payload
 
 
-def _sample(process, counters_path) -> dict:
+def _sample(tree, counters_path) -> dict:
     return {
         "collector": {"name": COLLECTOR_NAME, "version": COLLECTOR_VERSION},
         "timestamp": datetime.now(timezone.utc).isoformat(timespec="milliseconds"),
         "monotonic_s": round(time.monotonic(), 3),
         "measurement_source": "psutil" if psutil is not None else "unavailable",
         "host": _host_profile(),
-        "process": _process_block(process),
+        "process": _process_block(tree),
         "system": _system_block(),
         "temperature_c": _temperature(),
         "counters": _counters(counters_path),
@@ -161,8 +216,12 @@ def _sample(process, counters_path) -> dict:
 
 
 def _default_output() -> Path:
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    return Path(__file__).resolve().parent / f"telemetry-{stamp}.jsonl"
+    # Self-contained by design: the copied file imports nothing from the tool
+    # that scaffolded it. Milliseconds and the PID keep two runs started in the
+    # same second (vl0 and vl1) from sharing one file.
+    now = datetime.now(timezone.utc)
+    stamp = f"{now:%Y%m%dT%H%M%S}{now.microsecond // 1000:03d}Z"
+    return Path(__file__).resolve().parent / f"telemetry-{stamp}-{os.getpid()}.jsonl"
 
 
 def _parse_args(argv):
@@ -176,6 +235,8 @@ def _parse_args(argv):
                         help="seconds to sample; 0 runs until SIGINT or SIGTERM (default: 0)")
     parser.add_argument("--counters", type=Path, default=None,
                         help="JSON object written by the HAL or the service instrumentation")
+    parser.add_argument("--pid", type=int, default=None,
+                        help="root of the process tree to measure (default: the collector's parent)")
     args = parser.parse_args(argv)
     if args.interval <= 0:
         parser.error("--interval must be greater than 0")
@@ -188,13 +249,12 @@ def main(argv=None) -> int:
     args = _parse_args(argv)
     output = args.output or _default_output()
 
-    process = None
+    tree = None
     if psutil is not None:
-        candidate = _reading(psutil.Process)
-        if not isinstance(candidate, dict):
-            process = candidate
-            psutil.cpu_percent(interval=None)
-            process.cpu_percent(interval=None)
+        pid = args.pid if args.pid is not None else os.getppid()
+        root = _reading(lambda: psutil.Process(pid))
+        tree = root if isinstance(root, dict) else _reading(lambda: _ProcessTree(root))
+        psutil.cpu_percent(interval=None)
 
     stop = threading.Event()
 
@@ -215,8 +275,11 @@ def main(argv=None) -> int:
     deadline = time.monotonic() + args.duration if args.duration > 0 else None
     try:
         with stream:
+            # One interval after priming, so the first CPU reading covers a real
+            # interval instead of a near-zero delta that psutil reports as 0.0.
+            stop.wait(args.interval)
             while not stop.is_set():
-                stream.write(json.dumps(_sample(process, args.counters), ensure_ascii=False) + "\n")
+                stream.write(json.dumps(_sample(tree, args.counters), ensure_ascii=False) + "\n")
                 stream.flush()
                 if deadline is not None and time.monotonic() >= deadline:
                     break

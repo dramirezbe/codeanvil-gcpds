@@ -92,7 +92,9 @@ has the same name as `src/<package>/` and would be shadowed by it. Write
 No `sys.path` bootstrap. Deploy with `uv sync --frozen --no-dev`, start with `uv run <package>`.
 The telemetry collector (`verification/telemetry/telemetry_collector.py`, copied unchanged from
 `references/telemetry_collector.py`) needs `psutil` in the dev group; without it every psutil
-metric is reported as `unavailable` and the run continues.
+metric is reported as `unavailable` and the run continues. `run.sh` starts it in the background
+before the suite, so by default it measures `run.sh` and every process `run.sh` starts; pass
+`--pid <pid>` to measure another process tree.
 The `<package>.main:main` function must instantiate a runtime HAL and run the service; logging
 startup instructions without starting the loop is not a working entry point. In `mock-only`, the
 runtime Mock HAL required for a preview lives in the package or a shipped demo bundle, while the
