@@ -1,10 +1,14 @@
 # Handoff — V-SIL v3 full flow (2026-11-05)
 
-Where we stopped, and how to pick up on another machine. The full history (specs, tasks,
-verbatim requests L1–L16) is in `odd/tasks/2026-11-05_1421_vsil_v3_full_flow.md`.
+**Historical handoff, now superseded by the completed feature.** The first realistic T3
+OpenCode run reached G2 PASS, its project files were archived, and the runnable entry point was
+corrected and smoke-tested. The feature is on `main`; the latest release is
+[`v0.4.1`](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.4.1) with green CI.
+The full history (specs, tasks,
+verbatim requests and closure log L1–L19) is in `odd/tasks/2026-11-05_1421_vsil_v3_full_flow.md`.
 
-Branch: `feat/vsil-v3-full-flow` (pushed, not merged to `main`). Suite: 320 passed.
-Version in `pyproject.toml`: still `0.3.0`.
+At the time of this handoff: `feat/vsil-v3-full-flow` was pushed but unmerged;
+the suite had 320 passes and `pyproject.toml` still said `0.3.0`.
 
 ## Done
 
@@ -24,7 +28,7 @@ Version in `pyproject.toml`: still `0.3.0`.
 | G1 runs no script; re-derives every row; G1.14 checks the toolchain with `--version` and installs only after a yes | `19ce74a`, `7221e0e` |
 | T3 fixture v2: spectrum + waterfall + detection, DSP + UI, author-owned oracle (B.2 Mock HAL model, B.3 scenes SC-1–SC-6, B.4 golden vectors GV-1–GV-5) | `87dfd96` |
 
-## Pending
+## Pending at handoff (historical)
 
 1. **T8 end-to-end run** (needs a human at the gates). Procedure: `methodology/test/README.md`
    §5b. A first Claude run was started on the old fixture and must restart with the v2 fixture.
@@ -33,6 +37,17 @@ Version in `pyproject.toml`: still `0.3.0`.
 3. **Merge** `feat/vsil-v3-full-flow` into `main` after T8 (PR is the user's call).
 4. **T11 release** after the merge: bump `0.3.0` → `0.4.0`, `uv lock`, tag `v0.4.0`; push the
    tag only after the user confirms. Plan: `odd/tasks/2026-11-05_RELEASE_v0_4_0.md`.
+
+## Resolution
+
+- T8 completed with OpenCode through G2 iteration 2 PASS and one G2-to-S1
+  rework loop. The archived original and the corrected runnable preview live in
+  `methodology/test/T3_FM-mock/first_full_flow_2026-11-05/`. The extra failure
+  probes were not run and remain a future regression matrix.
+- OpenCode invoked `vsil-verifier`; a separate Claude `/agents` visibility
+  check was not recorded and is not claimed here.
+- `main` merged the feature at `b96cf4a`. `v0.4.0` was published; `v0.4.1`
+  corrected a Python 3.10 test import and has green CI and a published release.
 
 ## Findings to remember
 
@@ -45,7 +60,7 @@ Version in `pyproject.toml`: still `0.3.0`.
 - Paper §6 G1 list still has no explicit kit row; the G1 skill checks it.
 - The AGENTS template is filled with `str.replace`, not Jinja (CLAUDE.md still says "Jinja").
 
-## Resume on another machine
+## Historical resume instructions
 
 ```bash
 cd ~/GIT/UNAL                       # git identity dramirezbe applies only under ~/GIT/UNAL/

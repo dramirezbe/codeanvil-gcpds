@@ -469,3 +469,17 @@ does not cover this post-G2 correction; the smoke run is separate evidence.
 T8's remaining failure probes were not performed and are retained as a future
 regression matrix. The feature still needs its planned `main` merge and T11
 release before the day plan can be marked closed.
+
+### Final disposition of the 2026-11-05 plan
+
+The feature was merged into `main` at `b96cf4a`. The planned `v0.4.0` tag
+points to commit `1004118` and its GitHub Release was published. CI then
+exposed a Python 3.10-only test import error; the test and lockfile were
+corrected at `1d67e22` and released as `v0.4.1` without moving the earlier
+tag. The final `main` CI and `v0.4.1` Release workflow both passed. The first
+realistic run, archived original, executable correction and release are now
+closed in the 2026-11-05 feature plan.
+
+The unrun T8 failure probes and the separate proposals above remain explicit
+future work. No additional G2 human verdict was invented for the corrected
+entry point; its evidence is the post-cycle startup and WebSocket smoke test.
