@@ -346,7 +346,7 @@ of a 2 MHz slice) and a browser UI, validation up to VL-1 with the Mock HAL and 
 synthetic scenes the Build Package fixes (B.2 signal model, B.3 scenes SC-1–SC-6, B.4 golden
 vectors GV-1–GV-5), no real hardware. The ML spectral-localisation model
 is future work only, so the design has no §1.5. Plan:
-`odd/tasks/2026-11-05_E2E_full_flow_mock_only.md`.
+`odd/tasks/vsil-v3-full-flow/2026-11-05_E2E_full_flow_mock_only.md`.
 
 ```bash
 ROOT="$(mktemp -d)"

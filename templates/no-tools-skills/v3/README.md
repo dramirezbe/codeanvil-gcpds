@@ -21,14 +21,14 @@ Build Package
 
 | Skill | V-SIL v3 | File | Plan | New chat? |
 |-------|----------|------|------|-----------|
-| `S0-1` Build Package normalisation | §3 S0 | `S0-1_SKILL.md` | `odd/tasks/2026-11-01_S0-1_normalise_build_package.md` | — |
-| `S0-2` G0 structural validation + Gate H | §4 G0 | `S0-2_SKILL.md` | `odd/tasks/2026-11-01_S0-2_g0_structural_validation.md` | yes |
-| `S1-1` Layered architecture design | §5 S1 | `S1-1_SKILL.md` | `odd/tasks/2026-11-01_S1-1_layered_architecture_design.md` | — |
-| `S1-2` G1 design review | §6 G1 | `S1-2_SKILL.md` | `odd/tasks/2026-11-01_S1-2_g1_design_review.md` | yes |
-| `S2-1` Base layer, stubs, top-down integration | §7 S2 Step 1 | `S2-1_SKILL.md` | `odd/tasks/2026-11-01_S2-1_base_layer_and_stubs.md` | — |
-| `S2-2` Module implementation (NEXT / REWORK / INTEGRATION) | §7 S2 Step 2 | `S2-2_SKILL.md` | `odd/tasks/2026-11-01_S2-2_module_implementation.md` | — |
-| `S2-3` G2 adaptive verification + Verified Prototype | §8 G2, §10 | `S2-3_SKILL.md` | `odd/tasks/2026-11-01_S2-3_g2_adaptive_verification.md` | yes |
-| `SX-1` Request for Deviation | §9 | `SX-1_SKILL.md` | `odd/tasks/2026-11-01_SX-1_request_for_deviation.md` | — |
+| `S0-1` Build Package normalisation | §3 S0 | `S0-1_SKILL.md` | `odd/tasks/vsil-v3-skills/2026-11-01_S0-1_normalise_build_package.md` | — |
+| `S0-2` G0 structural validation + Gate H | §4 G0 | `S0-2_SKILL.md` | `odd/tasks/vsil-v3-skills/2026-11-01_S0-2_g0_structural_validation.md` | yes |
+| `S1-1` Layered architecture design | §5 S1 | `S1-1_SKILL.md` | `odd/tasks/vsil-v3-skills/2026-11-01_S1-1_layered_architecture_design.md` | — |
+| `S1-2` G1 design review | §6 G1 | `S1-2_SKILL.md` | `odd/tasks/vsil-v3-skills/2026-11-01_S1-2_g1_design_review.md` | yes |
+| `S2-1` Base layer, stubs, top-down integration | §7 S2 Step 1 | `S2-1_SKILL.md` | `odd/tasks/vsil-v3-skills/2026-11-01_S2-1_base_layer_and_stubs.md` | — |
+| `S2-2` Module implementation (NEXT / REWORK / INTEGRATION) | §7 S2 Step 2 | `S2-2_SKILL.md` | `odd/tasks/vsil-v3-skills/2026-11-01_S2-2_module_implementation.md` | — |
+| `S2-3` G2 adaptive verification + Verified Prototype | §8 G2, §10 | `S2-3_SKILL.md` | `odd/tasks/vsil-v3-skills/2026-11-01_S2-3_g2_adaptive_verification.md` | yes |
+| `SX-1` Request for Deviation | §9 | `SX-1_SKILL.md` | `odd/tasks/vsil-v3-skills/2026-11-01_SX-1_request_for_deviation.md` | — |
 
 Naming: `S<stage>-<n>` = V-SIL v3 stage (its gate included) + skill number inside it; `SX` =
 cross-stage (an RFD can be raised from any stage).

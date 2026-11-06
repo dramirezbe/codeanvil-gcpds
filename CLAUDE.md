@@ -82,17 +82,17 @@ The formal methodology paper lives at `methodology/V-SIL-v2/V-SIL.tex` (+ compil
 
 ## Archived plans
 
-Completed plans live in `odd/tasks/` with date prefixes. The 2026-11-05
-full-flow plan is [complete](odd/tasks/2026-11-05_1421_vsil_v3_full_flow.md);
+Completed plans live in `odd/tasks/` grouped by milestone. The 2026-11-05
+full-flow plan is [complete](odd/tasks/vsil-v3-full-flow/2026-11-05_1421_vsil_v3_full_flow.md);
 its remaining failure probes are future regression work, not recorded as PASS.
 
 | Plan                 | Path                                              | Description                                                        |
 |----------------------|---------------------------------------------------|--------------------------------------------------------------------|
-| G0 validation script | `odd/tasks/2026-10-13_1227_g0_skill_plan.md`      | Deterministic Python script to structurally validate the GT documents against IEEE 29148 templates |
-| Scaffold CLI         | `odd/tasks/2026-10-21_1423_scaffold_cli_plan.md`   | pyproject.toml, skill dir convention (.agents/skills/ + symlinks), path rewriting, GT inside skills |
-| AGENTS.md template   | `odd/tasks/2026-10-14_1514_agents_md_template_plan.md` | Config-driven scaffold: YAML config, AGENTS.md template with dynamic skills, multi-agent symlinks |
-| V-SIL v3 full flow | `odd/tasks/2026-11-05_1421_vsil_v3_full_flow.md` | S0 → G2 implementation, T3 full-flow run, v0.4.1 release; deferred probes documented |
-| Windows support    | `odd/tasks/` (v0.4.2)                              | PowerShell installer, symlink fallback, tzdata/pathsep fixes, validated on Windows |
+| G0 validation script | `odd/tasks/scaffold-cli/2026-10-13_1227_g0_skill_plan.md` | Deterministic Python script to structurally validate the GT documents against IEEE 29148 templates |
+| Scaffold CLI         | `odd/tasks/scaffold-cli/2026-10-21_1423_scaffold_cli_plan.md` | pyproject.toml, skill dir convention (.agents/skills/ + symlinks), path rewriting, GT inside skills |
+| AGENTS.md template   | `odd/tasks/scaffold-cli/2026-10-14_1514_agents_md_template_plan.md` | Config-driven scaffold: YAML config, AGENTS.md template with dynamic skills, multi-agent symlinks |
+| V-SIL v3 full flow | `odd/tasks/vsil-v3-full-flow/2026-11-05_1421_vsil_v3_full_flow.md` | S0 → G2 implementation, T3 full-flow run, v0.4.1 release; deferred probes documented |
+| Windows support    | v0.4.2                                              | PowerShell installer, symlink fallback, tzdata/pathsep fixes, validated on Windows |
 
 ## Installation
 

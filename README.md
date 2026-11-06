@@ -304,7 +304,7 @@ codeanvil-gcpds/
 │       ├── G2_adaptive_verification/  # + Verified Prototype reference
 │       └── RFD_request_for_deviation/
 │
-├── odd/tasks/               # Archived plans and task logs (date-prefixed)
+├── odd/tasks/               # Archived plans and task logs (grouped by milestone)
 │
 ├── install.sh               # Linux/macOS installer (curl one-liner)
 ├── install.ps1              # Windows installer (PowerShell one-liner)

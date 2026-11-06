@@ -429,7 +429,7 @@ the system entry point and VL-0/VL-1 reporting above do not depend on it.
 
 ## Closure audit of the 2026-11-05 full-flow plan
 
-The primary plan is `odd/tasks/2026-11-05_1421_vsil_v3_full_flow.md` on
+The primary plan is `odd/tasks/vsil-v3-full-flow/2026-11-05_1421_vsil_v3_full_flow.md` on
 `feat/vsil-v3-full-flow`. The T3 OpenCode project completed the report chain:
 S0 and G0 at iteration 2, S1 and G1 at iteration 2, S2 and G2 at iteration 2,
 with G2 `HITL: PASS`. This establishes that an agent and a human traversed the
