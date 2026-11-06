@@ -59,3 +59,10 @@ def test_g0_passes_a_syrs_without_lab_inputs(tmp_path):
         capture_output=True, text=True,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_s0_skill_backs_up_before_overwriting_the_gt_pair():
+    text = " ".join(_skill_text("S0_normalise_build_package").split())
+
+    assert "codeanvil backup S0" in text
+    assert "If it exits nonzero, stop and show its message; write no iteration." in text

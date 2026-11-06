@@ -33,8 +33,8 @@ codeanvil status
 This prints the project identity, active cycle, and per-gate HITL verdicts. Use it as your
 orientation: you do not need to read files or list directories to discover progress.
 
-- The `codeanvil` CLI is the only tool for project state and timestamps:
-  `codeanvil status`, `codeanvil now`, `codeanvil now --machine`.
+- The `codeanvil` CLI is the only tool for project state, timestamps and backups:
+  `codeanvil status`, `codeanvil now`, `codeanvil now --machine`, `codeanvil backup <stage>`.
 - How each step works is in its skill under `.agents/skills/`; what the project must do
   is in `.codeanvil/GT/`. Read those to know what to do; run skill scripts from the project root.
 

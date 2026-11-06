@@ -78,3 +78,10 @@ def test_g2_fresh_session_runs_the_steps_itself():
 
     assert "In a fresh session that did not run S2, G2 runs steps 2–5 itself" in text
     assert "`Verifier` = `fresh session`" in text
+
+
+def test_g2_skill_backs_up_before_overwriting_the_verified_prototype():
+    text = " ".join(_skill_text("G2_adaptive_verification").split())
+
+    assert "codeanvil backup G2" in text
+    assert "If it exits nonzero, stop and show its message; write no iteration." in text

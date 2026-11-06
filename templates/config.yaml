@@ -34,6 +34,15 @@ report_order: ["S0", "G0", "S1", "G1", "S2", "G2"]
 # Stages finish in one pass: their PASS means "delivered", not a human verdict.
 stage_reports: ["S0", "S1", "S2"]
 
+# Files `codeanvil backup <stage>` copies before a skill overwrites them.
+# Project-root-relative; {cycle} expands to the active cycle. The command is
+# the single writer of .codeanvil/backups/ — skills never copy by hand.
+backup_targets:
+  S0: [".codeanvil/GT/StRS.md", ".codeanvil/GT/SyRS.md"]
+  S1: [".codeanvil/design/SDD.md", ".codeanvil/design/dependency_graph.html"]
+  S2: [".codeanvil/report/{cycle}/S2_artifacts/test_run.md"]
+  G2: [".codeanvil/report/{cycle}/G2_artifacts/verified_prototype.md"]
+
 # Skill directory symlinks — agent runtimes that discover skills
 # via a directory convention.
 agent_skill_links:

@@ -107,9 +107,13 @@ writing **no iteration** when you stop:
    higher, write a test fed by the Mock HAL synthetic generator that measures the metric against
    its `SYS-*` threshold, with the telemetry companion attached. Run them only to check they
    execute; never report their result as evidence. The VL-1 claim belongs to G2.
-6. **Floor run.** Run `verification/run.sh vl0`: the whole VL-0 suite with the telemetry companion
+6. **Back up the last test run before overwriting it.** Run `codeanvil backup S2` from the project
+   root. If it exits nonzero, stop and show its message; write no iteration. Cite the printed
+   backup path in the iteration's Description. Backups never cover `src/` or `verification/`:
+   code recovery relies on git.
+7. **Floor run.** Run `verification/run.sh vl0`: the whole VL-0 suite with the telemetry companion
    attached. Fix failures (step 3) until it exits 0. Write `test_run.md`.
-7. Write the iteration and return `S2 complete. Run the G2 skill.`
+8. Write the iteration and return `S2 complete. Run the G2 skill.`
 
 Rework: a G2 iteration with `Verdict: module defect` names the modules to fix, including a missing
 VL-1 test. Redo step 3 (unit, bottom-up and sandwich) or 5 for them, then step 6.

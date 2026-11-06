@@ -820,6 +820,35 @@ def test_status_always_prints_the_active_cycle_even_without_reports(tmp_path, db
     assert "02_new (active)" in out
 
 
+def test_status_shows_the_latest_backup_per_stage(tmp_path, db_path, capsys):
+    cmd_create(None, tmp_path, project_name="Proj")
+    project = tmp_path / "proj"
+    _set_cycle(project, "01_c")
+    _write_report(project, "01_c", "S1", [(1, "PASS")])
+    backups = project / ".codeanvil" / "backups" / "01_c"
+    (backups / "S1_iter1").mkdir(parents=True)
+    (backups / "S1_iter2").mkdir()
+
+    cmd_status("Proj")
+
+    out = capsys.readouterr().out
+    assert "  Backups: S1 iteration 2 → .codeanvil/backups/01_c/S1_iter2/" in out
+    assert "S1_iter1" not in out
+
+
+def test_status_lists_backups_without_a_producing_cycle(tmp_path, db_path, capsys):
+    cmd_create(None, tmp_path, project_name="Proj")
+    project = tmp_path / "proj"
+    folder = project / ".codeanvil" / "backups" / "unknown" / "S2_2026-11-06_14-10-00-123"
+    folder.mkdir(parents=True)
+
+    cmd_status("Proj")
+
+    out = capsys.readouterr().out
+    assert "Backups without a producing cycle:" in out
+    assert "S2: .codeanvil/backups/unknown/S2_2026-11-06_14-10-00-123/" in out
+
+
 def test_g0_validator_is_side_effect_free_and_maps_exit_codes(tmp_path):
     """S4 — validator prints only; 0 pass, 1 errors, 2 usage/IO."""
     import hashlib

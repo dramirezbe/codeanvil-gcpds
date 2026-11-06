@@ -236,3 +236,10 @@ def test_layout_tsconfig_declares_the_console_types():
 
     assert '"lib"' in text and '"DOM"' in text
     assert "@types/node" in text
+
+
+def test_s2_skill_backs_up_before_overwriting_the_test_run():
+    text = " ".join(_skill_text("S2_implement_services").split())
+
+    assert "codeanvil backup S2" in text
+    assert "If it exits nonzero, stop and show its message; write no iteration." in text

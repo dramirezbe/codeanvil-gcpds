@@ -87,7 +87,11 @@ In a fresh session that did not run S2, G2 runs steps 2–5 itself and records
    flag), the entry-point smoke result, the draft honesty declaration and a recommendation. Ask
    the human: **PASS**,
    **FEEDBACK** or **RFD**, as **Asking the human** says below.
-8. Write the iteration with the results table and the answer verbatim, including
+8. **Back up the previous Verified Prototype before overwriting it.** Run `codeanvil backup G2`
+   from the project root. If it exits nonzero, stop and show its message; write no iteration.
+   Cite the printed backup path in the iteration's Description. Backups never cover `src/` or
+   `verification/`: code recovery relies on git.
+9. Write the iteration with the results table and the answer verbatim, including
    `Decided by: <name>`.
 
 | Human answer | Row written | Route |

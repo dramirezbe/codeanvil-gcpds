@@ -83,26 +83,30 @@ Working files live in `.codeanvil/design/`, outside the cycle report folder.
 
 ## Steps (one pass)
 
-1. Copy the template to `.codeanvil/design/SDD.md`. Record the GT digests in the Meta
+1. **Back up before overwriting.** Run `codeanvil backup S1` from the project root. If it exits
+   nonzero, stop and show its message; write no iteration. Cite the printed backup path in the
+   iteration's Description. Backups never cover `src/` or `verification/`: code recovery relies
+   on git.
+2. Copy the template to `.codeanvil/design/SDD.md`. Record the GT digests in the Meta
    "G0 approved" row (information only, never a block), computed with:
    `python -c "import hashlib,sys;[print(hashlib.sha256(open(p,'rb').read()).hexdigest(),p) for p in sys.argv[1:]]" .codeanvil/GT/StRS.md .codeanvil/GT/SyRS.md`
-2. Allocate `SYS-*` to services and paths: §0.4, §1.1, §4.1.
-3. Fill the COTS envelope from the `HWC-*` blocks: §0.1–0.3. In §0.5, define
+3. Allocate `SYS-*` to services and paths: §0.4, §1.1, §4.1.
+4. Fill the COTS envelope from the `HWC-*` blocks: §0.1–0.3. In §0.5, define
    one project-root command that starts the complete runnable system, its HAL
    mode, processes, URL, visible result and clean shutdown.
-4. For each service: its base (§1.3) and module cards (§1.4), each with the full verification profile.
+5. For each service: its base (§1.3) and module cards (§1.4), each with the full verification profile.
    Set `HAL mode` and `Toolchain` in the Meta, then fill the verification kit (§1.3.4), the HAL
    substitution ladder (§1.6) and the Telemetry companion (§1.7).
-5. Draw the implementation DAG and topological order (§2.1–2.2) and the runtime graph (§2.3).
-6. Write the contracts with stub or fake-peer recipes and vectors (§3).
-7. Complete traces and `PATH-*` (§4).
-8. Record decisions with real alternatives (§5; DEC-001 is the partitioning decision) and risks (§6).
-9. Reread the design against this short list and fix what you find: no `{{` left, every `SYS-*`
-   traced, every contract with a recipe, `hw_dependency: true` at `VL-2`, no cycle in the build
-   order, `HAL mode` set, `Toolchain` set for every service, kit table complete, §1.7 present.
-   This is a courtesy to the reviewer, not a gate.
-10. Build the dependency graph (next section).
-11. Write the iteration with the row `| HITL | PASS |` and the graph's path in the Description.
+6. Draw the implementation DAG and topological order (§2.1–2.2) and the runtime graph (§2.3).
+7. Write the contracts with stub or fake-peer recipes and vectors (§3).
+8. Complete traces and `PATH-*` (§4).
+9. Record decisions with real alternatives (§5; DEC-001 is the partitioning decision) and risks (§6).
+10. Reread the design against this short list and fix what you find: no `{{` left, every `SYS-*`
+    traced, every contract with a recipe, `hw_dependency: true` at `VL-2`, no cycle in the build
+    order, `HAL mode` set, `Toolchain` set for every service, kit table complete, §1.7 present.
+    This is a courtesy to the reviewer, not a gate.
+11. Build the dependency graph (next section).
+12. Write the iteration with the row `| HITL | PASS |` and the graph's path in the Description.
     Return the design path and `S1 complete. Run the G1 skill.`
 
 ## Infeasibility

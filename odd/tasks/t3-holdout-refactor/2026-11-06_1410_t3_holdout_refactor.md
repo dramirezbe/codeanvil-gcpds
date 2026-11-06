@@ -457,3 +457,23 @@ After Phase 5:
    The regex excludes `.codeanvil/GT/`, `templates/GT/` and the
    `S1_design_services` / `G0_valid_req_and_GT` folder names.
 6. Every `SKILL.md` input/output path matches the target layout.
+
+---
+
+## Log
+
+- **2026-11-06 — Phase 1 complete** (`954c3f9`): GT pair moved to `.codeanvil/GT/StRS.md` and
+  `SyRS.md`; design moved to `.codeanvil/design/SDD.md` and `dependency_graph.html`; repo
+  templates renamed to `templates/GT/StRS.md`, `templates/GT/SyRS.md`,
+  `references/SDD.md`, `references/dependency_graph_template.html`; every skill, agent template,
+  test and `pyproject.toml` force-include updated. Evidence: 228 pytest + 97 unittest green.
+- **2026-11-06 — Phase 2 complete.** WU-B1 moved the report parser to
+  `src/codeanvil/reports.py`. WU-B2 added `codeanvil backup S0|S1|S2|G2`
+  (`CLI/commands/backup.py`, `backup_targets` in `templates/config.yaml`, `PROJECT_BACKUPS`),
+  producer resolution (active cycle → RFD supersede → `unknown`), idempotency and
+  `MANIFEST.yaml`. WU-B3 prints the latest backup per stage in `codeanvil status`. WU-B4 adds the
+  backup step to S0, S1, S2 and G2 and the command to `TEMPLATE_AGENT.md`. Evidence: 244 pytest +
+  97 unittest green; scratch project: first run created `.codeanvil/backups/01_run/S1_iter1/`
+  with `MANIFEST.yaml`, second printed `already backed up`, and `status` printed
+  `Backups: S1 iteration 1 → .codeanvil/backups/01_run/S1_iter1/`.
+- **Next:** Phase 3 (WU-C1 paths and scaffold), then Phase 4 (WU-L4 and WU-L6 decisions are open).

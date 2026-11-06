@@ -71,12 +71,16 @@ S0 has **no prerequisite**: it is the entry point of the V-SIL chain.
 ## Steps
 
 1. Inventory every statement of the Build Package as `STK | HWC | NRM | SYS | not mapped`.
-2. Fill the StRS blueprint.
-3. Fill the SyRS blueprint, including `Traces to` from the Build Package's own links.
-4. Build the report Description: the inventory, the **missing list** (every placeholder
+2. **Back up before overwriting.** Run `codeanvil backup S0` from the project root. If it exits
+   nonzero, stop and show its message; write no iteration. Cite the printed backup path in the
+   iteration's Description. Backups never cover `src/` or `verification/`: code recovery relies
+   on git.
+3. Fill the StRS blueprint.
+4. Fill the SyRS blueprint, including `Traces to` from the Build Package's own links.
+5. Build the report Description: the inventory, the **missing list** (every placeholder
    left, as `<file> · <block ID> · <field>`) and the trace from each block to its
    Build Package line.
-5. Write the iteration with the row `| HITL | PASS |` (see `## Report Contract`) and return:
+6. Write the iteration with the row `| HITL | PASS |` (see `## Report Contract`) and return:
    `S0 complete. Run the G0 skill.`
 
 ## Re-entry

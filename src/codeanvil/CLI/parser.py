@@ -146,6 +146,22 @@ def build_parser() -> argparse.ArgumentParser:
     )
     status.add_argument("name", nargs="?", default=None, help="Name of the project to inspect (default: current directory)")
 
+    backup = sub.add_parser(
+        "backup",
+        help="Save a stage's working artifacts before a skill overwrites them",
+        description=(
+            "Copies the files a stage overwrites into .codeanvil/backups/, with a\n"
+            "MANIFEST.yaml holding each source path and SHA-256. Skills run it before\n"
+            "rewriting an artifact. It only copies and hashes: it never decides or\n"
+            "advances a gate. A stage with nothing on disk prints 'nothing to back up'."
+        ),
+    )
+    backup.add_argument(
+        "stage",
+        choices=["S0", "S1", "S2", "G2"],
+        help="Stage whose artifacts to back up",
+    )
+
     now_parser = sub.add_parser(
         "now",
         help="Print the current system timestamp",

@@ -57,3 +57,10 @@ def test_s1_design_template_has_toolchain_hal_ladder_and_telemetry():
     assert "### 1.7 Telemetry companion" in text
     assert text.index("### 1.5 Supplied ML model") < text.index("### 1.6 HAL") \
         < text.index("### 1.7 Telemetry") < text.index("## 2. Dependency view")
+
+
+def test_s1_skill_backs_up_before_overwriting_the_design():
+    text = " ".join(_skill_text("S1_design_services").split())
+
+    assert "codeanvil backup S1" in text
+    assert "If it exits nonzero, stop and show its message; write no iteration." in text
