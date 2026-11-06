@@ -35,6 +35,11 @@ orientation: you do not need to read files or list directories to discover progr
 
 - The `codeanvil` CLI is the only tool for project state, timestamps and backups:
   `codeanvil status`, `codeanvil now`, `codeanvil now --machine`, `codeanvil backup <stage>`.
+- Run skill scripts with `codeanvil python <script> [args]`: it uses the shared methodology
+  runtime and checks the skill's declared packages first. `Runtime not installed` →
+  `codeanvil runtime sync`; a missing package → the `codeanvil runtime add` command it prints.
+- MCP servers start through `codeanvil mcp run <name>`. If one fails to start, run
+  `codeanvil mcp doctor <name>` and show the human its fix line.
 - How each step works is in its skill under `.agents/skills/`; what the project must do
   is in `.codeanvil/GT/`. Read those to know what to do; run skill scripts from the project root.
 

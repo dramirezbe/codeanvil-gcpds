@@ -12,7 +12,7 @@ requirement quality, measurement-method correctness, or metrological rigor.
 ## Invocation
 
 ```bash
-python templates/skills/G0_valid_req_and_GT/scripts/g0_validate.py <StRS.md> <SyRS.md>
+codeanvil python templates/skills/G0_valid_req_and_GT/scripts/g0_validate.py <StRS.md> <SyRS.md>
 ```
 
 Each `<file>` is a GT document; the type (StRS/SyRS) is auto-detected from the first `## `

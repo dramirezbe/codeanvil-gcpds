@@ -305,20 +305,25 @@ def test_s2_module_subagents_are_optional_and_bounded():
     assert "their files do not overlap" in section
 
 
-# --- locked telemetry collector (2026-11-06, WU-L6) -------------------------
+# --- locked telemetry collector on the runtime (WU-L6, WU-RT7) -------------
 
 
-def test_s2_skill_copies_the_locked_telemetry_collector():
+def test_s2_skill_runs_the_locked_collector_in_place_on_the_runtime():
     text = " ".join(_skill_text(SKILL).split())
 
-    assert "telemetry_collector.py" in text
+    assert "scripts/telemetry_collector.py" in text
+    assert "codeanvil python" in text
+    assert "never copied" in text
     assert "verification/telemetry/" in text
-    assert "never edit them" in text
+    assert 'runtime: ["psutil"]' in _skill_text(SKILL)
 
 
-def test_layout_names_the_locked_telemetry_collector():
+def test_layout_starts_the_collector_through_the_runtime():
     text = _layout_text()
 
-    assert "telemetry_collector.py (locked)" in text
-    assert "psutil" in text
+    assert "codeanvil python" in text and "scripts/telemetry_collector.py" in text
+    assert "--pid $$" in text
     assert "--counters" in text
+    # psutil comes from the runtime, never from the kit's dev group.
+    assert 'dev = ["pytest"]' in text
+    assert "never lists `psutil`" in text

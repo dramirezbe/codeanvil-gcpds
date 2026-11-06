@@ -33,7 +33,7 @@ block IDs.
 4. Validate the pair (deterministic, no AI):
 
    ```bash
-   python templates/skills/G0_valid_req_and_GT/scripts/g0_validate.py .codeanvil/GT/StRS.md .codeanvil/GT/SyRS.md
+   codeanvil python templates/skills/G0_valid_req_and_GT/scripts/g0_validate.py .codeanvil/GT/StRS.md .codeanvil/GT/SyRS.md
    ```
 
 5. After G0 passes (script and Gate H), the S1 skill writes the design document to

@@ -1,5 +1,4 @@
 import json
-import re
 import shutil
 import sys
 from pathlib import Path
@@ -7,6 +6,8 @@ from pathlib import Path
 import yaml
 
 from codeanvil.config.logger import get_logger
+from codeanvil.skills import FRONTMATTER_RE as _FRONTMATTER_RE  # noqa: F401  (tests)
+from codeanvil.skills import parse_skill_frontmatter as _parse_skill_frontmatter
 from codeanvil.config.paths import (
     CONFIG,
     PROJECT_BACKUPS,
@@ -233,42 +234,6 @@ def _link_agent_skill_dirs(project_dir: Path) -> None:
 
 
 # Frontmatter block at the very start of a SKILL.md file.
-_FRONTMATTER_RE = re.compile(r"\A---[ \t]*\n(.*?)\n---[ \t]*(?:\n|\Z)", re.DOTALL)
-
-
-def _parse_skill_frontmatter(skill_md: Path) -> dict | None:
-    """Extract {name, description, gate} from a SKILL.md YAML frontmatter.
-
-    Returns None when the file has no frontmatter (e.g. an empty
-    placeholder SKILL.md) or when parsing fails — never raises."""
-    try:
-        text = skill_md.read_text(encoding="utf-8")
-    except OSError as exc:
-        log.warning("cannot read %s: %s", skill_md, exc)
-        return None
-
-    match = _FRONTMATTER_RE.match(text)
-    if not match:
-        return None  # empty file or no frontmatter — not an error
-
-    try:
-        metadata = yaml.safe_load(match.group(1))
-    except yaml.YAMLError as exc:
-        log.warning("cannot parse frontmatter in %s: %s", skill_md, exc)
-        return None
-    if not isinstance(metadata, dict):
-        log.warning("frontmatter in %s is not a mapping — skipping", skill_md)
-        return None
-
-    nested = metadata.get("metadata") or {}
-    gate = nested.get("gate") if isinstance(nested, dict) else None
-    return {
-        "name": metadata.get("name") or "",
-        "description": metadata.get("description") or "",
-        "gate": str(gate) if gate is not None else "",
-    }
-
-
 def _collect_skill_summaries(skills_root: Path) -> list[dict]:
     """Collect frontmatter summaries for every skill under skills_root.
 

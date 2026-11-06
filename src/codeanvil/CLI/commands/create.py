@@ -58,7 +58,7 @@ def cmd_create(
                           srv, ", ".join(available))
                 sys.exit(1)
             if not is_mcp_installed(srv):
-                log.error("MCP server '%s' not installed — run 'codeanvil init --mcp %s' first",
+                log.error("MCP server '%s' not installed — run 'codeanvil mcp add %s' first",
                           srv, srv)
                 sys.exit(1)
 

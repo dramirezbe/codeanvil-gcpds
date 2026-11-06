@@ -40,7 +40,7 @@ The V-SIL pipeline encoded as executable artifacts:
   - `S1_design_services/` — **Stage**: designs a system of layered services (`.codeanvil/design/SDD.md`) and its dependency graph (`.codeanvil/design/dependency_graph.html`, vis-network vendored in `assets/`). Design §0.5 defines one runnable entry point for the complete system.
   - `G1_design_review/` — **Human gate**: no script. The agent fills a checklist, including G1.15 for the runnable entry point, and recommends; the human answers PASS, FEEDBACK or RFD.
   - `RFD_request_for_deviation/` — Outside the chain: decision document when requirements are infeasible on the declared COTS platform. Suspends the cycle until the author decides.
-  - `S2_implement_services/` — **Stage**: builds the services under `src/<service>/`, the verification kit under `verification/` (Mock HAL, golden vectors, telemetry collector), the runnable §0.5 entry point and its VL-0 smoke test. Uses `references/project_layout.md` and the locked `references/logger.py`, `references/logger.ts` and `references/telemetry_collector.py`. Writes `S2.md` and `S2_artifacts/test_run.md`.
+  - `S2_implement_services/` — **Stage**: builds the services under `src/<service>/`, the verification kit under `verification/` (Mock HAL, golden vectors, telemetry collector), the runnable §0.5 entry point and its VL-0 smoke test. Uses `references/project_layout.md` and the locked `references/logger.py` and `references/logger.ts`, and runs the locked `scripts/telemetry_collector.py` in place on the methodology runtime (psutil). Writes `S2.md` and `S2_artifacts/test_run.md`.
   - `G2_adaptive_verification/` — **Human gate**: delegates the `test_run.md` commands to the `vsil-verifier` subagent, checks the entry-point smoke evidence, presents the results and records PASS, FEEDBACK (`Verdict: module defect` → S2, `Verdict: design defect` → S1) or RFD. PASS writes `G2_artifacts/verified_prototype.md` with run instructions.
 - **`templates/agents/`** — Subagent bodies. `vsil-verifier.md` is the one shared body of the G2 verifier; `codeanvil create` writes it per runtime (`.claude/agents/`, `.opencode/agents/`, `.codex/agents/`) as listed under `subagents` in `config.yaml`.
 - **`templates/backups/`** — Retired in v3 and kept for later: `custody-chain/`, `G1_start_design/` and `G1_SRS.md`. Not scaffolded and not shipped in the wheel.
@@ -50,7 +50,7 @@ The V-SIL pipeline encoded as executable artifacts:
 CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks state:
 
 - **`__main__.py`** — entry point (`python -m codeanvil`)
-- **`CLI/`** — argparse CLI: `main.py` (entry point + dispatch), `parser.py` (argument definitions), `prompts.py` (interactive `create` TUI via beaupy/Rich), `commands/` (one module per subcommand: `init`, `create`, `list`, `sync`, `status`, `now`, `backup`, `sandbox`)
+- **`CLI/`** — argparse CLI: `main.py` (entry point + dispatch), `parser.py` (argument definitions), `prompts.py` (interactive `create` TUI via beaupy/Rich), `commands/` (one module per subcommand: `init`, `create`, `list`, `sync`, `status`, `now`, `backup`, `runtime`, `python`, `mcp`, `sandbox`, `upgrade`)
 - **`reports.py`** — shared report parser (`ReportState`, `_report_state()`, `_cycle_reports()`, `_gate_order()`, `backup_entries()`): the gate reports `status` reads and the backups `backup` resolves; command modules never import from each other
 - **`UI/ui.py`** — PySide6 graphical interface (planned; see `UI/README.md` for scope)
 - **`config/logger.py`** — cross-platform colored logger (`get_logger(__name__)`)
@@ -63,7 +63,10 @@ CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks stat
 - **`init/check.py`** — `preflight()` (workdir + DB checks) + `check_project_path()`
 - **`init/create.py`** — `scaffold_project()` (copies skills to `.agents/skills/`, embeds GT reference templates inside skills, rewrites repo-root paths, creates agent symlinks, writes `.codeanvil/GT/`, `.codeanvil/design/`, `.codeanvil/backups/`) + `write_project_manifest()`. Templates located via `_find_templates_dir()` (editable install: source tree; wheel install: `importlib.resources`)
 - **`init/sync.py`** — `run_sync()` (clone/move flow: read manifest → migrate `.provenance/` → upsert DB) + `_migrate_provenance()`
-- **`init/mcp.py`** — MCP server lifecycle: `install_mcp_server()` (clone + prewarm), `copy_mcp_skills()` (prefix + gate frontmatter), `generate_agent_mcp_configs()` (per-agent JSON: `.mcp.json`, `.vscode/`, `.opencode/`, `.codex/`), `_detect_system_site_packages()` (bridges system packages like gnuradio into uv venvs via `PYTHONPATH`)
+- **`init/mcp.py`** — MCP manager: `install_mcp_server()` / `update_mcp_server()` (clone, check out the pinned `ref`, venv on the system interpreter the server's system packages need, probe), `doctor()`, `run_server()` (the `codeanvil mcp run` launcher: resolves install path, project root and env at start-up; `execvpe` on POSIX, parent process on Windows), `generate_agent_mcp_configs()` (per-agent JSON calling the launcher, no absolute path: `.mcp.json`, `.vscode/`, `opencode.json`, `.codex/`), `enable_server()` / `disable_server()`
+- **`init/system_packages.py`** — OS-installed Python packages (gnuradio): `probe()` imports in the target interpreter and reports ok / missing (with the OS-family install command from `config.yaml`) / ABI mismatch / broken; `cached_probe()`; `system_interpreter_for()`
+- **`init/runtime.py`** — global methodology runtime (`~/.codeanvil-config/runtime/`): `sync()`, `add()`, `remove()`, `listing()`, `.pth` bridge for `runtime.system_packages`; the shipped `templates/runtime/` spec is rendered from `config.yaml` `runtime.base`
+- **`skills.py`** — shared SKILL.md frontmatter parser (`name`, `description`, `gate`, `runtime`)
 
 ## Key concepts
 
@@ -192,18 +195,23 @@ project folder — it has no `templates/`, and no `src/`, `verification/` or `py
 ### How they connect
 
 ```
-codeanvil init                              → ~/.codeanvil-config/ + DB
-codeanvil init --mcp marconi               → + clone to ~/.codeanvil-config/mcp/marconi/
+codeanvil init                              → ~/.codeanvil-config/ + DB + methodology runtime
+codeanvil runtime sync|add|remove|list|path → the global methodology venv (~/.codeanvil-config/runtime/)
+codeanvil python <script> [args]           → run a skill script on the runtime (-I, from the project root)
+codeanvil mcp add marconi                  → clone, pin, venv on gnuradio's interpreter, probe (= init --mcp)
+codeanvil mcp update|remove|list|doctor    → MCP lifecycle; doctor names the fix for each problem
+codeanvil mcp run marconi                  → the launcher every project config calls (stdio)
+codeanvil mcp enable|disable marconi       → wire/unwire a server in the current project
 codeanvil create                            → interactive prompts: project + folder name
 codeanvil create --name "My SDR Lab"        → ./my_sdr_lab/ (folder derived from the label)
 codeanvil create myproj -p /path/to/        → /path/to/myproj/ (legacy: name == folder)
-codeanvil create myproj --mcp marconi       → + marconi-* skills, MCP configs, PYTHONPATH
+codeanvil create myproj --mcp marconi       → + marconi-* skills, portable MCP configs (launcher)
 codeanvil sync (inside a clone)            → register the project in the local DB
 codeanvil list                             → registered projects (short UUID + local path)
 codeanvil status [myproj]                  → cycles and latest HITL per gate (.codeanvil/report/)
 codeanvil backup S0|S1|S2|G2               → copy the stage's files to .codeanvil/backups/<cycle>/
 codeanvil now [--machine]                  → timestamp: human-readable / filename-safe
-codeanvil upgrade                          → reinstall from latest main (detects OS, uses uv)
+codeanvil upgrade                          → reinstall from latest main (uv), then the new binary's runtime sync
 codeanvil sandbox <agent>                  → launch agent (claude|pi|opencode|codex) with only project-local settings
 ```
 
@@ -211,9 +219,11 @@ The scaffold copies `templates/skills/` → `.agents/skills/`, runs `path_replac
 on `.md` files, generates `AGENTS.md` from the template, creates links, and registers
 the project in the DB. On Windows, symlinks fall back to directory junctions or file
 copies when Developer Mode is not enabled. With `--mcp`, it also copies MCP skills
-(prefixed), generates per-agent MCP configs, and bridges system packages (like gnuradio)
-via `PYTHONPATH`. After that the project is self-contained — it does not depend on the
-repo at runtime.
+(prefixed) and writes per-agent MCP configs that call `codeanvil mcp run <name>`. After
+that the project does not depend on the repo at runtime. It does depend on the installed
+`codeanvil` by design: skill scripts (G0, the S2 telemetry collector) run on the global
+methodology runtime through `codeanvil python`, and MCP servers start through the
+launcher. Delivered code (`src/`) never depends on the tool.
 
 ### Installation paths
 
