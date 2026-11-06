@@ -1,9 +1,9 @@
 # T3 OpenCode S1/G1 review holdout — 2026-11-05
 
-Keep this review in the CodeAnvil source repository while the OpenCode sandbox
-continues through S2 and G2. Compare it with G2's independent findings after
-G2 finishes. Do not copy it into the scaffolded test project or give it to the
-G2 verifier as context.
+This is the central record of the T3 OpenCode test observations across S1,
+G1, S2 and G2. It stays in the CodeAnvil source repository, outside the
+scaffolded test project, so the G2 verifier did not receive the earlier
+review as context.
 
 ## Baseline
 
@@ -69,7 +69,7 @@ advisory while marking G1.14 `pass`. A project-local TypeScript dev dependency
 may be sufficient for S2, but the current G1 rule does not say that. This is a
 G1 process and rule-design issue, not an expected G2 detection.
 
-## How to score the later G2 run
+## Scoring rule for the G2 comparison
 
 For each finding, record whether S2 resolved it, G2 independently identified
 it, or it remained latent. Use the S2 `test_run.md`, the fresh G2 console
@@ -77,3 +77,97 @@ result, and the G2 report as evidence. Count a G2 detection only when G2 names
 the root cause or a test fails on that cause without receiving this review.
 Do not score F1, F4, or F5 as G2 misses: they are outside G2's required scope.
 F2 and F3 are conditional checks because G2 runs only the tests supplied by S2.
+
+## G2 comparison — 2026-11-05
+
+OpenCode's independent G2 run reported 17 VL-0 and 10 VL-1 tests passing and
+recommended `PASS`. It named none of F1–F5 before the human supplied the review
+findings in chat. After the human initially chose `RFD`, the agent correctly
+explained that these are remediable design and review defects, then recorded
+`FEEDBACK` with `Verdict: design defect` in G2 iteration 1. The report repeats
+the supplied findings; this is **human detection with correct routing**, not an
+independent G2 detection.
+
+| Finding | Outcome at G2 |
+|---------|---------------|
+| F1 graph | Repeated after human feedback. Remains a G1 review miss. |
+| F2 HAL type | Repeated after human feedback. The Mock HAL converts uint8 to complex64 before yielding a `HalFrame`; `run_pipeline` consumes complex64 directly. The `capture` conversion function is tested separately, so the design's raw-byte capture boundary remains unresolved. |
+| F3 capture buffering | Repeated after human feedback. The generator emits exactly 65,536 samples per update and the pipeline has no full-rate buffering or selection policy. The tests do not exercise 1,200,000 samples per 0.5 s. |
+| F4 VL-0 latency claim | A nominal VL-0 PATH-004 test was added, but it asserts hardcoded 20/5/30 ms values and separately times only DSP processing. It does not measure connected-process or end-to-end latency. |
+| F5 TypeScript tool | S2 installed TypeScript as a project dev dependency, so compilation is available. G1's earlier classification remains inaccurate under its current rule. |
+
+### Additional G2 misses found while comparing evidence
+
+- **Declared VL-1 paths lack corresponding VL-1 tests.** PATH-002 and PATH-004
+  are declared VL-1 in the S1 design and G2 report. The six Python VL-1 tests
+  cover detector scenes; the four TypeScript VL-1 tests cover jsdom rendering.
+  No VL-1 test runs PATH-002 across both services or measures PATH-004's 60 s
+  p95 latency. The G2 skill's hard rule says a declared VL-1 path with no VL-1
+  test is a module defect routed to S2, yet G2 marked both paths `pass`.
+- **Dropped-buffer and scheduling readings are synthetic.**
+  `verification/telemetry/telemetry.py:67-68` writes `dropped = 0` and
+  `sched_ms = 0.0` on every sample; `verification/run.sh:70` also prints
+  `dropped: 0` unconditionally. G2 reported dropped buffers as measured and
+  in envelope. Its `N/A` for WSL2 temperature is appropriately qualified.
+- **The FEEDBACK route is right, but the rework pointers are wrong.**
+  `G2.md:97-99` calls the HAL ladder §1.5 and the module table §1.6.
+  In the design they are §1.6 and §1.4, respectively. The G2 report also
+  omits the human answer verbatim, which its skill requires.
+
+Evidence inspected: test project `.codeanvil/report/01_fm_occupancy_mock/G2.md`,
+`S2_artifacts/test_run.md`, `verification/fm_edge/test/test_paths.py`,
+`verification/fm_edge/test/test_vl1.py`, `verification/dashboard/test/vl1.test.ts`,
+`verification/fm_edge/mock_hal/hal.py`, `verification/fm_edge/mock_hal/generator.py`,
+`src/fm_edge/main.py`, and the telemetry files above. This comparison is
+read-only with respect to the test project.
+
+## S2 workflow observation and questions — 2026-11-05
+
+Status: design notes only; no S2 skill change has been made. The user observed
+that S2 delivered two services, seven modules and the verification kit in one
+uninterrupted execution, and is not confident that every required step ran.
+`S2.md` lists the final artifacts and VL-0 result, but does not record separate
+evidence for the kit and base, the top-down test, unit and bottom-up tests per
+module, stub replacement, or integration of each `PATH-*`. This does **not**
+prove those steps were skipped; the session trace and artifacts need an audit.
+
+The current S2 skill requires this order: kit and base first; modules in DAG
+order, each with unit and bottom-up tests before stub replacement; service
+contracts and paths; VL-1 tests for declared modules and paths; then the final
+VL-0 run. The test showed a need for visible checkpoints during that sequence.
+
+### Proposed question at S2 start
+
+**«¿Con qué frecuencia quieres que S2 pause para revisar el avance?»**
+
+| Option | Proposed pauses |
+|--------|-----------------|
+| Entre capas y por módulo | For each service: after the kit and base, after every module and its tests, and after integration. |
+| Entre capas | For each service: after the kit and base, once after all its modules and tests, and after integration. |
+| Por servicio | Once after each completed service, including its base, modules and internal tests. |
+
+These are S2 review points, not new `HITL: PASS` gate verdicts. Cross-service
+integration and `PATH-*` can be completed only after their participating
+services exist. The shared kit should be built once even if pauses repeat for
+each service.
+
+### Proposed subagent granularity
+
+Organize optional implementation subagents around **modules**, rather than
+whole services. The parent agent owns the shared kit, bases, contracts,
+integration, and selected pause schedule. A module subagent receives one
+module and its contract, implements it, runs its unit and bottom-up tests, and
+returns the evidence. Parallel work is limited to modules whose DAG
+dependencies are ready and whose files do not overlap. S2 must also work in a
+runtime without subagents.
+
+### Questions to decide before changing S2
+
+1. Which of the three pause schedules should be recommended by default?
+2. Is the schedule selected once per S2 cycle, or again on each rework?
+3. At a pause, does the user choose `continue`, `rework`, or `stop`; where is
+   that recorded without adding a new gate?
+4. Does each service's “integration” mean internal integration only, with an
+   additional pause for cross-service integration and `PATH-*`?
+5. How many module subagents may run concurrently, and what minimum evidence
+   must each return before S2 advances?
