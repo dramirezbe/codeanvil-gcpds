@@ -17,7 +17,7 @@ it has no `src/` until S2 writes the delivered code there. The user's AGENTS.md 
 `templates/AGENTS/TEMPLATE_AGENT.md`) never mentions this repository: it names only the
 `codeanvil` CLI, the skills and `.codeanvil/`. Do not confuse the two environments.
 
-## Where to start (v0.5.0)
+## Where to start (v0.6.0)
 
 | Need | Source of truth |
 |------|-----------------|
@@ -25,7 +25,7 @@ it has no `src/` until S2 writes the delivered code there. The user's AGENTS.md 
 | Understand the first complete V-SIL v3 run | [`methodology/test/T3_FM-mock/FIRST_FULL_FLOW_SNAPSHOT.md`](methodology/test/T3_FM-mock/FIRST_FULL_FLOW_SNAPSHOT.md) and [`first_full_flow_2026-11-05/`](methodology/test/T3_FM-mock/first_full_flow_2026-11-05/) |
 | Run the archived Mock HAL prototype | [`first_full_flow_2026-11-05/RUN.md`](methodology/test/T3_FM-mock/first_full_flow_2026-11-05/RUN.md) (`uv sync --frozen --no-dev`, then `./run-demo SC-2`) |
 | Review findings and pending proposals | [`S1_G1_review_holdout_2026-11-05.md`](methodology/test/T3_FM-mock/S1_G1_review_holdout_2026-11-05.md) |
-| See release and completed work | [`v0.5.0`](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.5.0) and [`2026-11-05_1421_vsil_v3_full_flow.md`](odd/tasks/vsil-v3-full-flow/2026-11-05_1421_vsil_v3_full_flow.md) |
+| See release and completed work | [`v0.6.0`](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.6.0) and [`2026-11-06_1521_global_runtime_and_mcp_manager.md`](odd/tasks/global-runtime-mcp/2026-11-06_1521_global_runtime_and_mcp_manager.md) |
 
 The T3 snapshot completed S0 → G2 with a G2 design-defect feedback loop through
 S1, G1 and S2. Its original G2 PASS predates the later runnable-entry-point

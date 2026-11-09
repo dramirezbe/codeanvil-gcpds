@@ -11,8 +11,8 @@ wherever this file writes `$$`.
 
 ## 0. Install the build under test
 
-The released `codeanvil` (v0.5.0) has no `runtime`, `python` or `mcp`
-commands. Install the branch instead:
+The `runtime`, `python` and `mcp` commands shipped in v0.6.0 (v0.5.0 has
+none of them). Install the build under test — the branch, or the released tag:
 
 ```bash
 cd ~/GIT/UNAL/codeanvil-gcpds
