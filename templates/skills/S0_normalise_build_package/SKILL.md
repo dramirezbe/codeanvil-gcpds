@@ -66,6 +66,15 @@ Package (TRIAGE.md §2). While drafting, the digest and overwrite checks above d
 - **Invent nothing.** A field the Build Package does not supply keeps its blueprint
   placeholder and goes on the missing list. G0 does not reject a placeholder inside a
   block body, so the missing list is what shows it: the author supplies the content.
+- **Emit spec, not blueprint scaffolding.** The produced GT holds only the document skeleton and its
+  filled content. **Drop** the author-guidance sections — `### Block ID Convention`, `### Fields per
+  Block`, `### Enumeration Values`, `### Block Format` (with its example block) — and every empty
+  blueprint placeholder row or instruction sentence (`_What this document specifies…_`,
+  `_TERM_ | _Precise definition_`, `_Brief description…_`, the `[TYPE]-[SUB]-[NNN]` Traceability
+  row). They are guidance, not requirements; leaving them makes the validator read an example block
+  as a real requirement and floods the missing list with non-items. A required section with no Build
+  Package content keeps the **explicit** missing marker (`_Not supplied by the Build Package._`) on
+  the missing list — never the blueprint's own instructional boilerplate.
 - Copy `Status`, `Compliance` and STK `Standard(s)` from the Build Package; never infer
   them. Where the blueprint has an enum marker, use `PENDING` or `PROPOSED`. Never fill a
   field by vocabulary heuristic.

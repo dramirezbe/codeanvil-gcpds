@@ -89,11 +89,35 @@ skill writes it with one line — `Draft opened: <codeanvil now> by <name>` — 
 open item; the human may also create it to iterate deliberately. It is removed only on commit, once
 every item has an explicit decision.
 
-### Decide every item before advancing
+### Classify each item: auto-apply or ask
 
-**No gate advances with an undecided item.** The stage must not record a Gate H / G1 PASS, nor move
-to the next stage, while any item lacks an **explicit human decision**. For each item the human
-chooses exactly one:
+Not every item carries a judgment. Before asking the human anything, sort the items:
+
+- **Auto-apply — do not ask.** Mechanical fixes with one correct resolution that invents nothing:
+  - removing blueprint scaffolding the GT should never have carried (an example block, an empty
+    `_TERM_` placeholder row, a boilerplate sentence, a template `[TYPE]-[SUB]-[NNN]` row);
+  - filling a value stated elsewhere in the GT or the Build Package (a manufacturer named in the
+    part, a purpose that restates the existing scope, an overview from the existing headings);
+  - removing a broken reference (a dependency on a block that does not exist);
+  - linking an obligation to the system block that already realizes it, where the mapping is
+    unambiguous.
+  Apply these and list them in the iteration as **auto-applied** (what changed and why). Show the
+  human the batch so they can **override** any of them, but do **not** ask one question each.
+
+- **Ask — per-item decision.** Anything that carries a trade-off or author authority:
+  - dropping or weakening a requirement (marking something out of scope, relaxing a bound);
+  - inventing content not derivable from the sources (an acceptance threshold with a real choice);
+  - an external fact (a web look-up citation — the human confirms the source);
+  - a lifecycle choice (the document status).
+
+When in doubt, **ask** — auto-apply only what is clearly mechanical and invents nothing.
+
+### Decide every ask-tier item before advancing
+
+**No gate advances with an open item left unresolved.** Every item is either **auto-applied and
+reported** (above) or carries an **explicit human decision**; the stage must not record a Gate H /
+G1 PASS, nor move on, while an ask-tier item is undecided. For each ask-tier item the human chooses
+exactly one:
 
 - **Fix** — edit the GT (or the Build Package) to supply what is missing, then re-run the check.
   When the missing value is a documentary fact (a clause, a datasheet number, a citation) and the
@@ -105,9 +129,10 @@ chooses exactly one:
 - **Escalate (RFD)** — the item shows the requirements are infeasible on the declared COTS
   platform; raise an RFD.
 
-The agent presents each item through the triage of §1, proposes options, and records the human's
-choice. It never resolves, defaults or bulk-accepts an item on its own — a single blanket PASS over
-open items is not a decision.
+The agent presents each ask-tier item through the triage of §1, proposes options, and records the
+human's choice. It never resolves, defaults or bulk-accepts an **ask-tier** item on its own — a
+single blanket PASS over open items is not a decision. (It may, and should, auto-apply the mechanical
+tier above without asking, as long as it reports each one.)
 
 **One asymmetry.** A content gap (a missing-list entry at exit `0`) can be *fixed* or *ignored*,
 because the document is already structurally valid. A format ERROR (exit `1`) can be *fixed* or
@@ -124,8 +149,9 @@ because the document is already structurally valid. A format ERROR (exit `1`) ca
 
 ### Closing draft (commit)
 
-Draft closes only when **every open item has an explicit decision** (fix, ignore/accept, or
-escalate) — not merely when the human asks. Then **remove the marker** and run the gate once in the
+Draft closes only when **every item is resolved** — auto-applied and reported, or given an explicit
+decision (fix, ignore/accept, or escalate) — not merely when the human asks. Then **remove the
+marker** and run the gate once in the
 normal recorded way: S0 re-normalises (or accepts the hand-written pair), G0 writes the one passing
 iteration plus Gate H, G1 writes its reviewed iteration. The recorded iteration **lists each item
 and the decision it received**, so the audit trail shows what was fixed and what was knowingly

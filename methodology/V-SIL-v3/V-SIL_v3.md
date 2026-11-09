@@ -111,7 +111,7 @@ flowchart LR
     FILL --> SyRS
 ```
 
-S0 **normalises only** — it casts the Build Package content into the IEEE 29148 [12] document blueprints and makes no conceptual judgement about sufficiency or scope. Following SDAD Phase 1 (spec crystallisation) [6], it populates the blueprints:
+S0 **normalises only** — it casts the Build Package content into the IEEE 29148 [12] document blueprints and makes no conceptual judgement about sufficiency or scope. The produced documents carry only the filled specification, not the blueprint's author-guidance sections or empty placeholder rows, so a template example block is never read as a requirement. Following SDAD Phase 1 (spec crystallisation) [6], it populates the blueprints:
 
 - **G0_StRS.md** — Stakeholder Requirements Specification (§9.4): `NRM-*`, `HWC-*`, `STK-*` blocks.
 - **G0_SyRS.md** — System Requirements Specification (§9.5): `SYS-*` blocks tracing to StRS.
@@ -524,9 +524,11 @@ the interpreter, never the oracle: the verdict stays the validator's exit code (
 answer (Gate H, G1), so P2 and P3 are untouched.
 
 **Draft mode.** When a requirements stage finds unresolved items — a missing-list entry, a format
-error, or a G1 open finding — it **enters draft automatically** and cannot advance until the human
-has **explicitly decided each one**: fix it, knowingly ignore/accept it (recorded with the decider's
-name), or escalate it to an RFD. While in draft the stage runs against the current files, applies
+error, or a G1 open finding — it **enters draft automatically** and cannot advance until **each one is
+resolved**. Mechanical fixes that invent nothing — removing blueprint scaffolding, filling a value
+already stated elsewhere, dropping a broken reference — are **auto-applied and reported**, not asked;
+only the judgment calls go to the human, who **fixes** them, knowingly **ignores/accepts** them
+(recorded with the decider's name), or **escalates** to an RFD. While in draft the stage runs against the current files, applies
 triage and loops without writing a report iteration or enforcing staleness; the human may edit the
 GT pair directly. On commit — reached only once every item is decided — the marker is removed and one
 recorded run is written, listing each item and its decision. A format error can be fixed or escalated
