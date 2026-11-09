@@ -22,12 +22,12 @@ it has no `src/` until S2 writes the delivered code there. The user's AGENTS.md 
 | Need | Source of truth |
 |------|-----------------|
 | Change a stage, gate or artifact contract | The matching `templates/skills/<stage>/SKILL.md` and its `references/`; register scaffold changes in `templates/config.yaml` |
-| Understand the first complete V-SIL v3 run | [`methodology/test/T3_FM-mock/FIRST_FULL_FLOW_SNAPSHOT.md`](methodology/test/T3_FM-mock/FIRST_FULL_FLOW_SNAPSHOT.md) and [`first_full_flow_2026-11-05/`](methodology/test/T3_FM-mock/first_full_flow_2026-11-05/) |
-| Run the archived Mock HAL prototype | [`first_full_flow_2026-11-05/RUN.md`](methodology/test/T3_FM-mock/first_full_flow_2026-11-05/RUN.md) (`uv sync --frozen --no-dev`, then `./run-demo SC-2`) |
-| Review findings and pending proposals | [`S1_G1_review_holdout_2026-11-05.md`](methodology/test/T3_FM-mock/S1_G1_review_holdout_2026-11-05.md) |
-| See release and completed work | [`v0.6.0`](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.6.0) and [`2026-11-06_1521_global_runtime_and_mcp_manager.md`](odd/tasks/global-runtime-mcp/2026-11-06_1521_global_runtime_and_mcp_manager.md) |
+| Understand the first complete V-SIL v3 run | [`methodology/test/T0_FM-RPI-RTL-mock/FIRST_FULL_FLOW_SNAPSHOT.md`](methodology/test/T0_FM-RPI-RTL-mock/FIRST_FULL_FLOW_SNAPSHOT.md) and [`first_full_flow_2026-11-05/`](methodology/test/T0_FM-RPI-RTL-mock/first_full_flow_2026-11-05/) |
+| Run the archived Mock HAL prototype | [`first_full_flow_2026-11-05/RUN.md`](methodology/test/T0_FM-RPI-RTL-mock/first_full_flow_2026-11-05/RUN.md) (`uv sync --frozen --no-dev`, then `./run-demo SC-2`) |
+| Review findings and pending proposals | [`S1_G1_review_holdout_2026-11-05.md`](methodology/test/T0_FM-RPI-RTL-mock/S1_G1_review_holdout_2026-11-05.md) |
+| See release and completed work | [`v0.6.1`](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.6.1) and [`2026-11-06_1521_global_runtime_and_mcp_manager.md`](odd/tasks/global-runtime-mcp/2026-11-06_1521_global_runtime_and_mcp_manager.md) |
 
-The T3 snapshot completed S0 → G2 with a G2 design-defect feedback loop through
+The T0_FM-RPI-RTL-mock snapshot completed S0 → G2 with a G2 design-defect feedback loop through
 S1, G1 and S2. Its original G2 PASS predates the later runnable-entry-point
 correction; `RUN.md` records that correction's separate smoke evidence. Do not
 present it as a new G2 verdict. The holdout is an observation log; the refactor plan
@@ -88,14 +88,12 @@ checks its predecessor's report before it runs:
 
 ## Test GT cases (V-SIL system inputs)
 
-`methodology/test/T<n>_<name>/` — numbered test cases containing real-world project materials from which the GT pair is derived. They are the methodology's integration tests. See [`methodology/test/README.md`](methodology/test/README.md) for the catalog and manual test procedure; T3 contains the first archived full-flow run.
+`methodology/test/T<n>_<name>/` — numbered test cases containing real-world project materials from which the GT pair is derived. They are the methodology's integration tests. See [`methodology/test/README.md`](methodology/test/README.md) for the catalog and manual test procedure; T0_FM-RPI-RTL-mock contains the first archived full-flow run.
 
 | Test | Domain | GT-ready | Contents |
 |------|--------|----------|----------|
-| **T0_ANE-Lap2** | SDR spectrum monitoring (ANE edge sensor) | **Yes** | `just-edge/StRS.md` + `just-edge/SyRS.md` — copy as `.codeanvil/GT/StRS.md`/`SyRS.md` |
-| **T1_FM-monitoring** | SDR-based FM broadcast compliance monitoring | No (raw) | LaTeX specification (RAG-informed from FCC Part 73, ANE Res. 105, ITU-R BS.412/450/SM.2152, ISO/IEC 17025) |
-| **T2_IoT-Indoor** | Indoor IoT radio environment mapping, 2.4 GHz ISM (GCPDS) | No (raw) | Hermes proposal, radio environment mapping literature, variable adaptation design doc |
-| **T3_FM-mock** | FM occupancy, Raspberry Pi + RTL-SDR target | Build Package | Mock-only S0 → G2 run, copied project, runnable preview and review holdout |
+| **T0_FM-RPI-RTL-mock** | FM occupancy, Raspberry Pi + RTL-SDR, mock-only | Build Package | Archived S0 → G2 run, copied project, runnable preview and review holdout |
+| **T1_HackRF-spectrum** | Real-time spectrum + live HackRF One parameter control, x86_64 PC | Build Package | Build Package plus `SEEDED_FAULTS.md`, the oracle for the triage/draft acid test |
 
 ## Gate details
 
@@ -180,7 +178,7 @@ gates.
 
 ### Deferred proposals, not active paths
 
-The T3 holdout's `.codeanvil/` layout, `codeanvil backup`, bounded S1/G1/S2
+The T0_FM-RPI-RTL-mock holdout's `.codeanvil/` layout, `codeanvil backup`, bounded S1/G1/S2
 rework, S2 pause schedule, module subagents and telemetry collector are
 implemented on `main` (unreleased until v0.5.0). The plan and its Log are in
 `odd/tasks/t3-holdout-refactor/2026-11-06_1410_t3_holdout_refactor.md`.

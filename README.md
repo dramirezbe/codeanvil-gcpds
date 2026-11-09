@@ -6,7 +6,7 @@ Agent-agnostic project scaffolding, templates, and agent definitions for the **V
 
 Works with any AI coding agent: Claude, Codex, OpenCode, Pi, or others. Runs on **Linux, macOS and Windows**.
 
-**Current release:** [v0.5.0](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.5.0). Breaking: GT and design moved under `.codeanvil/`; see the release notes. The first realistic complete run, including a G2 → S1 rework loop, is archived under [`methodology/test/T3_FM-mock/`](methodology/test/T3_FM-mock/). Its [snapshot guide](methodology/test/T3_FM-mock/FIRST_FULL_FLOW_SNAPSHOT.md), [prototype run instructions](methodology/test/T3_FM-mock/first_full_flow_2026-11-05/RUN.md), and [review holdout](methodology/test/T3_FM-mock/S1_G1_review_holdout_2026-11-05.md) show the result and its limits.
+**Current release:** [v0.6.1](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.6.1). It adds failure triage and draft mode to the requirements stages (S0/G0/G1); see the release notes. The first realistic complete run, including a G2 → S1 rework loop, is archived under [`methodology/test/T0_FM-RPI-RTL-mock/`](methodology/test/T0_FM-RPI-RTL-mock/). Its [snapshot guide](methodology/test/T0_FM-RPI-RTL-mock/FIRST_FULL_FLOW_SNAPSHOT.md), [prototype run instructions](methodology/test/T0_FM-RPI-RTL-mock/first_full_flow_2026-11-05/RUN.md), and [review holdout](methodology/test/T0_FM-RPI-RTL-mock/S1_G1_review_holdout_2026-11-05.md) show the result and its limits.
 
 > This methodology does not design hardware. It targets software running on Commercial Off-The-Shelf devices (not necessarily out-of-the-box), where the GT defines what constraints that hardware imposes.
 
@@ -106,7 +106,7 @@ repeats S1 → G1 → S2 → G2; `codeanvil status` shows stale downstream repor
 From this repository, with Python 3.12+, `uv`, Node and `pnpm` installed:
 
 ```bash
-cd methodology/test/T3_FM-mock/first_full_flow_2026-11-05
+cd methodology/test/T0_FM-RPI-RTL-mock/first_full_flow_2026-11-05
 uv sync --frozen --no-dev
 ./run-demo SC-2
 ```
@@ -115,7 +115,7 @@ Open the local Vite URL printed by the launcher (normally
 <http://127.0.0.1:5173/>). The spectrum and waterfall update, and scene SC-2
 shows three occupied channels. Ctrl-C stops both services. This is a **Mock HAL
 preview with a VL-1 ceiling**; it does not validate the RTL-SDR or Raspberry Pi.
-See [RUN.md](methodology/test/T3_FM-mock/first_full_flow_2026-11-05/RUN.md)
+See [RUN.md](methodology/test/T0_FM-RPI-RTL-mock/first_full_flow_2026-11-05/RUN.md)
 for separate-terminal commands and smoke evidence. The archived G2 PASS was
 recorded before the entry-point correction; that correction has separate smoke
 evidence, not a new G2 verdict.
@@ -287,10 +287,8 @@ codeanvil-gcpds/
 │       └── mcp.py           # MCP server install, skill copy, per-agent config gen
 │
 ├── methodology/test/        # Test GT cases (V-SIL system inputs)
-│   ├── T0_ANE-Lap2/        # ANE edge sensor (StRS + SyRS examples, Phase 2)
-│   ├── T1_FM-monitoring/    # SDR-based FM compliance monitoring (LaTeX spec)
-│   ├── T2_IoT-Indoor/      # Indoor IoT radio environment (Hermes/GCPDS)
-│   └── T3_FM-mock/        # Build Package + archived first full V-SIL v3 run
+│   ├── T0_FM-RPI-RTL-mock/  # FM occupancy, RPi + RTL-SDR — Build Package + archived full-flow run
+│   └── T1_HackRF-spectrum/  # HackRF One real-time spectrum — Build Package + seeded-fault oracle
 │
 ├── templates/               # The methodology (the real product)
 │   ├── GT/                  # Ground Truth document templates (IEEE 29148)

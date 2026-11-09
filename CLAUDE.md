@@ -11,12 +11,12 @@ CodeAnvil is an **agent-agnostic harness** that implements the V-SIL methodology
 This is the **CodeAnvil source repo**, so edit `src/codeanvil/` for delivery
 code and `templates/` for methodology. Read [`AGENTS.md`](AGENTS.md) for the
 active stage contracts and source-versus-scaffold distinction. The current
-release is [v0.6.0](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.6.0).
+release is [v0.6.1](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.6.1).
 
 For the first complete S0 → G2 run, start with the
-[`T3_FM-mock` snapshot guide](methodology/test/T3_FM-mock/FIRST_FULL_FLOW_SNAPSHOT.md),
-then the [archived project's `RUN.md`](methodology/test/T3_FM-mock/first_full_flow_2026-11-05/RUN.md)
-and [review holdout](methodology/test/T3_FM-mock/S1_G1_review_holdout_2026-11-05.md).
+[`T0_FM-RPI-RTL-mock` snapshot guide](methodology/test/T0_FM-RPI-RTL-mock/FIRST_FULL_FLOW_SNAPSHOT.md),
+then the [archived project's `RUN.md`](methodology/test/T0_FM-RPI-RTL-mock/first_full_flow_2026-11-05/RUN.md)
+and [review holdout](methodology/test/T0_FM-RPI-RTL-mock/S1_G1_review_holdout_2026-11-05.md).
 The snapshot includes a G2 design-defect FEEDBACK → S1/G1/S2 rework → G2 PASS.
 The later entry-point fix has separate smoke evidence; the original G2 verdict
 does not cover that correction. The holdout's document renames, report moves,
@@ -72,10 +72,8 @@ CLI + PySide6 UI that bootstraps projects, wires up the harness, and tracks stat
 
 - **GT (Ground Truth)**: the pair of human-authored `.md` files (StRS + SyRS) that define what "correct" means. Human-authored, not raw PDFs. Normativity lives inline in the StRS as `NRM-` blocks. S0 produces the pair from the author's Build Package.
 - **T# (Test GT)**: numbered test cases (`methodology/test/T<n>_<name>/`) that serve as V-SIL system inputs — real-world GT instances used to validate and stress-test the methodology pipeline end-to-end. See [`methodology/test/README.md`](methodology/test/README.md) for the full test catalog and end-to-end manual test procedure.
-  - **T0_ANE-Lap2** — SDR spectrum monitoring edge sensor (ANE). **GT-ready**: `just-edge/StRS.md` + `just-edge/SyRS.md` are valid GT files that can be copied directly into a project as `.codeanvil/GT/StRS.md` / `SyRS.md`.
-  - **T1_FM-monitoring** — SDR-based FM broadcast compliance monitoring system. Raw LaTeX spec (GT must be derived). RAG-informed from regulatory docs (FCC Part 73, ANE Res. 105, ITU-R BS.412/450/SM.2152, ISO/IEC 17025).
-  - **T2_IoT-Indoor** — Indoor IoT radio environment mapping at 2.4 GHz ISM (Proyecto Hermes / GCPDS). Raw proposal + literature (GT must be derived).
-  - **T3_FM-mock** — ready Build Package and an archived mock-only full-flow run. The snapshot contains GT, code, verification kit and cycle reports; `RUN.md` starts the corrected preview.
+  - **T0_FM-RPI-RTL-mock** — FM spectrum, waterfall and channel occupancy on a Raspberry Pi + RTL-SDR, `mock-only`. Ready Build Package plus an archived S0 → G2 full-flow run; the snapshot contains GT, code, verification kit and cycle reports, and `RUN.md` starts the corrected preview.
+  - **T1_HackRF-spectrum** — real-time spectrum viewer with live HackRF One parameter control on an x86_64 PC. Build Package plus `SEEDED_FAULTS.md`, the oracle for the failure-triage and draft-mode acid test.
 - **Stage (Sn) and gate (Gn)**: stages produce, gates judge. Sequential — each needs its predecessor's report at `HITL: PASS`. G0 is the only deterministic gate (script); Gate H, G1 and G2 are human. A stage's PASS means "delivered".
 - **Skill**: `SKILL.md` + optional scripts that define what happens at a gate. Agent-agnostic — any coding agent that reads markdown can execute them. Live in `templates/skills/` (repo) and `.agents/skills/` (scaffolded projects).
 - **Gate progress**: tracked by the harness via the GT files and cycle-scoped reports (`.codeanvil/report/<cycle>/<gate>.md`), not by the tool. There is no orchestrator advancing a stored session — each skill checks its predecessor's report, and the agent asks for the cycle on project open.

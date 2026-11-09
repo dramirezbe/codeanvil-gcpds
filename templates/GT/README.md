@@ -57,7 +57,7 @@ its filename.
 
 ## Working examples
 
-Filled-in examples for a real project (ANE Edge Sensor — spectrum monitoring) live in `methodology/test/T0_ANE-Lap2/just-edge/`:
+Filled-in examples for a real project (ANE Edge Sensor — spectrum monitoring) live in the test suite's fixtures, `templates/tests/fixtures/`:
 
 | File       | Description                                                        |
 |------------|--------------------------------------------------------------------|

@@ -233,7 +233,7 @@ Repeat B7 here, without regenerating any config.
 | C2 runs on the runtime | `echo 'import six, sys; print(six.__version__, sys.flags.isolated)' > /tmp/rt.py && codeanvil python /tmp/rt.py` | version and `1` |
 | C3 skill package check | In `telemetry_idle`: `codeanvil runtime remove six`, then the collector command of part A with `--duration 2` | still runs: psutil is base, not user |
 | C4 base cannot go | `codeanvil runtime remove psutil` | exit 1, `base packages of the runtime cannot be removed: psutil` |
-| C5 G0 on the runtime | In `telemetry_idle`: copy `methodology/test/T0_ANE-Lap2/just-edge/{StRS,SyRS}.md` to `.codeanvil/GT/`, then `codeanvil python .agents/skills/G0_valid_req_and_GT/scripts/g0_validate.py .codeanvil/GT/StRS.md .codeanvil/GT/SyRS.md; echo $?` | exit 0, same report as `python3 -I <same script> <same files>` |
+| C5 G0 on the runtime | In `telemetry_idle`: copy `templates/tests/fixtures/{StRS,SyRS}.md` to `.codeanvil/GT/`, then `codeanvil python .agents/skills/G0_valid_req_and_GT/scripts/g0_validate.py .codeanvil/GT/StRS.md .codeanvil/GT/SyRS.md; echo $?` | exit 0, same report as `python3 -I <same script> <same files>` |
 | C6 disable / enable | In `moved_probe`: `codeanvil mcp disable marconi`, `cat .mcp.json`, `codeanvil mcp enable marconi` | marconi and its `marconi-*` skills disappear, then come back; the MCP table in `AGENTS.md` follows |
 | C7 remove guard | `codeanvil mcp remove marconi` | exit 1, lists the registered projects that use it; nothing deleted |
 | C8 full flow | `methodology/test/README.md` § 5b (T3 S0 → G2) in a fresh project | `run.sh vl0` writes JSONL under `verification/telemetry/` from the in-place collector; G2 accepts the readings |

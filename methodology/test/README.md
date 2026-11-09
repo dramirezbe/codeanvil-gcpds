@@ -1,37 +1,15 @@
 # V-SIL Test Cases (T#) and End-to-End Manual Test
 
-## Test cases
-
-Each `T<n>_<name>/` folder is a real-world GT instance used to validate the
-methodology pipeline. They are the methodology's integration tests.
-
-| T# | Domain | GT-ready | Contents |
-|----|--------|----------|----------|
-| **T0_ANE-Lap2** | SDR spectrum monitoring (ANE edge sensor) | **Yes** — `just-edge/StRS.md` + `just-edge/SyRS.md` are valid GT files | Also has `full-system/StRS_APPROVED.md` (broader scope, historical snapshot) |
-| **T1_FM-monitoring** | SDR-based FM broadcast compliance | No — raw LaTeX spec, GT must be derived | `00_sdr_spectrum_sensor_design/` (RAG-informed from FCC/ANE/ITU) |
-| **T2_IoT-Indoor** | Indoor IoT radio environment mapping, 2.4 GHz | No — raw proposal + literature | Hermes proposal, radio env mapping papers, variable adaptation doc |
-| **T3_FM-mock** | FM spectrum + waterfall + channel detection, RTL-SDR → Raspberry Pi DSP service + browser UI | Build Package — `build_package.md`, S0 writes the GT pair | Archived `mock-only` S0 → G2 run, copied project, runnable preview and review holdout |
-
-Only **T0** has ready-to-use GT files for the pipeline, and **T3** a ready-to-use Build
-Package. T1 and T2 are raw project materials from which GT files would be authored.
-
-The first complete run is preserved in
-[`T3_FM-mock/first_full_flow_2026-11-05/`](T3_FM-mock/first_full_flow_2026-11-05/).
-Read the [snapshot guide](T3_FM-mock/FIRST_FULL_FLOW_SNAPSHOT.md),
-[run instructions](T3_FM-mock/first_full_flow_2026-11-05/RUN.md) and
-[review holdout](T3_FM-mock/S1_G1_review_holdout_2026-11-05.md).
-Its original G2 PASS predates the corrected runnable entry point; the latter
-has separate smoke evidence in `RUN.md`.
-
 ---
 
 ## End-to-End Manual Test Procedure
 
 This earlier procedure covers the clean install and Build Package → S0 → G0 →
 S1 → G1 portion of the flow, using the FM Build Package under
-`templates/no-tools-skills/v3/test-inputs/` as the test input. T0 stays usable as a
+`templates/no-tools-skills/v3/test-inputs/` as the test input. The test suite's own
+StRS + SyRS pair under `templates/tests/fixtures/` can be copied straight in as a
 hand-written GT pair (S0 passes it through as normalised input).
-For the S2 → G2 continuation and a runnable result, use the T3 archive above.
+For the S2 → G2 continuation and a runnable result, use the T0_FM-RPI-RTL-mock archive below.
 
 ### Prerequisites
 
@@ -188,11 +166,11 @@ Verify:
 cp templates/no-tools-skills/v3/test-inputs/build_package.md /tmp/smoke-test/.codeanvil/GT/build_package.md
 ```
 
-Alternative (hand-written pair, S0 runs as a no-op): copy the T0 pair instead.
+Alternative (hand-written pair, S0 runs as a no-op): copy the test suite's fixture pair instead.
 
 ```bash
-cp methodology/test/T0_ANE-Lap2/just-edge/StRS.md /tmp/smoke-test/.codeanvil/GT/StRS.md
-cp methodology/test/T0_ANE-Lap2/just-edge/SyRS.md /tmp/smoke-test/.codeanvil/GT/SyRS.md
+cp templates/tests/fixtures/StRS.md /tmp/smoke-test/.codeanvil/GT/StRS.md
+cp templates/tests/fixtures/SyRS.md /tmp/smoke-test/.codeanvil/GT/SyRS.md
 ```
 
 ### 4. Enter sandboxed Claude session in the project
@@ -352,7 +330,7 @@ Cycles:
 | Graph differs from design | Remove a module from the graph's `DATA`, run G1 | Finding marked `open` |
 | RFD closes the cycle | Answer RFD at G1, decide it, name a new cycle | Old cycle shows `(closed: superseded by <name>)`; G1 before the decision returns `Cycle suspended by RFD. Run the RFD skill.` |
 
-### 5b. Full flow S0 → G2, `mock-only` (T3_FM-mock)
+### 5b. Full flow S0 → G2, `mock-only` (T0_FM-RPI-RTL-mock)
 
 Scenario: SDR → Raspberry Pi DSP service (spectrum, waterfall, detection of the 10 FM channels
 of a 2 MHz slice) and a browser UI, validation up to VL-1 with the Mock HAL and the labelled
@@ -365,7 +343,7 @@ is future work only, so the design has no §1.5. Plan:
 ROOT="$(mktemp -d)"
 codeanvil create --name "FM Occupancy Mock" -p "$ROOT"
 cd "$ROOT"/fm_occupancy_mock
-cp <repo>/methodology/test/T3_FM-mock/build_package.md .codeanvil/GT/build_package.md
+cp <repo>/methodology/test/T0_FM-RPI-RTL-mock/build_package.md .codeanvil/GT/build_package.md
 codeanvil sandbox claude    # or opencode, codex; pi only for the fresh-session probe
 ```
 
@@ -396,10 +374,10 @@ feature document's Log; a failing step reopens the task of the skill that failed
 
 The first OpenCode result of this procedure, including its hidden scaffold files,
 GT, reports, services and verification kit, is archived at
-`T3_FM-mock/first_full_flow_2026-11-05/`. Its original state is commit
+`T0_FM-RPI-RTL-mock/first_full_flow_2026-11-05/`. Its original state is commit
 `2b760da`; the corrected runnable entry point and replay instructions are in
-that directory's `RUN.md`. See `T3_FM-mock/FIRST_FULL_FLOW_SNAPSHOT.md` for the
-copy exclusions and `T3_FM-mock/S1_G1_review_holdout_2026-11-05.md` for the
+that directory's `RUN.md`. See `T0_FM-RPI-RTL-mock/FIRST_FULL_FLOW_SNAPSHOT.md` for the
+copy exclusions and `T0_FM-RPI-RTL-mock/S1_G1_review_holdout_2026-11-05.md` for the
 review.
 
 ### 6. Cleanup
