@@ -541,3 +541,23 @@ Only after every verification check passes on the final commit.
      commit, then Phase 4 (v0.6.0: bump, tag the merge commit, release, smoke
      test from `@v0.6.0`).
   4. Verification 8 (Windows) is still manual.
+- **2026-11-09 — CLOSED (merged to main).** The probe ran and the one finding
+  it surfaced was fixed:
+  - Probe `methodology/test/runtime_mcp_probe.md` parts A, B, C run on the dev
+    box; Results table filled. All PASS except C8 (deferred). B1 fail→fix
+    exercised by removing the venv (the original 3.14→3.15 ABI drift had
+    already been repaired, so the FAIL mode is "no venv", not the ABI text).
+  - **Finding B6 → fixed** (`ef84b94`): `codeanvil sandbox claude` leaked the
+    claude.ai account-managed MCP servers past `--setting-sources project`.
+    The recipe now carries `--strict-mcp-config`, and `cmd_sandbox` adds
+    `--mcp-config <project .mcp.json>` when present. Verified live + 430 tests
+    green.
+  - PR #8 merged to main with a merge commit. Formal code review (item 2) was
+    skipped at the owner's direction in favour of the probe evidence + the
+    full suite.
+  - **Carried forward (not blockers for this plan):** the v0.6.0 release
+    (bump, tag, publish, smoke test from `@v0.6.0`); the C8 full S0→G2
+    flow with the in-place collector; Verification 8 (Windows), still manual;
+    and a decision on the stale repo-root `mcp_sandbox_probe/` scratch dir.
+    Two probe-wording nits are noted in the Results table (B1 ABI text no
+    longer reproducible; B8 whole-file `~/.claude.json` checksum too strict).
