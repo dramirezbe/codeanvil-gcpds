@@ -153,7 +153,13 @@ sandbox_agents:
   claude:
     binary: claude
     strategy: native
-    args: ["--setting-sources", "project"]
+    # --strict-mcp-config stops the claude.ai account-managed MCP servers
+    # (Claude Docs, ClickUp, Lucid, ...) from leaking past --setting-sources
+    # project. project_mcp_config re-adds the project's own servers via
+    # --mcp-config when the project has a .mcp.json; without one the sandbox
+    # sees no MCP servers at all.
+    args: ["--setting-sources", "project", "--strict-mcp-config"]
+    project_mcp_config: ".mcp.json"
   pi:
     binary: pi
     strategy: native

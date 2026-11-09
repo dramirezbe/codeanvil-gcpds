@@ -165,28 +165,30 @@ checks that stdout carried JSON-RPC only.
 
 ### B6. Sandboxed Claude sees only the project's server (Level 2, costs tokens)
 
+These are the flags `codeanvil sandbox claude` now passes (`config.yaml`
+`sandbox_agents.claude`): `--strict-mcp-config` plus `--mcp-config <project
+.mcp.json>` when the project has one.
+
 ```bash
 cd ~/sandbox-vsil/mcp_sandbox_probe
-claude -p --setting-sources project --output-format stream-json --verbose \
-  "List your MCP servers." \
+claude -p --setting-sources project --strict-mcp-config --mcp-config "$PWD/.mcp.json" \
+  --output-format stream-json --verbose "List your MCP servers." \
   | jq -c 'select(.type == "system" and .subtype == "init") | .mcp_servers'
 ```
 
 **PASS:** exactly `[{"name":"marconi","status":"connected"}]`, with no
-codegraph, context7, engram or local-rag.
+codegraph, context7, engram, local-rag, nor any claude.ai account-managed
+server (Claude Docs, ClickUp, Lucid, …).
 
 If `jq` prints `null`, the field has another name in your Claude Code version:
 drop the trailing `.mcp_servers` and read the init event.
 
-**If a user-scope server leaks**, the sandbox recipe needs the strict flags.
-Rerun with them, and if they fix it, report it so `config.yaml`
-`sandbox_agents.claude.args` gets them:
-
-```bash
-claude -p --setting-sources project --strict-mcp-config --mcp-config .mcp.json \
-  --output-format stream-json --verbose "List your MCP servers." \
-  | jq -c 'select(.type == "system" and .subtype == "init") | .mcp_servers'
-```
+**Why strict:** `--setting-sources project` alone does NOT exclude the claude.ai
+account-managed servers — they leak in with `"source":"claudeai"`.
+`--strict-mcp-config` admits only the servers named by `--mcp-config`; a project
+with no `.mcp.json` then sees `[]` (full isolation). If you drop the strict
+flags you will see the leak. This was found and fixed on 2026-11-09 (see
+[Results](#results) B6).
 
 ### B7. A real tool call from the sandboxed session
 
@@ -243,6 +245,22 @@ The registry keeps their rows (no prune command yet).
 
 | Date | Part | Machine | Result | Notes |
 |------|------|---------|--------|-------|
-| | A | | | |
-| | B1–B9 | | | |
-| | C1–C8 | | | |
+| 2026-11-09 | 0 | dev (omarchy, x86_64, 16-core) | PASS | `runtime list` prints psutil 7.2.2 + pyyaml 6.0.3. |
+| 2026-11-09 | A | dev (omarchy, x86_64, 16-core) | PASS | 120 samples @ 1.00 s, `['psutil']` only, system cpu mean 2.80 % stdev 0.94, sensors Tctl/acpitz/edge, `tree pid {354826}` = echoed shell, `processes {1}`, unavailable = counters only. **Gotcha:** wrap the collector command in a pipe (`\| tail`) and `processes` reads `{2}` — the piped reader is a live sibling in the measured tree. Run the collector line exactly as written (no pipe). |
+| 2026-11-09 | B1 | dev (omarchy, x86_64, 16-core) | PASS* | Genuine FAIL, `exit 1`, names the fix. *The original 3.14→3.15 ABI drift had already been repaired in a prior session, so the venv was healthy; re-broke it by `rm -rf .venv`. Failure line is `[FAIL] venv: no venv — run codeanvil mcp update marconi`, not the ABI-mismatch text the step documents. The ABI case is no longer reproducible on this box without downgrading Python. |
+| 2026-11-09 | B2 | dev (omarchy, x86_64, 16-core) | PASS | `mcp update` rebuilt the venv on /usr/bin/python3.14 + system site-packages; doctor all `[ok]` incl. gnuradio 3.10.12.0, `exit 0`; list shows `ref 533bae4268e3 pinned`. |
+| 2026-11-09 | B3 | dev (omarchy, x86_64, 16-core) | — | Baseline captured. User-scope servers: codegraph, context7, engram, local-rag (+ claude.ai managed: Claude Docs, motion, ClickUp, Lucid, Atlassian). |
+| 2026-11-09 | B4 | dev (omarchy, x86_64, 16-core) | PASS | `.mcp.json` holds only the launcher call `codeanvil mcp run marconi`, `env {}`, no home path. |
+| 2026-11-09 | B5 | dev (omarchy, x86_64, 16-core) | PASS | `test_mcp_e2e.py` 1 passed in 10.53 s (real flowgraph through the launcher). |
+| 2026-11-09 | B6 | dev (omarchy, x86_64, 16-core) | PASS (fix applied) | **FINDING → FIXED.** Old recipe (`--setting-sources project` alone) LEAKED the claude.ai account-managed servers (Claude Docs, motion, ClickUp, Lucid, Atlassian) with `"source":"claudeai"`; user-scope servers (codegraph/context7/engram/local-rag) did NOT leak. Fix: `config.yaml` `sandbox_agents.claude` now carries `--strict-mcp-config`, and `cmd_sandbox` adds `--mcp-config <project .mcp.json>` when the project has one. Verified live: with `.mcp.json` → exactly `[{"name":"marconi"...}]`; without → `[]`, no crash. |
+| 2026-11-09 | B7 | dev (omarchy, x86_64, 16-core) | PASS | `tool_result` `"status":"ok"`, `tone.bin` 32768 bytes. (Sub-agent's first attempt used `src`/`dst` connection keys; marconi correctly rejected them, it retried with `src_block`/`dst_block`.) |
+| 2026-11-09 | B8 | dev (omarchy, x86_64, 16-core) | PASS* | Meaningful checks pass: user-scope list unchanged, marconi NOT in global `.mcpServers`, `/tmp` list `grep -c marconi` = 0. *`sha256sum -c` on the whole `~/.claude.json` FAILS — Claude Code mutates that file every run (`skillUsage.*` counters, caches). The only marconi hits in it are `skillUsage.marconi-*`, not MCP registration. **The whole-file checksum is too strict; check the `.mcpServers` section instead.** |
+| 2026-11-09 | B9 | dev (omarchy, x86_64, 16-core) | PASS | Moved project, no config regen, `"status":"ok"`, 32768-byte `tone.bin` in the new folder. |
+| 2026-11-09 | C1 | dev (omarchy, x86_64, 16-core) | PASS | `six user 1.17.0` listed. |
+| 2026-11-09 | C2 | dev (omarchy, x86_64, 16-core) | PASS | `1.17.0 1` (version + isolated flag). |
+| 2026-11-09 | C3 | dev (omarchy, x86_64, 16-core) | PASS | After `remove six`, collector still runs (2 samples) — psutil is base. |
+| 2026-11-09 | C4 | dev (omarchy, x86_64, 16-core) | PASS | `remove psutil` → `exit 1`, `base packages of the runtime cannot be removed: psutil`. |
+| 2026-11-09 | C5 | dev (omarchy, x86_64, 16-core) | PASS | G0 on T0 GT: `exit 0`, report IDENTICAL to `python3 -I` on the same script+files. |
+| 2026-11-09 | C6 | dev (omarchy, x86_64, 16-core) | PASS | disable: skills 8→0, `.mcp.json` `mcpServers {}`, AGENTS.md rows 7→6. enable: restored 0→8, marconi key back, rows 6→7. |
+| 2026-11-09 | C7 | dev (omarchy, x86_64, 16-core) | PASS | `mcp remove marconi` → `exit 1`, lists the project using it, nothing deleted. (Listed project is the stale repo-root `mcp_sandbox_probe` from a prior session, still registered.) |
+| 2026-11-09 | C8 | — | NOT RUN | Deferred. Full S0→G2 flow with human gates G1/G2 — belongs in its own session. S0→G2 is already evidenced by the T3 first-full-flow snapshot; C8's unique check is that `run.sh vl0` writes JSONL from the in-place collector and G2 accepts it. |
