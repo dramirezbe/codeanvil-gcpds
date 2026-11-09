@@ -3,9 +3,10 @@
 
 Two independent guarantees are covered here:
 
-1. **Real fixtures** - the ANE edge-sensor StRS/SyRS pair in
-   ``methodology/test/T0_ANE-Lap2/just-edge/`` must pass with the exact
-   expected error/warning counts, and the G0 gate must accept the pair.
+1. **Real fixtures** - the StRS/SyRS pair in ``templates/tests/fixtures/`` must
+   pass with the exact expected error/warning counts, and the G0 gate must accept
+   the pair. The fixtures are owned by the test suite, not read from
+   ``methodology/test/``, so retiring a methodology test case never breaks them.
 
 2. **Reference templates** - the unfilled templates in ``templates/GT/`` must
    stay in sync with the validator. Every heading constant baked into the
@@ -41,12 +42,8 @@ _REPO_ROOT = _TEMPLATES.parent           # repository root
 SCRIPT = _TEMPLATES / "skills" / "G0_valid_req_and_GT" / "scripts" / "g0_validate.py"
 TEMPLATE_STRS = _TEMPLATES / "GT" / "StRS.md"
 TEMPLATE_SYRS = _TEMPLATES / "GT" / "SyRS.md"
-FIXTURE_STRS = (
-    _REPO_ROOT / "methodology" / "test" / "T0_ANE-Lap2" / "just-edge" / "StRS.md"
-)
-FIXTURE_SYRS = (
-    _REPO_ROOT / "methodology" / "test" / "T0_ANE-Lap2" / "just-edge" / "SyRS.md"
-)
+FIXTURE_STRS = _TESTS_DIR / "fixtures" / "StRS.md"
+FIXTURE_SYRS = _TESTS_DIR / "fixtures" / "SyRS.md"
 
 # Expected shape of the migrated real fixtures (pinned; see T8).
 FIXTURE_STRS_BLOCK_COUNT = 64   # 43 STK + 17 HWC + 4 NRM
@@ -454,7 +451,7 @@ class TestMinimalFixtures(unittest.TestCase):
 
 
 class TestRealStrsFixture(unittest.TestCase):
-    """methodology/test/T0_ANE-Lap2/just-edge/StRS.md - the named real document."""
+    """templates/tests/fixtures/StRS.md - the suite's reference StRS."""
 
     @classmethod
     def setUpClass(cls):
@@ -534,7 +531,7 @@ class TestRealStrsFixture(unittest.TestCase):
 
 
 class TestRealSyrsFixture(unittest.TestCase):
-    """methodology/test/T0_ANE-Lap2/just-edge/SyRS.md - the named real document."""
+    """templates/tests/fixtures/SyRS.md - the suite's reference SyRS."""
 
     @classmethod
     def setUpClass(cls):

@@ -876,10 +876,10 @@ def test_g0_validator_is_side_effect_free_and_maps_exit_codes(tmp_path):
 
     repo = Path(__file__).resolve().parents[1]
     validator = repo / "templates/skills/G0_valid_req_and_GT/scripts/g0_validate.py"
-    t0 = repo / "methodology/test/T0_ANE-Lap2/just-edge"
+    fixtures = repo / "templates/tests/fixtures"
     strs, syrs = tmp_path / "StRS.md", tmp_path / "SyRS.md"
-    shutil.copy2(t0 / "StRS.md", strs)
-    shutil.copy2(t0 / "SyRS.md", syrs)
+    shutil.copy2(fixtures / "StRS.md", strs)
+    shutil.copy2(fixtures / "SyRS.md", syrs)
 
     def digests():
         return [hashlib.sha256(p.read_bytes()).hexdigest() for p in (strs, syrs)]
