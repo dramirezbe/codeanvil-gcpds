@@ -50,6 +50,21 @@ passes only on the validator's exit `0`, Gate H and G1 only on the human's answe
 plain-language explanation never downgrades, hides or pre-approves an ERROR. The deterministic
 validator stays the oracle; this triage only makes its output legible.
 
+### Lead with meaning, never codes
+
+The reader must never have to open a document to learn what an item is about. Describe every
+requirement, constraint or obligation by **what it asks or limits, in plain words, first**, and put
+its ID in parentheses as a reference only. This holds for the problem statement, every option and
+every question — a bare ID with no plain-language description is never acceptable anywhere.
+
+- Not: `NRM-RF-002 has no clause.`
+- But: `The rule that the receiver must stay within the HackRF's 1 MHz – 6 GHz tuning range cites the
+  datasheet but names no section, so the number cannot be checked against the source (NRM-RF-002).`
+
+When an item links two blocks (a dependency, a trace), name both in plain words, not just the codes:
+not `R2 depends on H9`, but `the live-parameter-control requirement depends on a hardware limit that
+is not in the table (STK-CTRL-001 → H9)`.
+
 ## 2. Draft mode — the fast requirements loop
 
 Draft mode lets the human iterate on the Ground Truth (and, at G1, on the open findings)

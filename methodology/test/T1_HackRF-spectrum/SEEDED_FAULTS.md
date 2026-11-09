@@ -33,3 +33,20 @@ Package (worth recording) or agent noise (worth noting) — both are useful sign
   not pre-approve or auto-fix. The agent interprets; the human chooses.
 - Compare the `.codeanvil/report/<cycle>/` iterations against this table after the run and record
   the result in a `SECOND_FULL_FLOW_<date>` note, as the first run was archived.
+
+## Observed — run 1 (opencode, 2026-11-09, S0 → Gate H)
+
+- G0 validated **clean: 0 errors, 0 warnings, exit 0**. All three seeded faults were caught, but on
+  the **S0 missing list** (handled at Gate H), not as deterministic errors.
+- **F1 did NOT produce a G0 exit-1.** The dangling `H9` dependency surfaced as a traceability gap on
+  the missing list (STK-CTRL-001 → H9), not as a validator ERROR. S0 did not lift R2's prose
+  dependency into a checked field, so the deterministic cross-reference check never saw it.
+  **Consequence: draft mode was never triggered this run** — no exit-1 occurred. To actually
+  exercise draft mode, a future seeded fault must produce a *deterministic* G0 ERROR (e.g. a SyRS
+  `Traces to` pointing at a non-existent StRS block, which `validate_cross_document` does reject).
+- Triage also surfaced **3 unseeded real gaps**: N2 clip-warning has no SyRS spec, StRS §5.2–§5.4
+  (security/reliability/maintainability) unspecified, and both documents still DRAFT. Good signal.
+- Open methodology question (not fixed): should a requirement that depends on a non-existent
+  constraint be a deterministic G0 ERROR, rather than only a missing-list item?
+- Presentation fix applied after this run: triage must lead with plain-language meaning and put the
+  block ID in parentheses (TRIAGE.md "Lead with meaning, never codes").
