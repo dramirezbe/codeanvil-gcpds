@@ -33,6 +33,13 @@ S0 has **no prerequisite**: it is the entry point of the V-SIL chain.
    `Build Package unchanged since the RFD. Update .codeanvil/GT/build_package.md first.` and write nothing.
    A digest of `none` (the RFD was decided on a hand-written pair) skips this check.
 
+**Draft mode.** If `.codeanvil/report/<cycle-name>/DRAFT` exists, S0 runs in draft mode: apply the
+human's requested GT changes — re-normalise from the Build Package, or help edit the GT pair
+directly — run Triage ([references/TRIAGE.md](references/TRIAGE.md)) on anything the Build Package
+does not supply, and write **no** iteration. The recorded S0 run (Report Contract below) happens
+only when the human commits the draft, which also reconciles any direct GT edits against the Build
+Package (TRIAGE.md §2). While drafting, the digest and overwrite checks above do not block.
+
 ## Inputs
 
 | Path | Role |
@@ -40,6 +47,7 @@ S0 has **no prerequisite**: it is the entry point of the V-SIL chain.
 | `.codeanvil/GT/build_package.md` | User-authored. The only content source |
 | `templates/skills/S0_normalise_build_package/templates/StRS.md`, `.../SyRS.md` | This skill's locked blueprints. Never edit them |
 | `.codeanvil/report/<cycle-name>/G0.md` | Re-entry only: the latest FEEDBACK |
+| `references/TRIAGE.md` | Failure triage + draft mode, shared with G0 and G1 |
 
 ## Decision Table
 
@@ -85,7 +93,9 @@ S0 has **no prerequisite**: it is the entry point of the V-SIL chain.
 
 ## Re-entry
 
-When the latest `G0.md` iteration is `FEEDBACK`, match each reason to its Build Package
+When the latest `G0.md` iteration is `FEEDBACK`, run Triage
+([references/TRIAGE.md](references/TRIAGE.md)) on each reason first: present the real problem and
+reconciliation options, and let the human choose. Then match each reason to its Build Package
 line. If the content exists there, correct the GT block. If not, list it as
 "needs Build Package content" and leave the block unchanged. A re-run after G0 passed makes
 `codeanvil status` mark G0 stale, so G0 runs again.

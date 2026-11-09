@@ -23,7 +23,13 @@ G0 validates what S0 produced. Before running anything:
 2. If the latest iteration of `.codeanvil/report/<cycle-name>/RFD.md` holds a line
    `Superseded by cycle: <name>`, this cycle is **closed** by an RFD and read-only: return exactly
    `Cycle closed by RFD. Continue in cycle <name>.` and write nothing.
-3. Check, in this order, writing **no iteration** when you stop:
+3. **Draft mode.** If `.codeanvil/report/<cycle-name>/DRAFT` exists, G0 runs in draft mode:
+   validate the **current** GT pair, run Triage on every ERROR and missing-list entry, and loop
+   with the human — writing **no** iteration and **not** requiring S0's recorded PASS. See
+   [references/TRIAGE.md](references/TRIAGE.md) §2. The checks in step 4 and the Report Contract
+   apply only to a **recorded** (non-draft) run; a recorded run happens when the human commits
+   the draft (the marker is removed) or when draft mode was never entered.
+4. Otherwise (recorded run) check, in this order, writing **no iteration** when you stop:
    1. `.codeanvil/report/<cycle-name>/S0.md` is missing or its latest iteration is not
       `HITL: PASS`: return exactly `S0 must pass first. Run the S0 skill.`
    2. `codeanvil status` marks `S0` stale: return the same line.
@@ -32,7 +38,7 @@ G0 validates what S0 produced. Before running anything:
       states `Outcome: Withdrawn`. Otherwise, if its `Based on` line names the current latest
       S0 iteration, nothing was reworked: return exactly
       `S0 must rework first. Run the S0 skill.`
-4. Create `.codeanvil/report/<cycle-name>/` when it does not exist.
+5. Create `.codeanvil/report/<cycle-name>/` when it does not exist.
 
 ## Activation Contract
 
@@ -54,6 +60,10 @@ metrological rigor, and do not use it for the design: that is S1 and G1.
 - **The exit code is the gate verdict.** `0` pass, `1` errors block, `2` script error. Never
   record G0 as passed on exit `1` or `2`.
 - **Errors block; warnings do not.** Report every ERROR. Never downgrade or suppress one.
+- **Translate before FEEDBACK.** On exit `1`, run Triage ([references/TRIAGE.md](references/TRIAGE.md))
+  on every ERROR and every missing-list entry before recording FEEDBACK or looping in draft:
+  each becomes a plain-language problem plus reconciliation options for the human. Triage never
+  changes the verdict — exit `1` still blocks.
 - **Never edit a GT document inside G0.** A fix goes back to S0 (or to the author, for a
   hand-written pair).
 - **Validate against the templates**, never assumptions: `templates/GT/StRS.md`,
@@ -87,9 +97,10 @@ Write exactly one file: `.codeanvil/report/<cycle-name>/G0.md`.
 
 | Situation | Action |
 |-----------|--------|
-| Exit `0` | Show the user the script output and the **missing list** from the latest `S0.md` iteration (placeholders the validator does not reject). Then ask **Gate H**: *Requirements complete, bounded, and verifiable?* Ask it as **Asking the human** says below. Write the iteration with that `HITL` value; `PASS` completes G0. |
+| Exit `0` | Show the user the script output and the **missing list** from the latest `S0.md` iteration (placeholders the validator does not reject). In **draft mode**, instead offer to commit (remove the marker, then do a recorded run); Gate H is asked on the recorded run. In a **recorded run**, ask **Gate H**: *Requirements complete, bounded, and verifiable?* Ask it as **Asking the human** says below. Write the iteration with that `HITL` value; `PASS` completes G0. |
 | Gate H `FEEDBACK` | Collect the reasons one per line, each starting with the block ID it concerns, and write them verbatim. The route back is S0. Never suggest or complete a reason. |
-| Exit `1` | `HITL` is forced to **FEEDBACK**, with no question to the human. Write the iteration with the full report so each ERROR is fixable by line + block ID. The route back is S0. |
+| Exit `1` (recorded) | `HITL` is forced to **FEEDBACK**; the human is not asked the *Gate H* question. First run Triage ([references/TRIAGE.md](references/TRIAGE.md)) on every ERROR, then write the iteration with the full report so each ERROR is fixable by line + block ID. The route back is S0. |
+| Exit `1` (draft) | Write **no** iteration. Run Triage on every ERROR, apply the human's chosen fixes to the GT, and re-run the validator. Loop until exit `0`, then offer to commit. |
 | Exit `2` | Script error (bad args, unreadable file, undetectable doc type). Fix the invocation or the type heading and re-run. Write **no** iteration. |
 | Pair incomplete | The G0 GATE REPORT names the missing document; supply both files in one invocation. Write the iteration with `HITL: FEEDBACK`. |
 
@@ -129,6 +140,8 @@ Return all five:
 - [references/RULES.md](references/RULES.md) — full Phase 1–4 + G0-X rule tables, required
   sections, enum values, block/field formats, the report format, and the script's internal
   architecture.
+- [references/TRIAGE.md](references/TRIAGE.md) — failure triage (plain-language problem +
+  reconciliation options for every ERROR) and draft mode (the fast requirements loop).
 - `scripts/g0_validate.py` — the deterministic validator (Python 3.9+, stdlib only).
 - `templates/GT/StRS.md`, `templates/GT/SyRS.md` — the authoritative structure
   definitions (repository-root relative).

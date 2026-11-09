@@ -25,8 +25,14 @@ Its findings inform the human; they are never an automatic verdict.
 Resolve the active cycle from `.codeanvil/project.yaml` (`cycle:`); if missing, ask the user.
 If the latest iteration of `.codeanvil/report/<cycle-name>/RFD.md` holds a line
 `Superseded by cycle: <name>`, this cycle is **closed** by an RFD and read-only: return exactly
-`Cycle closed by RFD. Continue in cycle <name>.` and write nothing. Otherwise check, in this order,
-writing **no iteration** when you stop:
+`Cycle closed by RFD. Continue in cycle <name>.` and write nothing.
+
+**Draft mode.** If `.codeanvil/report/<cycle-name>/DRAFT` exists, G1 runs in draft mode: re-derive the
+findings on the **current** design, run Triage ([references/TRIAGE.md](references/TRIAGE.md)) on every
+`open` finding, loop with the human, and write **no** iteration — the recorded-order checks below do
+not block. The recorded review happens when the human commits the draft.
+
+Otherwise check, in this order, writing **no iteration** when you stop:
 
 1. `.codeanvil/report/<cycle-name>/S1.md` is missing or its latest iteration is not
    `HITL: PASS`: return exactly `S1 must pass first. Run the S1 skill.`
@@ -46,6 +52,7 @@ writing **no iteration** when you stop:
 | `.codeanvil/design/dependency_graph.html` | Reading aid, named in `S1.md` |
 | `.codeanvil/GT/StRS.md`, `.codeanvil/GT/SyRS.md` | Read-only: requirements the design must cover |
 | `templates/skills/G1_design_review/references/G1_CHECKLIST.md` | This skill's checklist and filled form |
+| `templates/skills/G1_design_review/references/TRIAGE.md` | Failure triage + draft mode, shared with S0 and G0 |
 
 ## Hard Rules
 
@@ -79,8 +86,10 @@ writing **no iteration** when you stop:
    whether they match the design's Meta row. Information only: it never blocks. Compute the
    `SDD.md` digest the same way and record it in the iteration: S2 and G2 use it to detect a design
    changed after this review.
-5. Present the findings, `open` first, and a recommendation. When the G1.8 test points to RFD,
-   the recommendation names it.
+5. Present the findings, `open` first, and a recommendation. Run Triage
+   ([references/TRIAGE.md](references/TRIAGE.md)) on every `open` finding: each is shown as a
+   plain-language problem with reconciliation options, so the human can decide per finding. When
+   the G1.8 test points to RFD, the recommendation names it.
 6. Ask the human: **PASS**, **FEEDBACK** or **RFD**, as **Asking the human** says below.
 7. Write the iteration with the filled form and the answer verbatim, including `Decided by: <name>`.
 

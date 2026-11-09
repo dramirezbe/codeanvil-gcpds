@@ -506,6 +506,27 @@ flowchart LR
     D ---|"different from"| R
 ```
 
+### 9.5 Failure triage and draft mode (S0 · G0 · G1)
+
+The requirements stages are exploratory: the Ground Truth is corrected many times before it is
+sound. V-SIL v3 softens the *loop*, not the *checks*, through two devices scoped to S0, G0 and
+G1 — never to S2 or G2.
+
+**Failure triage.** A machine or gate failure is translated before it reaches the human. For
+every G0 ERROR, every missing-list placeholder and every G1 `open` finding, the agent states the
+real problem in plain language — what can no longer be verified, and why — and offers two to four
+concrete reconciliation options (connect an unlinked item, create its missing origin, or
+remove/relax it), each with its consequence. The human chooses; the agent applies. The agent is
+the interpreter, never the oracle: the verdict stays the validator's exit code (G0) or the human's
+answer (Gate H, G1), so P2 and P3 are untouched.
+
+**Draft mode.** While a cycle carries a draft marker, S0, G0 and G1 run against the current files,
+apply triage, and loop without writing a report iteration or enforcing staleness between edits. The
+human may edit the GT pair directly. On commit the marker is removed, one recorded run is written,
+and any divergence between the hand-edited GT and the Build Package is itself a triage choice
+(regenerate, accept the pair, or discard). The audit trail records the run that passes, not the red
+path to it.
+
 ---
 
 ## 10 Terminal Output
