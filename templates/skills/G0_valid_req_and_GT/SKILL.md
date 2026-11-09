@@ -64,6 +64,10 @@ metrological rigor, and do not use it for the design: that is S1 and G1.
   on every ERROR and every missing-list entry before recording FEEDBACK or looping in draft:
   each becomes a plain-language problem plus reconciliation options for the human. Triage never
   changes the verdict — exit `1` still blocks.
+- **No advancing with undecided items.** G0 never records `PASS` while a missing-list entry or an
+  ERROR lacks an explicit human decision (fix, ignore/accept, or escalate). The agent never
+  defaults, bulk-accepts or self-resolves an item; each decision is recorded in the iteration with
+  the decider's name. See [references/TRIAGE.md](references/TRIAGE.md) §2.
 - **Never edit a GT document inside G0.** A fix goes back to S0 (or to the author, for a
   hand-written pair).
 - **Validate against the templates**, never assumptions: `templates/GT/StRS.md`,
@@ -97,10 +101,10 @@ Write exactly one file: `.codeanvil/report/<cycle-name>/G0.md`.
 
 | Situation | Action |
 |-----------|--------|
-| Exit `0` | Show the user the script output and the **missing list** from the latest `S0.md` iteration (placeholders the validator does not reject). In **draft mode**, instead offer to commit (remove the marker, then do a recorded run); Gate H is asked on the recorded run. In a **recorded run**, ask **Gate H**: *Requirements complete, bounded, and verifiable?* Ask it as **Asking the human** says below. Write the iteration with that `HITL` value; `PASS` completes G0. |
+| Exit `0`, missing list **non-empty** | **Enter draft** — write the `DRAFT` marker. Run Triage ([references/TRIAGE.md](references/TRIAGE.md)) on every missing-list entry from the latest `S0.md` iteration and have the human **decide each one**: fix, ignore/accept, or escalate (RFD). Write **no** iteration while deciding. Only when **every** entry has a recorded decision, remove the marker and do the recorded run: ask **Gate H** (*Requirements complete, bounded, and verifiable?*, as **Asking the human** says below) and write the iteration listing each decision; `PASS` completes G0. |
+| Exit `0`, missing list **empty** | No open items. Show the script output, ask **Gate H** directly and write the iteration with that `HITL` value; `PASS` completes G0. No draft. |
 | Gate H `FEEDBACK` | Collect the reasons one per line, each starting with the block ID it concerns, and write them verbatim. The route back is S0. Never suggest or complete a reason. |
-| Exit `1` (recorded) | `HITL` is forced to **FEEDBACK**; the human is not asked the *Gate H* question. First run Triage ([references/TRIAGE.md](references/TRIAGE.md)) on every ERROR, then write the iteration with the full report so each ERROR is fixable by line + block ID. The route back is S0. |
-| Exit `1` (draft) | Write **no** iteration. Run Triage on every ERROR, apply the human's chosen fixes to the GT, and re-run the validator. Loop until exit `0`, then offer to commit. |
+| Exit `1` | **Enter draft** — write the `DRAFT` marker. Run Triage ([references/TRIAGE.md](references/TRIAGE.md)) on every ERROR; the human **decides each**: fix (edit the GT, re-run the validator, loop until exit `0`) or escalate (RFD). An ERROR **cannot be ignored** into a pass (P3). Write **no** iteration while deciding. On commit, the recorded iteration carries the full report and the decisions, with each ERROR fixable by line + block ID; an unfixed structural error routes to S0 as FEEDBACK. |
 | Exit `2` | Script error (bad args, unreadable file, undetectable doc type). Fix the invocation or the type heading and re-run. Write **no** iteration. |
 | Pair incomplete | The G0 GATE REPORT names the missing document; supply both files in one invocation. Write the iteration with `HITL: FEEDBACK`. |
 

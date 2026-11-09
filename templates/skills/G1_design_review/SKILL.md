@@ -58,7 +58,10 @@ Otherwise check, in this order, writing **no iteration** when you stop:
 
 - The agent recommends; **only the human's answer sets `HITL`**. Never write `PASS` without it.
 - `open` findings are shown first and never hidden, softened or fixed here. Rework belongs to S1.
-- The human may pass a design that has `open` findings. Record the answer verbatim.
+- G1 is **not answered `PASS` while any `open` finding is undecided.** The human decides each one
+  explicitly — accept/ignore (recorded with the decider's name), fix (→ S1 as FEEDBACK), or RFD. A
+  blanket PASS over open findings is not a decision. Record every answer verbatim. See
+  [references/TRIAGE.md](references/TRIAGE.md) §2.
 - The graph is a reading aid. The prerequisite and the verdict rest on `S1.md`, the design and the
   human's answer. G1 never edits the graph; a wrong graph goes back to S1.
 - Never edit the design or GT here.
@@ -86,10 +89,11 @@ Otherwise check, in this order, writing **no iteration** when you stop:
    whether they match the design's Meta row. Information only: it never blocks. Compute the
    `SDD.md` digest the same way and record it in the iteration: S2 and G2 use it to detect a design
    changed after this review.
-5. Present the findings, `open` first, and a recommendation. Run Triage
-   ([references/TRIAGE.md](references/TRIAGE.md)) on every `open` finding: each is shown as a
-   plain-language problem with reconciliation options, so the human can decide per finding. When
-   the G1.8 test points to RFD, the recommendation names it.
+5. Present the findings, `open` first, and a recommendation. **If any finding is `open`, enter
+   draft** — write the `DRAFT` marker ([references/TRIAGE.md](references/TRIAGE.md) §2) — and run
+   Triage on each: a plain-language problem with reconciliation options. **The human decides every
+   `open` finding** (accept/ignore, fix → S1, or RFD) before G1 is answered; the marker is removed
+   when the answer is recorded. When the G1.8 test points to RFD, the recommendation names it.
 6. Ask the human: **PASS**, **FEEDBACK** or **RFD**, as **Asking the human** says below.
 7. Write the iteration with the filled form and the answer verbatim, including `Decided by: <name>`.
 

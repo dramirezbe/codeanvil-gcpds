@@ -50,3 +50,8 @@ Package (worth recording) or agent noise (worth noting) — both are useful sign
   constraint be a deterministic G0 ERROR, rather than only a missing-list item?
 - Presentation fix applied after this run: triage must lead with plain-language meaning and put the
   block ID in parentheses (TRIAGE.md "Lead with meaning, never codes").
+- Behaviour change applied after this run (mandatory draft): a non-empty missing list or a format
+  ERROR now **auto-enters draft**, and the gate cannot reach Gate H / PASS until the human decides
+  each item (fix, ignore/accept, or escalate). So run 1's three missing-list items would now trigger
+  draft and require an explicit decision each — the behaviour the user wanted. A structural fault is
+  still needed to exercise the exit-1 path specifically (see the two options at the end of this file).

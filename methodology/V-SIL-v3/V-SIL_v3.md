@@ -521,12 +521,15 @@ remove/relax it), each with its consequence. The human chooses; the agent applie
 the interpreter, never the oracle: the verdict stays the validator's exit code (G0) or the human's
 answer (Gate H, G1), so P2 and P3 are untouched.
 
-**Draft mode.** While a cycle carries a draft marker, S0, G0 and G1 run against the current files,
-apply triage, and loop without writing a report iteration or enforcing staleness between edits. The
-human may edit the GT pair directly. On commit the marker is removed, one recorded run is written,
-and any divergence between the hand-edited GT and the Build Package is itself a triage choice
-(regenerate, accept the pair, or discard). The audit trail records the run that passes, not the red
-path to it.
+**Draft mode.** When a requirements stage finds unresolved items — a missing-list entry, a format
+error, or a G1 open finding — it **enters draft automatically** and cannot advance until the human
+has **explicitly decided each one**: fix it, knowingly ignore/accept it (recorded with the decider's
+name), or escalate it to an RFD. While in draft the stage runs against the current files, applies
+triage and loops without writing a report iteration or enforcing staleness; the human may edit the
+GT pair directly. On commit — reached only once every item is decided — the marker is removed and one
+recorded run is written, listing each item and its decision. A format error can be fixed or escalated
+but never ignored into a pass, since the deterministic validator keeps rejecting it. The audit trail
+records the run that passes and the decisions behind it, not the red path to it.
 
 ---
 

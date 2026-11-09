@@ -67,17 +67,44 @@ is not in the table (STK-CTRL-001 → H9)`.
 
 ## 2. Draft mode — the fast requirements loop
 
-Draft mode lets the human iterate on the Ground Truth (and, at G1, on the open findings)
-without the per-edit ceremony: **no report iteration per change, no staleness or digest guard
-between edits.** It is scoped to S0, G0 and G1 only; S2 and G2 never run in draft.
+Draft mode lets the human resolve every open item on the Ground Truth (and, at G1, every open
+finding) without the per-edit ceremony: **no report iteration per change, no staleness or digest
+guard between edits.** It is scoped to S0, G0 and G1 only; S2 and G2 never run in draft.
 
-### Marker
+### Draft is entered automatically, and is mandatory while items are open
 
-Draft mode is on for a cycle while the file `.codeanvil/report/<cycle-name>/DRAFT` exists.
-It has **no `.md` extension on purpose**, so `codeanvil status` (which reads `*.md` gate
-reports) never treats it as a gate. Any requirements-stage skill may offer to enter draft on
-the first failure — *"Iterate in draft until green?"* — and on a yes writes the marker with
-one line: `Draft opened: <codeanvil now> by <name>`. The human may also ask for it directly.
+Draft mode is **not optional**. A requirements-stage skill enters it **automatically** the moment
+it finds **unresolved items** — any missing-list entry, any format ERROR (G0 exit `1`), or any G1
+`open` finding. The skill writes the marker itself; it never asks permission to enter and never
+skips straight to a verdict while items are open.
+
+The marker is the file `.codeanvil/report/<cycle-name>/DRAFT`. It has **no `.md` extension on
+purpose**, so `codeanvil status` (which reads `*.md` gate reports) never treats it as a gate. The
+skill writes it with one line — `Draft opened: <codeanvil now> by <name>` — as soon as it finds an
+open item; the human may also create it to iterate deliberately. It is removed only on commit, once
+every item has an explicit decision.
+
+### Decide every item before advancing
+
+**No gate advances with an undecided item.** The stage must not record a Gate H / G1 PASS, nor move
+to the next stage, while any item lacks an **explicit human decision**. For each item the human
+chooses exactly one:
+
+- **Fix** — edit the GT (or the Build Package) to supply what is missing, then re-run the check.
+- **Ignore / accept** — the gap or finding is acceptable as it stands. This is a real decision: it
+  is recorded in the iteration with the decider's name, never a silent skip and never the agent's
+  default.
+- **Escalate (RFD)** — the item shows the requirements are infeasible on the declared COTS
+  platform; raise an RFD.
+
+The agent presents each item through the triage of §1, proposes options, and records the human's
+choice. It never resolves, defaults or bulk-accepts an item on its own — a single blanket PASS over
+open items is not a decision.
+
+**One asymmetry.** A content gap (a missing-list entry at exit `0`) can be *fixed* or *ignored*,
+because the document is already structurally valid. A format ERROR (exit `1`) can be *fixed* or
+*escalated*, but it cannot be *ignored* into a PASS: the deterministic validator keeps returning
+`1` until the structure is corrected (P3). So "ignore" applies to content gaps, not to format errors.
 
 ### While the marker exists
 
@@ -89,10 +116,12 @@ one line: `Draft opened: <codeanvil now> by <name>`. The human may also ask for 
 
 ### Closing draft (commit)
 
-When the human asks to commit — or when the check is green and the human accepts — **remove
-the marker** and run the gate once in the normal recorded way: S0 re-normalises (or accepts
-the hand-written pair), G0 writes the one passing iteration plus Gate H, G1 writes its
-reviewed iteration. The audit trail records the run that passes, not the path to it.
+Draft closes only when **every open item has an explicit decision** (fix, ignore/accept, or
+escalate) — not merely when the human asks. Then **remove the marker** and run the gate once in the
+normal recorded way: S0 re-normalises (or accepts the hand-written pair), G0 writes the one passing
+iteration plus Gate H, G1 writes its reviewed iteration. The recorded iteration **lists each item
+and the decision it received**, so the audit trail shows what was fixed and what was knowingly
+accepted — the run that passes, not the path to it.
 
 ### Direct GT edits and the Build Package
 
