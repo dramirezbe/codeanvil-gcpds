@@ -516,8 +516,10 @@ G1 — never to S2 or G2.
 every G0 ERROR, every missing-list placeholder and every G1 `open` finding, the agent states the
 real problem in plain language — describing each requirement by what it asks, with its block ID only
 in parentheses, so the reader never opens a document to know what an item is — and offers two to four
-concrete reconciliation options (connect an unlinked item, create its missing origin, or
-remove/relax it), each with its consequence. The human chooses; the agent applies. The agent is
+concrete reconciliation options (connect an unlinked item, create its missing origin, remove or
+relax it, or — when the gap is a documentary fact and the runtime has web access — look it up on
+the web and propose the found value with its source for the human to confirm), each with its
+consequence. The human chooses; the agent applies. The agent is
 the interpreter, never the oracle: the verdict stays the validator's exit code (G0) or the human's
 answer (Gate H, G1), so P2 and P3 are untouched.
 

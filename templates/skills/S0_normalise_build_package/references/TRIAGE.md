@@ -31,6 +31,11 @@ applies. The agent is the interpreter, never the oracle.
      justifies it.
    - **Remove / relax** — the item is not needed, or two items conflict → delete it, or relax
      the bound.
+   - **Look it up** — when the missing item is a documentary fact that exists in the world (a
+     standard clause, a datasheet section or value, a citation) **and the runtime has web access**,
+     offer to search the web for it and propose the found value **with its source URL** as a
+     candidate. The human confirms before it enters the GT — invent-nothing still holds: a web
+     result is a proposal to approve, never an auto-fill, and its source is recorded in the block.
    Name the concrete edit each option makes (file · block · field), not an abstract idea.
 3. **Ask which** — one question, the options as choices, free text allowed. Never pick for
    the human, and never invent content a source does not supply (S0's invent-nothing rule
@@ -91,6 +96,9 @@ to the next stage, while any item lacks an **explicit human decision**. For each
 chooses exactly one:
 
 - **Fix** — edit the GT (or the Build Package) to supply what is missing, then re-run the check.
+  When the missing value is a documentary fact (a clause, a datasheet number, a citation) and the
+  runtime has web access, this may include **looking it up on the web** and proposing the found
+  value with its source for the human to confirm before it enters the GT.
 - **Ignore / accept** — the gap or finding is acceptable as it stands. This is a real decision: it
   is recorded in the iteration with the decider's name, never a silent skip and never the agent's
   default.
