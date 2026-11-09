@@ -555,8 +555,11 @@ Only after every verification check passes on the final commit.
   - PR #8 merged to main with a merge commit. Formal code review (item 2) was
     skipped at the owner's direction in favour of the probe evidence + the
     full suite.
-  - **Carried forward (not blockers for this plan):** the v0.6.0 release
-    (bump, tag, publish, smoke test from `@v0.6.0`); the C8 full S0→G2
+  - **v0.6.0 released** (`c19511d`, tag `v0.6.0`): bump + notes committed on
+    main, tag pushed, GitHub release published, smoke-tested from `@v0.6.0` in
+    an isolated venv (version 0.6.0, `runtime`/`python`/`mcp` present, templates
+    bundled).
+  - **Carried forward (not blockers for this plan):** the C8 full S0→G2
     flow with the in-place collector; Verification 8 (Windows), still manual;
     and a decision on the stale repo-root `mcp_sandbox_probe/` scratch dir.
     Two probe-wording nits are noted in the Results table (B1 ABI text no
