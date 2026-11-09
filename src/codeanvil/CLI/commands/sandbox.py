@@ -47,11 +47,21 @@ def _resolve_required_extensions(names: list[str]) -> list[str]:
     return paths
 
 
-def _build_command(spec: dict) -> list[str]:
-    """Construct the agent launch argv from a sandbox_agents recipe."""
+def _build_command(spec: dict, project_dir: Path | None = None) -> list[str]:
+    """Construct the agent launch argv from a sandbox_agents recipe.
+
+    When the recipe names a ``project_mcp_config`` and that file exists in the
+    project, it is passed with ``--mcp-config`` so the project's own MCP servers
+    stay available under ``--strict-mcp-config`` (which otherwise admits none).
+    """
     args = list(spec.get("args", []))
     for ext_path in _resolve_required_extensions(spec.get("required_extensions", [])):
         args += ["-e", ext_path]
+    mcp_config = spec.get("project_mcp_config")
+    if mcp_config and project_dir is not None:
+        config_path = project_dir / mcp_config
+        if config_path.is_file():
+            args += ["--mcp-config", str(config_path)]
     return [spec["binary"]] + args
 
 
@@ -66,9 +76,11 @@ def _copy_auth_files(spec: dict, sandbox_dir: Path) -> None:
 
 def cmd_sandbox(agent: str) -> None:
     """Run `codeanvil sandbox <agent>` — isolated agent session in this project."""
-    if find_manifest(Path.cwd()) is None:
+    manifest = find_manifest(Path.cwd())
+    if manifest is None:
         log.error("not inside a scaffolded project — .codeanvil/project.yaml not found (searched up from cwd)")
         sys.exit(1)
+    project_dir = manifest.parent.parent
 
     spec = SANDBOX_AGENTS.get(agent)
     if spec is None:
@@ -81,7 +93,7 @@ def cmd_sandbox(agent: str) -> None:
         log.error("'%s' binary not found on PATH — install it first", binary)
         sys.exit(1)
 
-    cmd = _build_command(spec)
+    cmd = _build_command(spec, project_dir)
     strategy = spec.get("strategy", "native")
 
     if strategy == "native":

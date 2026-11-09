@@ -1,60 +1,43 @@
-import glob
+"""MCP servers: a pinned venv per server under ~/.codeanvil-config/mcp/<name>/,
+one launcher (`codeanvil mcp run <name>`) and portable per-project configs.
+
+Lifecycle: `add` (clone, check out the pinned `ref`, build the venv, probe the
+system packages), `update`, `remove`, `list`, `doctor`. Every project config
+calls `codeanvil mcp run <name>`; the launcher resolves the install path, the
+project root and the env at start-up, so a moved or cloned project keeps
+working. stdout is the MCP protocol channel: nothing here prints to it.
+"""
+
 import json
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import yaml
 
 from codeanvil.config.logger import get_logger
-from codeanvil.config.paths import CONFIG, MCP_DIR, SKILLS_DIRNAME
+from codeanvil.config.paths import CONFIG, MCP_DIR, SKILLS_DIRNAME, find_manifest
+from codeanvil.init import system_packages as syspkg
 
 log = get_logger(__name__)
 
+_IS_WIN = sys.platform == "win32"
+PROBE_CACHE = ".probe.json"
 
-def _detect_system_site_packages(package: str) -> str | None:
-    """Find the system site-packages directory containing a Python package.
 
-    GNU Radio and similar packages are installed by the system package manager
-    (pacman, apt, dnf) and aren't pip-installable. uv's isolated venvs can't
-    see them unless PYTHONPATH bridges the gap. This finds where they live."""
-    # Try gnuradio-config-info first (most reliable for GNU Radio)
-    if package == "gnuradio":
-        try:
-            prefix = subprocess.check_output(
-                ["gnuradio-config-info", "--prefix"],
-                text=True, stderr=subprocess.DEVNULL,
-            ).strip().rstrip("/")
-            hits = glob.glob(f"{prefix}/lib/python*/site-packages/{package}/__init__.py")
-            if hits:
-                return hits[0].rsplit(f"/{package}/", 1)[0]
-        except (FileNotFoundError, subprocess.CalledProcessError):
-            pass
-
-    # Fallback: scan common system locations (Arch, Debian/Ubuntu, Fedora, local builds)
-    for pattern in [
-        f"/usr/lib/python*/site-packages/{package}/__init__.py",
-        f"/usr/lib/python*/dist-packages/{package}/__init__.py",
-        f"/usr/local/lib/python*/site-packages/{package}/__init__.py",
-        f"/usr/local/lib/python*/dist-packages/{package}/__init__.py",
-    ]:
-        hits = sorted(glob.glob(pattern), reverse=True)  # newest python first
-        if hits:
-            return hits[0].rsplit(f"/{package}/", 1)[0]
-
-    return None
+class McpError(Exception):
+    """An MCP operation failed; the message says what to do."""
 
 
 def _server_cfg(name: str) -> dict:
     servers = CONFIG.get("mcp_servers", {})
     if name not in servers:
-        raise ValueError(f"unknown MCP server '{name}' — not defined in config.yaml")
+        raise McpError(
+            f"unknown MCP server '{name}' — available: {', '.join(servers) or 'none'}"
+        )
     return servers[name]
-
-
-def is_mcp_installed(name: str) -> bool:
-    return (MCP_DIR / _server_cfg(name)["install_dir"].split("/")[-1]).is_dir()
 
 
 def get_mcp_install_path(name: str) -> Path:
@@ -62,39 +45,293 @@ def get_mcp_install_path(name: str) -> Path:
     return (MCP_DIR / cfg["install_dir"].split("/")[-1]).resolve()
 
 
-def install_mcp_server(name: str) -> Path:
-    cfg = _server_cfg(name)
-    dest = MCP_DIR / cfg["install_dir"].split("/")[-1]
+def is_mcp_installed(name: str) -> bool:
+    return get_mcp_install_path(name).is_dir()
 
-    if dest.is_dir():
-        log.info("MCP server '%s' already cloned at %s — pulling latest", name, dest)
-        subprocess.run(["git", "-C", str(dest), "pull", "--ff-only"],
-                       check=False, capture_output=True)
-    else:
+
+def venv_bin(install_path: Path) -> Path:
+    return install_path / ".venv" / ("Scripts" if _IS_WIN else "bin")
+
+
+def venv_python(install_path: Path) -> Path:
+    return venv_bin(install_path) / ("python.exe" if _IS_WIN else "python")
+
+
+def _run(args: list[str], what: str) -> str:
+    """Run a command; on failure raise with its stderr instead of swallowing it."""
+    try:
+        result = subprocess.run(args, capture_output=True, text=True)
+    except FileNotFoundError as exc:
+        raise McpError(f"{what}: {args[0]} is not installed") from exc
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout).strip()
+        raise McpError(f"{what} failed (`{' '.join(args)}`, exit {result.returncode}):\n{detail}")
+    return result.stdout.strip()
+
+
+def _head(install_path: Path) -> str | None:
+    try:
+        return _run(["git", "-C", str(install_path), "rev-parse", "HEAD"], "git rev-parse")
+    except McpError:
+        return None
+
+
+def _checkout_ref(name: str, cfg: dict, dest: Path) -> None:
+    ref = cfg.get("ref")
+    if not ref:
+        raise McpError(f"mcp_servers.{name}.ref is not set — pin a tag or commit in config.yaml")
+    if not dest.is_dir():
         log.info("cloning MCP server '%s' from %s", name, cfg["repo"])
-        subprocess.run(["git", "clone", cfg["repo"], str(dest)],
-                       check=True, capture_output=True)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        _run(["git", "clone", "--quiet", cfg["repo"], str(dest)], "git clone")
+    else:
+        _run(["git", "-C", str(dest), "fetch", "--quiet", "--tags", "origin"], "git fetch")
+    _run(["git", "-C", str(dest), "checkout", "--quiet", "--detach", ref], f"git checkout {ref}")
 
-    log.info("prewarming MCP server '%s' dependencies", name)
-    subprocess.run(
-        ["uv", "--directory", str(dest), "sync", "--extra", "mcp"],
-        check=False, capture_output=True,
-    )
 
-    for pkg in cfg.get("system_packages", []):
-        sp = _detect_system_site_packages(pkg)
-        if sp:
-            log.info("detected system package '%s' at %s", pkg, sp)
-        else:
-            log.warning(
-                "system package '%s' not found — %s tools that need it will fail. "
-                "Install it via your package manager (e.g. pacman -S gnuradio, "
-                "apt install gnuradio-dev, dnf install gnuradio-devel).",
-                pkg, name,
+def _target_interpreter(name: str, cfg: dict) -> Path | None:
+    """The system interpreter the server's system packages were built for, or
+    None when the server declares none (uv then picks the interpreter)."""
+    chosen: Path | None = None
+    for package in cfg.get("system_packages", []):
+        site = syspkg.detect_system_site_packages(package)
+        if site is None:
+            raise McpError(
+                f"{package} is not installed. Install it: {syspkg.install_hint(package)}"
             )
+        interpreter = syspkg.system_interpreter_for(site)
+        if interpreter is None:
+            raise McpError(
+                f"{package} is installed at {site} but its Python "
+                f"{syspkg.built_for_python(site) or '?'} interpreter was not found"
+            )
+        if chosen is not None and interpreter != chosen:
+            raise McpError(f"{name}'s system packages need different interpreters: {chosen}, {interpreter}")
+        chosen = interpreter
+    return chosen
 
-    log.info("MCP server '%s' installed at %s", name, dest)
+
+def _venv_matches(install_path: Path, interpreter: Path) -> bool:
+    """True when the venv runs `interpreter`'s version and sees its site-packages."""
+    python = venv_python(install_path)
+    if not python.exists():
+        return False
+    cfg_file = install_path / ".venv" / "pyvenv.cfg"
+    try:
+        text = cfg_file.read_text(encoding="utf-8")
+    except OSError:
+        return False
+    if "include-system-site-packages = true" not in text:
+        return False
+    return syspkg.interpreter_version(python) == syspkg.interpreter_version(interpreter)
+
+
+def _build_venv(name: str, cfg: dict, dest: Path) -> None:
+    uv = shutil.which("uv")
+    if uv is None:
+        raise McpError("uv is not installed — install it first (https://docs.astral.sh/uv/)")
+    interpreter = _target_interpreter(name, cfg)
+    sync = [uv, "sync", "--directory", str(dest), *cfg.get("sync_args", [])]
+    if interpreter is not None:
+        if not _venv_matches(dest, interpreter):
+            shutil.rmtree(dest / ".venv", ignore_errors=True)
+            log.info("creating %s venv on %s with system site-packages", name, interpreter)
+            _run([uv, "venv", "--quiet", "--python", str(interpreter), "--system-site-packages",
+                  str(dest / ".venv")], "uv venv")
+        sync += ["--python", str(interpreter)]
+    log.info("syncing MCP server '%s' dependencies", name)
+    _run(sync, "uv sync")
+    (dest / PROBE_CACHE).unlink(missing_ok=True)
+
+
+def probe_server(name: str, use_cache: bool = True) -> list[syspkg.ProbeResult]:
+    cfg = _server_cfg(name)
+    install_path = get_mcp_install_path(name)
+    python = venv_python(install_path)
+    owner = f"the {name} venv"
+    results = []
+    for package in cfg.get("system_packages", []):
+        if use_cache:
+            result = syspkg.cached_probe(package, python, owner, install_path / PROBE_CACHE)
+        else:
+            result = syspkg.probe(package, python, owner)
+        if result.status == "mismatch":
+            result = syspkg.ProbeResult(
+                result.package, result.status, f"{result.message} Run codeanvil mcp update {name}."
+            )
+        results.append(result)
+    return results
+
+
+def _require_probes(name: str) -> None:
+    failures = [result for result in probe_server(name, use_cache=False) if not result.ok]
+    if failures:
+        raise McpError("\n".join(result.message for result in failures))
+
+
+def install_mcp_server(name: str) -> Path:
+    """`codeanvil mcp add`: clone, pin, build the venv, probe. Idempotent."""
+    cfg = _server_cfg(name)
+    dest = get_mcp_install_path(name)
+    _checkout_ref(name, cfg, dest)
+    _build_venv(name, cfg, dest)
+    _require_probes(name)
+    log.info("MCP server '%s' installed at %s (%s)", name, dest, cfg["ref"])
     return dest
+
+
+def update_mcp_server(name: str) -> Path:
+    """`codeanvil mcp update`: re-pin to the configured ref and rebuild the
+    venv when its interpreter no longer matches the system packages."""
+    if not is_mcp_installed(name):
+        raise McpError(f"MCP server '{name}' is not installed. Run codeanvil mcp add {name}.")
+    return install_mcp_server(name)
+
+
+def projects_using(name: str) -> list[tuple[str, str]]:
+    """(project name, path) of registered projects whose .agents/mcp.yaml names `name`."""
+    from codeanvil.config.paths import DB_PATH
+    from codeanvil.db.projects import list_projects
+    from codeanvil.db.schema import db_exists
+    from codeanvil.db.utils import connect_db
+
+    if not db_exists(DB_PATH):
+        return []
+    conn = connect_db(DB_PATH)
+    try:
+        rows = list_projects(conn)
+    finally:
+        conn.close()
+    using = []
+    for row in rows:
+        if name in project_servers(Path(row["path"])):
+            using.append((row["name"], row["path"]))
+    return using
+
+
+def remove_mcp_server(name: str, force: bool = False) -> list[tuple[str, str]]:
+    """Delete the install. Refuses without `force` while projects use it;
+    returns those projects either way."""
+    _server_cfg(name)
+    dest = get_mcp_install_path(name)
+    using = projects_using(name)
+    if using and not force:
+        listed = "\n".join(f"  {label}: {path}" for label, path in using)
+        raise McpError(
+            f"{len(using)} project(s) use '{name}':\n{listed}\n"
+            f"Run codeanvil mcp disable {name} in each, or pass --yes to remove anyway."
+        )
+    if dest.is_dir():
+        shutil.rmtree(dest)
+        log.info("removed MCP server '%s' (%s)", name, dest)
+    return using
+
+
+def server_rows() -> list[dict]:
+    """One row per configured server for `codeanvil mcp list`."""
+    rows = []
+    for name, cfg in CONFIG.get("mcp_servers", {}).items():
+        install_path = get_mcp_install_path(name)
+        installed = install_path.is_dir()
+        head = _head(install_path) if installed else None
+        rows.append({
+            "name": name,
+            "installed": installed,
+            "ref": cfg.get("ref", ""),
+            "head": head or "",
+            "pinned": bool(head and cfg.get("ref") and head.startswith(str(cfg["ref"]))),
+        })
+    return rows
+
+
+def doctor(name: str) -> list[tuple[str, bool, str]]:
+    """(check, ok, detail) for one server."""
+    cfg = _server_cfg(name)
+    install_path = get_mcp_install_path(name)
+    checks: list[tuple[str, bool, str]] = []
+    for tool in cfg.get("requires", []):
+        found = shutil.which(tool)
+        checks.append((f"{tool} on PATH", found is not None, found or f"install {tool}"))
+    if not install_path.is_dir():
+        checks.append(("installed", False, f"Run codeanvil mcp add {name}."))
+        return checks
+    checks.append(("installed", True, str(install_path)))
+    head = _head(install_path) or ""
+    ref = str(cfg.get("ref", ""))
+    pinned = bool(ref) and head.startswith(ref)
+    checks.append(("pinned ref", pinned,
+                   head if pinned else f"checked out {head[:12] or '?'}, config pins {ref[:12]} — run codeanvil mcp update {name}"))
+    python = venv_python(install_path)
+    checks.append(("venv", python.exists(),
+                   str(python) if python.exists() else f"no venv — run codeanvil mcp update {name}"))
+    if python.exists():
+        for result in probe_server(name, use_cache=False):
+            checks.append((f"system package {result.package}", result.ok, result.message))
+    return checks
+
+
+def _expand(value: str, install_path: Path, project_dir: Path) -> str:
+    return (value.replace("{install_path}", str(install_path))
+                 .replace("{venv_bin}", str(venv_bin(install_path)))
+                 .replace("{project_dir}", str(project_dir)))
+
+
+def launch_spec(name: str, cwd: Path) -> tuple[list[str], dict[str, str]]:
+    """argv and env the launcher starts, after every start-up check."""
+    cfg = _server_cfg(name)
+    install_path = get_mcp_install_path(name)
+    if not install_path.is_dir():
+        raise McpError(f"MCP server '{name}' is not installed. Run codeanvil mcp add {name}.")
+    if not venv_python(install_path).exists():
+        raise McpError(f"MCP server '{name}' has no venv. Run codeanvil mcp update {name}.")
+    failures = [result for result in probe_server(name) if not result.ok]
+    if failures:
+        raise McpError(" ".join(result.message for result in failures))
+
+    manifest = find_manifest(cwd)
+    project_dir = manifest.parent.parent if manifest else cwd.resolve()
+    command = _expand(cfg["command"], install_path, project_dir)
+    if _IS_WIN and not Path(command).suffix and Path(command + ".exe").exists():
+        command += ".exe"
+    argv = [command, *(_expand(arg, install_path, project_dir) for arg in cfg.get("args", []))]
+    env = {key: value for key, value in os.environ.items() if key != "PYTHONPATH"}
+    env.update({key: _expand(str(value), install_path, project_dir)
+                for key, value in cfg.get("env", {}).items()})
+    return argv, env
+
+
+def run_server(name: str) -> int:
+    """Start the server with inherited stdio. POSIX replaces this process; on
+    Windows `os.execv` would spawn and exit (a dead server to the client), so
+    the launcher stays as the parent and forwards the exit code."""
+    argv, env = launch_spec(name, Path.cwd())
+    if not _IS_WIN:
+        sys.stderr.flush()
+        os.execvpe(argv[0], argv, env)
+    child = subprocess.Popen(argv, env=env)
+    try:
+        return child.wait()
+    except KeyboardInterrupt:
+        child.terminate()
+        return child.wait()
+
+
+# --- per-project wiring --------------------------------------------------------
+
+
+def project_servers(project_dir: Path) -> list[str]:
+    """Server names listed in the project's .agents/mcp.yaml."""
+    path = project_dir / SKILLS_DIRNAME.parent / "mcp.yaml"
+    try:
+        data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    except (OSError, yaml.YAMLError):
+        return []
+    servers = data.get("mcp_servers", {}) if isinstance(data, dict) else {}
+    return list(servers) if isinstance(servers, dict) else []
+
+
+def _launcher_entry(name: str) -> dict:
+    return {"command": "codeanvil", "args": ["mcp", "run", name], "env": {}}
 
 
 def copy_mcp_skills(name: str, project_dir: Path) -> list[str]:
@@ -203,64 +440,116 @@ def _ensure_gate_frontmatter(skill_md: Path) -> None:
 
 
 def write_mcp_manifest(servers: list[str], project_dir: Path) -> None:
+    """Agent-agnostic `.agents/mcp.yaml`: every server through the launcher."""
     manifest = {}
     for name in servers:
         cfg = _server_cfg(name)
-        install_path = str(get_mcp_install_path(name))
-        env = {
-            k: v.replace("{project_dir}", str(project_dir.resolve()))
-            for k, v in cfg.get("env", {}).items()
-        }
-        sys_paths: list[str] = []
-        for pkg in cfg.get("system_packages", []):
-            sp = _detect_system_site_packages(pkg)
-            if sp and sp not in sys_paths:
-                sys_paths.append(sp)
-        if sys_paths:
-            env["PYTHONPATH"] = os.pathsep.join(sys_paths)
-
-        manifest[name] = {
-            "command": cfg["command"],
-            "args": [a.replace("{install_path}", install_path) for a in cfg["args"]],
-            "env": env,
-            "description": cfg.get("description", ""),
-        }
+        entry = _launcher_entry(name)
+        manifest[name] = {"command": entry["command"], "args": entry["args"],
+                          "description": cfg.get("description", "")}
 
     dest = project_dir / SKILLS_DIRNAME.parent / "mcp.yaml"
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(
-        yaml.dump({"mcp_servers": manifest}, default_flow_style=False, sort_keys=False),
+        yaml.dump({"mcp_servers": manifest}, default_flow_style=False, sort_keys=False,
+                  allow_unicode=True),
         encoding="utf-8",
     )
     log.debug("wrote MCP manifest %s", dest)
 
 
 def generate_agent_mcp_configs(servers: list[str], project_dir: Path) -> None:
-    entries = {}
-    for name in servers:
-        cfg = _server_cfg(name)
-        install_path = str(get_mcp_install_path(name))
-        args = [a.replace("{install_path}", install_path) for a in cfg["args"]]
-        env = {
-            k: v.replace("{project_dir}", str(project_dir.resolve()))
-            for k, v in cfg.get("env", {}).items()
-        }
-
-        # Bridge system-installed packages into uv's isolated venv via PYTHONPATH.
-        sys_paths: list[str] = []
-        for pkg in cfg.get("system_packages", []):
-            sp = _detect_system_site_packages(pkg)
-            if sp and sp not in sys_paths:
-                sys_paths.append(sp)
-        if sys_paths:
-            env["PYTHONPATH"] = os.pathsep.join(sys_paths)
-
-        entries[name] = {"command": cfg["command"], "args": args, "env": env}
-
+    """The four per-agent configs. Identical on every OS: no absolute path,
+    no env — the launcher resolves both at start-up."""
+    entries = {name: _launcher_entry(name) for name in servers if _server_cfg(name)}
     _write_claude_mcp(entries, project_dir)
     _write_vscode_mcp(entries, project_dir)
     _write_opencode_mcp(entries, project_dir)
     _write_codex_mcp(entries, project_dir)
+
+
+def _load_json(path: Path) -> dict:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _drop_from_configs(name: str, project_dir: Path) -> None:
+    for path, keys in (
+        (project_dir / ".mcp.json", ("mcpServers",)),
+        (project_dir / ".vscode" / "mcp.json", ("servers",)),
+        (project_dir / "opencode.json", ("mcp",)),
+        (project_dir / ".codex" / "mcp.json", ("mcp_servers",)),
+    ):
+        if not path.exists():
+            continue
+        data = _load_json(path)
+        section = data.get(keys[0])
+        if isinstance(section, dict) and name in section:
+            del section[name]
+            _write_json(path, data)
+    for settings in (".claude/settings.json", ".claude/settings.local.json"):
+        path = project_dir / settings
+        if not path.exists():
+            continue
+        data = _load_json(path)
+        enabled = data.get("enabledMcpjsonServers")
+        if isinstance(enabled, list) and name in enabled:
+            data["enabledMcpjsonServers"] = [server for server in enabled if server != name]
+            _write_json(path, data)
+
+
+def _refresh_agents_md_table(project_dir: Path, servers: list[str]) -> None:
+    """Replace only the generated MCP table inside AGENTS.md."""
+    from codeanvil.init.create import _mcp_table
+
+    path = project_dir / "AGENTS.md"
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return
+    start_marker = "## MCP Servers\n\n"
+    end_marker = "\n\nMCP servers provide tool-calling"
+    start = text.find(start_marker)
+    end = text.find(end_marker, start)
+    if start == -1 or end == -1:
+        log.warning("AGENTS.md has no generated MCP table — update it by hand")
+        return
+    start += len(start_marker)
+    path.write_text(text[:start] + _mcp_table(servers or None) + text[end:], encoding="utf-8")
+
+
+def enable_server(name: str, project_dir: Path) -> list[str]:
+    """Wire `name` into a project (also rewrites a pre-launcher config)."""
+    _server_cfg(name)
+    if not is_mcp_installed(name):
+        raise McpError(f"MCP server '{name}' is not installed. Run codeanvil mcp add {name}.")
+    servers = project_servers(project_dir)
+    if name not in servers:
+        servers.append(name)
+    copy_mcp_skills(name, project_dir)
+    write_mcp_manifest(servers, project_dir)
+    generate_agent_mcp_configs(servers, project_dir)
+    _refresh_agents_md_table(project_dir, servers)
+    return servers
+
+
+def disable_server(name: str, project_dir: Path) -> list[str]:
+    cfg = _server_cfg(name)
+    servers = [server for server in project_servers(project_dir) if server != name]
+    prefix = cfg.get("skill_prefix", name)
+    skills = project_dir / SKILLS_DIRNAME
+    for path in sorted(skills.glob(f"{prefix}-*")):
+        if path.is_dir():
+            shutil.rmtree(path)
+        else:
+            path.unlink()
+    _drop_from_configs(name, project_dir)
+    write_mcp_manifest(servers, project_dir)
+    _refresh_agents_md_table(project_dir, servers)
+    return servers
 
 
 def _write_json(path: Path, data: dict) -> None:

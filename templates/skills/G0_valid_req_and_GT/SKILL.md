@@ -2,11 +2,12 @@
 name: g0-valid-req-and-gt
 description: "Trigger: G0, Gate H, validate StRS, validate SyRS, GT structural check, IEEE 29148. Deterministically validate the Ground Truth document pair S0 produced, then ask the human the Gate H question, write the iterative G0 report, and return a line-numbered result."
 license: Apache-2.0
-compatibility: "Requires Python 3.9+ (stdlib only). No network access. The validator is side-effect free; the skill writes only .codeanvil/report/<cycle-name>/G0.md."
+compatibility: "Runs on the CodeAnvil methodology runtime through `codeanvil python` (the validator itself is stdlib only). No network access. The validator is side-effect free; the skill writes only .codeanvil/report/<cycle-name>/G0.md."
 metadata:
   author: "gcpds"
-  version: "3.1"
+  version: "3.2"
   gate: "G0"
+  runtime: []
   pipeline: "V-SIL"
 ---
 
@@ -46,7 +47,8 @@ metrological rigor, and do not use it for the design: that is S1 and G1.
 ## Hard Rules
 
 - **Run the script.** Never re-implement or hand-wave these checks in prose:
-  `python templates/skills/G0_valid_req_and_GT/scripts/g0_validate.py <StRS.md> <SyRS.md>`
+  `codeanvil python templates/skills/G0_valid_req_and_GT/scripts/g0_validate.py <StRS.md> <SyRS.md>`
+  If it prints `Runtime not installed`, run `codeanvil runtime sync` and retry.
 - **G0 is a pair gate.** Both a StRS and a SyRS must be provided; a missing half is an
   ERROR (exit `1`) via the G0 gate report.
 - **The exit code is the gate verdict.** `0` pass, `1` errors block, `2` script error. Never

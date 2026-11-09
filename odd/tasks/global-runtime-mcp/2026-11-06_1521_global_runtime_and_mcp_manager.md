@@ -81,32 +81,36 @@ One manager under `~/.codeanvil-config/`, two kinds of environment:
 
 The refactor in
 [`odd/tasks/t3-holdout-refactor/2026-11-06_1410_t3_holdout_refactor.md`](../t3-holdout-refactor/2026-11-06_1410_t3_holdout_refactor.md)
-is being implemented by another agent (Phases 1–4 committed; Phase 5 docs and
-Phase 6 `v0.5.0` tag pending at the time of writing).
+is complete: `v0.5.0` is tagged on `main` (`027acd4`, PR #6), so the start rule
+below is met and this plan runs on `feat/global-runtime-mcp`.
 
 **Start rule.** Begin this plan only after `v0.5.0` is tagged on `main`.
 Branch `feat/global-runtime-mcp` from that tag. If the refactor gets
 follow-up commits, rebase before touching a shared file.
 
-**Shared files.** Both plans edit these; never edit them while the refactor
-is open:
+**Shared files.** Both plans edit these. The refactor has merged, so they are
+free to edit; the table records what v0.5.0 already put there:
 
 | File | Refactor touches | This plan touches |
 |------|------------------|-------------------|
 | `templates/config.yaml` | `backup_targets`, GT paths | `runtime`, `mcp_servers.*.ref` |
 | `src/codeanvil/config/paths.py` | `PROJECT_GT`, `PROJECT_DESIGN`, `PROJECT_BACKUPS` | `RUNTIME_DIR` |
-| `src/codeanvil/CLI/parser.py`, `main.py`, `commands/__init__.py` | `backup` | `runtime`, `python`, `mcp` |
+| `src/codeanvil/CLI/parser.py`, `main.py`, `commands/__init__.py` | `backup` (its `choices` come from `CONFIG["backup_targets"]`) | `runtime`, `python`, `mcp`, following the same config-derived pattern |
 | `tests/test_cli.py` | `EXPECTED_SUBCOMMANDS` + `backup` | + `runtime`, `python`, `mcp` |
 | `src/codeanvil/init/create.py` | GT/design/backups dirs | MCP config generation |
 | `templates/AGENTS/TEMPLATE_AGENT.md` | command list, layout | command list |
 | `CLAUDE.md`, `AGENTS.md` | Phase 5 docs | Phase 4 docs |
 
-**Non-goals (to avoid stepping on the refactor):**
-- Do not move `templates/skills/S2_implement_services/references/telemetry_collector.py`
-  to the runtime. It runs inside the project's verification kit, in the
-  project's own environment, not in the methodology runtime.
+**Non-goals:**
 - Do not change stage or gate logic. The only skill edits are the
-  `metadata.runtime` declarations and the G0 script invocation (WU-RT5).
+  `metadata.runtime` declarations, the G0 script invocation (WU-RT5) and the
+  telemetry collector's move to the runtime (WU-RT7).
+
+**Owner decision (2026-11-06, after v0.5.0):** the telemetry collector moves to
+the methodology runtime and uses psutil only (WU-RT7). This reverses the
+earlier non-goal. Cost: a delivered project's `run.sh` needs `codeanvil` on
+PATH to record telemetry, the same self-containment trade the runtime already
+makes for skill scripts.
 
 ---
 
@@ -115,8 +119,11 @@ is open:
 ### WU-RT1: Shipped runtime spec
 
 - New `templates/runtime/pyproject.toml`: project `codeanvil-runtime`,
-  `requires-python = ">=3.12"`, base dependencies kept minimal (`pyyaml`).
-  It is already bundled in the wheel through the `templates/` force-include.
+  `requires-python = ">=3.12"`, base dependencies kept minimal (`pyyaml`,
+  `psutil` for WU-RT7), `[tool.uv] package = false`.
+- `pyproject.toml` force-includes paths one by one, so add
+  `"templates/runtime" = "codeanvil/templates/runtime"`; without it a wheel
+  install has no runtime spec.
 - New `templates/runtime/uv.lock`: generated with `uv lock`, which resolves
   for every platform at once. This is the single lock maintained for Linux,
   macOS and Windows.
@@ -125,6 +132,7 @@ is open:
   ```yaml
   runtime:
     dir: "runtime"              # under ~/.codeanvil-config/
+    python: "3.12"              # same interpreter pin as install.sh / upgrade
     system_packages: []         # e.g. ["gnuradio"], bridged via a .pth file
   ```
 
@@ -156,7 +164,9 @@ New `src/codeanvil/CLI/commands/runtime.py` plus `src/codeanvil/init/runtime.py`
 - Resolve the project root with `find_manifest(cwd)`; fall back to cwd.
 - Run `<RUNTIME_DIR>/.venv/bin/python -I <script> [args]`
   (`.venv\Scripts\python.exe` on Windows) with cwd = project root. Forward
-  the exit code.
+  the exit code. On POSIX `os.execv` replaces the launcher, so the script's
+  parent is the caller (`run.sh`), which the telemetry collector relies on.
+  On Windows the launcher stays as the parent (`subprocess.run`).
 - Missing runtime → exit nonzero with `Runtime not installed. Run codeanvil runtime sync.`
 - Logging goes to stderr only; stdout belongs to the script.
 
@@ -191,6 +201,22 @@ New `src/codeanvil/CLI/commands/runtime.py` plus `src/codeanvil/init/runtime.py`
 - `codeanvil upgrade` runs the **new** binary's `codeanvil runtime sync` as a
   subprocess after a successful reinstall, so a changed shipped lock takes
   effect at once.
+
+### WU-RT7: Telemetry collector on the runtime (psutil only)
+
+- Move `S2_implement_services/references/telemetry_collector.py` to
+  `S2_implement_services/scripts/telemetry_collector.py`. It stays locked, but
+  S2 no longer copies it into the project: `run.sh` runs it in place with
+  `codeanvil python .agents/skills/S2_implement_services/scripts/telemetry_collector.py --pid $$ --output verification/telemetry/<level>-<timestamp>.jsonl &`.
+- S2 frontmatter declares `metadata.runtime: ["psutil"]`; `psutil` joins the
+  runtime base. The collector imports psutil unconditionally: the "psutil
+  missing → every metric unavailable" branch goes away, and a missing psutil
+  is caught by `codeanvil python` before the run (WU-RT4).
+- The collector excludes its own PID from the measured tree.
+- `project_layout.md`: drop `psutil` from the kit's dev group;
+  `verification/telemetry/` keeps only the JSONL runs. G1, G2, the SDD
+  template and the verifier keep the §1.7 "telemetry companion" design
+  contract; only the collector's location and launch change.
 
 **Tests (Phase 1)**: new `tests/test_runtime.py` with `uv` calls mocked
 (pyproject merge of base + user packages, `user.yaml` survives a re-sync,
@@ -341,7 +367,7 @@ skipped when marconi is not installed):
    protocol channel).
 
 **Level 2 — sandboxed Claude session** (manual script
-`methodology/test/mcp_sandbox_probe.md` with exact commands and expected
+`methodology/test/runtime_mcp_probe.md` with exact commands and expected
 output; record each run's result there):
 1. **Only project servers are visible.** Run the sandbox recipe
    non-interactively in the project:
@@ -428,6 +454,110 @@ Only after every verification check passes on the final commit.
 6. WU-M5: on the dev machine, `codeanvil mcp doctor marconi` reports the
    ABI mismatch before the fix and `ok` after `codeanvil mcp update marconi`.
 7. WU-M6 Level 1 passes; Level 2 steps 1–5 are recorded as PASS in
-   `methodology/test/mcp_sandbox_probe.md`, including the "nothing became
+   `methodology/test/runtime_mcp_probe.md`, including the "nothing became
    global" checks.
 8. Steps 2–5 repeated on Windows, including the launcher stdio round trip.
+
+## Log
+
+- **2026-11-06 — Phase 1 complete (WU-RT1–RT7)** on `feat/global-runtime-mcp`.
+  - RT1: `config.yaml` `runtime.{dir,python,base,system_packages}`. The shipped
+    `templates/runtime/pyproject.toml` is rendered from `runtime.base` by the
+    same function `sync` uses, and a test keeps the two in step. The universal
+    `uv.lock` and the wheel force-include are in place (checked in a built wheel).
+  - RT2: `codeanvil runtime sync|add|remove|list|path` (`init/runtime.py`).
+    uv errors raise with uv's stderr. `user.yaml` survives re-syncs. Base
+    packages cannot be removed. `runtime.system_packages` is bridged with
+    `codeanvil-system.pth`. Detection moved to `init/system_packages.py`.
+  - RT3: `codeanvil python` runs with `-I` from the project root. It uses
+    `os.execv` on POSIX and `subprocess.run` on Windows, and logs to stderr
+    only.
+  - RT4: `metadata.runtime` is parsed by the shared `codeanvil/skills.py`. A
+    missing package stops the run with `Run codeanvil runtime add <pkg>.`, or
+    `... runtime sync.` for a base package.
+  - RT5: G0 runs through `codeanvil python` (skill v3.2, `runtime: []`).
+  - RT6: `init` runs `runtime sync`. `upgrade` runs the new binary's
+    `runtime sync`.
+  - RT7: the collector is in `S2_implement_services/scripts/`, uses psutil
+    only and is never copied. `run.sh` starts it with
+    `codeanvil python ... --pid $$`. It excludes itself, and the kit's dev
+    group drops psutil (S2 v1.1, `runtime: ["psutil"]`).
+  - Evidence: 303 pytest + 97 unittest green.
+    - The real `~/.codeanvil-config/runtime/` reports Python 3.12.15,
+      psutil 7.2.2 and pyyaml 6.0.3.
+    - In a scratch project, G0 through `codeanvil python` printed the same
+      report as the direct call (exit 0).
+    - A simulated `run.sh` gave 4 samples with `pid` = run.sh, 2 processes
+      (the collector excluded), CPU ≈ 99 % under load and Tctl temperature
+      from psutil.
+- **Next:** Phase 2 (WU-M1–M6). WU-M5 repairs the deliberately broken marconi
+  venv. WU-M6 Level 2 runs a real sandboxed Claude session, which costs tokens.
+- **2026-11-06 — Phase 2 and Phase 3 complete (WU-M1–M6, docs).**
+  - Root cause of the broken dev venv: it was created on mise's floating `latest`
+    Python. `pyvenv.cfg` still says 3.14.8, but the symlink now resolves to
+    3.15.2. WU-M5 therefore builds a server venv on the system interpreter by
+    explicit path (`/usr/bin/python3.14`) with `--system-site-packages`, never a
+    version shim. The probe cache is keyed by the interpreter's *real* path.
+  - M1: `marconi.ref = 533bae4…`. Add and update run `git checkout --detach <ref>`,
+    and every git and uv failure raises with its stderr.
+  - M2: `codeanvil mcp add|update|remove|list|doctor`. `remove` refuses while
+    registered projects use the server (`--yes` overrides).
+  - M3: `codeanvil mcp run` expands `{install_path}`, `{venv_bin}` and
+    `{project_dir}` at start-up and strips `PYTHONPATH`. It uses `execvpe` on
+    POSIX and stays the parent on Windows. It writes nothing to stdout.
+  - M4: all four configs and `.agents/mcp.yaml` hold
+    `codeanvil mcp run <name>`, with no path and no env.
+    `codeanvil mcp enable|disable` rewrites old configs and the AGENTS.md MCP
+    table. The sandbox recipes keep the caller's PATH, so `codeanvil` resolves
+    inside them.
+  - M5: the probe reports ok, missing (with the OS-family command), mismatch or
+    broken. Install commands are data in `system_packages`, with no `-dev`
+    packages. The probe fails fast in add, update, doctor and run.
+  - M6: Level 1 is `tests/test_mcp_e2e.py`, opt-in with `CODEANVIL_MCP_E2E=1`.
+    Level 2 is `methodology/test/runtime_mcp_probe.md` part B.
+  - Collector fix found by the tutorial dry run: sensor reads stretched the
+    interval to 1.06 s. Samples now sit on a fixed monotonic grid (1.00 s).
+  - Evidence: 332 pytest (1 opt-in skip) + 97 unittest green.
+    - Real `codeanvil mcp doctor marconi` reports the 3.14/3.15 mismatch, exit 1.
+    - On a scratch copy of the install, `update` rebuilt the venv on
+      `/usr/bin/python3.14` in about 3 s, and the probe then gave
+      `gnuradio 3.10.12.0`. The Level 1 session through the launcher ran a real
+      flowgraph (4096 samples).
+    - `create --mcp marconi` writes launcher configs only.
+    - A 10 s idle run gave 10 samples at 1.00 s on psutil, tree = the shell
+      alone, and Tctl present.
+  - The real install was left broken on purpose: the owner runs B1 → B2.
+- **Next:** the owner runs `methodology/test/runtime_mcp_probe.md` (A, then B,
+  then C) and records the results. Then the PR leaves draft and Phase 4
+  (v0.6.0) runs. Windows (Verification 8) stays manual.
+- **2026-11-06 — Paused. Pending, in order:**
+  1. The owner runs `methodology/test/runtime_mcp_probe.md` parts A, B and C on
+     the dev machine and fills its Results table. The real marconi venv is still
+     broken on purpose: B1 must FAIL, then B2 (`codeanvil mcp update marconi`)
+     fixes it.
+  2. Code review of PR #8 (it was started, then stopped at the owner's request;
+     nothing from it was applied).
+  3. Fix whatever 1 and 2 find. Take PR #8 out of draft, merge it with a merge
+     commit, then Phase 4 (v0.6.0: bump, tag the merge commit, release, smoke
+     test from `@v0.6.0`).
+  4. Verification 8 (Windows) is still manual.
+- **2026-11-09 — CLOSED (merged to main).** The probe ran and the one finding
+  it surfaced was fixed:
+  - Probe `methodology/test/runtime_mcp_probe.md` parts A, B, C run on the dev
+    box; Results table filled. All PASS except C8 (deferred). B1 fail→fix
+    exercised by removing the venv (the original 3.14→3.15 ABI drift had
+    already been repaired, so the FAIL mode is "no venv", not the ABI text).
+  - **Finding B6 → fixed** (`ef84b94`): `codeanvil sandbox claude` leaked the
+    claude.ai account-managed MCP servers past `--setting-sources project`.
+    The recipe now carries `--strict-mcp-config`, and `cmd_sandbox` adds
+    `--mcp-config <project .mcp.json>` when present. Verified live + 430 tests
+    green.
+  - PR #8 merged to main with a merge commit. Formal code review (item 2) was
+    skipped at the owner's direction in favour of the probe evidence + the
+    full suite.
+  - **Carried forward (not blockers for this plan):** the v0.6.0 release
+    (bump, tag, publish, smoke test from `@v0.6.0`); the C8 full S0→G2
+    flow with the in-place collector; Verification 8 (Windows), still manual;
+    and a decision on the stale repo-root `mcp_sandbox_probe/` scratch dir.
+    Two probe-wording nits are noted in the Results table (B1 ABI text no
+    longer reproducible; B8 whole-file `~/.claude.json` checksum too strict).

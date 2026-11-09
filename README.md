@@ -144,8 +144,9 @@ CodeAnvil can scaffold projects with MCP (Model Context Protocol) servers that g
 [Marconi](https://github.com/yoelbassin/gr-mcp) provides 19 MCP tools and 6 skills for RF/SDR work: spectrum survey, receiver building, simulation, transmit experiments, and GRC flowgraph export. Tested with Claude Code.
 
 ```bash
-# Install Marconi (clones repo, prewarms uv dependencies)
-codeanvil init --mcp marconi
+# Install Marconi (pinned clone, venv on gnuradio's Python, import probe)
+codeanvil mcp add marconi
+codeanvil mcp doctor marconi
 
 # Scaffold a project with Marconi enabled
 codeanvil create sdr-lab --mcp marconi -p ~/projects
@@ -155,14 +156,14 @@ cd ~/projects/sdr-lab && claude mcp list
 # marconi: ✔ Connected
 ```
 
-**Requires**: GNU Radio 3.10+ installed via your system package manager (`pacman -S gnuradio`, `apt install gnuradio-dev`, `dnf install gnuradio-devel`). The scaffold auto-detects the system gnuradio path and injects `PYTHONPATH` so Marconi's isolated uv venv can access it.
+**Requires**: GNU Radio 3.10+ installed via your system package manager (`pacman -S gnuradio`, `apt install gnuradio`, `dnf install gnuradio`, `brew install gnuradio`). `codeanvil mcp add` builds Marconi's venv on the Python gnuradio was built for and checks the import; if it fails, it prints the install command for your OS or `Run codeanvil mcp update marconi.`
 
 **What you get in the scaffolded project**:
 
 | What | Where |
 |------|-------|
 | 6 Marconi skills | `.agents/skills/marconi-*` (survey-spectrum, build-receiver, simulate-scene, debug-no-signal, tx-experiment, escape-hatch) |
-| MCP server definition | `.mcp.json` (Claude Code), `.vscode/mcp.json`, `.opencode/mcp.json`, `.codex/mcp.json` |
+| MCP server definition | `.mcp.json` (Claude Code), `.vscode/mcp.json`, `opencode.json`, `.codex/mcp.json` — all call `codeanvil mcp run marconi` |
 | Agent-agnostic manifest | `.agents/mcp.yaml` |
 | Server pre-approved | `.claude/settings.json` + `.claude/settings.local.json` (`enabledMcpjsonServers`) |
 

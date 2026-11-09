@@ -134,7 +134,16 @@ ls /tmp/smoke-test/.codeanvil/report/        # empty — populated by gate repor
 ls /tmp/smoke-test/.codeanvil/GT/README.md   # GT dir with instructions
 ls /tmp/smoke-test/.codeanvil/design/        # empty — S1 writes SDD.md and dependency_graph.html here
 ls /tmp/smoke-test/.codeanvil/backups/       # empty — written only by `codeanvil backup <stage>`
+
+# Methodology runtime — `init` built it; skill scripts run on it via `codeanvil python`
+codeanvil runtime list    # psutil  base  <version> / pyyaml  base  <version>
+codeanvil runtime path    # ~/.codeanvil-config/runtime/.venv/bin/python
 ```
+
+The runtime, the telemetry collector and the GNU Radio MCP server have their own probe:
+[`runtime_mcp_probe.md`](runtime_mcp_probe.md). With Marconi, install it once with
+`codeanvil mcp add marconi`, check it with `codeanvil mcp doctor marconi`, then
+`codeanvil create smoke-test -p /tmp --mcp marconi`.
 
 ### 2b. Verify project identity and status
 

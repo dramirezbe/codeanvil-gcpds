@@ -98,6 +98,10 @@ def test_sandbox_claude_uses_native_flags():
     assert cmd[0] == "claude"
     assert "--setting-sources" in cmd
     assert "project" in cmd
+    # --strict-mcp-config blocks the claude.ai account-managed MCP servers.
+    assert "--strict-mcp-config" in cmd
+    # No project_dir given, so no project .mcp.json is wired in.
+    assert "--mcp-config" not in cmd
 
 
 def test_sandbox_claude_launches_isolated_command(project_dir, monkeypatch):
@@ -106,8 +110,25 @@ def test_sandbox_claude_launches_isolated_command(project_dir, monkeypatch):
     with pytest.raises(SystemExit) as exc:
         cmd_sandbox("claude")
     assert exc.value.code == 0
-    assert captured["cmd"] == ["claude", "--setting-sources", "project"]
+    # No .mcp.json in this project: strict mode, no servers wired in.
+    assert captured["cmd"] == [
+        "claude", "--setting-sources", "project", "--strict-mcp-config",
+    ]
     assert captured["env"] is None  # native strategy passes no env override
+
+
+def test_sandbox_claude_wires_project_mcp_config_when_present(project_dir, monkeypatch):
+    """A project with a .mcp.json gets --mcp-config so its own servers survive
+    --strict-mcp-config."""
+    (project_dir / ".mcp.json").write_text("{}", encoding="utf-8")
+    captured = {}
+    _patch_agent_launch(monkeypatch, captured)
+    with pytest.raises(SystemExit) as exc:
+        cmd_sandbox("claude")
+    assert exc.value.code == 0
+    cmd = captured["cmd"]
+    assert "--strict-mcp-config" in cmd
+    assert cmd[cmd.index("--mcp-config") + 1] == str(project_dir / ".mcp.json")
 
 
 def test_sandbox_opencode_creates_temp_dir(project_dir, monkeypatch):

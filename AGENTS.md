@@ -132,7 +132,7 @@ Pure Python script. No LLM, no AI agent — just `g0_validate.py`.
 
 ### S2 — Implement services (agent)
 
-- **Skill**: `templates/skills/S2_implement_services/SKILL.md`, with `references/project_layout.md` and the locked `references/logger.py`, `references/logger.ts` and `references/telemetry_collector.py`.
+- **Skill**: `templates/skills/S2_implement_services/SKILL.md`, with `references/project_layout.md`, the locked `references/logger.py` and `references/logger.ts`, and the locked `scripts/telemetry_collector.py` that `run.sh` runs in place through `codeanvil python` (psutil from the methodology runtime).
 - **Output**: the delivered code in `src/<service>/`, the verification kit in `verification/`, the root manifests, `S2.md` and `S2_artifacts/test_run.md` (the two `verification/run.sh vl0|vl1` commands and `Possible infeasibility`). S2 implements §0.5 and a VL-0 smoke test of the actual entry point, including the URL and observed result. Only S2 writes code; a design defect is a `Verdict: design defect` iteration routed to S1.
 
 ### G2 — Adaptive verification (human verdict)
@@ -204,7 +204,7 @@ Agents are **stateless** and **runtime-agnostic** — all persistence is in the 
 
 ## MCP servers
 
-MCP (Model Context Protocol) servers give AI agents tool-calling capabilities. They are installed globally at `~/.codeanvil-config/mcp/<name>/` and wired into projects during scaffold. Config is generated per agent runtime.
+MCP (Model Context Protocol) servers give AI agents tool-calling capabilities. Each is installed globally at `~/.codeanvil-config/mcp/<name>/` with its own venv, pinned to the `ref` in `templates/config.yaml`, and never shares the methodology runtime. Projects call every server through the launcher `codeanvil mcp run <name>`, so their configs hold no absolute path and survive a move or a clone.
 
 ### Implemented: Marconi (GNU Radio)
 
@@ -212,19 +212,21 @@ MCP (Model Context Protocol) servers give AI agents tool-calling capabilities. T
 
 **Install & scaffold flow**:
 ```
-codeanvil init --mcp marconi       → clones to ~/.codeanvil-config/mcp/marconi/, prewarms uv deps
-codeanvil create proj --mcp marconi → copies 6 marconi-* skills, generates MCP configs
+codeanvil mcp add marconi          → clone, check out the pinned ref, venv, probe gnuradio (fails fast)
+codeanvil mcp doctor marconi       → PATH tools, pin, venv, gnuradio import — each with its fix
+codeanvil create proj --mcp marconi → copies 6 marconi-* skills, writes launcher configs
+codeanvil mcp enable marconi       → (inside a project) wire it later, or rewrite an old absolute config
 ```
 
 **Agent-agnostic config generation** (`src/codeanvil/init/mcp.py`):
 - `.mcp.json` — Claude Code (standard project MCP manifest)
 - `.claude/settings.json` + `.claude/settings.local.json` — `enabledMcpjsonServers` (pre-approves the server)
 - `.vscode/mcp.json` — VS Code / Copilot
-- `.opencode/mcp.json` — OpenCode
+- `opencode.json` — OpenCode
 - `.codex/mcp.json` — Codex
 - `.agents/mcp.yaml` — agent-agnostic canonical manifest
 
-**System package bridging**: GNU Radio is installed by the system package manager (not pip). `_detect_system_site_packages()` finds the system gnuradio and injects `PYTHONPATH` into all generated MCP configs so Marconi's uv venv can access it. Configured via `system_packages` in `templates/config.yaml`.
+**System packages**: GNU Radio is installed by the system package manager (not pip) and compiled for one system Python. `mcp add` / `mcp update` build Marconi's venv on that exact interpreter (`/usr/bin/python3.X`, never a version shim) with `--system-site-packages`. The probe is a real `from gnuradio import gr` in the venv, reported as ok, missing (with the OS-family install command from `system_packages` in `templates/config.yaml`), ABI mismatch (`Run codeanvil mcp update marconi.`) or broken; `mcp run` refuses to start on a failed probe with one stderr line.
 
 **Marconi v1.0 vocabulary** (17 blocks): tone_source, audio_tone_source, noise_source, file_source, head, add, multiply_const, freq_shift, freq_xlating_lowpass, quadrature_demod, rational_resampler_c/f, fm_deemphasis, nbfm_rx, nbfm_tx, file_sink, wav_sink. No hardware sources or GUI sinks — those use escape-hatch.
 

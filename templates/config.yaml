@@ -43,6 +43,19 @@ backup_targets:
   S2: [".codeanvil/report/{cycle}/S2_artifacts/test_run.md"]
   G2: [".codeanvil/report/{cycle}/G2_artifacts/verified_prototype.md"]
 
+# Global methodology runtime: one uv venv under ~/.codeanvil-config/<dir>/,
+# shared by every project, built from templates/runtime/ plus user additions
+# (`codeanvil runtime add`). Skill scripts run on it via `codeanvil python`.
+# system_packages: OS-installed Python packages (e.g. gnuradio) bridged into
+# the venv with a .pth file.
+runtime:
+  dir: "runtime"
+  python: "3.12"
+  # Shipped base; templates/runtime/pyproject.toml and uv.lock are generated
+  # from it (a test keeps them in step). psutil: S2 telemetry collector.
+  base: ["psutil", "pyyaml"]
+  system_packages: []
+
 # Skill directory symlinks — agent runtimes that discover skills
 # via a directory convention.
 agent_skill_links:
@@ -140,7 +153,13 @@ sandbox_agents:
   claude:
     binary: claude
     strategy: native
-    args: ["--setting-sources", "project"]
+    # --strict-mcp-config stops the claude.ai account-managed MCP servers
+    # (Claude Docs, ClickUp, Lucid, ...) from leaking past --setting-sources
+    # project. project_mcp_config re-adds the project's own servers via
+    # --mcp-config when the project has a .mcp.json; without one the sandbox
+    # sees no MCP servers at all.
+    args: ["--setting-sources", "project", "--strict-mcp-config"]
+    project_mcp_config: ".mcp.json"
   pi:
     binary: pi
     strategy: native
@@ -162,19 +181,41 @@ sandbox_agents:
     args: ["--no-daemon"]
     auth_files: ["installation_id"]
 
-# MCP servers — optional external tool integrations.
-# Installed globally during `codeanvil init --mcp <name>`,
-# wired into projects during `codeanvil create --mcp <name>`.
+# OS-installed Python packages that pip cannot provide (compiled against one
+# system Python). `probe` runs in the target interpreter: an import, never a
+# folder check. `install` is keyed by OS family: os-release ID / ID_LIKE
+# (arch, debian, fedora), then darwin and win32. The -dev/-devel packages are
+# for building out-of-tree modules, not for running GNU Radio.
+system_packages:
+  gnuradio:
+    probe: "from gnuradio import gr; print(gr.version())"
+    install:
+      arch: "sudo pacman -S gnuradio"
+      debian: "sudo apt install gnuradio"
+      fedora: "sudo dnf install gnuradio"
+      darwin: "brew install gnuradio"
+      win32: "Use WSL with a Linux install of gnuradio (native Windows via radioconda is unverified)"
+
+# MCP servers — optional external tool integrations, one pinned venv each
+# under ~/.codeanvil-config/mcp/<name>/ (never the methodology runtime).
+# `codeanvil mcp add <name>` clones the repo, checks out `ref` (a tag or
+# commit, never a branch head) and runs `uv sync <sync_args>`. A server with
+# system_packages gets a venv on the exact system interpreter those packages
+# were built for, with --system-site-packages. Projects call every server
+# through `codeanvil mcp run <name>`, which expands {install_path},
+# {venv_bin} and {project_dir} at start-up, so configs hold no absolute path.
 mcp_servers:
   marconi:
     repo: "https://github.com/yoelbassin/gr-mcp.git"
+    ref: "533bae4268e35e4324d03a1c0cd1a624516db56e"
     install_dir: "mcp/marconi"
-    command: "uv"
-    args: ["--directory", "{install_path}", "run", "--extra", "mcp", "marconi-mcp"]
+    sync_args: ["--extra", "mcp"]
+    command: "{venv_bin}/marconi-mcp"
+    args: []
     env:
       MARCONI_WORKSPACE: "{project_dir}"
     skills_subdir: "skills"
     skill_prefix: "marconi"
     description: "LLM-driven GNU Radio — spectrum survey, receiver building, simulation"
-    requires: ["uv"]
+    requires: ["uv", "git"]
     system_packages: ["gnuradio"]

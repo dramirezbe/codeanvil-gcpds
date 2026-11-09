@@ -31,8 +31,19 @@ def cmd_upgrade() -> None:
 
     log.info("Running: %s", " ".join(cmd))
     result = subprocess.run(cmd)
-    if result.returncode == 0:
-        log.info("codeanvil upgraded successfully")
-    else:
+    if result.returncode != 0:
         log.error("Upgrade failed (exit %d)", result.returncode)
         raise SystemExit(result.returncode)
+    log.info("codeanvil upgraded successfully")
+
+    # The new binary owns the new shipped runtime spec: run *its* sync, not
+    # this process's, so a changed lock takes effect at once.
+    new_binary = shutil.which("codeanvil")
+    if new_binary is None:
+        log.warning("codeanvil is not on PATH — run 'codeanvil runtime sync' once it is")
+        return
+    sync = subprocess.run([new_binary, "runtime", "sync"])
+    if sync.returncode != 0:
+        log.error("runtime sync failed after the upgrade (exit %d) — rerun 'codeanvil runtime sync'",
+                  sync.returncode)
+        raise SystemExit(sync.returncode)
