@@ -25,7 +25,7 @@ it has no `src/` until S2 writes the delivered code there. The user's AGENTS.md 
 | Understand the first complete V-SIL v3 run | [`methodology/test/T0_FM-RPI-RTL-mock/FIRST_FULL_FLOW_SNAPSHOT.md`](methodology/test/T0_FM-RPI-RTL-mock/FIRST_FULL_FLOW_SNAPSHOT.md) and [`first_full_flow_2026-11-05/`](methodology/test/T0_FM-RPI-RTL-mock/first_full_flow_2026-11-05/) |
 | Run the archived Mock HAL prototype | [`first_full_flow_2026-11-05/RUN.md`](methodology/test/T0_FM-RPI-RTL-mock/first_full_flow_2026-11-05/RUN.md) (`uv sync --frozen --no-dev`, then `./run-demo SC-2`) |
 | Review findings and pending proposals | [`S1_G1_review_holdout_2026-11-05.md`](methodology/test/T0_FM-RPI-RTL-mock/S1_G1_review_holdout_2026-11-05.md) |
-| See release and completed work | [`v0.6.2`](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.6.2) and [`2026-11-06_1521_global_runtime_and_mcp_manager.md`](odd/tasks/global-runtime-mcp/2026-11-06_1521_global_runtime_and_mcp_manager.md) |
+| See release and completed work | [`v0.7.0`](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.7.0) and [`2026-11-06_1521_global_runtime_and_mcp_manager.md`](odd/tasks/global-runtime-mcp/2026-11-06_1521_global_runtime_and_mcp_manager.md) |
 
 The T0_FM-RPI-RTL-mock snapshot completed S0 → G2 with a G2 design-defect feedback loop through
 S1, G1 and S2. Its original G2 PASS predates the later runnable-entry-point
