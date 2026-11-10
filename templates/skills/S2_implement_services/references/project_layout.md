@@ -90,11 +90,9 @@ has the same name as `src/<package>/` and would be shadowed by it. Write
 `from verification.<package>.mock_hal import ...` and `from <package>.hal.port import ...`.
 
 No `sys.path` bootstrap. Deploy with `uv sync --frozen --no-dev`, start with `uv run <package>`.
-The telemetry collector is not copied into the project: it runs in place from
-`templates/skills/S2_implement_services/scripts/telemetry_collector.py` on the CodeAnvil methodology
-runtime, which provides `psutil` (`codeanvil python` stops with `Run codeanvil runtime sync.` when it
-is missing). The kit's dev group never lists `psutil`. `run.sh` starts it in the background with
-`--pid $$`, so it measures `run.sh` and every process `run.sh` starts, never the collector itself.
+The telemetry collector ships with CodeAnvil itself and is invoked as `codeanvil telemetry`; it is
+not copied into the project, and the kit's dev group never lists `psutil`. `run.sh` starts it in the
+background with `--pid $$`, so it measures `run.sh` and every process `run.sh` starts, never the collector itself.
 The `<package>.main:main` function must instantiate a runtime HAL and run the service; logging
 startup instructions without starting the loop is not a working entry point. In `mock-only`, the
 runtime Mock HAL required for a preview lives in the package or a shipped demo bundle, while the
@@ -111,7 +109,7 @@ verification/
 │   ├── manifest.md        # one row per vector: id, SHA-256, generation parameters,
 │   │                      #   simulated condition, expected output
 │   └── <vector files>
-├── telemetry/             # one JSONL file per run, written by the locked collector
+├── telemetry/             # one JSONL file per run, written by `codeanvil telemetry`
 └── <package>/             # one folder per service, in that service's language
     ├── mock_hal/          # VL-0 vectors and the VL-1 synthetic generator
     ├── stubs/             # one stub per contract of a module not built yet
@@ -127,7 +125,7 @@ HAL's VL-0 tests use.
 `verification/run.sh <vl0|vl1>`:
 
 1. starts the telemetry collector in the background:
-   `codeanvil python templates/skills/S2_implement_services/scripts/telemetry_collector.py --pid $$ --output verification/telemetry/<level>-<timestamp>.jsonl &`,
+   `codeanvil telemetry --pid $$ --output verification/telemetry/<level>-<timestamp>.jsonl &`,
    with the design §1.7 `--interval`, and `--counters` when the HAL or services expose counters;
 2. runs `uv run pytest -m <level>` when a Python service exists;
 3. runs `pnpm -r --filter "./verification/*" test:<level>` when a TS service exists;

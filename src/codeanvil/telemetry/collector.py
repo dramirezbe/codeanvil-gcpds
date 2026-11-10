@@ -1,8 +1,7 @@
-#!/usr/bin/env python3
-"""Locked V-SIL telemetry collector.
+"""V-SIL telemetry collector, behind ``codeanvil telemetry``.
 
-It runs in place on the CodeAnvil methodology runtime, never copied into a project:
-``verification/run.sh`` starts it with ``codeanvil python <this file> --pid $$ ...``.
+It runs in-process in CodeAnvil's own environment; ``verification/run.sh`` starts it
+with ``codeanvil telemetry --pid $$ --output verification/telemetry/<level>-<ts>.jsonl``.
 It samples the host and the verification process tree once per interval and appends
 one JSON object per line to a file, one file per VL run. The tree is ``--pid`` (default:
 the collector's parent, e.g. ``run.sh``) plus every descendant except the collector
@@ -14,9 +13,8 @@ Application counters (dropped buffers, queue depth, scheduling latency) are not
 measured here: the collector copies them from the JSON object the HAL or the
 service instrumentation writes to ``--counters``.
 
-psutil is the only measurement source (CPU, memory, temperature, CPU count).
-The runtime provides it; without it the collector exits 2 before writing anything,
-and ``codeanvil python`` refuses to start it in the first place.
+psutil is the only measurement source (CPU, memory, temperature, CPU count) and is
+a CodeAnvil dependency. Without it the collector exits 2 before writing anything.
 """
 
 from __future__ import annotations
@@ -38,7 +36,7 @@ COLLECTOR_VERSION = "1.1.0"
 try:
     import psutil
 except ImportError as exc:  # the methodology runtime always ships psutil
-    print(f"telemetry collector: psutil is not installed ({exc}); run codeanvil runtime sync",
+    print(f"telemetry collector: psutil is not installed ({exc}); reinstall codeanvil",
           file=sys.stderr)
     sys.exit(2)
 
@@ -212,12 +210,11 @@ def _sample(tree, counters_path) -> dict:
 
 
 def _default_output() -> Path:
-    # Self-contained by design: the copied file imports nothing from the tool
-    # that scaffolded it. Milliseconds and the PID keep two runs started in the
+    # Milliseconds and the PID keep two runs started in the
     # same second (vl0 and vl1) from sharing one file.
     now = datetime.now(timezone.utc)
     stamp = f"{now:%Y%m%dT%H%M%S}{now.microsecond // 1000:03d}Z"
-    # cwd is the project root: `codeanvil python` runs every script from there.
+    # cwd is the project root: run.sh starts the collector from there.
     return Path.cwd() / "verification" / "telemetry" / f"telemetry-{stamp}-{os.getpid()}.jsonl"
 
 

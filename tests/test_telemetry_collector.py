@@ -1,4 +1,4 @@
-"""Locked telemetry collector, run in place on the methodology runtime (WU-L6, WU-RT7)."""
+"""`codeanvil telemetry`: the in-process telemetry collector."""
 
 import json
 import os
@@ -11,26 +11,19 @@ import importlib.util
 
 import pytest
 
-from codeanvil.CLI.commands.create import cmd_create
-from test_create import _scaffold_skill, db_path  # noqa: F401  (db_path is a fixture)
-
-SKILL = "S2_implement_services"
-COLLECTOR = "telemetry_collector.py"
 
 
 @pytest.fixture
-def collector(tmp_path, db_path) -> Path:
-    cmd_create(None, tmp_path, project_name="Proj")
-    path = _scaffold_skill(tmp_path, SKILL, "scripts", COLLECTOR)
-    assert path.is_file(), "codeanvil create did not ship scripts/telemetry_collector.py"
-    return path
+def collector() -> list[str]:
+    """The command prefix of the in-process collector: `codeanvil telemetry`."""
+    return [sys.executable, "-m", "codeanvil", "telemetry"]
 
 
-def _run(collector: Path, output: Path, *extra: str, env_extra: dict | None = None):
+def _run(collector: list[str], output: Path, *extra: str, env_extra: dict | None = None):
     env = {key: value for key, value in os.environ.items() if key != "PYTHONPATH"}
     env.update(env_extra or {})
     return subprocess.run(
-        [sys.executable, str(collector), "--output", str(output),
+        [*collector, "--output", str(output),
          "--interval", "0.02", "--duration", "0.06", *extra],
         capture_output=True, text=True, env=env, timeout=60,
     )
@@ -45,19 +38,18 @@ def _lines(output: Path) -> list[dict]:
     return [json.loads(line) for line in output.read_text(encoding="utf-8").splitlines()]
 
 
-def test_reference_collector_never_imports_codeanvil(collector):
-    """It runs on the runtime venv, which does not hold the codeanvil package."""
-    import ast
+def test_telemetry_subcommand_exists_with_the_five_flags():
+    from codeanvil.CLI.parser import argparser
 
-    tree = ast.parse(collector.read_text(encoding="utf-8"))
-    imported = {
-        alias.name.split(".")[0] for node in ast.walk(tree) if isinstance(node, ast.Import)
-        for alias in node.names
-    } | {
-        (node.module or "").split(".")[0] for node in ast.walk(tree)
-        if isinstance(node, ast.ImportFrom)
-    }
-    assert "codeanvil" not in imported
+    args = argparser(["telemetry", "--pid", "7", "--output", "o.jsonl", "--interval", "0.5",
+                      "--duration", "3", "--counters", "c.json"])
+
+    assert args.command == "telemetry"
+    assert (args.pid, args.output, args.interval, args.duration, args.counters) == (
+        7, Path("o.jsonl"), 0.5, 3.0, Path("c.json"))
+    defaults = argparser(["telemetry"])
+    assert (defaults.pid, defaults.output, defaults.interval, defaults.duration,
+            defaults.counters) == (None, None, 1.0, 0.0, None)
 
 
 def test_collector_writes_json_lines_with_the_schema(collector, tmp_path):
@@ -108,7 +100,7 @@ def test_collector_refuses_to_run_without_psutil(collector, tmp_path):
 
     assert result.returncode == 2
     assert "psutil is not installed" in result.stderr
-    assert "codeanvil runtime sync" in result.stderr
+    assert "reinstall codeanvil" in result.stderr
     assert not output.exists()
 
 
@@ -117,14 +109,13 @@ def test_collector_default_output_goes_to_verification_telemetry(collector, tmp_
     env = {key: value for key, value in os.environ.items() if key != "PYTHONPATH"}
 
     result = subprocess.run(
-        [sys.executable, str(collector), "--interval", "0.02", "--duration", "0.04"],
+        [*collector, "--interval", "0.02", "--duration", "0.04"],
         capture_output=True, text=True, env=env, timeout=60, cwd=tmp_path,
     )
 
     assert result.returncode == 0, result.stderr
     [run] = list((tmp_path / "verification" / "telemetry").glob("telemetry-*.jsonl"))
     assert _lines(run)
-    assert not list(collector.parent.glob("telemetry-*.jsonl"))
 
 
 def test_collector_never_measures_itself(collector, tmp_path):

@@ -52,8 +52,8 @@ runtime:
   dir: "runtime"
   python: "3.12"
   # Shipped base; templates/runtime/pyproject.toml and uv.lock are generated
-  # from it (a test keeps them in step). psutil: S2 telemetry collector.
-  base: ["psutil", "pyyaml"]
+  # from it (a test keeps them in step).
+  base: ["pyyaml"]
   system_packages: []
 
 # Skill directory symlinks — agent runtimes that discover skills
