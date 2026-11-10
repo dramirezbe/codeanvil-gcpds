@@ -7,6 +7,7 @@ target in the project's .codeanvil/project.yaml. The admin password is passed
 to the script through the environment only (never argv) and is never logged.
 """
 
+import getpass
 import os
 import re
 import subprocess
@@ -24,6 +25,9 @@ log = get_logger(__name__)
 _NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
 _SCRIPTS = Path("mcp") / "vsil_hil_mcp" / "scripts"
 PASSWORD_ENV = "CODEANVIL_HIL_PASSWORD"
+SUDO_PASSWORD_ENV = "CODEANVIL_HIL_SUDO_PASSWORD"
+# The agent user is fixed on every target, for traceability — never configurable.
+AGENT_USER = "codeanvil-agent"
 
 
 def _derive_target(ip: str) -> str:
@@ -82,15 +86,18 @@ def _register_target(project_yaml: Path, entry: dict) -> bool:
 
 def cmd_credential_setup(
     user: str,
-    password: str,
     ip: str,
-    agent_user: str = "codeanvil",
+    password: str | None = None,
+    sudo_password: str | None = None,
     workspace: str = "",
     port: int = 22,
     target: str = "",
     os_: str = "linux",
 ) -> None:
-    """Run `codeanvil credential-setup` — keys + remote bootstrap + project.yaml."""
+    """Run `codeanvil credential-setup` — keys + remote bootstrap + project.yaml.
+
+    The agent user is always ``codeanvil-agent`` (fixed, for traceability).
+    """
     manifest = find_manifest(Path.cwd())
     if manifest is None:
         log.error("not inside a scaffolded project — .codeanvil/project.yaml not found (searched up from cwd)")
@@ -100,7 +107,19 @@ def cmd_credential_setup(
     if not _NAME_RE.match(target):
         log.error("invalid target name '%s' (allowed: letters, digits, '_' and '-', max 64) — pass -t", target)
         sys.exit(1)
-    workspace = workspace or f"/home/{agent_user}/workspace"
+    workspace = workspace or f"/home/{AGENT_USER}/workspace"
+
+    # Prompt securely when -p is omitted; sudo reuses the SSH password unless a
+    # different one is given (or entered at the second prompt).
+    if password is None:
+        password = getpass.getpass(f"SSH password for {user}@{ip}: ")
+        if sudo_password is None:
+            entered = getpass.getpass("sudo password (press Enter to reuse the SSH password): ")
+            sudo_password = entered or password
+    if not password:
+        log.error("no SSH password provided")
+        sys.exit(1)
+    sudo_password = sudo_password or password
 
     if os_ == "linux":
         script = TEMPLATES_DIR / _SCRIPTS / "setup_credentials_ssh_hil.sh"
@@ -109,10 +128,14 @@ def cmd_credential_setup(
             sys.exit(1)
         cmd = [
             "bash", str(script), "-u", user, "-i", ip, "--port", str(port),
-            "-a", agent_user, "-t", target, "-w", workspace,
+            "-a", AGENT_USER, "-t", target, "-w", workspace,
         ]
-        log.info("bootstrapping %s@%s as '%s' (target '%s')", agent_user, ip, user, target)
-        res = subprocess.run(cmd, env={**os.environ, PASSWORD_ENV: password}, check=False)
+        log.info("bootstrapping %s@%s as admin '%s' (target '%s')", AGENT_USER, ip, user, target)
+        res = subprocess.run(
+            cmd,
+            env={**os.environ, PASSWORD_ENV: password, SUDO_PASSWORD_ENV: sudo_password},
+            check=False,
+        )
         if res.returncode != 0:
             log.error("remote bootstrap failed (exit %s) — project.yaml not modified", res.returncode)
             sys.exit(1)
@@ -122,12 +145,12 @@ def cmd_credential_setup(
         log.info("Windows target: automatic bootstrap is not supported from this host.")
         log.info("Run this script ON the target as Administrator:")
         log.info("  %s", ps1)
-        log.info("Public keys to install for user '%s':", agent_user)
+        log.info("Public keys to install for user '%s':", AGENT_USER)
         log.info("  deploy: %s", hil / "deploy_ed25519.pub")
         log.info("  exec:   %s", hil / "exec_ed25519.pub")
 
     entry = {
-        "name": target, "host": ip, "user": agent_user, "workspace": workspace,
+        "name": target, "host": ip, "user": AGENT_USER, "workspace": workspace,
         "os": os_, "hil_policy": "trusted",
     }
     if _register_target(manifest, entry):
@@ -137,4 +160,4 @@ def cmd_credential_setup(
 
     log.info("done. The vsil_hil_mcp tools (ssh_exec_cmd, code_sync, fetch_evidence, ...) can now use target '%s'.", target)
     log.info("Next: running the verification kit on the target also needs CodeAnvil installed there "
-             "(install.sh as '%s'); this command sets up access only.", agent_user)
+             "(install.sh as '%s'); this command sets up access only.", AGENT_USER)

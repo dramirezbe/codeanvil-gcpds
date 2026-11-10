@@ -53,8 +53,8 @@ def choose_option(args: argparse.Namespace) -> None:
             cmd_credential_setup(
                 user=args.user,
                 password=args.password,
+                sudo_password=args.sudo_password,
                 ip=args.ip,
-                agent_user=args.agent_user,
                 workspace=args.workspace,
                 port=args.port,
                 target=args.target,

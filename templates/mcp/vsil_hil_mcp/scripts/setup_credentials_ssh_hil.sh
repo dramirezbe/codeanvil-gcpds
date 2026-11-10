@@ -15,7 +15,7 @@
 # lab machine you own and can reflash (this matches the MCP `trusted` policy).
 set -euo pipefail
 
-ADMIN_USER=""; ADMIN_PASS="${CODEANVIL_HIL_PASSWORD:-}"; TARGET_IP=""; PORT=22
+ADMIN_USER=""; ADMIN_PASS="${CODEANVIL_HIL_PASSWORD:-}"; SUDO_PASS="${CODEANVIL_HIL_SUDO_PASSWORD:-}"; TARGET_IP=""; PORT=22
 AGENT_USER="codeanvil"; TARGET_NAME=""; WORKSPACE=""
 
 usage() {
@@ -26,6 +26,8 @@ Usage: $0 -u <admin_user> [-p <admin_password>] -i <target_ip> [options]
   -p, --password     that user's password (used only for this bootstrap SSH).
                      Prefer the env var CODEANVIL_HIL_PASSWORD (not visible in ps);
                      -p is the fallback when the variable is unset.
+                     Sudo uses the same password unless CODEANVIL_HIL_SUDO_PASSWORD
+                     is set (for targets where the sudo password differs).
   -i, --ip           target IP or hostname
   -P, --port         SSH port (default: 22)
   -a, --agent-user   agent user to create on the target (default: codeanvil)
@@ -53,6 +55,7 @@ while [ $# -gt 0 ]; do
 done
 
 [ -n "$ADMIN_USER" ] && [ -n "$ADMIN_PASS" ] && [ -n "$TARGET_IP" ] || usage
+SUDO_PASS="${SUDO_PASS:-$ADMIN_PASS}"   # sudo password defaults to the login password
 TARGET_NAME="${TARGET_NAME:-${TARGET_IP//[.:]/_}}"
 WORKSPACE="${WORKSPACE:-/home/$AGENT_USER/workspace}"
 
@@ -149,7 +152,7 @@ echo ">> configuring $AGENT_USER@$TARGET_IP via admin '$ADMIN_USER' (password au
 # command argument, so it never collides with the password on stdin and works
 # whether the admin login is root or a sudoer.
 ENC="$(base64 -w0 <<<"$REMOTE")"
-printf '%s\n' "$ADMIN_PASS" \
+printf '%s\n' "$SUDO_PASS" \
   | SSHPASS="$ADMIN_PASS" sshpass -e ssh "${SSH_OPTS[@]}" "$ADMIN_USER@$TARGET_IP" \
       "sudo -S -p '' bash -c 'echo $ENC | base64 -d | bash'"
 
