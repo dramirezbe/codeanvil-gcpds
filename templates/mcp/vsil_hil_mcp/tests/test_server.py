@@ -91,7 +91,9 @@ def test_code_sync_separate_excludes_and_deploy_key(env):
     for e in (".git", "__pycache__", "*.pyc", "verification/telemetry/", ".env", "*.key", "*.pem"):
         assert f"--exclude={e}" in argv
     assert str(_keys(home)[1]) in argv[argv.index("-e") + 1]
-    assert argv[-2] == f"{root}/" and argv[-1] == "hil@10.0.0.5:/home/hil/ws/"
+    # rrsync -wo roots the deploy key at the workspace, so the dest is the root
+    # (empty path), not the absolute workspace path (verified on a real target).
+    assert argv[-2] == f"{root}/" and argv[-1] == "hil@10.0.0.5:"
 
 
 def test_fetch_pulls_only_telemetry(env):
