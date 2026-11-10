@@ -3,7 +3,10 @@ name = "vsil-hil-mcp"
 version = "0.1.0"
 description = "V-SIL hardware-in-the-loop MCP server: deploy, run and fetch evidence on a declared COTS target over ssh/rsync"
 requires-python = ">=3.12"
-dependencies = ["mcp>=1.12,<2"]
+dependencies = ["mcp>=1.12,<2", "pyyaml>=6"]
+
+[dependency-groups]
+dev = ["pytest>=8"]
 
 [project.scripts]
 vsil-hil-mcp = "vsil_hil_mcp.server:main"

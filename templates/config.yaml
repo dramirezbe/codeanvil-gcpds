@@ -227,6 +227,8 @@ mcp_servers:
     install_dir: "mcp/vsil_hil_mcp"
     command: "{venv_bin}/vsil-hil-mcp"
     args: []
+    env:
+      VSIL_HIL_WORKSPACE: "{project_dir}"
     skills_subdir: "skills"
     skill_prefix: "vsil-hil"
     description: "Hardware-in-the-loop proxy — deploy, run and fetch evidence on a COTS target over ssh/rsync"
