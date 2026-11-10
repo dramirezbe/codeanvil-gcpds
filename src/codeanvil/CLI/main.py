@@ -5,6 +5,7 @@ import argparse
 from codeanvil.CLI.commands import (
     cmd_backup,
     cmd_create,
+    cmd_credential_setup,
     cmd_init,
     cmd_list,
     cmd_mcp,
@@ -48,6 +49,17 @@ def choose_option(args: argparse.Namespace) -> None:
             cmd_python(args.script, args.args)
         case "now":
             cmd_now(tz=args.tz, machine=args.machine)
+        case "credential-setup":
+            cmd_credential_setup(
+                user=args.user,
+                password=args.password,
+                sudo_password=args.sudo_password,
+                ip=args.ip,
+                workspace=args.workspace,
+                port=args.port,
+                target=args.target,
+                os_=args.os,
+            )
         case "sandbox":
             cmd_sandbox(args.agent)
         case "telemetry":

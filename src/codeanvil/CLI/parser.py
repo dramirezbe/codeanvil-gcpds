@@ -273,6 +273,26 @@ def build_parser() -> argparse.ArgumentParser:
         help="Agent to launch in the sandbox",
     )
 
+    cred = sub.add_parser(
+        "credential-setup",
+        help="Bootstrap an HIL target's agent credentials and register it in the project",
+        description=(
+            "Generates the vsil_hil_mcp confined keys, bootstraps the remote target over SSH\n"
+            "(locked-login agent user, NOPASSWD sudo, workspace, rrsync, the two pubkeys) and\n"
+            "registers it under `targets:` in .codeanvil/project.yaml. Run from inside a\n"
+            "project. The password is passed to the engine via env, never argv."
+        ),
+    )
+    cred.add_argument("-u", "--user", required=True, help="existing admin (sudoer) user on the target (bootstrap only)")
+    cred.add_argument("-p", "--password", default=None, help="admin SSH password; prompted securely if omitted (never logged)")
+    cred.add_argument("-s", "--sudo-password", dest="sudo_password", default=None,
+                      help="sudo password, only if it differs from the SSH password (default: reuse it)")
+    cred.add_argument("-i", "--ip", "-ip", dest="ip", required=True, help="target IP or hostname")
+    cred.add_argument("-w", "--workspace", default="", help="agent workspace (default: /home/codeanvil-agent/workspace)")
+    cred.add_argument("--port", type=int, default=22, help="SSH port (default: 22)")
+    cred.add_argument("-t", "--target", default="", help="target name (default: derived from the IP)")
+    cred.add_argument("--os", choices=["linux", "windows"], default="linux", help="target OS (default: linux)")
+
     sub.add_parser(
         "upgrade",
         help="Upgrade codeanvil to the latest version from GitHub",
