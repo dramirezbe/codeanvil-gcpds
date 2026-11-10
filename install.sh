@@ -113,6 +113,53 @@ install() {
     fi
 }
 
+# ── 5b. Ensure sshpass (used by `codeanvil credential-setup`) ──────────
+# Best-effort: the package is named `sshpass` on every distro; only the package
+# manager differs. A failure here never aborts the codeanvil install.
+ensure_sshpass() {
+    if command -v sshpass &>/dev/null; then
+        info "sshpass found."
+        return
+    fi
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+        warn "sshpass is not in core Homebrew. For 'codeanvil credential-setup', install it with:"
+        warn "  brew install hudochenkov/sshpass/sshpass"
+        return
+    fi
+
+    local pm cmd
+    if   command -v apt-get &>/dev/null; then pm="apt-get"; cmd="apt-get install -y sshpass"
+    elif command -v dnf     &>/dev/null; then pm="dnf";     cmd="dnf install -y sshpass"
+    elif command -v yum     &>/dev/null; then pm="yum";     cmd="yum install -y sshpass"
+    elif command -v pacman  &>/dev/null; then pm="pacman";  cmd="pacman -S --noconfirm sshpass"
+    elif command -v zypper  &>/dev/null; then pm="zypper";  cmd="zypper --non-interactive install sshpass"
+    elif command -v apk     &>/dev/null; then pm="apk";     cmd="apk add sshpass"
+    else
+        warn "No known package manager — install 'sshpass' manually (needed by 'codeanvil credential-setup')."
+        return
+    fi
+
+    local sudo=""
+    if [[ "$(id -u)" -ne 0 ]]; then
+        if command -v sudo &>/dev/null; then
+            sudo="sudo "
+        else
+            warn "sshpass not installed (need root). Run manually: $cmd"
+            return
+        fi
+    fi
+
+    info "Installing sshpass via ${pm} (for 'codeanvil credential-setup')..."
+    if ${sudo}${cmd}; then
+        info "sshpass installed."
+    else
+        warn "Could not install sshpass automatically. Run manually: ${sudo}${cmd}"
+        if [[ "$pm" == "dnf" || "$pm" == "yum" ]]; then
+            warn "  (on RHEL/CentOS, sshpass may require the EPEL repository)"
+        fi
+    fi
+}
+
 # ── 6. Verify ──────────────────────────────────────────────────────────
 verify() {
     export PATH="$HOME/.local/bin:$PATH"
@@ -148,6 +195,7 @@ main() {
     check_python
     ensure_uv
     install
+    ensure_sshpass
     verify
 
     # Inject PATH only if codeanvil isn't already reachable without it
