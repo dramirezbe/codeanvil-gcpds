@@ -30,8 +30,10 @@ def test_shipped_lock_covers_every_base_package():
         assert f'name = "{runtime.requirement_name(spec)}"' in lock
 
 
-def test_base_includes_psutil_for_the_telemetry_collector():
-    assert "psutil" in {runtime.requirement_name(spec) for spec in runtime.base_packages()}
+def test_base_leaves_psutil_to_codeanvil_itself():
+    """The telemetry collector runs in-process (`codeanvil telemetry`), not on the runtime."""
+    assert "psutil" not in {runtime.requirement_name(spec) for spec in runtime.base_packages()}
+    assert '"psutil"' in (REPO / "pyproject.toml").read_text(encoding="utf-8").split("[project.optional")[0]
 
 
 def test_wheel_force_includes_the_runtime_spec():
@@ -78,7 +80,7 @@ def test_add_records_user_packages_and_syncs(tmp_path, fake_sync):
 
 
 def test_add_skips_base_packages(tmp_path, fake_sync):
-    runtime.add(["psutil"], tmp_path)
+    runtime.add(["pyyaml"], tmp_path)
 
     assert runtime.load_user_packages(tmp_path) == []
 
@@ -87,7 +89,7 @@ def test_remove_refuses_base_and_unknown_packages(tmp_path, fake_sync):
     runtime.save_user_packages(["torch"], tmp_path)
 
     with pytest.raises(runtime.RuntimeSetupError, match="base packages"):
-        runtime.remove(["psutil"], tmp_path)
+        runtime.remove(["pyyaml"], tmp_path)
     with pytest.raises(runtime.RuntimeSetupError, match="not in the runtime's user packages"):
         runtime.remove(["numpy"], tmp_path)
 
@@ -278,12 +280,12 @@ def test_python_stops_when_a_skill_package_is_missing(tmp_path, project):
 
 def test_python_points_to_sync_when_a_base_package_is_missing(tmp_path, project):
     home = _runtime_home(tmp_path)
-    script = _skill_script(project, "S9_probe", ["psutil"])
+    script = _skill_script(project, "S9_probe", ["pyyaml"])
 
     result = _cli(home, project, "python", str(script))
 
     assert result.returncode == 1
-    assert "Skill S9_probe needs psutil. Run codeanvil runtime sync." in result.stderr
+    assert "Skill S9_probe needs pyyaml. Run codeanvil runtime sync." in result.stderr
 
 
 def test_python_forwards_the_exit_code(tmp_path, project, monkeypatch):
@@ -301,7 +303,7 @@ def test_scaffolded_skills_declare_their_runtime_packages():
 
     s2 = parse_skill_frontmatter(TEMPLATES_DIR / "skills" / "S2_implement_services" / "SKILL.md")
     g0 = parse_skill_frontmatter(TEMPLATES_DIR / "skills" / "G0_valid_req_and_GT" / "SKILL.md")
-    assert s2["runtime"] == ["psutil"]
+    assert s2["runtime"] == []  # the collector is `codeanvil telemetry`, in-process
     assert g0["runtime"] == []
     base = {runtime.requirement_name(spec) for spec in runtime.base_packages()}
     assert set(s2["runtime"]) <= base  # S2 must work right after `runtime sync`
@@ -315,7 +317,7 @@ def test_real_sync_builds_a_runtime_that_imports_the_base(tmp_path):
     interpreter = runtime.sync(tmp_path / "runtime")
 
     result = subprocess.run(
-        [str(interpreter), "-I", "-c", "import psutil, yaml; print(psutil.cpu_count() > 0)"],
+        [str(interpreter), "-I", "-c", "import yaml; print(bool(yaml.safe_load('a: 1')))"],
         capture_output=True, text=True, timeout=60,
     )
     assert result.stdout.strip() == "True", result.stderr

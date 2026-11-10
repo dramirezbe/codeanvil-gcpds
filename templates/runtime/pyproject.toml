@@ -6,7 +6,6 @@ name = "codeanvil-runtime"
 version = "1.0.0"
 requires-python = ">=3.12"
 dependencies = [
-    "psutil",
     "pyyaml",
 ]
 

@@ -22,6 +22,8 @@ LAUNCHER = {"command": "codeanvil", "args": ["mcp", "run", "marconi"], "env": {}
 
 def test_every_configured_server_pins_a_ref():
     for name, cfg in CONFIG["mcp_servers"].items():
+        if cfg.get("source") == "bundled":
+            continue  # pinned by the wheel it ships in, not by a git ref
         assert cfg.get("ref"), f"{name} has no pinned ref"
         assert cfg["ref"] not in ("main", "master", "HEAD"), f"{name} pins a branch head"
 
@@ -380,3 +382,94 @@ def test_remove_refuses_while_projects_use_the_server(tmp_path, monkeypatch):
 def test_unknown_server_is_a_clear_error():
     with pytest.raises(mcp.McpError, match="unknown MCP server 'nope'"):
         mcp.doctor("nope")
+
+
+# --- bundled first-party servers (vsil_hil_mcp) ---------------------------------
+
+
+@pytest.fixture
+def stub_install(tmp_path, monkeypatch):
+    """Fake `uv` and probes: record `_run` calls, make `uv sync` create the venv."""
+    monkeypatch.setattr(mcp, "MCP_DIR", tmp_path / "mcp")
+    monkeypatch.setattr(mcp.shutil, "which", lambda tool: f"/usr/bin/{tool}")
+    calls = []
+
+    def fake_run(args, what):
+        calls.append(args)
+        if args[1:2] == ["sync"]:
+            python = mcp.venv_python(Path(args[args.index("--directory") + 1]))
+            python.parent.mkdir(parents=True, exist_ok=True)
+            python.write_text("")
+        return ""
+
+    monkeypatch.setattr(mcp, "_run", fake_run)
+    return calls
+
+
+def test_bundled_server_is_configured_without_git_fields():
+    cfg = CONFIG["mcp_servers"]["vsil_hil_mcp"]
+    assert cfg["source"] == "bundled"
+    assert not {"repo", "ref", "system_packages"} & set(cfg)
+    assert (mcp.TEMPLATES_DIR / "mcp" / "vsil_hil_mcp" / "uv.lock").is_file()
+
+
+def test_bundled_install_copies_from_the_wheel_and_builds_a_plain_venv(stub_install, tmp_path):
+    dest = mcp.install_mcp_server("vsil_hil_mcp")
+
+    assert dest == (tmp_path / "mcp" / "vsil_hil_mcp").resolve()
+    assert (dest / "pyproject.toml").is_file() and (dest / "uv.lock").is_file()
+    assert (dest / "vsil_hil_mcp" / "server.py").is_file()
+    assert (dest / "skills" / "usage" / "SKILL.md").is_file()
+    assert not any(call[0] == "git" for call in stub_install)  # never cloned
+    [sync] = [call for call in stub_install if call[1:2] == ["sync"]]
+    assert "--python" not in sync  # no system packages -> plain venv
+    assert mcp.venv_python(dest).exists()
+
+
+def test_bundled_install_is_idempotent_and_refreshes_source(stub_install, tmp_path):
+    dest = mcp.install_mcp_server("vsil_hil_mcp")
+    (dest / "vsil_hil_mcp" / "server.py").write_text("stale")
+    mcp.install_mcp_server("vsil_hil_mcp")
+
+    assert "FastMCP" in (dest / "vsil_hil_mcp" / "server.py").read_text()
+    assert mcp.venv_python(dest).exists()
+
+
+def test_bundled_row_has_no_git_head_and_flips_to_installed(stub_install):
+    [before] = [r for r in mcp.server_rows() if r["name"] == "vsil_hil_mcp"]
+    assert before["installed"] is False and before["source"] == "bundled" and before["pinned"] is False
+
+    mcp.install_mcp_server("vsil_hil_mcp")
+    [after] = [r for r in mcp.server_rows() if r["name"] == "vsil_hil_mcp"]
+    assert after["installed"] is True and after["pinned"] is True
+    assert after["ref"] == "bundled" and after["head"] == ""
+
+
+def test_bundled_doctor_does_not_ask_for_a_git_pin(stub_install):
+    mcp.install_mcp_server("vsil_hil_mcp")
+    checks = {check: ok for check, ok, _ in mcp.doctor("vsil_hil_mcp")}
+
+    assert checks["bundled source"] and "pinned ref" not in checks and checks["venv"]
+
+
+def test_bundled_skill_is_copied_with_the_vsil_hil_prefix(stub_install, tmp_path):
+    mcp.install_mcp_server("vsil_hil_mcp")
+    project = tmp_path / "proj"
+    project.mkdir()
+
+    assert mcp.copy_mcp_skills("vsil_hil_mcp", project) == ["vsil-hil-usage"]
+
+
+def test_git_servers_still_clone_and_pin(monkeypatch, tmp_path):
+    """marconi keeps the clone path: _checkout_ref runs, the bundled copy never does."""
+    monkeypatch.setattr(mcp, "MCP_DIR", tmp_path / "mcp")
+    seen = []
+    monkeypatch.setattr(mcp, "_checkout_ref", lambda name, cfg, dest: seen.append(name))
+    monkeypatch.setattr(mcp, "_copy_bundled", lambda *a: pytest.fail("bundled path used for git server"))
+    monkeypatch.setattr(mcp, "_build_venv", lambda *a: None)
+    monkeypatch.setattr(mcp, "_require_probes", lambda name: None)
+
+    mcp.install_mcp_server("marconi")
+    assert seen == ["marconi"]
+    [row] = [r for r in mcp.server_rows() if r["name"] == "marconi"]
+    assert row["source"] == "git" and row["ref"] == CONFIG["mcp_servers"]["marconi"]["ref"]

@@ -1,0 +1,194 @@
+"""Project root, remote-target declarations and the per-target key store.
+
+Self-contained: stdlib + pyyaml only. Never imports `codeanvil`.
+"""
+
+from __future__ import annotations
+
+import os
+import re
+from dataclasses import dataclass
+from pathlib import Path
+
+import yaml
+
+POLICIES = ("trusted", "guarded", "locked")
+DEFAULT_POLICY = "trusted"
+
+# Strict allowlists: these values end up in ssh/rsync argv and in a shell script
+# the human runs as root on the target, so anything outside the pattern is refused.
+_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
+_USER_RE = re.compile(r"^[a-z_][a-z0-9_-]{0,31}$")
+_HOST_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.:-]{0,252}$")  # no leading '-', no whitespace
+_WORKSPACE_RE = re.compile(r"^/[A-Za-z0-9._/+@-]+$")  # absolute, no shell metacharacters
+
+
+class ConfigError(ValueError):
+    """Bad or missing project / target configuration."""
+
+
+@dataclass(frozen=True)
+class Target:
+    name: str
+    host: str
+    user: str
+    workspace: str
+    os: str = "linux"
+    arch: str = ""
+    device: str = ""
+    hil_policy: str = DEFAULT_POLICY
+
+
+def project_root() -> Path:
+    """`VSIL_HIL_WORKSPACE`, else the nearest ancestor of cwd holding `.codeanvil/`."""
+    env = os.environ.get("VSIL_HIL_WORKSPACE", "").strip()
+    if env:
+        return Path(env).resolve()
+    here = Path.cwd().resolve()
+    for candidate in (here, *here.parents):
+        if (candidate / ".codeanvil").is_dir():
+            return candidate
+    raise ConfigError("no project root: set VSIL_HIL_WORKSPACE or run inside a project with .codeanvil/")
+
+
+def project_yaml(root: Path) -> Path:
+    return root / ".codeanvil" / "project.yaml"
+
+
+def _read_project(root: Path) -> dict:
+    path = project_yaml(root)
+    if not path.is_file():
+        raise ConfigError(f"{path} not found: not a CodeAnvil project")
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    if not isinstance(data, dict):
+        raise ConfigError(f"{path} is not a mapping")
+    return data
+
+
+def validate_target_fields(name: str, host: str, user: str, workspace: str, policy: str) -> None:
+    if not _NAME_RE.match(name):
+        raise ConfigError(f"invalid target name {name!r}")
+    if not _HOST_RE.match(host):
+        raise ConfigError(f"invalid host {host!r}")
+    if not _USER_RE.match(user):
+        raise ConfigError(f"invalid user {user!r}")
+    if not _WORKSPACE_RE.match(workspace) or ".." in workspace.split("/"):
+        raise ConfigError(f"invalid workspace {workspace!r}: must be an absolute path of [A-Za-z0-9._/+@-]")
+    if policy not in POLICIES:
+        raise ConfigError(f"invalid hil_policy {policy!r}: expected one of {POLICIES}")
+
+
+def _to_target(name: str, raw: dict) -> Target:
+    if not isinstance(raw, dict):
+        raise ConfigError(f"target {name!r} is not a mapping")
+    t = Target(
+        name=name,
+        host=str(raw.get("host", "")),
+        user=str(raw.get("user", "")),
+        workspace=str(raw.get("workspace", "")),
+        os=str(raw.get("os", "linux")),
+        arch=str(raw.get("arch", "")),
+        device=str(raw.get("device", "")),
+        hil_policy=str(raw.get("hil_policy", DEFAULT_POLICY)),
+    )
+    validate_target_fields(t.name, t.host, t.user, t.workspace, t.hil_policy)
+    return t
+
+
+def load_targets(root: Path) -> dict[str, Target]:
+    """Read `targets:` from project.yaml — a list of dicts (with `name`) or a name->dict map."""
+    block = _read_project(root).get("targets") or []
+    out: dict[str, Target] = {}
+    if isinstance(block, dict):
+        items = [(str(k), v) for k, v in block.items()]
+    elif isinstance(block, list):
+        items = [(str(v.get("name", "")) if isinstance(v, dict) else "", v) for v in block]
+    else:
+        raise ConfigError("`targets:` must be a list or a map")
+    for name, raw in items:
+        out[name] = _to_target(name, raw)
+    return out
+
+
+def resolve_target(name: str = "", root: Path | None = None) -> Target:
+    """The named target, or the only declared one when `name` is empty."""
+    targets = load_targets(root or project_root())
+    if not targets:
+        raise ConfigError("no remote target declared in .codeanvil/project.yaml `targets:` (run init_codeanvil)")
+    if not name:
+        if len(targets) == 1:
+            return next(iter(targets.values()))
+        raise ConfigError(f"several targets declared ({', '.join(targets)}): pass `target`")
+    if name not in targets:
+        raise ConfigError(f"unknown target {name!r} (declared: {', '.join(targets)})")
+    return targets[name]
+
+
+def register_target(root: Path, target: Target) -> bool:
+    """Add `target` to `targets:` if absent. Returns True when written.
+
+    Rewrites project.yaml through yaml.safe_dump (comments are not preserved).
+    """
+    data = _read_project(root)
+    block = data.get("targets") or []
+    fields = {
+        "name": target.name, "host": target.host, "user": target.user,
+        "workspace": target.workspace, "os": target.os, "arch": target.arch,
+        "device": target.device, "hil_policy": target.hil_policy,
+    }
+    if isinstance(block, dict):
+        if target.name in block:
+            return False
+        block[target.name] = {k: v for k, v in fields.items() if k != "name"}
+    elif isinstance(block, list):
+        if any(isinstance(v, dict) and v.get("name") == target.name for v in block):
+            return False
+        block.append(fields)
+    else:
+        raise ConfigError("`targets:` must be a list or a map")
+    data["targets"] = block
+    project_yaml(root).write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+    return True
+
+
+# --- key store -------------------------------------------------------------
+
+def hil_dir(name: str) -> Path:
+    if not _NAME_RE.match(name):
+        raise ConfigError(f"invalid target name {name!r}")
+    return Path.home() / ".codeanvil-config" / "hil" / name
+
+
+def key_paths(name: str) -> dict[str, Path]:
+    d = hil_dir(name)
+    return {
+        "dir": d,
+        "deploy": d / "deploy_ed25519",
+        "exec": d / "exec_ed25519",
+        "known_hosts": d / "known_hosts",
+    }
+
+
+def ensure_key_dir(name: str) -> dict[str, Path]:
+    """Create the key dir (0700, parents too) and an empty 0600 known_hosts."""
+    paths = key_paths(name)
+    d = paths["dir"]
+    d.mkdir(parents=True, exist_ok=True)
+    for p in (d.parent, d):
+        os.chmod(p, 0o700)
+    kh = paths["known_hosts"]
+    if not kh.exists():
+        kh.touch(mode=0o600)
+    os.chmod(kh, 0o600)
+    return paths
+
+
+def lock_key_perms(paths: dict[str, Path]) -> None:
+    """Private keys 0600, public keys 0644 (idempotent)."""
+    for kind in ("deploy", "exec"):
+        priv = paths[kind]
+        if priv.exists():
+            os.chmod(priv, 0o600)
+        pub = priv.with_name(priv.name + ".pub")
+        if pub.exists():
+            os.chmod(pub, 0o644)

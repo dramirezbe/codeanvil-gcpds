@@ -2,12 +2,12 @@
 name: s2-implement-services
 description: "Trigger: S2, implement services, build the code, verification kit, VL-0. From a G1-passed design, build the services and the verification kit, prove the VL-0 floor and write the VL-1 tests."
 license: Apache-2.0
-compatibility: "Ships one script, scripts/telemetry_collector.py, run in place on the CodeAnvil methodology runtime (`codeanvil python`, needs psutil). Reads the S1 design, .codeanvil/GT/SyRS.md and .codeanvil/project.yaml. Writes src/, verification/, root manifests, .codeanvil/report/<cycle-name>/S2.md and S2_artifacts/."
+compatibility: "Telemetry is collected by the `codeanvil telemetry` subcommand, part of CodeAnvil itself (not a skill script). Reads the S1 design, .codeanvil/GT/SyRS.md and .codeanvil/project.yaml. Writes src/, verification/, root manifests, .codeanvil/report/<cycle-name>/S2.md and S2_artifacts/."
 metadata:
   author: "gcpds"
   version: "1.1"
   gate: "S2"
-  runtime: ["psutil"]
+  runtime: []
   pipeline: "V-SIL"
 ---
 
@@ -46,7 +46,7 @@ writing **no iteration** when you stop:
 | `templates/skills/S2_implement_services/references/project_layout.md` | Locked trees: Python, TypeScript, root manifests, kit |
 | `templates/skills/S2_implement_services/references/logger.py` | Locked Python logger, copied unchanged |
 | `templates/skills/S2_implement_services/references/logger.ts` | Locked TypeScript logger, copied unchanged |
-| `templates/skills/S2_implement_services/scripts/telemetry_collector.py` | Locked telemetry collector, run in place by `verification/run.sh` through `codeanvil python`; never copied |
+| `codeanvil telemetry` | Telemetry collector shipped with CodeAnvil, started by `verification/run.sh`; verification kit, never delivered |
 
 ## Hard Rules
 
@@ -60,8 +60,7 @@ writing **no iteration** when you stop:
 - Delivered code never depends on the scaffolding tool. Copy `logger.py` to every Python service's
   `config/logger.py` and `logger.ts` to every TypeScript service's `config/logger.ts`, unchanged,
   and never edit them. The telemetry collector is the exception because it is kit, not delivered
-  code: `run.sh` runs it in place from `templates/skills/S2_implement_services/scripts/` with
-  `codeanvil python`, and only its JSONL readings land in `verification/telemetry/`. Every
+  code: `run.sh` starts it as `codeanvil telemetry`, and only its JSONL readings land in `verification/telemetry/`. Every
   Python module logs with `log = get_logger(__name__)`; every TypeScript module with
   `getLogger("<package>.<module>")`. No `print`, no bare `console.log`.
 - The kit is never shipped: no service imports or depends on anything under `verification/`. Kit

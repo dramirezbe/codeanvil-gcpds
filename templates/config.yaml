@@ -52,8 +52,8 @@ runtime:
   dir: "runtime"
   python: "3.12"
   # Shipped base; templates/runtime/pyproject.toml and uv.lock are generated
-  # from it (a test keeps them in step). psutil: S2 telemetry collector.
-  base: ["psutil", "pyyaml"]
+  # from it (a test keeps them in step).
+  base: ["pyyaml"]
   system_packages: []
 
 # Skill directory symlinks — agent runtimes that discover skills
@@ -219,3 +219,17 @@ mcp_servers:
     description: "LLM-driven GNU Radio — spectrum survey, receiver building, simulation"
     requires: ["uv", "git"]
     system_packages: ["gnuradio"]
+
+  # First-party, methodology-owned (vsil_* prefix): bundled in the wheel, copied
+  # instead of cloned, version-matched with CodeAnvil.
+  vsil_hil_mcp:
+    source: bundled
+    install_dir: "mcp/vsil_hil_mcp"
+    command: "{venv_bin}/vsil-hil-mcp"
+    args: []
+    env:
+      VSIL_HIL_WORKSPACE: "{project_dir}"
+    skills_subdir: "skills"
+    skill_prefix: "vsil-hil"
+    description: "Hardware-in-the-loop proxy — deploy, run and fetch evidence on a COTS target over ssh/rsync"
+    requires: ["uv"]

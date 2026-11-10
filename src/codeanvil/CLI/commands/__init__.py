@@ -11,10 +11,11 @@ from codeanvil.CLI.commands.runtime import cmd_runtime
 from codeanvil.CLI.commands.sandbox import cmd_sandbox
 from codeanvil.CLI.commands.status import cmd_status
 from codeanvil.CLI.commands.sync import cmd_sync
+from codeanvil.CLI.commands.telemetry import cmd_telemetry
 from codeanvil.CLI.commands.upgrade import cmd_upgrade
 
 __all__ = [
     "cmd_backup", "cmd_create", "cmd_init", "cmd_list", "cmd_mcp", "cmd_now",
     "cmd_python", "cmd_runtime", "cmd_sandbox", "cmd_status", "cmd_sync",
-    "cmd_upgrade",
+    "cmd_telemetry", "cmd_upgrade",
 ]

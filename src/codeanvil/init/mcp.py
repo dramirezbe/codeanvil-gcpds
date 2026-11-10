@@ -18,7 +18,7 @@ from pathlib import Path
 import yaml
 
 from codeanvil.config.logger import get_logger
-from codeanvil.config.paths import CONFIG, MCP_DIR, SKILLS_DIRNAME, find_manifest
+from codeanvil.config.paths import CONFIG, MCP_DIR, SKILLS_DIRNAME, TEMPLATES_DIR, find_manifest
 from codeanvil.init import system_packages as syspkg
 
 log = get_logger(__name__)
@@ -87,6 +87,23 @@ def _checkout_ref(name: str, cfg: dict, dest: Path) -> None:
     else:
         _run(["git", "-C", str(dest), "fetch", "--quiet", "--tags", "origin"], "git fetch")
     _run(["git", "-C", str(dest), "checkout", "--quiet", "--detach", ref], f"git checkout {ref}")
+
+
+def _is_bundled(cfg: dict) -> bool:
+    return cfg.get("source") == "bundled"
+
+
+def _copy_bundled(name: str, cfg: dict, dest: Path) -> None:
+    """Install a first-party server by copying its source from the wheel
+    (templates/mcp/<dir>) instead of cloning. Keeps an existing .venv so a
+    re-run is an in-place refresh."""
+    src = TEMPLATES_DIR / "mcp" / cfg["install_dir"].split("/")[-1]
+    if not src.is_dir():
+        raise McpError(f"bundled MCP server '{name}' is missing from this CodeAnvil install ({src})")
+    log.info("installing bundled MCP server '%s' from %s", name, src)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(src, dest, dirs_exist_ok=True,
+                    ignore=shutil.ignore_patterns(".venv", "__pycache__", "*.pyc"))
 
 
 def _target_interpreter(name: str, cfg: dict) -> Path | None:
@@ -173,10 +190,14 @@ def install_mcp_server(name: str) -> Path:
     """`codeanvil mcp add`: clone, pin, build the venv, probe. Idempotent."""
     cfg = _server_cfg(name)
     dest = get_mcp_install_path(name)
-    _checkout_ref(name, cfg, dest)
+    bundled = _is_bundled(cfg)
+    if bundled:
+        _copy_bundled(name, cfg, dest)
+    else:
+        _checkout_ref(name, cfg, dest)
     _build_venv(name, cfg, dest)
     _require_probes(name)
-    log.info("MCP server '%s' installed at %s (%s)", name, dest, cfg["ref"])
+    log.info("MCP server '%s' installed at %s (%s)", name, dest, "bundled" if bundled else cfg["ref"])
     return dest
 
 
@@ -233,13 +254,17 @@ def server_rows() -> list[dict]:
     for name, cfg in CONFIG.get("mcp_servers", {}).items():
         install_path = get_mcp_install_path(name)
         installed = install_path.is_dir()
-        head = _head(install_path) if installed else None
+        bundled = _is_bundled(cfg)
+        # A bundled server has no git HEAD: it is pinned by the wheel it ships in.
+        head = None if bundled or not installed else _head(install_path)
         rows.append({
             "name": name,
             "installed": installed,
-            "ref": cfg.get("ref", ""),
+            "source": "bundled" if bundled else "git",
+            "ref": "bundled" if bundled else cfg.get("ref", ""),
             "head": head or "",
-            "pinned": bool(head and cfg.get("ref") and head.startswith(str(cfg["ref"]))),
+            "pinned": installed if bundled else bool(
+                head and cfg.get("ref") and head.startswith(str(cfg["ref"]))),
         })
     return rows
 
@@ -256,11 +281,14 @@ def doctor(name: str) -> list[tuple[str, bool, str]]:
         checks.append(("installed", False, f"Run codeanvil mcp add {name}."))
         return checks
     checks.append(("installed", True, str(install_path)))
-    head = _head(install_path) or ""
-    ref = str(cfg.get("ref", ""))
-    pinned = bool(ref) and head.startswith(ref)
-    checks.append(("pinned ref", pinned,
-                   head if pinned else f"checked out {head[:12] or '?'}, config pins {ref[:12]} — run codeanvil mcp update {name}"))
+    if _is_bundled(cfg):
+        checks.append(("bundled source", True, "shipped in the CodeAnvil wheel"))
+    else:
+        head = _head(install_path) or ""
+        ref = str(cfg.get("ref", ""))
+        pinned = bool(ref) and head.startswith(ref)
+        checks.append(("pinned ref", pinned,
+                       head if pinned else f"checked out {head[:12] or '?'}, config pins {ref[:12]} — run codeanvil mcp update {name}"))
     python = venv_python(install_path)
     checks.append(("venv", python.exists(),
                    str(python) if python.exists() else f"no venv — run codeanvil mcp update {name}"))

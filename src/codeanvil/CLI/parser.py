@@ -239,6 +239,23 @@ def build_parser() -> argparse.ArgumentParser:
         help="Filename-safe format (no colons or spaces)",
     )
 
+    telemetry = sub.add_parser(
+        "telemetry",
+        help="Sample host and process telemetry into a JSON-lines file",
+        description="Samples CPU, memory and temperature of the verification process tree "
+        "once per interval into a JSON-lines file. Runs until SIGINT/SIGTERM or --duration.",
+    )
+    telemetry.add_argument("--pid", type=int, default=None,
+                           help="root of the process tree to measure (default: the parent process)")
+    telemetry.add_argument("--output", type=Path, default=None,
+                           help="output JSON-lines file (default: verification/telemetry/ under the cwd)")
+    telemetry.add_argument("--interval", type=float, default=1.0,
+                           help="seconds between samples (default: 1.0)")
+    telemetry.add_argument("--duration", type=float, default=0.0,
+                           help="seconds to sample; 0 runs until SIGINT or SIGTERM (default: 0)")
+    telemetry.add_argument("--counters", type=Path, default=None,
+                           help="JSON object written by the HAL or the service instrumentation")
+
     sandbox = sub.add_parser(
         "sandbox",
         help="Launch an agent isolated to project-local settings",
