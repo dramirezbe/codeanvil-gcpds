@@ -41,6 +41,13 @@ def test_wheel_force_includes_the_runtime_spec():
     assert '"templates/runtime" = "codeanvil/templates/runtime"' in text
 
 
+def test_wheel_force_includes_the_bundled_mcp():
+    """The bundled vsil_hil_mcp server must ship in the wheel, or `mcp add` fails."""
+    text = (REPO / "pyproject.toml").read_text(encoding="utf-8")
+    assert '"templates/mcp" = "codeanvil/templates/mcp"' in text
+    assert (TEMPLATES_DIR / "mcp" / "vsil_hil_mcp" / "vsil_hil_mcp" / "server.py").is_file()
+
+
 # --- pyproject rendering and user packages -----------------------------------
 
 
