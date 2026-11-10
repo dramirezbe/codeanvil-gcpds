@@ -35,3 +35,4 @@ packages = ["src/codeanvil"]
 "templates/AGENTS" = "codeanvil/templates/AGENTS"
 "templates/agents" = "codeanvil/templates/agents"
 "templates/runtime" = "codeanvil/templates/runtime"
+"templates/mcp" = "codeanvil/templates/mcp"
