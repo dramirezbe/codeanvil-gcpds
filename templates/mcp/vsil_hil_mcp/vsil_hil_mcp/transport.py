@@ -56,7 +56,11 @@ def rsync_push_argv(target: Target, deploy_key: Path, local_workspace: Path) -> 
         "-e", _rsync_e(target, deploy_key),
         *[f"--exclude={e}" for e in EXCLUDES],
         f"{local_workspace}/",
-        f"{target.user}@{target.host}:{target.workspace}/",
+        # The deploy key is forced to `rrsync -wo <workspace>`, which roots every
+        # client path at the workspace. So the destination is that root (empty
+        # path), NOT the absolute workspace path — otherwise rrsync nests it as
+        # <workspace>/<workspace>/ and fails (verified against a real target).
+        f"{target.user}@{target.host}:",
     ]
 
 
