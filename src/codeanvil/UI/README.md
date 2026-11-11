@@ -9,6 +9,21 @@ purpose-built views while reusing their existing Python logic.
 > change CLI behavior, project formats or database schema just to support UI
 > workflows.
 
+The [2026-11-11 project-contract audit](../../../odd/tasks/ui/2026-11-11_current_project_ui_audit.md)
+maps paths and artifact producers for **new projects created with release
+`v0.7.0` (`2f08944`)**. Use its expected completed-project tree and acceptance
+criteria when adding views. Earlier-version projects and compatibility are
+outside scope; acceptance uses only the new 0.7.0 example collection. The UI is developed on `feat/ui`;
+the release tag itself has no UI command. Audit §6 identifies post-tag changes
+that must not be presented as released 0.7.0 capabilities.
+
+**Implemented on the UI branch (2026-11-11):** project creation/addition,
+cycle and report-iteration browsing, shared stale/delivered states, safe
+Markdown, Design/Verification views and nested artifacts. The five synthetic
+[0.7.0 examples](../../../methodology/test/v0.7.0-example-artifacts/README.md)
+exercise the empty through G2 states. Terminal sessions, automatic refresh,
+hardware/telemetry surfaces and native packaging remain later work.
+
 ---
 
 ## 1. What it is
@@ -57,7 +72,8 @@ runtime:
 
 - **Launcher / dashboard** — when the launch folder has **no** `.codeanvil/`
   project. Shows the **projects list** (`db/projects.list_projects()`) and a
-  **Create project** button (`init/create.scaffold_project()`), plus global
+  **Create project** workflow (existing `CLI/commands/create.cmd_create()`
+  includes input validation, scaffold, identity and DB registration), plus global
   tool config (runtime, MCP, `init`, `upgrade`). Picking a project opens it in
   workspace mode.
 - **Workspace** — when the folder **is** a project. Opens the full working
@@ -127,9 +143,10 @@ The backend imports these directly (no CLI subprocess):
 | Concern            | Module / functions |
 |--------------------|--------------------|
 | Project detection  | `config/paths.py` — `find_manifest()`, `PROJECT_*`, `WORKDIR`, `DB_PATH` |
-| Report/gate state  | `reports.py` — `ReportState`, `_report_state()`, `_cycle_reports()`, `_gate_order()`, `backup_entries()` |
+| Report/gate state  | `reports.py` — `ReportState`, `report_state()`, `parse_report_iterations()`, `stale_reason()`, `cycle_reports()`, `gate_order()`, `backup_entries()`; CLI and UI share staleness |
 | Registry           | `db/projects.py` — `list_projects()`, `get_project_by_id/name()`, `register_project()`, `sync_project()`; `db/utils.connect_db()` |
 | Scaffold           | `init/create.py` — `scaffold_project()`, `write_project_manifest()` |
+| Full project sync  | `init/sync.py` — `run_sync()`; reads manifest and reconciles local registration |
 | MCP lifecycle      | `init/mcp.py` — install/update/doctor/enable/disable/run |
 | Runtime            | `init/runtime.py` — `sync/add/remove/listing/path` |
 | System packages    | `init/system_packages.py` — `probe()`, `cached_probe()` |
@@ -143,6 +160,12 @@ per-command glue). Where a command module mixes logic with printing/`sys.exit`,
 the UI work extracts the pure function into a small **service layer** both
 front-ends call — the CLI keeps zero adherence to the UI and vice-versa.
 **(design task)**
+
+The current read adapter is `UI/workspace.py`; `UI/project_context.py`
+validates identity once for bootstrap, artifact views and workflows.
+`UI/workflows.py` calls the full create handler and existing sync function
+without changing cwd. Remaining handler extraction is incremental; the
+advanced action adapter still dispatches CLI handlers in-process.
 
 ## 7. Agent & editor sidebar (O3)
 
@@ -172,10 +195,13 @@ All launch and install recipes come from an editable YAML (§9), not hard-coded.
 
 ## 8. Verification commands
 
-Running a project's `verification/run.sh vlN` and the telemetry collector are
-real subprocesses by nature (they execute the delivered prototype, possibly on
-a remote HIL target). These are the methodology's own external work, surfaced
-through the terminal/PTY and the WS stream — not the CLI-reuse exception.
+The active S2/G2 contract names `verification/run.sh vl0` and
+`verification/run.sh vl1`, recorded in
+`.codeanvil/report/<cycle>/S2_artifacts/test_run.md`. Run them through the
+terminal/PTY with the collector companion. Manual reruns show their own
+results; they do not write a G2 verdict. The G2 skill and human own that verdict.
+Remote execution integration into the stage skills is still pending; the HIL
+transport's existence does not establish an automatic remote G2 or `vl2` kit.
 
 ## 9. Launcher registry — editable YAML (O5)
 
@@ -212,15 +238,18 @@ launchers:
   **warns the user to install it manually** rather than guessing.
 - Icons: one per launcher (Claude, Codex, OpenCode, Pi, VS Code, VSCodium,
   JetBrains).
-- This registry can live beside `config.yaml` (or a dedicated
-  `launchers.yaml`) — decided when the ODD task starts.
+- The shipped registry is `src/codeanvil/UI/launchers.yaml`; `load_registry()`
+  creates the editable global copy at `~/.codeanvil-config/launchers.yaml` on
+  first use. The YAML above is a design sketch; the implementation accepts
+  argv arrays and does not interpret recipes as shell pipelines.
 
 ## 10. Live refresh via watchdog (O6)
 
-A **watchdog** watches every **non-code project document** (the `.codeanvil/`
-tree: `report/`, `GT/`, `design/`, `backups/`, `project.yaml`, HIL audit log;
-not `src/` or `verification/` code). On a change (file saved, or its **SHA**
-differs):
+A **watchdog** watches methodology documents under `.codeanvil/` (`report/`,
+`GT/`, `design/`, `backups/`, `project.yaml`, `hil/audit.log`) and evidence data
+under **`verification/telemetry/`**. Include extensionless `report/<cycle>/DRAFT`
+and file creation/deletion. Do not watch `src/` or verification source code.
+On a change (file saved, or its **SHA** differs):
 - re-read **only that file**, and
 - refresh **only the UI items bound to it** (e.g. a new `report/<cycle>/G1.md`
   bumps the progress board and that gate's report view) via a WS push.
@@ -245,24 +274,36 @@ target UI contract; the current implementation note distinguishes existing
 views from planned workflows.
 
 ### View & understand
-- **Progress board**: `S0 → G0 → S1 → G1 → S2 → G2` (RFD from any stage), per
-  cycle, with delivered / stale / closed-cycle markers — from `reports.py`.
-- **Reports & iterations**: browse each cycle's gate reports and HITL verdicts;
-  diff iterations across cycles. **(+ new)**
+- **Progress board**: `S0 → G0 → S1 → G1 → S2 → G2`, per cycle, with delivered,
+  human verdict, stale, draft and closed/suspended-cycle states. RFD is raised
+  from S1/G1/G2; S2 records possible infeasibility for G2. Share status semantics;
+  raw `reports.py` output alone does not compute all these states.
+- **Reports & iterations**: browse each cycle's gate reports and select an
+  individual iteration. Implemented; cross-cycle diffs remain planned.
 - **Themed Markdown viewer**: render reports, GT and design documents as
   formatted HTML (headings, tables, links, quotes and code blocks), rather than
   showing Markdown source. Use the forge palette, spacing and surfaces in both
-  light and dark themes. **(+ new; pending)**
+  light and dark themes. Implemented with safe GFM rendering; raw HTML and
+  automatic external-image loading are disabled.
 - **GT viewer**: `build_package.md`, `StRS.md`, `SyRS.md`.
 - **Design viewer**: render `SDD.md` and the interactive
   `dependency_graph.html` inline. **(+ new)**
+- **Verification / final result**: open `S2_artifacts/test_run.md` and
+  `G2_artifacts/verified_prototype.md` inside the selected cycle; show evidence
+  levels and the final template's §12 run/stop instructions. Existing files
+  can be stale after rework; do not label a cycle complete from file existence.
+- **Draft / deviations**: `DRAFT`, `RFD.md` and `RFD_artifacts/RFD-NNN.md`,
+  including withdrawn and superseded-cycle outcomes. **(+ new)**
 - **Backups**: `.codeanvil/backups/<cycle>/` with MANIFEST SHA-256.
-- **Telemetry**: chart the JSON-lines telemetry (CPU/mem/temp). **(+ new)**
+- **Telemetry**: chart `verification/telemetry/*.jsonl` (process/system CPU,
+  memory, temperature and available counters); retain unavailable readings and
+  unknown cycle/target associations. **(+ new)**
 - **HIL targets**: `targets:` from `project.yaml` + `.codeanvil/hil/audit.log`.
   **(+ new)**
 - **HW COTS gallery**: a card per hardware component, with its image. **(+ new,
   see §12.1)**
-- **Logs**: application logs.
+- **Logs**: captured action/terminal streams and project-declared log files.
+  The current project contract defines no universal application log directory.
 
 ### Feature workflows (the primary UI)
 
@@ -281,7 +322,7 @@ UI.
 | `runtime` | Runtime settings expose package sync/add/remove/list/path with clear global scope. |
 | `mcp` | The launcher has an MCP catalog (marketplace-style) showing available servers and install state. Users can install a server there; project creation then offers installed servers to activate for that project. Project settings show health and wiring actions. |
 | `telemetry` | Verification and telemetry views display collected data and offer bounded capture controls. |
-| `credential-setup` | A guided HIL target setup flow collects target details and credentials securely. |
+| `credential-setup` (post-tag extension) | Guided HIL setup requires the later tool build; the command is absent from release 0.7.0 and is deferred for the strict release baseline. |
 | `init`, `upgrade` | Global setup/update controls show confirmation, progress and result. |
 | `now` | Use internally for timestamps; it does not need a prominent user action. |
 | `python`, `sandbox`, `mcp run`, `verification/run.sh` | Run through the live terminal/PTY workflow (§5/§8). |
@@ -300,7 +341,7 @@ configuration and skills. This keeps global installation separate from
 project-level activation. The catalog is marketplace-style UI, not a remote
 third-party marketplace.
 
-The current code already provides the needed operations: `server_rows()` lists
+The current code already provides these operations: `server_rows()` lists
 configured servers and installed state; `doctor()` reports readiness;
 `install_mcp_server()` implements global installation; `cmd_create()` accepts
 installed MCP names and delegates scaffold/config generation to
@@ -309,10 +350,47 @@ project. The UI should call these through its in-process action adapter or a
 small UI route. Do not add a second registry, installer, or project-wiring
 implementation.
 
-**Current implementation:** the launcher already implements `list`; the
-generic action page can dispatch one-shot handlers. The project creation
-wizard, native folder picker for `sync`, and the other feature-specific
-workflows above are still pending.
+Release boundary: the 0.7.0 tag declares `vsil_hil_mcp`, but its wheel mapping
+omits the bundled server source and its transport predates the rrsync fix.
+The later branch corrects both. The release catalog entry alone is not proof
+that HIL installation or execution works; keep that distinct from the core
+0.7.0 project views and workflows.
+
+**Current implementation:** the launcher lists projects, adds an existing
+project through manifest validation and UUID-based sync, and creates projects
+through the full scaffold/identity/registration operation. A native folder
+picker runs in an isolated Python/Tk process; manual path entry remains
+available when it is unavailable or headless. Creation lists the configured
+MCP servers and permits activation of installed ones. Global MCP installation,
+contextual backup/runtime/telemetry controls and other guided settings remain
+available through the advanced action catalog until their own workflows land.
+
+The workspace now exposes GT, Design, reports and Verification with cycle and
+iteration selection, useful missing-artifact states and a synthetic-fixture
+notice. A completed cycle requires current stage/gate reports plus a prototype
+whose baseline matches the latest S2/G2 iterations; file existence is not
+enough. DRAFT, RFD suspension/withdrawal, closed cycles and transitive staleness
+are shown explicitly. Backups currently list the latest per stage/cycle;
+history and manifest inspection are still pending. The graph runs in a
+sandboxed iframe with its copied library inlined for offline display.
+
+Validation: 526 Python tests passed (one optional test skipped), 11 frontend
+tests passed, and the production frontend built. A real Chromium run covered
+the five fixture states, add/create, iteration selection, the interactive graph,
+light/dark themes and mobile navigation against an isolated temporary DB.
+Native folder-dialog interaction is covered by mocked tests, not a cross-OS
+desktop acceptance claim. The global release installation is unchanged.
+
+To run this branch's UI from the repository root:
+
+```bash
+uv run --extra ui codeanvil ui
+```
+
+This runs the checkout's implementation; it does not require replacing the
+globally installed release 0.7.0. Development checks are `uv run --extra dev
+--extra ui pytest tests templates/tests -q` and, from `frontend/`, `pnpm test`
+and `pnpm build`.
 
 ### Launch (external — §7)
 - Agents/editors sidebar, two groups.
@@ -322,8 +400,10 @@ workflows above are still pending.
 Show a photo of every COTS hardware component the project targets, so the GT's
 hardware reads as real objects, not just identifiers.
 
-- **Source of the list**: the StRS `HWC-` blocks (and the SyRS). The UI already
-  knows the component names; it only needs an image per name.
+- **Source of the list**: StRS §1.6 hardware inventory (`HW-*` entries: name,
+  purpose, manufacturer, part number). Join its HWC-* constraints through the
+  `Component` field. A component can have many constraints: one card represents
+  the component, not each constraint. No current UI inventory reader exists.
 - **Image source — Wikimedia Commons / Wikidata, no API key.** Resolve each
   component to its Wikidata entity and read the image property **`P18`**, then
   pull the file from Commons. Both are public, keyless, rate-friendly APIs with
@@ -334,9 +414,9 @@ hardware reads as real objects, not just identifiers.
   attribution) is cached under `.codeanvil/` on first fetch, so later views work
   offline and the artifact is reproducible. Only the public component *name*
   ever leaves the machine — no project or user data.
-- **Author override wins**: a `HWC-` block (or `project.yaml`) may pin an exact
-  image URL or a local path; that is canonical and author-controlled, like the
-  rest of the GT contract.
+- **Author override wins (planned)**: define a UI-owned image override and cache
+  format before implementation. Current GT/manifest schemas have no image field;
+  do not require new GT content or silently extend `project.yaml` for the gallery.
 - **Forge placeholder fallback**: when nothing resolves, show a steel-framed
   line-art placeholder instead of a broken image.
 - **Pluggable provider**: the launcher-registry YAML (§9) may define an optional
@@ -347,7 +427,7 @@ hardware reads as real objects, not just identifiers.
   images, so a mockup renders the cards as drawn SVG; the shipped UI shows the
   real Commons photos.)
 - **Aesthetic fit**: frame each photo in a hard-edged steel "billet" card with
-  its `HWC-` chip and a license/attribution line; prefer Commons'
+  its `HW-*` identity, linked HWC-* constraints and a license/attribution line; prefer Commons'
   transparent-background files; an optional subtle duotone keeps glossy product
   shots inside the forge palette.
 
@@ -361,8 +441,7 @@ hardware reads as real objects, not just identifiers.
 
 ## 14. Still to pin down (at ODD-task time)
 
-- Exact home of the launcher registry (`launchers.yaml` vs a block in
-  `config.yaml`).
+- Launcher recipe completeness and OS validation; registry location is resolved (§9).
 - Service-layer extraction list: which `CLI/commands/*` functions need a pure
   counterpart.
 - WSL transport specifics (localhost WS into a WSL-side backend vs
