@@ -392,7 +392,7 @@ are shown explicitly. Backups currently list the latest per stage/cycle;
 history and manifest inspection are still pending. The graph runs in a
 sandboxed iframe with its copied library inlined for offline display.
 
-Validation: 557 Python tests passed (one optional test skipped), 22 frontend
+Validation: 606 Python tests passed (one optional test skipped), 30 frontend
 tests passed, and the production frontend built. A real Chromium run covered
 the five fixture states, add/create, iteration selection, the interactive graph,
 light/dark themes and mobile navigation against an isolated temporary DB.
@@ -419,6 +419,22 @@ An explicit valid path takes precedence. Folder-name previews call the shared
 CLI creation logic, so the default follows the TUI's naming rules.
 The locally bundled Lucide Anvil favicon is served at both `/favicon.svg` and
 `/favicon.ico`; its upstream license ships with the frontend assets.
+
+### Project deletion
+
+Project deletion calls the same `project_delete.py` operations as the CLI.
+`POST /api/workflows/delete` requires the registered UUID, the path shown to
+the user, explicit confirmation and the exact project name. It unregisters
+only by default; deleting the folder also requires `remove_files: true`.
+Boolean options are strict, and a changed path or mismatched root identity
+is rejected. The generic CLI action catalog directs users to this dedicated
+confirmation workflow.
+
+Trash buttons are available on project cards and in the active workspace.
+The dialog shows the exact name/path and requires typing that name. Removing
+files is unchecked by default; cancelling keeps the project and restores focus.
+Success refreshes the list and returns to the launcher, including when the
+server was launched inside the now-unregistered project.
 
 ### Global installation and dependency ownership
 

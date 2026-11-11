@@ -25,6 +25,7 @@ from codeanvil.config.paths import find_manifest
 
 _CWD_LOCK = threading.RLock()
 _BLOCKED = {
+    "delete": "Use Delete project on the project card to review and confirm deletion.",
     "python": "Running arbitrary Python scripts requires the live terminal feature.",
     "sandbox": "Launching an agent requires the live terminal feature.",
     "mcp.run": "Starting a long-running MCP server is not a one-shot UI action.",
@@ -35,7 +36,7 @@ _CONFIRM = {
     "runtime.remove", "create", "sync", "backup", "telemetry",
 }
 _ALLOWED_TOP = {
-    "init", "create", "list", "sync", "status", "backup", "runtime",
+    "init", "create", "delete", "list", "sync", "status", "backup", "runtime",
     "mcp", "now", "telemetry", "credential-setup", "upgrade", "python", "sandbox",
 }
 

@@ -8,13 +8,14 @@ import threading
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field, StrictStr
+from pydantic import BaseModel, Field, StrictBool, StrictStr
 
 from codeanvil.CLI.commands.create import CreateInputError, cmd_create, resolve_create_inputs
 from codeanvil.config.paths import CONFIG, DB_PATH
 from codeanvil.db.schema import db_exists
 from codeanvil.init.mcp import is_mcp_installed, server_rows
 from codeanvil.init.sync import run_sync
+from codeanvil.project_delete import ProjectDeleteError, delete_project, resolve_delete_target
 from codeanvil.UI.project_context import ProjectManifestError, project_context, project_summary
 from codeanvil.UI.user_context import default_folder
 
@@ -35,6 +36,14 @@ class CreateRequest(BaseModel):
     parent_path: StrictStr = Field(min_length=1)
     folder: StrictStr | None = None
     mcp_servers: list[StrictStr] = Field(default_factory=list)
+
+
+class DeleteRequest(BaseModel):
+    project_id: StrictStr = Field(min_length=1)
+    expected_path: StrictStr = Field(min_length=1)
+    remove_files: StrictBool = False
+    confirm: StrictBool = False
+    confirmation_name: StrictStr
 
 
 def _existing_folder(value: str, base: Path) -> Path:
@@ -69,6 +78,22 @@ def _context(path: Path):
 def create_workflows_router(root: Path) -> APIRouter:
     root = root.resolve()
     router = APIRouter(prefix="/api/workflows", tags=["workflows"])
+
+    @router.post("/delete")
+    def delete(request: DeleteRequest):
+        if not request.confirm:
+            raise HTTPException(status_code=428, detail="Confirm project deletion first.")
+        _require_registry()
+        try:
+            project = resolve_delete_target(request.project_id, db_path=DB_PATH)
+            if project["id"] != request.project_id:
+                raise ProjectDeleteError("Select a registered project by its ID.")
+            if request.confirmation_name != project["name"]:
+                raise HTTPException(status_code=400, detail="Enter the project's exact name to confirm deletion.")
+            return delete_project(project["id"], expected_path=request.expected_path,
+                                  remove_files=request.remove_files, db_path=DB_PATH)
+        except ProjectDeleteError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
 
     @router.get("/defaults")
     def defaults():
