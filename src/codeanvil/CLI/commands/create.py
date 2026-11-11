@@ -135,6 +135,8 @@ def _validate_folder_name(folder: str) -> str:
     folder_name = folder.strip()
     if not folder_name:
         raise CreateInputError("--folder must not be empty")
+    if folder_name in {".", ".."} or "/" in folder_name or "\\" in folder_name:
+        raise CreateInputError("--folder must be a single directory name, not a path")
     return folder_name
 
 

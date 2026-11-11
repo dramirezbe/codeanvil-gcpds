@@ -51,6 +51,10 @@ def build_parser() -> argparse.ArgumentParser:
         )
     sub = parser.add_subparsers(dest="command", required=True, title="commands")
 
+    ui = sub.add_parser("ui", help="Open the local CodeAnvil workspace UI")
+    ui.add_argument("--port", type=int, default=8765, help="HTTP port (default: 8765)")
+    ui.add_argument("--no-browser", action="store_true", help="do not open a browser automatically")
+
     init_parser = sub.add_parser(
         "init",
         help="Initialize CodeAnvil workdir and database",

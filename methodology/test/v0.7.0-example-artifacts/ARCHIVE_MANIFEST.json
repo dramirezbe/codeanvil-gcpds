@@ -1,0 +1,1886 @@
+{
+  "format_version": 1,
+  "codeanvil_tag": "v0.7.0",
+  "codeanvil_commit": "2f08944",
+  "synthetic_progress": true,
+  "excluded_names": [
+    ".env",
+    ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".uv-cache",
+    ".venv",
+    "__pycache__",
+    "node_modules"
+  ],
+  "projects": [
+    {
+      "directory": "laboratorio_espectro_rf",
+      "through": null,
+      "report_count": 0,
+      "cycle": null
+    },
+    {
+      "directory": "monitor_ocupacion_fm",
+      "through": "G0",
+      "report_count": 2,
+      "cycle": "01_ui_demo"
+    },
+    {
+      "directory": "banco_telemetria_cots",
+      "through": "G1",
+      "report_count": 4,
+      "cycle": "01_ui_demo"
+    },
+    {
+      "directory": "api_procesamiento_senales",
+      "through": "S2",
+      "report_count": 5,
+      "cycle": "01_ui_demo"
+    },
+    {
+      "directory": "panel_prototipo",
+      "through": "G2",
+      "report_count": 6,
+      "cycle": "01_ui_demo"
+    }
+  ],
+  "entries": [
+    {
+      "path": "api_procesamiento_senales/.agents/skills/G0_valid_req_and_GT/SKILL.md",
+      "type": "file",
+      "sha256": "a943d6840a16354b67d0992b04fdf7935349d72e3edf059753e3ffae4a8ac128",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.agents/skills/G0_valid_req_and_GT/references/RULES.md",
+      "type": "file",
+      "sha256": "bd80af779634cdc9766a794bb2888a7a8bac356c38705269ba82caca642f54eb",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.agents/skills/G0_valid_req_and_GT/references/TRIAGE.md",
+      "type": "file",
+      "sha256": "8237ea175481a67b23febd25b6b77c5bd24fe4e59ca7e6fd6bce98c71e06874f",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.agents/skills/G0_valid_req_and_GT/scripts/g0_validate.py",
+      "type": "file",
+      "sha256": "e75e4d91490cd5296f5d9f326e62d06edb7bfcd3e7e04e0bcec037e41c81378a",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.agents/skills/G0_valid_req_and_GT/templates/StRS.md",
+      "type": "file",
+      "sha256": "644d0c528172a84cc38b66bee2f0718f0bef8a9c0b03286f887f2dd399e41287",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.agents/skills/G0_valid_req_and_GT/templates/SyRS.md",
+      "type": "file",
+      "sha256": "456bcfb5726f3acbd45d0c7338b6e61fcbff734d7f98461aa0ac13b4beb65bd8",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.agents/skills/G1_design_review/SKILL.md",
+      "type": "file",
+      "sha256": "cc2c28f2fb697c7a64127607522d38aba950b976c29e11c62a30c0e52f34014a",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.agents/skills/G1_design_review/references/G1_CHECKLIST.md",
+      "type": "file",
+      "sha256": "7738374af147aeacfdb8f7934f70d13cabfd096a0bf1962d29729df0502a82e0",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.agents/skills/G1_design_review/references/TRIAGE.md",
+      "type": "file",
+      "sha256": "8237ea175481a67b23febd25b6b77c5bd24fe4e59ca7e6fd6bce98c71e06874f",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.agents/skills/G2_adaptive_verification/SKILL.md",
+      "type": "file",
+      "sha256": "13fefdc34e892c0337f7c9e0eca5a17fe819e304a1985f76920e1f6189a14189",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.agents/skills/G2_adaptive_verification/references/verified_prototype.md",
+      "type": "file",
+      "sha256": "fca5a7565438575115388b8a28315a9ae2f22ff6ae362e462729588d95ab1789",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.agents/skills/RFD_request_for_deviation/SKILL.md",
+      "type": "file",
+      "sha256": "fc93c0efdb221c9e0f2f61f94dc2ce60e0eea8cb9b72584ae7b818f51d23b7ff",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.agents/skills/S0_normalise_build_package/SKILL.md",
+      "type": "file",
+      "sha256": "c99f35e0aed8146582979ee9ff98810644c693d619df506debc09d85feb041c0",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.agents/skills/S0_normalise_build_package/references/TRIAGE.md",
+      "type": "file",
+      "sha256": "8237ea175481a67b23febd25b6b77c5bd24fe4e59ca7e6fd6bce98c71e06874f",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.agents/skills/S0_normalise_build_package/templates/StRS.md",
+      "type": "file",
+      "sha256": "644d0c528172a84cc38b66bee2f0718f0bef8a9c0b03286f887f2dd399e41287",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.agents/skills/S0_normalise_build_package/templates/SyRS.md",
+      "type": "file",
+      "sha256": "456bcfb5726f3acbd45d0c7338b6e61fcbff734d7f98461aa0ac13b4beb65bd8",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.agents/skills/S1_design_services/SKILL.md",
+      "type": "file",
+      "sha256": "831506d18941e787f2e15c0c2e9e85220b79f02d94a01c694eccb632f09578d1",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.agents/skills/S1_design_services/assets/LICENSE-vis-network.txt",
+      "type": "file",
+      "sha256": "b8600511082fe290caacb1f93e19b1a7582d90e90cfb0296446417ef092e62f8",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.agents/skills/S1_design_services/assets/vis-network.min.js",
+      "type": "file",
+      "sha256": "f6ee3a6560dd2bc7fce0b08149a30f2111e78255c5bb677e02c6517acc770379",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.agents/skills/S1_design_services/references/SDD.md",
+      "type": "file",
+      "sha256": "05b912ea0760326eee255d9159599c821847ba1c33331c8611f5e22868b883ab",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.agents/skills/S1_design_services/references/dependency_graph_template.html",
+      "type": "file",
+      "sha256": "edfeb7c01b2ede8fe26c7387268fe61d9434e279b7ce0f32deb65632b654a366",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.agents/skills/S2_implement_services/SKILL.md",
+      "type": "file",
+      "sha256": "6dfcb82b8f72523fb32d8544b5aa4426d8947fec4edb4ff696653319cac53597",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.agents/skills/S2_implement_services/references/logger.py",
+      "type": "file",
+      "sha256": "20ea9e8b1dfc636b3cb7b871dcc64f7d4b7b8cf42183ae6700965a9e588fea3e",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.agents/skills/S2_implement_services/references/logger.ts",
+      "type": "file",
+      "sha256": "d6594761f6ff44b9f2d753a821ca8884728214f3214315a8299d4e9fa494df24",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.agents/skills/S2_implement_services/references/project_layout.md",
+      "type": "file",
+      "sha256": "304422c3797d3fbb373693e848b3ef1c55274d8f185c76dc330f87b56dfa6a3a",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.claude/agents/vsil-verifier.md",
+      "type": "file",
+      "sha256": "3be640629495374066b29029bd86894ea2d5801c7769617f974262b1119c2321",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.claude/skills",
+      "type": "symlink",
+      "target": "../.agents/skills"
+    },
+    {
+      "path": "api_procesamiento_senales/.codeanvil/GT/README.md",
+      "type": "file",
+      "sha256": "35d14274ada88c6e6b16c567b1ed3159c379bf38bacc260e4db8137b064bb43a",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.codeanvil/GT/StRS.md",
+      "type": "file",
+      "sha256": "f33123a4ed4c217f76faaac17dacbde96d094d8c774630ab08495fb126ceac46",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.codeanvil/GT/SyRS.md",
+      "type": "file",
+      "sha256": "f844ff4dff55914875d69f2832630e7a6704f4d98e65a7727a6ddeb7048103e0",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.codeanvil/GT/build_package.md",
+      "type": "file",
+      "sha256": "14ddc7dcfdcae133f91e598fdb8ab1a7d6f1e8105388748d906720e8d9d33120",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.codeanvil/backups/.gitkeep",
+      "type": "file",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.codeanvil/custody/.gitkeep",
+      "type": "file",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.codeanvil/design/SDD.md",
+      "type": "file",
+      "sha256": "2eb0a21b3b2ec08ac766f0a6ea59ef4b4401bcb59362e3abd0e754a48887260a",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.codeanvil/design/dependency_graph.html",
+      "type": "file",
+      "sha256": "95c0545ba2aec8f69852efaa5a1a834ef041c5c890576c55e34d864dd89321a1",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.codeanvil/project.yaml",
+      "type": "file",
+      "sha256": "50dba75f04a6a64f0f047cfca9868b2d3de0f83789be83433e17e56ac266c0ca",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.codeanvil/report/01_ui_demo/G0.md",
+      "type": "file",
+      "sha256": "c3817cbf7288419bb5832124983719ffdd2144995f1a912aefa5245f8f48928a",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.codeanvil/report/01_ui_demo/G1.md",
+      "type": "file",
+      "sha256": "141e33d00157b5eb04be8488b524998eca3847821e9ba21db4e79870bb185f0d",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.codeanvil/report/01_ui_demo/S0.md",
+      "type": "file",
+      "sha256": "5d7138bab53616c2e1cb7f7d072ea5171d20561d6b83b46af6262191ef11e31e",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.codeanvil/report/01_ui_demo/S1.md",
+      "type": "file",
+      "sha256": "080724b99ec66ea2db7dd8b325262daa8237295b4f2d9a3b1d4564ef400e399d",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.codeanvil/report/01_ui_demo/S2.md",
+      "type": "file",
+      "sha256": "fedac0c7b974f99589e67f10900be68c4a3de7c4f5ae23b5df3d5d59fb17734c",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.codeanvil/report/01_ui_demo/S2_artifacts/test_run.md",
+      "type": "file",
+      "sha256": "c4e05f6301dc222514df80a90ad2490137ed0ed4cddc416388dcea7c611ee697",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.codex/agents/vsil-verifier.toml",
+      "type": "file",
+      "sha256": "84453701a11130323de5218154f93484b2a85ed69a5f7c502da1c21106a8badd",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.codex/skills",
+      "type": "symlink",
+      "target": "../.agents/skills"
+    },
+    {
+      "path": "api_procesamiento_senales/.env.example",
+      "type": "file",
+      "sha256": "47b6f8b80e870c5ba12fdb9613254c517f0fd356baaba0de4aa50016862776cd",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.github/copilot-instructions.md",
+      "type": "file",
+      "sha256": "bcb6269c092cd40f753f038a0cbc4cdbf9a3f6351dedebe0d65b5b391a64eb72",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.github/skills",
+      "type": "symlink",
+      "target": "../.agents/skills"
+    },
+    {
+      "path": "api_procesamiento_senales/.gitignore",
+      "type": "file",
+      "sha256": "6db68b6af6c862aaf71259e7691b8ed4152d9502e253fe2ac9c3d64dfe3fb73a",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.opencode/agents/vsil-verifier.md",
+      "type": "file",
+      "sha256": "1d69a0a9aba11f1cbe10e4bb8ba0c72d9ad45bd98b93205291bad2013392af62",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/.opencode/skills",
+      "type": "symlink",
+      "target": "../.agents/skills"
+    },
+    {
+      "path": "api_procesamiento_senales/AGENTS.md",
+      "type": "file",
+      "sha256": "c6fc81eaacda8ecaca76aa06dd0ff4b30b4f6d736a717ffdcd8a0ffe141726bb",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/CLAUDE.md",
+      "type": "symlink",
+      "target": "AGENTS.md"
+    },
+    {
+      "path": "api_procesamiento_senales/UI_FIXTURE.md",
+      "type": "file",
+      "sha256": "fcb1c816df14401bd197e6c55de03cb883198e02a63b79506b65b64d8d317193",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/pyproject.toml",
+      "type": "file",
+      "sha256": "f77da98fd3046860b4e187bb60b61477133d7d4f72384007b72250c6bf1a92d8",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/src/demo_counter/__init__.py",
+      "type": "file",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/src/demo_counter/__main__.py",
+      "type": "file",
+      "sha256": "bc143cdb7df8917d3a2260db1653c582205188b2229f0364df3f0a86cea177be",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/src/demo_counter/config/__init__.py",
+      "type": "file",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/src/demo_counter/config/logger.py",
+      "type": "file",
+      "sha256": "20ea9e8b1dfc636b3cb7b871dcc64f7d4b7b8cf42183ae6700965a9e588fea3e",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/src/demo_counter/config/paths.py",
+      "type": "file",
+      "sha256": "6a1d424781339e57cad99ac4fe70d3149a58ace59c7faed5bef329ecd8372a67",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/src/demo_counter/config/runtime.py",
+      "type": "file",
+      "sha256": "3370f08528a5147a9740141c4cf5a7df1bfc6e756c2963998f7b77a354c46edd",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/src/demo_counter/hal/__init__.py",
+      "type": "file",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/src/demo_counter/hal/port.py",
+      "type": "file",
+      "sha256": "0704a69008e488ea2c58fca5ea76e6940caadd9eac4ee53340baf2ba7834b4c9",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/src/demo_counter/lib/__init__.py",
+      "type": "file",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/src/demo_counter/main.py",
+      "type": "file",
+      "sha256": "a78e6b4e63f4c54f0085e31d001e43d648be73f835715367f8d1e510d55e66e7",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/src/demo_counter/processing/__init__.py",
+      "type": "file",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/src/demo_counter/processing/value.py",
+      "type": "file",
+      "sha256": "21fa599c05ae76a2f441bb411cbb3cf7d9e7a8f71cab8bb7f7098862be2279d4",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/uv.lock",
+      "type": "file",
+      "sha256": "af9474728ba9f97812e080b56498eab730f0b817115cdde64458a000423cc7f7",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/verification/__init__.py",
+      "type": "file",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/verification/demo_counter/__init__.py",
+      "type": "file",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/verification/demo_counter/drivers/__init__.py",
+      "type": "file",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/verification/demo_counter/drivers/base.py",
+      "type": "file",
+      "sha256": "29c8b17edf56b95d5599a24d79e32b7af4b6884ef1bb506b8a00cb951d55aa65",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/verification/demo_counter/fakes/README.md",
+      "type": "file",
+      "sha256": "a1b625bef3892c19d821d8130e0f63f600b760c40331f8af524b556d4197e4fd",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/verification/demo_counter/mock_hal/__init__.py",
+      "type": "file",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/verification/demo_counter/mock_hal/source.py",
+      "type": "file",
+      "sha256": "567f3cd92936926382b5a7b1ed46c35e8551014e82681ad3000277d9df516801",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/verification/demo_counter/stubs/__init__.py",
+      "type": "file",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/verification/demo_counter/stubs/identity.py",
+      "type": "file",
+      "sha256": "0062c0d13ec8ed6ee6c3550c04a10417825f234271fa319728c8a9b2266f8d59",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/verification/demo_counter/test/test_preview.py",
+      "type": "file",
+      "sha256": "d906216a6d185af72e4d2c9a3133e955efb40168e119357138a3883632e616a6",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/verification/golden/manifest.md",
+      "type": "file",
+      "sha256": "7fc5b3940a2c9d428f9d4e8b0541795781ad7303da52c2a3e9228caacf757b30",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/verification/golden/values.json",
+      "type": "file",
+      "sha256": "853a5328e71938ba77fa56ed5209611f42ac3cb81d6509f8629d9f8b606a0360",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/verification/run.sh",
+      "type": "file",
+      "sha256": "cf8bea65ea2cc5cb8c37c4082843a05027c9b233fae683b63015924e4accda7d",
+      "executable": true
+    },
+    {
+      "path": "api_procesamiento_senales/verification/telemetry/vl0-2026-11-11_10-08-34-321.jsonl",
+      "type": "file",
+      "sha256": "d8614ac2c74e0369c7bce396822a909534c7d3c0f29824abf31647e4f51eb2ca",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/verification/telemetry/vl1-2026-11-11_10-08-35-009.jsonl",
+      "type": "file",
+      "sha256": "19334ccda711957c9b5eb29b281244d00e3713e5684081b5a4f6d5a1560ff224",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/verification/test-output/s2-vl0.txt",
+      "type": "file",
+      "sha256": "01d42a4e8b5076fbcd069232b46c73c7230f20b8f3c0062dd18bb879a5b26626",
+      "executable": false
+    },
+    {
+      "path": "api_procesamiento_senales/verification/test-output/s2-vl1.txt",
+      "type": "file",
+      "sha256": "3cf2a80979f1c93f9e7984458f0a8092a8c85893de20501caae01270c94458d2",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.agents/skills/G0_valid_req_and_GT/SKILL.md",
+      "type": "file",
+      "sha256": "a943d6840a16354b67d0992b04fdf7935349d72e3edf059753e3ffae4a8ac128",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.agents/skills/G0_valid_req_and_GT/references/RULES.md",
+      "type": "file",
+      "sha256": "bd80af779634cdc9766a794bb2888a7a8bac356c38705269ba82caca642f54eb",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.agents/skills/G0_valid_req_and_GT/references/TRIAGE.md",
+      "type": "file",
+      "sha256": "8237ea175481a67b23febd25b6b77c5bd24fe4e59ca7e6fd6bce98c71e06874f",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.agents/skills/G0_valid_req_and_GT/scripts/g0_validate.py",
+      "type": "file",
+      "sha256": "e75e4d91490cd5296f5d9f326e62d06edb7bfcd3e7e04e0bcec037e41c81378a",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.agents/skills/G0_valid_req_and_GT/templates/StRS.md",
+      "type": "file",
+      "sha256": "644d0c528172a84cc38b66bee2f0718f0bef8a9c0b03286f887f2dd399e41287",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.agents/skills/G0_valid_req_and_GT/templates/SyRS.md",
+      "type": "file",
+      "sha256": "456bcfb5726f3acbd45d0c7338b6e61fcbff734d7f98461aa0ac13b4beb65bd8",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.agents/skills/G1_design_review/SKILL.md",
+      "type": "file",
+      "sha256": "cc2c28f2fb697c7a64127607522d38aba950b976c29e11c62a30c0e52f34014a",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.agents/skills/G1_design_review/references/G1_CHECKLIST.md",
+      "type": "file",
+      "sha256": "7738374af147aeacfdb8f7934f70d13cabfd096a0bf1962d29729df0502a82e0",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.agents/skills/G1_design_review/references/TRIAGE.md",
+      "type": "file",
+      "sha256": "8237ea175481a67b23febd25b6b77c5bd24fe4e59ca7e6fd6bce98c71e06874f",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.agents/skills/G2_adaptive_verification/SKILL.md",
+      "type": "file",
+      "sha256": "13fefdc34e892c0337f7c9e0eca5a17fe819e304a1985f76920e1f6189a14189",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.agents/skills/G2_adaptive_verification/references/verified_prototype.md",
+      "type": "file",
+      "sha256": "fca5a7565438575115388b8a28315a9ae2f22ff6ae362e462729588d95ab1789",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.agents/skills/RFD_request_for_deviation/SKILL.md",
+      "type": "file",
+      "sha256": "fc93c0efdb221c9e0f2f61f94dc2ce60e0eea8cb9b72584ae7b818f51d23b7ff",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.agents/skills/S0_normalise_build_package/SKILL.md",
+      "type": "file",
+      "sha256": "c99f35e0aed8146582979ee9ff98810644c693d619df506debc09d85feb041c0",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.agents/skills/S0_normalise_build_package/references/TRIAGE.md",
+      "type": "file",
+      "sha256": "8237ea175481a67b23febd25b6b77c5bd24fe4e59ca7e6fd6bce98c71e06874f",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.agents/skills/S0_normalise_build_package/templates/StRS.md",
+      "type": "file",
+      "sha256": "644d0c528172a84cc38b66bee2f0718f0bef8a9c0b03286f887f2dd399e41287",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.agents/skills/S0_normalise_build_package/templates/SyRS.md",
+      "type": "file",
+      "sha256": "456bcfb5726f3acbd45d0c7338b6e61fcbff734d7f98461aa0ac13b4beb65bd8",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.agents/skills/S1_design_services/SKILL.md",
+      "type": "file",
+      "sha256": "831506d18941e787f2e15c0c2e9e85220b79f02d94a01c694eccb632f09578d1",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.agents/skills/S1_design_services/assets/LICENSE-vis-network.txt",
+      "type": "file",
+      "sha256": "b8600511082fe290caacb1f93e19b1a7582d90e90cfb0296446417ef092e62f8",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.agents/skills/S1_design_services/assets/vis-network.min.js",
+      "type": "file",
+      "sha256": "f6ee3a6560dd2bc7fce0b08149a30f2111e78255c5bb677e02c6517acc770379",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.agents/skills/S1_design_services/references/SDD.md",
+      "type": "file",
+      "sha256": "05b912ea0760326eee255d9159599c821847ba1c33331c8611f5e22868b883ab",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.agents/skills/S1_design_services/references/dependency_graph_template.html",
+      "type": "file",
+      "sha256": "edfeb7c01b2ede8fe26c7387268fe61d9434e279b7ce0f32deb65632b654a366",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.agents/skills/S2_implement_services/SKILL.md",
+      "type": "file",
+      "sha256": "6dfcb82b8f72523fb32d8544b5aa4426d8947fec4edb4ff696653319cac53597",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.agents/skills/S2_implement_services/references/logger.py",
+      "type": "file",
+      "sha256": "20ea9e8b1dfc636b3cb7b871dcc64f7d4b7b8cf42183ae6700965a9e588fea3e",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.agents/skills/S2_implement_services/references/logger.ts",
+      "type": "file",
+      "sha256": "d6594761f6ff44b9f2d753a821ca8884728214f3214315a8299d4e9fa494df24",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.agents/skills/S2_implement_services/references/project_layout.md",
+      "type": "file",
+      "sha256": "304422c3797d3fbb373693e848b3ef1c55274d8f185c76dc330f87b56dfa6a3a",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.claude/agents/vsil-verifier.md",
+      "type": "file",
+      "sha256": "3be640629495374066b29029bd86894ea2d5801c7769617f974262b1119c2321",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.claude/skills",
+      "type": "symlink",
+      "target": "../.agents/skills"
+    },
+    {
+      "path": "banco_telemetria_cots/.codeanvil/GT/README.md",
+      "type": "file",
+      "sha256": "35d14274ada88c6e6b16c567b1ed3159c379bf38bacc260e4db8137b064bb43a",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.codeanvil/GT/StRS.md",
+      "type": "file",
+      "sha256": "fb1ae25a082dbb6c4029c2679c481e7a1e5af65604e9b036c8a6adb1a64975e3",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.codeanvil/GT/SyRS.md",
+      "type": "file",
+      "sha256": "28d2083d3f8a7a8dd105d8c78f724cdd68ece4c8e076f990e5884faa24d344bc",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.codeanvil/GT/build_package.md",
+      "type": "file",
+      "sha256": "f03b37cb30caa21d402d8e50268382228ca3a4525c8637a22de4dff93b02bfed",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.codeanvil/backups/.gitkeep",
+      "type": "file",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.codeanvil/custody/.gitkeep",
+      "type": "file",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.codeanvil/design/SDD.md",
+      "type": "file",
+      "sha256": "7f6dbe1d14b5008fc6b08e849817df3f5d43837addf156bea4a22f0dad60f887",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.codeanvil/design/dependency_graph.html",
+      "type": "file",
+      "sha256": "743c36634a42dd58995c07e554341342eaf8cb269df190475ac253ba785ed392",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.codeanvil/project.yaml",
+      "type": "file",
+      "sha256": "960abaf363632fb20cd1d805af77b62f0ff7d6aec962592d26b46e701b13d010",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.codeanvil/report/01_ui_demo/G0.md",
+      "type": "file",
+      "sha256": "ae8728cdd5cbb9ac4934888442043f82aa12640eb89c80375efee86b92f85245",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.codeanvil/report/01_ui_demo/G1.md",
+      "type": "file",
+      "sha256": "577d61472397dfb1f0e47ed17085d1882aca73bbce055de5643b1b2cac93c2e8",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.codeanvil/report/01_ui_demo/S0.md",
+      "type": "file",
+      "sha256": "c1654c9f95da0ac1a564011c479bfb80713f2eb3d503c92b07b9497702a2d030",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.codeanvil/report/01_ui_demo/S1.md",
+      "type": "file",
+      "sha256": "5b1899ec834c67f5e65d97fc7de8de94c55ffa2cc8472f8e60cd87ab3c4becc4",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.codex/agents/vsil-verifier.toml",
+      "type": "file",
+      "sha256": "84453701a11130323de5218154f93484b2a85ed69a5f7c502da1c21106a8badd",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.codex/skills",
+      "type": "symlink",
+      "target": "../.agents/skills"
+    },
+    {
+      "path": "banco_telemetria_cots/.github/copilot-instructions.md",
+      "type": "file",
+      "sha256": "bcb6269c092cd40f753f038a0cbc4cdbf9a3f6351dedebe0d65b5b391a64eb72",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.github/skills",
+      "type": "symlink",
+      "target": "../.agents/skills"
+    },
+    {
+      "path": "banco_telemetria_cots/.opencode/agents/vsil-verifier.md",
+      "type": "file",
+      "sha256": "1d69a0a9aba11f1cbe10e4bb8ba0c72d9ad45bd98b93205291bad2013392af62",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/.opencode/skills",
+      "type": "symlink",
+      "target": "../.agents/skills"
+    },
+    {
+      "path": "banco_telemetria_cots/AGENTS.md",
+      "type": "file",
+      "sha256": "c6fc81eaacda8ecaca76aa06dd0ff4b30b4f6d736a717ffdcd8a0ffe141726bb",
+      "executable": false
+    },
+    {
+      "path": "banco_telemetria_cots/CLAUDE.md",
+      "type": "symlink",
+      "target": "AGENTS.md"
+    },
+    {
+      "path": "banco_telemetria_cots/UI_FIXTURE.md",
+      "type": "file",
+      "sha256": "0913d90a0c8bd56cf7de357c9e2bbfe6ef2350e0fc374f80886eefb1da0b2ad1",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.agents/skills/G0_valid_req_and_GT/SKILL.md",
+      "type": "file",
+      "sha256": "a943d6840a16354b67d0992b04fdf7935349d72e3edf059753e3ffae4a8ac128",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.agents/skills/G0_valid_req_and_GT/references/RULES.md",
+      "type": "file",
+      "sha256": "bd80af779634cdc9766a794bb2888a7a8bac356c38705269ba82caca642f54eb",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.agents/skills/G0_valid_req_and_GT/references/TRIAGE.md",
+      "type": "file",
+      "sha256": "8237ea175481a67b23febd25b6b77c5bd24fe4e59ca7e6fd6bce98c71e06874f",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.agents/skills/G0_valid_req_and_GT/scripts/g0_validate.py",
+      "type": "file",
+      "sha256": "e75e4d91490cd5296f5d9f326e62d06edb7bfcd3e7e04e0bcec037e41c81378a",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.agents/skills/G0_valid_req_and_GT/templates/StRS.md",
+      "type": "file",
+      "sha256": "644d0c528172a84cc38b66bee2f0718f0bef8a9c0b03286f887f2dd399e41287",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.agents/skills/G0_valid_req_and_GT/templates/SyRS.md",
+      "type": "file",
+      "sha256": "456bcfb5726f3acbd45d0c7338b6e61fcbff734d7f98461aa0ac13b4beb65bd8",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.agents/skills/G1_design_review/SKILL.md",
+      "type": "file",
+      "sha256": "cc2c28f2fb697c7a64127607522d38aba950b976c29e11c62a30c0e52f34014a",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.agents/skills/G1_design_review/references/G1_CHECKLIST.md",
+      "type": "file",
+      "sha256": "7738374af147aeacfdb8f7934f70d13cabfd096a0bf1962d29729df0502a82e0",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.agents/skills/G1_design_review/references/TRIAGE.md",
+      "type": "file",
+      "sha256": "8237ea175481a67b23febd25b6b77c5bd24fe4e59ca7e6fd6bce98c71e06874f",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.agents/skills/G2_adaptive_verification/SKILL.md",
+      "type": "file",
+      "sha256": "13fefdc34e892c0337f7c9e0eca5a17fe819e304a1985f76920e1f6189a14189",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.agents/skills/G2_adaptive_verification/references/verified_prototype.md",
+      "type": "file",
+      "sha256": "fca5a7565438575115388b8a28315a9ae2f22ff6ae362e462729588d95ab1789",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.agents/skills/RFD_request_for_deviation/SKILL.md",
+      "type": "file",
+      "sha256": "fc93c0efdb221c9e0f2f61f94dc2ce60e0eea8cb9b72584ae7b818f51d23b7ff",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.agents/skills/S0_normalise_build_package/SKILL.md",
+      "type": "file",
+      "sha256": "c99f35e0aed8146582979ee9ff98810644c693d619df506debc09d85feb041c0",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.agents/skills/S0_normalise_build_package/references/TRIAGE.md",
+      "type": "file",
+      "sha256": "8237ea175481a67b23febd25b6b77c5bd24fe4e59ca7e6fd6bce98c71e06874f",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.agents/skills/S0_normalise_build_package/templates/StRS.md",
+      "type": "file",
+      "sha256": "644d0c528172a84cc38b66bee2f0718f0bef8a9c0b03286f887f2dd399e41287",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.agents/skills/S0_normalise_build_package/templates/SyRS.md",
+      "type": "file",
+      "sha256": "456bcfb5726f3acbd45d0c7338b6e61fcbff734d7f98461aa0ac13b4beb65bd8",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.agents/skills/S1_design_services/SKILL.md",
+      "type": "file",
+      "sha256": "831506d18941e787f2e15c0c2e9e85220b79f02d94a01c694eccb632f09578d1",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.agents/skills/S1_design_services/assets/LICENSE-vis-network.txt",
+      "type": "file",
+      "sha256": "b8600511082fe290caacb1f93e19b1a7582d90e90cfb0296446417ef092e62f8",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.agents/skills/S1_design_services/assets/vis-network.min.js",
+      "type": "file",
+      "sha256": "f6ee3a6560dd2bc7fce0b08149a30f2111e78255c5bb677e02c6517acc770379",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.agents/skills/S1_design_services/references/SDD.md",
+      "type": "file",
+      "sha256": "05b912ea0760326eee255d9159599c821847ba1c33331c8611f5e22868b883ab",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.agents/skills/S1_design_services/references/dependency_graph_template.html",
+      "type": "file",
+      "sha256": "edfeb7c01b2ede8fe26c7387268fe61d9434e279b7ce0f32deb65632b654a366",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.agents/skills/S2_implement_services/SKILL.md",
+      "type": "file",
+      "sha256": "6dfcb82b8f72523fb32d8544b5aa4426d8947fec4edb4ff696653319cac53597",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.agents/skills/S2_implement_services/references/logger.py",
+      "type": "file",
+      "sha256": "20ea9e8b1dfc636b3cb7b871dcc64f7d4b7b8cf42183ae6700965a9e588fea3e",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.agents/skills/S2_implement_services/references/logger.ts",
+      "type": "file",
+      "sha256": "d6594761f6ff44b9f2d753a821ca8884728214f3214315a8299d4e9fa494df24",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.agents/skills/S2_implement_services/references/project_layout.md",
+      "type": "file",
+      "sha256": "304422c3797d3fbb373693e848b3ef1c55274d8f185c76dc330f87b56dfa6a3a",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.claude/agents/vsil-verifier.md",
+      "type": "file",
+      "sha256": "3be640629495374066b29029bd86894ea2d5801c7769617f974262b1119c2321",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.claude/skills",
+      "type": "symlink",
+      "target": "../.agents/skills"
+    },
+    {
+      "path": "laboratorio_espectro_rf/.codeanvil/GT/README.md",
+      "type": "file",
+      "sha256": "35d14274ada88c6e6b16c567b1ed3159c379bf38bacc260e4db8137b064bb43a",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.codeanvil/backups/.gitkeep",
+      "type": "file",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.codeanvil/custody/.gitkeep",
+      "type": "file",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.codeanvil/design/.gitkeep",
+      "type": "file",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.codeanvil/project.yaml",
+      "type": "file",
+      "sha256": "48c539e94e2e2fc150c84b726a49e955b4e7df06ec10fcd7a59a7cdc885e1e29",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.codeanvil/report/.gitkeep",
+      "type": "file",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.codex/agents/vsil-verifier.toml",
+      "type": "file",
+      "sha256": "84453701a11130323de5218154f93484b2a85ed69a5f7c502da1c21106a8badd",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.codex/skills",
+      "type": "symlink",
+      "target": "../.agents/skills"
+    },
+    {
+      "path": "laboratorio_espectro_rf/.github/copilot-instructions.md",
+      "type": "file",
+      "sha256": "bcb6269c092cd40f753f038a0cbc4cdbf9a3f6351dedebe0d65b5b391a64eb72",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.github/skills",
+      "type": "symlink",
+      "target": "../.agents/skills"
+    },
+    {
+      "path": "laboratorio_espectro_rf/.opencode/agents/vsil-verifier.md",
+      "type": "file",
+      "sha256": "1d69a0a9aba11f1cbe10e4bb8ba0c72d9ad45bd98b93205291bad2013392af62",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/.opencode/skills",
+      "type": "symlink",
+      "target": "../.agents/skills"
+    },
+    {
+      "path": "laboratorio_espectro_rf/AGENTS.md",
+      "type": "file",
+      "sha256": "c6fc81eaacda8ecaca76aa06dd0ff4b30b4f6d736a717ffdcd8a0ffe141726bb",
+      "executable": false
+    },
+    {
+      "path": "laboratorio_espectro_rf/CLAUDE.md",
+      "type": "symlink",
+      "target": "AGENTS.md"
+    },
+    {
+      "path": "monitor_ocupacion_fm/.agents/skills/G0_valid_req_and_GT/SKILL.md",
+      "type": "file",
+      "sha256": "a943d6840a16354b67d0992b04fdf7935349d72e3edf059753e3ffae4a8ac128",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.agents/skills/G0_valid_req_and_GT/references/RULES.md",
+      "type": "file",
+      "sha256": "bd80af779634cdc9766a794bb2888a7a8bac356c38705269ba82caca642f54eb",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.agents/skills/G0_valid_req_and_GT/references/TRIAGE.md",
+      "type": "file",
+      "sha256": "8237ea175481a67b23febd25b6b77c5bd24fe4e59ca7e6fd6bce98c71e06874f",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.agents/skills/G0_valid_req_and_GT/scripts/g0_validate.py",
+      "type": "file",
+      "sha256": "e75e4d91490cd5296f5d9f326e62d06edb7bfcd3e7e04e0bcec037e41c81378a",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.agents/skills/G0_valid_req_and_GT/templates/StRS.md",
+      "type": "file",
+      "sha256": "644d0c528172a84cc38b66bee2f0718f0bef8a9c0b03286f887f2dd399e41287",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.agents/skills/G0_valid_req_and_GT/templates/SyRS.md",
+      "type": "file",
+      "sha256": "456bcfb5726f3acbd45d0c7338b6e61fcbff734d7f98461aa0ac13b4beb65bd8",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.agents/skills/G1_design_review/SKILL.md",
+      "type": "file",
+      "sha256": "cc2c28f2fb697c7a64127607522d38aba950b976c29e11c62a30c0e52f34014a",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.agents/skills/G1_design_review/references/G1_CHECKLIST.md",
+      "type": "file",
+      "sha256": "7738374af147aeacfdb8f7934f70d13cabfd096a0bf1962d29729df0502a82e0",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.agents/skills/G1_design_review/references/TRIAGE.md",
+      "type": "file",
+      "sha256": "8237ea175481a67b23febd25b6b77c5bd24fe4e59ca7e6fd6bce98c71e06874f",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.agents/skills/G2_adaptive_verification/SKILL.md",
+      "type": "file",
+      "sha256": "13fefdc34e892c0337f7c9e0eca5a17fe819e304a1985f76920e1f6189a14189",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.agents/skills/G2_adaptive_verification/references/verified_prototype.md",
+      "type": "file",
+      "sha256": "fca5a7565438575115388b8a28315a9ae2f22ff6ae362e462729588d95ab1789",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.agents/skills/RFD_request_for_deviation/SKILL.md",
+      "type": "file",
+      "sha256": "fc93c0efdb221c9e0f2f61f94dc2ce60e0eea8cb9b72584ae7b818f51d23b7ff",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.agents/skills/S0_normalise_build_package/SKILL.md",
+      "type": "file",
+      "sha256": "c99f35e0aed8146582979ee9ff98810644c693d619df506debc09d85feb041c0",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.agents/skills/S0_normalise_build_package/references/TRIAGE.md",
+      "type": "file",
+      "sha256": "8237ea175481a67b23febd25b6b77c5bd24fe4e59ca7e6fd6bce98c71e06874f",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.agents/skills/S0_normalise_build_package/templates/StRS.md",
+      "type": "file",
+      "sha256": "644d0c528172a84cc38b66bee2f0718f0bef8a9c0b03286f887f2dd399e41287",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.agents/skills/S0_normalise_build_package/templates/SyRS.md",
+      "type": "file",
+      "sha256": "456bcfb5726f3acbd45d0c7338b6e61fcbff734d7f98461aa0ac13b4beb65bd8",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.agents/skills/S1_design_services/SKILL.md",
+      "type": "file",
+      "sha256": "831506d18941e787f2e15c0c2e9e85220b79f02d94a01c694eccb632f09578d1",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.agents/skills/S1_design_services/assets/LICENSE-vis-network.txt",
+      "type": "file",
+      "sha256": "b8600511082fe290caacb1f93e19b1a7582d90e90cfb0296446417ef092e62f8",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.agents/skills/S1_design_services/assets/vis-network.min.js",
+      "type": "file",
+      "sha256": "f6ee3a6560dd2bc7fce0b08149a30f2111e78255c5bb677e02c6517acc770379",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.agents/skills/S1_design_services/references/SDD.md",
+      "type": "file",
+      "sha256": "05b912ea0760326eee255d9159599c821847ba1c33331c8611f5e22868b883ab",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.agents/skills/S1_design_services/references/dependency_graph_template.html",
+      "type": "file",
+      "sha256": "edfeb7c01b2ede8fe26c7387268fe61d9434e279b7ce0f32deb65632b654a366",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.agents/skills/S2_implement_services/SKILL.md",
+      "type": "file",
+      "sha256": "6dfcb82b8f72523fb32d8544b5aa4426d8947fec4edb4ff696653319cac53597",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.agents/skills/S2_implement_services/references/logger.py",
+      "type": "file",
+      "sha256": "20ea9e8b1dfc636b3cb7b871dcc64f7d4b7b8cf42183ae6700965a9e588fea3e",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.agents/skills/S2_implement_services/references/logger.ts",
+      "type": "file",
+      "sha256": "d6594761f6ff44b9f2d753a821ca8884728214f3214315a8299d4e9fa494df24",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.agents/skills/S2_implement_services/references/project_layout.md",
+      "type": "file",
+      "sha256": "304422c3797d3fbb373693e848b3ef1c55274d8f185c76dc330f87b56dfa6a3a",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.claude/agents/vsil-verifier.md",
+      "type": "file",
+      "sha256": "3be640629495374066b29029bd86894ea2d5801c7769617f974262b1119c2321",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.claude/skills",
+      "type": "symlink",
+      "target": "../.agents/skills"
+    },
+    {
+      "path": "monitor_ocupacion_fm/.codeanvil/GT/README.md",
+      "type": "file",
+      "sha256": "35d14274ada88c6e6b16c567b1ed3159c379bf38bacc260e4db8137b064bb43a",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.codeanvil/GT/StRS.md",
+      "type": "file",
+      "sha256": "b5002d02dd338cdea5beb394c9fd0c9c4d7057314000471a3e935fc7f78960be",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.codeanvil/GT/SyRS.md",
+      "type": "file",
+      "sha256": "b8496b8296407f981cd4cd52cc363a3248b89c7ee3228dc3383116f079730c44",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.codeanvil/GT/build_package.md",
+      "type": "file",
+      "sha256": "1b12be3b6ec23c865d1936618a8d2620f860e8fe0967e31379681986a4f0869d",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.codeanvil/backups/.gitkeep",
+      "type": "file",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.codeanvil/custody/.gitkeep",
+      "type": "file",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.codeanvil/design/.gitkeep",
+      "type": "file",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.codeanvil/project.yaml",
+      "type": "file",
+      "sha256": "1b4052d0cb277eba285a9b6d95e538bfbc5e40a572304c3292ef566bba222dc2",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.codeanvil/report/01_ui_demo/G0.md",
+      "type": "file",
+      "sha256": "a92210ac1c185d1af35093d02c891d70f0cb9c2c860dbb0d0965fbb233593289",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.codeanvil/report/01_ui_demo/S0.md",
+      "type": "file",
+      "sha256": "c15a5e24800fef74955420b649a3a946af7869258a1d6a420cad18256116c081",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.codex/agents/vsil-verifier.toml",
+      "type": "file",
+      "sha256": "84453701a11130323de5218154f93484b2a85ed69a5f7c502da1c21106a8badd",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.codex/skills",
+      "type": "symlink",
+      "target": "../.agents/skills"
+    },
+    {
+      "path": "monitor_ocupacion_fm/.github/copilot-instructions.md",
+      "type": "file",
+      "sha256": "bcb6269c092cd40f753f038a0cbc4cdbf9a3f6351dedebe0d65b5b391a64eb72",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.github/skills",
+      "type": "symlink",
+      "target": "../.agents/skills"
+    },
+    {
+      "path": "monitor_ocupacion_fm/.opencode/agents/vsil-verifier.md",
+      "type": "file",
+      "sha256": "1d69a0a9aba11f1cbe10e4bb8ba0c72d9ad45bd98b93205291bad2013392af62",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/.opencode/skills",
+      "type": "symlink",
+      "target": "../.agents/skills"
+    },
+    {
+      "path": "monitor_ocupacion_fm/AGENTS.md",
+      "type": "file",
+      "sha256": "c6fc81eaacda8ecaca76aa06dd0ff4b30b4f6d736a717ffdcd8a0ffe141726bb",
+      "executable": false
+    },
+    {
+      "path": "monitor_ocupacion_fm/CLAUDE.md",
+      "type": "symlink",
+      "target": "AGENTS.md"
+    },
+    {
+      "path": "monitor_ocupacion_fm/UI_FIXTURE.md",
+      "type": "file",
+      "sha256": "3e982dc34b2d31cc2467abf9bdbba27dfada6e042d86545dfc278afec2e4163d",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.agents/skills/G0_valid_req_and_GT/SKILL.md",
+      "type": "file",
+      "sha256": "a943d6840a16354b67d0992b04fdf7935349d72e3edf059753e3ffae4a8ac128",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.agents/skills/G0_valid_req_and_GT/references/RULES.md",
+      "type": "file",
+      "sha256": "bd80af779634cdc9766a794bb2888a7a8bac356c38705269ba82caca642f54eb",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.agents/skills/G0_valid_req_and_GT/references/TRIAGE.md",
+      "type": "file",
+      "sha256": "8237ea175481a67b23febd25b6b77c5bd24fe4e59ca7e6fd6bce98c71e06874f",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.agents/skills/G0_valid_req_and_GT/scripts/g0_validate.py",
+      "type": "file",
+      "sha256": "e75e4d91490cd5296f5d9f326e62d06edb7bfcd3e7e04e0bcec037e41c81378a",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.agents/skills/G0_valid_req_and_GT/templates/StRS.md",
+      "type": "file",
+      "sha256": "644d0c528172a84cc38b66bee2f0718f0bef8a9c0b03286f887f2dd399e41287",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.agents/skills/G0_valid_req_and_GT/templates/SyRS.md",
+      "type": "file",
+      "sha256": "456bcfb5726f3acbd45d0c7338b6e61fcbff734d7f98461aa0ac13b4beb65bd8",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.agents/skills/G1_design_review/SKILL.md",
+      "type": "file",
+      "sha256": "cc2c28f2fb697c7a64127607522d38aba950b976c29e11c62a30c0e52f34014a",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.agents/skills/G1_design_review/references/G1_CHECKLIST.md",
+      "type": "file",
+      "sha256": "7738374af147aeacfdb8f7934f70d13cabfd096a0bf1962d29729df0502a82e0",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.agents/skills/G1_design_review/references/TRIAGE.md",
+      "type": "file",
+      "sha256": "8237ea175481a67b23febd25b6b77c5bd24fe4e59ca7e6fd6bce98c71e06874f",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.agents/skills/G2_adaptive_verification/SKILL.md",
+      "type": "file",
+      "sha256": "13fefdc34e892c0337f7c9e0eca5a17fe819e304a1985f76920e1f6189a14189",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.agents/skills/G2_adaptive_verification/references/verified_prototype.md",
+      "type": "file",
+      "sha256": "fca5a7565438575115388b8a28315a9ae2f22ff6ae362e462729588d95ab1789",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.agents/skills/RFD_request_for_deviation/SKILL.md",
+      "type": "file",
+      "sha256": "fc93c0efdb221c9e0f2f61f94dc2ce60e0eea8cb9b72584ae7b818f51d23b7ff",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.agents/skills/S0_normalise_build_package/SKILL.md",
+      "type": "file",
+      "sha256": "c99f35e0aed8146582979ee9ff98810644c693d619df506debc09d85feb041c0",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.agents/skills/S0_normalise_build_package/references/TRIAGE.md",
+      "type": "file",
+      "sha256": "8237ea175481a67b23febd25b6b77c5bd24fe4e59ca7e6fd6bce98c71e06874f",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.agents/skills/S0_normalise_build_package/templates/StRS.md",
+      "type": "file",
+      "sha256": "644d0c528172a84cc38b66bee2f0718f0bef8a9c0b03286f887f2dd399e41287",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.agents/skills/S0_normalise_build_package/templates/SyRS.md",
+      "type": "file",
+      "sha256": "456bcfb5726f3acbd45d0c7338b6e61fcbff734d7f98461aa0ac13b4beb65bd8",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.agents/skills/S1_design_services/SKILL.md",
+      "type": "file",
+      "sha256": "831506d18941e787f2e15c0c2e9e85220b79f02d94a01c694eccb632f09578d1",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.agents/skills/S1_design_services/assets/LICENSE-vis-network.txt",
+      "type": "file",
+      "sha256": "b8600511082fe290caacb1f93e19b1a7582d90e90cfb0296446417ef092e62f8",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.agents/skills/S1_design_services/assets/vis-network.min.js",
+      "type": "file",
+      "sha256": "f6ee3a6560dd2bc7fce0b08149a30f2111e78255c5bb677e02c6517acc770379",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.agents/skills/S1_design_services/references/SDD.md",
+      "type": "file",
+      "sha256": "05b912ea0760326eee255d9159599c821847ba1c33331c8611f5e22868b883ab",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.agents/skills/S1_design_services/references/dependency_graph_template.html",
+      "type": "file",
+      "sha256": "edfeb7c01b2ede8fe26c7387268fe61d9434e279b7ce0f32deb65632b654a366",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.agents/skills/S2_implement_services/SKILL.md",
+      "type": "file",
+      "sha256": "6dfcb82b8f72523fb32d8544b5aa4426d8947fec4edb4ff696653319cac53597",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.agents/skills/S2_implement_services/references/logger.py",
+      "type": "file",
+      "sha256": "20ea9e8b1dfc636b3cb7b871dcc64f7d4b7b8cf42183ae6700965a9e588fea3e",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.agents/skills/S2_implement_services/references/logger.ts",
+      "type": "file",
+      "sha256": "d6594761f6ff44b9f2d753a821ca8884728214f3214315a8299d4e9fa494df24",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.agents/skills/S2_implement_services/references/project_layout.md",
+      "type": "file",
+      "sha256": "304422c3797d3fbb373693e848b3ef1c55274d8f185c76dc330f87b56dfa6a3a",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.claude/agents/vsil-verifier.md",
+      "type": "file",
+      "sha256": "3be640629495374066b29029bd86894ea2d5801c7769617f974262b1119c2321",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.claude/skills",
+      "type": "symlink",
+      "target": "../.agents/skills"
+    },
+    {
+      "path": "panel_prototipo/.codeanvil/GT/README.md",
+      "type": "file",
+      "sha256": "35d14274ada88c6e6b16c567b1ed3159c379bf38bacc260e4db8137b064bb43a",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.codeanvil/GT/StRS.md",
+      "type": "file",
+      "sha256": "20eeb8cb8a8062831c63560aed0401a2b8e16660fab450fd4c70909fe609439f",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.codeanvil/GT/SyRS.md",
+      "type": "file",
+      "sha256": "14d0158c2150d2e202d7e4786699b3cdc87ef0cdf99b60ad42ba22782d2669ed",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.codeanvil/GT/build_package.md",
+      "type": "file",
+      "sha256": "447cf73d14bb1a56fdf43b0eab64f2c3700f4efe8f5123fa1278eb937d04f145",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.codeanvil/backups/.gitkeep",
+      "type": "file",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.codeanvil/custody/.gitkeep",
+      "type": "file",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.codeanvil/design/SDD.md",
+      "type": "file",
+      "sha256": "724298d86805795f53d4a63235d86eb582f82602f377eeedb56bf6e8640b28eb",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.codeanvil/design/dependency_graph.html",
+      "type": "file",
+      "sha256": "d31777f232d750194da39d472b83b741c81454150ddc85c9db6a2ebc0cfae5db",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.codeanvil/project.yaml",
+      "type": "file",
+      "sha256": "fcd3f3687cd455a6375a7b1dbcc8cb0376be6916f5136fbbc39849dfd8871dc5",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.codeanvil/report/01_ui_demo/G0.md",
+      "type": "file",
+      "sha256": "49c1a1ce05d63c7e5cab6f1f33fd2e32734e61c45e3817f995608f3751185345",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.codeanvil/report/01_ui_demo/G1.md",
+      "type": "file",
+      "sha256": "60cb5997a4457ce4f80a183d314c8592c1774b8d0e1c14b7e53a71a434622534",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.codeanvil/report/01_ui_demo/G2.md",
+      "type": "file",
+      "sha256": "d5fd36475e2b9422b1071e7dc92273e7e4eaf26e2e32f641cb648a223882e52e",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.codeanvil/report/01_ui_demo/G2_artifacts/verified_prototype.md",
+      "type": "file",
+      "sha256": "3d2d01bc1a4a15a63e47c86bf4054d85cdf31597704b23ba4d401f60de9b5273",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.codeanvil/report/01_ui_demo/S0.md",
+      "type": "file",
+      "sha256": "df3b5bd88a70c247e972144e768f594d18a49a142a556449672ebeb730348d0f",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.codeanvil/report/01_ui_demo/S1.md",
+      "type": "file",
+      "sha256": "14b12371043982d40607de7eb4cd8c2a605b0afb5cc2f4863bdf93b602c9642c",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.codeanvil/report/01_ui_demo/S2.md",
+      "type": "file",
+      "sha256": "8fd7b3403f1e91c98f8f59e73ce618f82dbcbf81a67f064a578a7880b09f3299",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.codeanvil/report/01_ui_demo/S2_artifacts/test_run.md",
+      "type": "file",
+      "sha256": "7027a763fb8b743fe2bd18940198a791f64dd841b95d0cf5c42a4073260c6402",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.codex/agents/vsil-verifier.toml",
+      "type": "file",
+      "sha256": "84453701a11130323de5218154f93484b2a85ed69a5f7c502da1c21106a8badd",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.codex/skills",
+      "type": "symlink",
+      "target": "../.agents/skills"
+    },
+    {
+      "path": "panel_prototipo/.env.example",
+      "type": "file",
+      "sha256": "47b6f8b80e870c5ba12fdb9613254c517f0fd356baaba0de4aa50016862776cd",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.github/copilot-instructions.md",
+      "type": "file",
+      "sha256": "bcb6269c092cd40f753f038a0cbc4cdbf9a3f6351dedebe0d65b5b391a64eb72",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.github/skills",
+      "type": "symlink",
+      "target": "../.agents/skills"
+    },
+    {
+      "path": "panel_prototipo/.gitignore",
+      "type": "file",
+      "sha256": "6db68b6af6c862aaf71259e7691b8ed4152d9502e253fe2ac9c3d64dfe3fb73a",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.opencode/agents/vsil-verifier.md",
+      "type": "file",
+      "sha256": "1d69a0a9aba11f1cbe10e4bb8ba0c72d9ad45bd98b93205291bad2013392af62",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/.opencode/skills",
+      "type": "symlink",
+      "target": "../.agents/skills"
+    },
+    {
+      "path": "panel_prototipo/AGENTS.md",
+      "type": "file",
+      "sha256": "c6fc81eaacda8ecaca76aa06dd0ff4b30b4f6d736a717ffdcd8a0ffe141726bb",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/CLAUDE.md",
+      "type": "symlink",
+      "target": "AGENTS.md"
+    },
+    {
+      "path": "panel_prototipo/UI_FIXTURE.md",
+      "type": "file",
+      "sha256": "d2f6df5e3c579d52f331418f8a394044e3c4de05b9847a0db2d9c1e663d8dac9",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/pyproject.toml",
+      "type": "file",
+      "sha256": "f77da98fd3046860b4e187bb60b61477133d7d4f72384007b72250c6bf1a92d8",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/src/demo_counter/__init__.py",
+      "type": "file",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/src/demo_counter/__main__.py",
+      "type": "file",
+      "sha256": "bc143cdb7df8917d3a2260db1653c582205188b2229f0364df3f0a86cea177be",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/src/demo_counter/config/__init__.py",
+      "type": "file",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/src/demo_counter/config/logger.py",
+      "type": "file",
+      "sha256": "20ea9e8b1dfc636b3cb7b871dcc64f7d4b7b8cf42183ae6700965a9e588fea3e",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/src/demo_counter/config/paths.py",
+      "type": "file",
+      "sha256": "6a1d424781339e57cad99ac4fe70d3149a58ace59c7faed5bef329ecd8372a67",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/src/demo_counter/config/runtime.py",
+      "type": "file",
+      "sha256": "a6180ac06cbf7a10f47dc22696fdf99be7b5c65b67a107ba06517a9da77db11c",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/src/demo_counter/hal/__init__.py",
+      "type": "file",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/src/demo_counter/hal/port.py",
+      "type": "file",
+      "sha256": "0704a69008e488ea2c58fca5ea76e6940caadd9eac4ee53340baf2ba7834b4c9",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/src/demo_counter/lib/__init__.py",
+      "type": "file",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/src/demo_counter/main.py",
+      "type": "file",
+      "sha256": "a78e6b4e63f4c54f0085e31d001e43d648be73f835715367f8d1e510d55e66e7",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/src/demo_counter/processing/__init__.py",
+      "type": "file",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/src/demo_counter/processing/value.py",
+      "type": "file",
+      "sha256": "21fa599c05ae76a2f441bb411cbb3cf7d9e7a8f71cab8bb7f7098862be2279d4",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/uv.lock",
+      "type": "file",
+      "sha256": "af9474728ba9f97812e080b56498eab730f0b817115cdde64458a000423cc7f7",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/verification/__init__.py",
+      "type": "file",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/verification/demo_counter/__init__.py",
+      "type": "file",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/verification/demo_counter/drivers/__init__.py",
+      "type": "file",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/verification/demo_counter/drivers/base.py",
+      "type": "file",
+      "sha256": "29c8b17edf56b95d5599a24d79e32b7af4b6884ef1bb506b8a00cb951d55aa65",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/verification/demo_counter/fakes/README.md",
+      "type": "file",
+      "sha256": "a1b625bef3892c19d821d8130e0f63f600b760c40331f8af524b556d4197e4fd",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/verification/demo_counter/mock_hal/__init__.py",
+      "type": "file",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/verification/demo_counter/mock_hal/source.py",
+      "type": "file",
+      "sha256": "567f3cd92936926382b5a7b1ed46c35e8551014e82681ad3000277d9df516801",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/verification/demo_counter/stubs/__init__.py",
+      "type": "file",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/verification/demo_counter/stubs/identity.py",
+      "type": "file",
+      "sha256": "0062c0d13ec8ed6ee6c3550c04a10417825f234271fa319728c8a9b2266f8d59",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/verification/demo_counter/test/test_preview.py",
+      "type": "file",
+      "sha256": "d906216a6d185af72e4d2c9a3133e955efb40168e119357138a3883632e616a6",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/verification/golden/manifest.md",
+      "type": "file",
+      "sha256": "7fc5b3940a2c9d428f9d4e8b0541795781ad7303da52c2a3e9228caacf757b30",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/verification/golden/values.json",
+      "type": "file",
+      "sha256": "853a5328e71938ba77fa56ed5209611f42ac3cb81d6509f8629d9f8b606a0360",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/verification/run.sh",
+      "type": "file",
+      "sha256": "cf8bea65ea2cc5cb8c37c4082843a05027c9b233fae683b63015924e4accda7d",
+      "executable": true
+    },
+    {
+      "path": "panel_prototipo/verification/telemetry/vl0-2026-11-11_10-08-35-869.jsonl",
+      "type": "file",
+      "sha256": "26a7de7c7bc3fe77baca7dad1a76fffefb846e614772ae1956ca86987302d1fe",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/verification/telemetry/vl0-2026-11-11_10-08-36-849.jsonl",
+      "type": "file",
+      "sha256": "3dead4a000244a17ebd7d0fcb73f2707b358c32ab265d51b6605da52f4b1152f",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/verification/telemetry/vl1-2026-11-11_10-08-36-533.jsonl",
+      "type": "file",
+      "sha256": "b89c8f3c981d33c18e15af67571c26111d58d93a9486e9fc06e520b7d5c2aba3",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/verification/telemetry/vl1-2026-11-11_10-08-37-209.jsonl",
+      "type": "file",
+      "sha256": "80c056caf00538e91af019ceeeb2fa368fc8299b21366b35b4107ac1cd82c3ec",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/verification/test-output/g2-vl0.txt",
+      "type": "file",
+      "sha256": "51539d521934b4c3df4444b045cc87485843a671e3f533a0b966d561fa8c2999",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/verification/test-output/g2-vl1.txt",
+      "type": "file",
+      "sha256": "3cf2a80979f1c93f9e7984458f0a8092a8c85893de20501caae01270c94458d2",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/verification/test-output/s2-vl0.txt",
+      "type": "file",
+      "sha256": "01d42a4e8b5076fbcd069232b46c73c7230f20b8f3c0062dd18bb879a5b26626",
+      "executable": false
+    },
+    {
+      "path": "panel_prototipo/verification/test-output/s2-vl1.txt",
+      "type": "file",
+      "sha256": "361b91c30e3f4acf005c2faa3dbda1d677f60b81567d5dc3f9ef21f72bc65400",
+      "executable": false
+    }
+  ]
+}

@@ -135,7 +135,13 @@ def cmd_credential_setup(
             cmd,
             env={**os.environ, PASSWORD_ENV: password, SUDO_PASSWORD_ENV: sudo_password},
             check=False,
+            capture_output=True,
+            text=True,
         )
+        if res.stdout:
+            print(res.stdout, end="")
+        if res.stderr:
+            print(res.stderr, end="", file=sys.stderr)
         if res.returncode != 0:
             log.error("remote bootstrap failed (exit %s) — project.yaml not modified", res.returncode)
             sys.exit(1)

@@ -6,7 +6,9 @@ Agent-agnostic project scaffolding, templates, and agent definitions for the **V
 
 Works with any AI coding agent: Claude, Codex, OpenCode, Pi, or others. Runs on **Linux, macOS and Windows**.
 
-**Current release:** [v0.7.0](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.7.0). HIL harness groundwork: the telemetry collector becomes the `codeanvil telemetry` subcommand, and a remote-only MCP server (`vsil_hil_mcp`) runs the verification kit on a real compute unit over SSH — credential custody, a two-door command model and a per-target policy dial (trusted-policy MVP, not yet validated on hardware). The first realistic complete run, including a G2 → S1 rework loop, is archived under [`methodology/test/T0_FM-RPI-RTL-mock/`](methodology/test/T0_FM-RPI-RTL-mock/). Its [snapshot guide](methodology/test/T0_FM-RPI-RTL-mock/FIRST_FULL_FLOW_SNAPSHOT.md), [prototype run instructions](methodology/test/T0_FM-RPI-RTL-mock/first_full_flow_2026-11-05/RUN.md), and [review holdout](methodology/test/T0_FM-RPI-RTL-mock/S1_G1_review_holdout_2026-11-05.md) show the result and its limits.
+**Current release:** [v0.7.1](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.7.1). Self-contained graphical workspace: Project creation/import, cycle and report browsing, safe artifact views, shared report state, local fonts and a complete global UI install. Includes the pending HIL packaging, setup and synchronization fixes already on main.
+
+**v0.7.0 background:** HIL harness groundwork: the telemetry collector becomes the `codeanvil telemetry` subcommand, and a remote-only MCP server (`vsil_hil_mcp`) runs the verification kit on a real compute unit over SSH — credential custody, a two-door command model and a per-target policy dial (trusted-policy MVP, not yet validated on hardware). The first realistic complete run, including a G2 → S1 rework loop, is archived under [`methodology/test/T0_FM-RPI-RTL-mock/`](methodology/test/T0_FM-RPI-RTL-mock/). Its [snapshot guide](methodology/test/T0_FM-RPI-RTL-mock/FIRST_FULL_FLOW_SNAPSHOT.md), [prototype run instructions](methodology/test/T0_FM-RPI-RTL-mock/first_full_flow_2026-11-05/RUN.md), and [review holdout](methodology/test/T0_FM-RPI-RTL-mock/S1_G1_review_holdout_2026-11-05.md) show the result and its limits.
 
 > This methodology does not design hardware. It targets software running on Commercial Off-The-Shelf devices (not necessarily out-of-the-box), where the GT defines what constraints that hardware imposes.
 
@@ -60,8 +62,11 @@ uv pip install -e .
 ## Quick start
 
 ```bash
-# Initialize workdir and database
+# Prepare the global DB, methodology runtime and bundled UI
 codeanvil init
+
+# Open the graphical workspace (no Node, pnpm or extra Python install needed)
+codeanvil ui
 
 # Scaffold a new project interactively (project name, folder name, confirm)
 codeanvil create
@@ -124,7 +129,8 @@ evidence, not a new G2 verdict.
 
 | Command | Purpose |
 |---------|---------|
-| `codeanvil init [--mcp <name>]` | Create `~/.codeanvil-config/` (DB + optional MCP installs) |
+| `codeanvil init [--mcp <name>]` | Prepare global DB/runtime, validate bundled UI and seed launcher settings; optional MCP installs |
+| `codeanvil ui [--port 8765] [--no-browser]` | Serve the bundled graphical workspace locally |
 | `codeanvil create` | Scaffold interactively: project name, folder name (default derived), confirm |
 | `codeanvil create --name <label> [--folder <dir>] [-p <path>] [--mcp <name>]` | Scaffold non-interactively (agents, scripts, CI); folder defaults to the derived snake_case name |
 | `codeanvil create <name> [-p <path>] [--mcp <name>]` | Legacy form: name is both project label and folder name (deprecated) |

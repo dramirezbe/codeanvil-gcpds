@@ -1,5 +1,15 @@
 # V-SIL Test Cases (T#) and End-to-End Manual Test
 
+## Synthetic UI fixtures — CodeAnvil 0.7.0
+
+[`v0.7.0-example-artifacts/`](v0.7.0-example-artifacts/README.md) contains five
+portable project snapshots: empty, through G0, through G1, through S2 and
+through G2 with a minimal Python Mock HAL preview. Their progress and gate
+decisions are explicitly synthetic; recorded G0 checks, test output and
+telemetry are actual executions. Use the collection's README to verify hashes,
+copy the examples and register them for future UI tests without running the
+agent pipeline. This collection is separate from the T# methodology runs below.
+
 ---
 
 ## End-to-End Manual Test Procedure

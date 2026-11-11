@@ -71,7 +71,10 @@ def scaffold_project(
     `name` is the human-readable label (manifest + DB); `folder_name` is the
     directory actually created, so "My SDR Lab" may live in `my_sdr_lab/`.
     """
-    project_dir = target.resolve() / folder_name
+    parent = target.resolve()
+    project_dir = (parent / folder_name).resolve()
+    if not project_dir.is_relative_to(parent):
+        raise ValueError("project folder must stay inside the selected parent directory")
     project_dir.mkdir(parents=True, exist_ok=True)
 
     _copy_skills(project_dir)
