@@ -1,77 +1,25 @@
-"""`codeanvil sandbox` — launch an AI agent isolated to project-local settings.
+"""`codeanvil sandbox` — launch an agent with project-local configuration."""
 
-Starts the named agent inside a scaffolded project with only AGENTS.md,
-.agents/skills/, and the GT visible — no global skills, MCPs, extensions,
-or memory. Recipes live in templates/config.yaml under `sandbox_agents`;
-three strategies: native (flags only), xdg_redirect (empty XDG_CONFIG_HOME),
-env_redirect (config-dir env override + auth files only).
-"""
-
-import os
 import shutil
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 from codeanvil.config.logger import get_logger
-from codeanvil.config.paths import CONFIG, find_manifest
+from codeanvil.config.paths import find_manifest
+from codeanvil.sandbox import SANDBOX_AGENTS, SandboxError, prepare_sandbox
+from codeanvil.sandbox import _build_command as _sandbox_command
 
 log = get_logger(__name__)
 
-SANDBOX_AGENTS: dict[str, dict] = CONFIG.get("sandbox_agents", {})
-
-
-def _pi_extension_dir() -> Path:
-    """Pi installs extensions under ~/.pi/agent/npm/node_modules/<name>/src/."""
-    return Path.home() / ".pi" / "agent" / "npm" / "node_modules"
-
-
-def _resolve_required_extensions(names: list[str]) -> list[str]:
-    """Locate required extension entrypoints (e.g. pi-claude-bridge).
-
-    Exits with an error when a required extension is missing — launching
-    without it would produce a half-isolated agent (Pi without model access).
-    """
-    paths: list[str] = []
-    extension_root = _pi_extension_dir()
-    for name in names:
-        entry = extension_root / name / "src" / "index.ts"
-        if not entry.is_file():
-            log.error(
-                "required extension '%s' not found at %s — install it first",
-                name, entry,
-            )
-            sys.exit(1)
-        paths.append(str(entry))
-    return paths
-
 
 def _build_command(spec: dict, project_dir: Path | None = None) -> list[str]:
-    """Construct the agent launch argv from a sandbox_agents recipe.
-
-    When the recipe names a ``project_mcp_config`` and that file exists in the
-    project, it is passed with ``--mcp-config`` so the project's own MCP servers
-    stay available under ``--strict-mcp-config`` (which otherwise admits none).
-    """
-    args = list(spec.get("args", []))
-    for ext_path in _resolve_required_extensions(spec.get("required_extensions", [])):
-        args += ["-e", ext_path]
-    mcp_config = spec.get("project_mcp_config")
-    if mcp_config and project_dir is not None:
-        config_path = project_dir / mcp_config
-        if config_path.is_file():
-            args += ["--mcp-config", str(config_path)]
-    return [spec["binary"]] + args
-
-
-def _copy_auth_files(spec: dict, sandbox_dir: Path) -> None:
-    """Seed the sandbox dir with identity files only (no config, skills, memory)."""
-    source_dir = Path(str(spec.get("config_dir", ""))).expanduser()
-    for name in spec.get("auth_files", []):
-        src = source_dir / name
-        if src.is_file():
-            shutil.copy2(src, sandbox_dir / name)
+    """Retain the CLI helper's exit behavior around the shared recipe builder."""
+    try:
+        return _sandbox_command(spec, project_dir)
+    except SandboxError as exc:
+        log.error("%s", exc)
+        sys.exit(1)
 
 
 def cmd_sandbox(agent: str) -> None:
@@ -80,31 +28,11 @@ def cmd_sandbox(agent: str) -> None:
     if manifest is None:
         log.error("not inside a scaffolded project — .codeanvil/project.yaml not found (searched up from cwd)")
         sys.exit(1)
-    project_dir = manifest.parent.parent
-
-    spec = SANDBOX_AGENTS.get(agent)
-    if spec is None:
-        known = ", ".join(sorted(SANDBOX_AGENTS))
-        log.error("unknown agent '%s' — known agents: %s", agent, known)
-        sys.exit(1)
-
-    binary = spec["binary"]
-    if shutil.which(binary) is None:
-        log.error("'%s' binary not found on PATH — install it first", binary)
-        sys.exit(1)
-
-    cmd = _build_command(spec, project_dir)
-    strategy = spec.get("strategy", "native")
-
-    if strategy == "native":
-        sys.exit(subprocess.run(cmd).returncode)
-
-    env_var = spec["env_var"]
-    sandbox_dir = Path(tempfile.mkdtemp(prefix="codeanvil-sandbox-"))
     try:
-        if spec.get("auth_files"):
-            _copy_auth_files(spec, sandbox_dir)
-        env = {**os.environ, env_var: str(sandbox_dir)}
-        sys.exit(subprocess.run(cmd, env=env).returncode)
-    finally:
-        shutil.rmtree(sandbox_dir, ignore_errors=True)
+        with prepare_sandbox(agent, manifest.parent.parent) as launch:
+            if SANDBOX_AGENTS[agent].get("strategy", "native") == "native":
+                sys.exit(subprocess.run(launch["argv"]).returncode)
+            sys.exit(subprocess.run(launch["argv"], env=launch["env"]).returncode)
+    except SandboxError as exc:
+        log.error("%s", exc)
+        sys.exit(1)
