@@ -15,11 +15,12 @@ export function ReportBadge({ report }: { report: Report }) {
     title={report.stale_reason || undefined}>{label === 'missing' ? 'Not started' : label}</span>
 }
 
-export function Workspace({ project, active, onSetActive, revision = 0 }: {
+export function Workspace({ project, active, onSetActive, revision = 0, theme = 'dark' }: {
   project: Project
   active: string
   onSetActive: (view: string) => void
   revision?: number
+  theme?: 'dark' | 'light'
 }) {
   const [overview, setOverview] = useState<Overview | null>(null)
   const [cycle, setCycle] = useState<string | undefined>()
@@ -41,14 +42,19 @@ export function Workspace({ project, active, onSetActive, revision = 0 }: {
   }, [project.path, cycle, refresh, revision])
 
   const currentCycle = overview?.cycles.find(item => item.name === overview.selected_cycle)
-  const artifacts = overview?.artifacts.filter(artifact => {
+  const viewArtifacts = overview?.artifacts.filter(artifact => {
     if (active === 'Ground truth') return artifact.kind === 'gt'
     if (active === 'Design') return artifact.kind === 'design'
     if (active === 'Reports') return artifact.kind === 'report' || artifact.kind === 'deviation'
     if (active === 'Verification') return artifact.kind === 'test_run' || artifact.kind === 'prototype'
     return false
   }) || []
-  const selectedArtifact = artifacts.find(item => selection?.view === active && item.path === selection.path)
+  const graphs = viewArtifacts.filter(artifact => artifact.graph_theme)
+  const graph = graphs.find(item => item.graph_theme === theme && item.exists)
+    || graphs.find(item => item.exists) || graphs.find(item => item.graph_theme === theme) || graphs[0]
+  const artifacts = viewArtifacts.filter(item => !item.graph_theme || item.path === graph?.path)
+  const selectedGraph = selection?.view === active && graphs.some(item => item.path === selection.path)
+  const selectedArtifact = (selectedGraph ? graph : artifacts.find(item => selection?.view === active && item.path === selection.path))
     || artifacts.find(item => item.exists) || artifacts[0] || null
 
   function openArtifact(artifact: Artifact) {

@@ -29,11 +29,15 @@ describe('Launcher navigation', () => {
 
     await user.click(within(navigation).getByRole('button', { name: 'CLI actions' }))
     expect(screen.getByRole('heading', { name: 'Global CLI actions' })).toBeInTheDocument()
+    expect(within(screen.getByRole('banner')).getAllByText('Project launcher')).toHaveLength(1)
+    expect(screen.queryByRole('button', { name: 'Show project list' })).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Project launcher' }))
     expect(screen.getByRole('heading', { name: 'Projects in CodeAnvil' })).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /Sample project/ }))
     expect(screen.getByRole('heading', { name: 'Sample project · Overview' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Current project')).toHaveTextContent('Sample project')
+    expect(screen.queryByRole('button', { name: 'Switch project' })).not.toBeInTheDocument()
     expect(within(navigation).getByRole('button', { name: 'Reports' })).toBeInTheDocument()
     await user.click(within(navigation).getByRole('button', { name: 'CLI actions' }))
     expect(screen.getByRole('heading', { name: 'Project CLI actions' })).toBeInTheDocument()

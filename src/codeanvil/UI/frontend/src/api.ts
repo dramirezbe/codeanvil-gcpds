@@ -26,6 +26,7 @@ export type Artifact = {
   cycle?: string
   exists: boolean
   working_copy?: boolean
+  graph_theme?: 'dark' | 'light'
 }
 
 export type Overview = {

@@ -26,6 +26,55 @@ function response(body: unknown, status = 200) {
 }
 
 describe('Workspace', () => {
+  const darkGraph: Artifact = { path: '.codeanvil/design/dependency_graph.html', label: 'Dependency graph', kind: 'design', exists: true, graph_theme: 'dark' }
+  const lightGraph: Artifact = { path: '.codeanvil/design/dependency_graph_light.html', label: 'Dependency graph · light', kind: 'design', exists: true, graph_theme: 'light' }
+  const design: Artifact = { path: '.codeanvil/design/SDD.md', label: 'Service design', kind: 'design', exists: true }
+
+  function mockDesign(lightExists = true) {
+    const fetcher = vi.fn(async (url: string) => {
+      if (url.includes('/overview?')) return response({ ...overview, artifacts: [design, darkGraph, { ...lightGraph, exists: lightExists }] })
+      const path = new URL(url, 'http://localhost').searchParams.get('path')!
+      return response({ path, name: path.split('/').at(-1), iterations: [],
+        format: path.endsWith('.html') ? 'html' : 'markdown', content: path.endsWith('.html') ? `<p>${path}</p>` : '# Service design document' })
+    })
+    vi.stubGlobal('fetch', fetcher)
+    return fetcher
+  }
+
+  it('chooses the current graph theme and follows theme changes while a graph is open', async () => {
+    const user = userEvent.setup()
+    mockDesign()
+    const view = render(<Workspace project={project} active="Design" theme="light" onSetActive={vi.fn()} />)
+    const graph = await screen.findByRole('button', { name: /Dependency graph · light/ })
+    expect(screen.getAllByRole('button', { name: /Dependency graph/ })).toHaveLength(1)
+    await user.click(graph)
+    await waitFor(() => expect(screen.getByTitle(lightGraph.label)).toHaveAttribute('srcdoc', `<p>${lightGraph.path}</p>`))
+    expect(screen.getByText('Light graph')).toBeInTheDocument()
+    view.rerender(<Workspace project={project} active="Design" theme="dark" onSetActive={vi.fn()} />)
+    await waitFor(() => expect(screen.getByTitle(darkGraph.label)).toHaveAttribute('srcdoc', `<p>${darkGraph.path}</p>`))
+    expect(screen.getByText('Dark graph')).toBeInTheDocument()
+    expect(screen.getByTitle(darkGraph.label)).toHaveAttribute('sandbox', 'allow-scripts')
+  })
+
+  it('keeps a selected design document when the page theme changes', async () => {
+    mockDesign()
+    const view = render(<Workspace project={project} active="Design" theme="dark" onSetActive={vi.fn()} />)
+    expect(await screen.findByRole('heading', { name: 'Service design document' })).toBeInTheDocument()
+    view.rerender(<Workspace project={project} active="Design" theme="light" onSetActive={vi.fn()} />)
+    expect(screen.getByRole('heading', { name: 'Service design document' })).toBeInTheDocument()
+    expect(screen.queryByTitle(lightGraph.label)).toBeNull()
+  })
+
+  it('uses the existing graph when the matching theme has not been generated', async () => {
+    const user = userEvent.setup()
+    const fetcher = mockDesign(false)
+    render(<Workspace project={project} active="Design" theme="light" onSetActive={vi.fn()} />)
+    await user.click(await screen.findByRole('button', { name: /Dependency graph/ }))
+    await waitFor(() => expect(screen.getByTitle(darkGraph.label)).toHaveAttribute('srcdoc', `<p>${darkGraph.path}</p>`))
+    expect(screen.getByText('Dark graph')).toBeInTheDocument()
+    expect(fetcher.mock.calls.every(([url]) => !url.includes(encodeURIComponent(lightGraph.path)))).toBe(true)
+  })
+
   it('uses server state and keeps synthetic progress distinct from human approval', async () => {
     const state: Overview = {
       ...overview,

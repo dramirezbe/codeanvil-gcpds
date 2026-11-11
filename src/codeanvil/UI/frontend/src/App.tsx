@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
-  Anvil, Archive, ArrowDownRight, ArrowLeft, ArrowUpRight, BookOpen, ChevronDown,
+  Anvil, Archive, ArrowDownRight, ArrowLeft, ArrowUpRight, BookOpen,
   Command, FileText, FolderOpen, HardDrive, LayoutDashboard, Menu, Moon,
   ShieldCheck, Sun, Terminal,
 } from 'lucide-react'
@@ -95,12 +95,12 @@ export default function App() {
       <button className="icon-btn mobile-menu" onClick={() => setMobile(!mobile)} aria-label="Toggle navigation"><Menu size={18} /></button>
       <div className="brand"><span className="brand-mark"><Anvil size={19} /></span><span>CODE<span className="ember">ANVIL</span></span><span className="brand-tag">FORGE</span></div>
       <div className="top-separator" />
-      {showLauncherReturn && <button className="secondary-button launcher-return" onClick={returnToLauncher}>
+      {showLauncherReturn && <button className="secondary-button launcher-return" title="Return to the project list" onClick={returnToLauncher}>
         <ArrowLeft size={15} /><span>Project launcher</span>
       </button>}
-      <button className="project-switch" aria-label={project ? 'Switch project' : 'Show project list'} onClick={returnToLauncher}>
-        <span className="project-dot" /><span>{project?.name || 'Project launcher'}</span><ChevronDown size={14} />
-      </button>
+      {project ? <div className="project-switch" aria-label="Current project" title={project.path}>
+        <span className="project-dot" /><span>{project.name}</span>
+      </div> : !showLauncherReturn && <span className="project-switch">Project launcher</span>}
       <div className="top-spacer" />
       <div className="status-pill"><span className="pulse" /> LOCAL ENGINE <span className="status-sep" /> {error ? 'UNAVAILABLE' : loading ? 'LOADING' : 'READY'}</div>
       <button className="icon-btn" onClick={() => setDark(!dark)} aria-label="Toggle theme">{dark ? <Sun size={17} /> : <Moon size={17} />}</button>
@@ -119,7 +119,7 @@ export default function App() {
       <main className="main-area">
         {active === 'CLI actions' ? <ActionsPanel projectPath={project?.path} onComplete={() => setRevision(value => value + 1)} />
           : showWorkspace && project ? active === 'Backups' ? <BackupsView key={project.path} projectPath={project.path} />
-            : <Workspace key={project.path} project={project} active={active} onSetActive={setActive} revision={revision} />
+            : <Workspace key={project.path} project={project} active={active} onSetActive={setActive} revision={revision} theme={dark ? 'dark' : 'light'} />
           : <Launcher projects={data.projects} user={data.user} loading={loading} error={error} onSelect={openProject} />}
       </main>
     </div>

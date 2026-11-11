@@ -288,7 +288,10 @@ views from planned workflows.
   automatic external-image loading are disabled.
 - **GT viewer**: `build_package.md`, `StRS.md`, `SyRS.md`.
 - **Design viewer**: render `SDD.md` and the interactive
-  `dependency_graph.html` inline. **(+ new)**
+  `dependency_graph.html` (dark) or `dependency_graph_light.html` inline,
+  choosing the available variant that matches the UI theme. A missing variant
+  falls back to the existing graph; opening SDD is unaffected by theme changes.
+  The two-file S1 contract is a branch extension beyond the frozen v0.7.0 tag.
 - **Verification / final result**: open `S2_artifacts/test_run.md` and
   `G2_artifacts/verified_prototype.md` inside the selected cycle; show evidence
   levels and the final template's §12 run/stop instructions. Existing files
@@ -371,6 +374,8 @@ Opening a project reveals its navigation; a labeled Project launcher button
 returns to the project list, including from global CLI actions. Recent projects
 show the local user/home context and abbreviate paths inside that home as
 `~/…`, retaining full paths in tooltips and exact paths outside the home.
+The project name in the header is informational. The arrow button is the sole
+return action; global CLI actions do not repeat a second Project launcher control.
 
 Create project presents Choose Folder and its Browse Folder button on one row,
 starting in Documents/Documentos/home. Folder name shows the shared CLI
@@ -387,7 +392,7 @@ are shown explicitly. Backups currently list the latest per stage/cycle;
 history and manifest inspection are still pending. The graph runs in a
 sandboxed iframe with its copied library inlined for offline display.
 
-Validation: 550 Python tests passed (one optional test skipped), 19 frontend
+Validation: 557 Python tests passed (one optional test skipped), 22 frontend
 tests passed, and the production frontend built. A real Chromium run covered
 the five fixture states, add/create, iteration selection, the interactive graph,
 light/dark themes and mobile navigation against an isolated temporary DB.
