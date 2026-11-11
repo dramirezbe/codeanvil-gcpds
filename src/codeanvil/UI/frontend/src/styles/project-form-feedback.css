@@ -1,0 +1,4 @@
+.workflow-folder-row { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.workflow-folder-controls { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.workflow-folder-controls input { flex: 1; }
+.workflow-folder-controls .secondary-button { flex: none; align-self: stretch; white-space: nowrap; }

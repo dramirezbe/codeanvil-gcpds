@@ -372,6 +372,12 @@ returns to the project list, including from global CLI actions. Recent projects
 show the local user/home context and abbreviate paths inside that home as
 `~/…`, retaining full paths in tooltips and exact paths outside the home.
 
+Create project presents Choose Folder and its Browse Folder button on one row,
+starting in Documents/Documentos/home. Folder name shows the shared CLI
+suggestion as the project name changes; a manual override is preserved.
+Pending or failed suggestions cannot submit an obsolete default. Project
+Tools keeps its existing presentation and installed-server selection.
+
 The workspace now exposes GT, Design, reports and Verification with cycle and
 iteration selection, useful missing-artifact states and a synthetic-fixture
 notice. A completed cycle requires current stage/gate reports plus a prototype
@@ -381,7 +387,7 @@ are shown explicitly. Backups currently list the latest per stage/cycle;
 history and manifest inspection are still pending. The graph runs in a
 sandboxed iframe with its copied library inlined for offline display.
 
-Validation: 537 Python tests passed (one optional test skipped), 11 frontend
+Validation: 550 Python tests passed (one optional test skipped), 19 frontend
 tests passed, and the production frontend built. A real Chromium run covered
 the five fixture states, add/create, iteration selection, the interactive graph,
 light/dark themes and mobile navigation against an isolated temporary DB.
