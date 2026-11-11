@@ -542,6 +542,7 @@ def test_s1_skill_builds_the_spider_graph_from_its_own_template():
     text = _skill_text("S1_design_services")
 
     assert ".codeanvil/design/dependency_graph.html" in text
+    assert ".codeanvil/design/dependency_graph_light.html" in text
     assert "dependency_graph_template.html" in text
     assert "spider" in text
     assert ".codeanvil/project.yaml" in text

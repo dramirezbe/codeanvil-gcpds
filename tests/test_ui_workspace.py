@@ -195,6 +195,40 @@ def test_nested_artifacts_and_graph_are_readable_without_writes():
     assert all(item.get("working_copy") for item in artifacts if item["kind"] in {"gt", "design"})
 
 
+def test_both_graph_variants_use_the_local_library_and_report_actual_presence(tmp_path):
+    root = project(tmp_path)
+    design = root / ".codeanvil/design"
+    design.mkdir()
+    library = root / ".agents/skills/S1_design_services/assets/vis-network.min.js"
+    library.parent.mkdir(parents=True)
+    library.write_text("window.graphLibrary = true;")
+    graphs = ("dependency_graph.html", "dependency_graph_light.html")
+    (design / graphs[0]).write_text('<script src="../../.agents/skills/S1_design_services/assets/vis-network.min.js"></script>')
+    inventory = {item["graph_theme"]: item for item in read_overview(root)["artifacts"] if "graph_theme" in item}
+    assert inventory["dark"]["exists"]
+    assert not inventory["light"]["exists"]
+    (design / graphs[1]).write_text((design / graphs[0]).read_text())
+    for name in graphs:
+        result = read_artifact(root, None, f".codeanvil/design/{name}")
+        assert result["format"] == "html"
+        assert "<script>window.graphLibrary = true;</script>" in result["content"]
+        assert '<script src=' not in result["content"]
+    inventory = [item for item in read_overview(root)["artifacts"] if "graph_theme" in item]
+    assert all(item["exists"] for item in inventory)
+
+
+def test_light_graph_cannot_escape_through_a_symlink(tmp_path):
+    root = project(tmp_path)
+    design = root / ".codeanvil/design"
+    design.mkdir()
+    outside = tmp_path / "outside.html"
+    outside.write_text("Outside the project")
+    (design / "dependency_graph_light.html").symlink_to(outside)
+    with pytest.raises(HTTPException) as error:
+        read_artifact(root, None, ".codeanvil/design/dependency_graph_light.html")
+    assert error.value.status_code == 400
+
+
 def test_select_report_iteration_keeps_header_and_hides_other_iteration(tmp_path):
     root = project(tmp_path)
     report(root, "S0", "# S0 header\n## Iteration 1\n| HITL | FEEDBACK |\nFirst\n## Iteration 2\n| HITL | PASS |\nSecond\n")
@@ -214,7 +248,8 @@ def test_iteration_selection_keeps_fenced_header_and_raw_quoted_content(tmp_path
     assert result["iterations"] == [{"number": 1, "hitl": "FEEDBACK"}]
 
 
-@pytest.mark.parametrize("path", ["../.env", "/etc/passwd", ".codeanvil/project.yaml", ".codeanvil/report/01_demo/../S0.md"])
+@pytest.mark.parametrize("path", ["../.env", "/etc/passwd", ".codeanvil/project.yaml", ".codeanvil/report/01_demo/../S0.md",
+                                 ".codeanvil/design/custom.html", ".codeanvil/design/dependency_graph_dark.html"])
 def test_unapproved_paths_are_rejected(tmp_path, path):
     with pytest.raises(HTTPException) as error:
         read_artifact(project(tmp_path), None, path)

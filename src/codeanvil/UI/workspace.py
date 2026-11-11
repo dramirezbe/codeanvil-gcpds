@@ -16,7 +16,9 @@ _CYCLE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]*\Z")
 _DEVIATION = re.compile(r"RFD-\d{3}\.md\Z")
 _REPORTS = tuple(CONFIG["report_order"])
 _GT = {"build_package.md": "Build Package", "StRS.md": "Stakeholder requirements", "SyRS.md": "System requirements"}
-_DESIGN = {"SDD.md": "Service design", "dependency_graph.html": "Dependency graph"}
+_GRAPH_THEMES = {"dependency_graph.html": "dark", "dependency_graph_light.html": "light"}
+_DESIGN = {"SDD.md": "Service design", "dependency_graph.html": "Dependency graph",
+           "dependency_graph_light.html": "Dependency graph · light"}
 
 
 def _project(root: Path, selected: str | None) -> tuple[Path, dict]:
@@ -131,10 +133,11 @@ def _inventory(root: Path, cycle: str | None) -> list[dict]:
         _artifact(root, f".codeanvil/GT/{name}", label, "gt", working=True)
         for name, label in _GT.items()
     ]
-    artifacts.extend(
-        _artifact(root, f".codeanvil/design/{name}", label, "design", working=True)
-        for name, label in _DESIGN.items()
-    )
+    for name, label in _DESIGN.items():
+        item = _artifact(root, f".codeanvil/design/{name}", label, "design", working=True)
+        if name in _GRAPH_THEMES:
+            item["graph_theme"] = _GRAPH_THEMES[name]
+        artifacts.append(item)
     if cycle is None:
         return artifacts
     base = f".codeanvil/report/{cycle}"
@@ -238,7 +241,7 @@ def read_artifact(root: Path, project_path: str | None, path: str, iteration: in
         header = report_header(content)
         content = header + chosen.content + "\n"
     format_ = "html" if path.endswith(".html") else "markdown" if path.endswith(".md") else "text"
-    if path == ".codeanvil/design/dependency_graph.html":
+    if path in {f".codeanvil/design/{name}" for name in _GRAPH_THEMES}:
         library_path = ".agents/skills/S1_design_services/assets/vis-network.min.js"
         library = _contained(project, library_path)
         if library != project / library_path:

@@ -2,7 +2,7 @@
 name: s1-design-services
 description: "Trigger: S1, design services, architecture, service topology, contracts, stubs, dependency graph. From a passed G0 pair, write the S1 design document (layered services, contracts with stubs, traceability, decisions, risks) and its dependency graph."
 license: Apache-2.0
-compatibility: "No network access, no scripts. Reads .codeanvil/GT/StRS.md, .codeanvil/GT/SyRS.md and .codeanvil/project.yaml. Writes .codeanvil/design/SDD.md, .codeanvil/design/dependency_graph.html and .codeanvil/report/<cycle-name>/S1.md."
+compatibility: "No network access, no scripts. Reads .codeanvil/GT/StRS.md, .codeanvil/GT/SyRS.md and .codeanvil/project.yaml. Writes .codeanvil/design/SDD.md, .codeanvil/design/dependency_graph.html (dark), .codeanvil/design/dependency_graph_light.html and .codeanvil/report/<cycle-name>/S1.md."
 metadata:
   author: "gcpds"
   version: "1.0"
@@ -47,7 +47,8 @@ rework, or by the user.
 | Input (rework) | Latest `G1.md` FEEDBACK, or `S2.md` / `G2.md` FEEDBACK with `Verdict: design defect` | Named sections to rework |
 | Template | `templates/skills/S1_design_services/references/SDD.md` | This skill's locked template |
 | Output | `.codeanvil/design/SDD.md` | Overwritten on rework |
-| Output | `.codeanvil/design/dependency_graph.html` | Dependency graph; overwritten on rework |
+| Output | `.codeanvil/design/dependency_graph.html` | Dark dependency graph; overwritten on rework |
+| Output | `.codeanvil/design/dependency_graph_light.html` | Light dependency graph; same design data; overwritten on rework |
 | Output | `.codeanvil/report/<cycle-name>/S1.md` | Iterative report: the only state of this stage |
 
 Working files live in `.codeanvil/design/`, outside the cycle report folder.
@@ -105,8 +106,8 @@ Working files live in `.codeanvil/design/`, outside the cycle report folder.
     traced, every contract with a recipe, `hw_dependency: true` at `VL-2`, no cycle in the build
     order, `HAL mode` set, `Toolchain` set for every service, kit table complete, §1.7 present.
     This is a courtesy to the reviewer, not a gate.
-11. Build the dependency graph (next section).
-12. Write the iteration with the row `| HITL | PASS |` and the graph's path in the Description.
+11. Build both dependency graph versions (next section).
+12. Write the iteration with the row `| HITL | PASS |` and both graph paths in the Description.
     Return the design path and `S1 complete. Run the G1 skill.`
 
 ## Rework (bounded)
@@ -133,17 +134,22 @@ passed makes `codeanvil status` mark G1 stale, so the design is reviewed again b
 ## Dependency Graph
 
 The graph is a reading aid: **a full dependency graph, each service drawn as a spider** (its
-base at the center, its modules on the spokes), delivered as one HTML file using vis-network, with
-the manifest as text to tell designs apart.
+base at the center, its modules on the spokes), delivered as dark and light HTML files using
+vis-network, with the manifest as text to tell designs apart. Their palette follows CodeAnvil's
+forge UI: ember accents, steel surfaces, cyan and green functional layers.
 
 Copy `templates/skills/S1_design_services/references/dependency_graph_template.html` to
-`.codeanvil/design/dependency_graph.html` and change **only the `DATA` block at
-the top**. Never edit below it and never write the page by hand: the fixed rendering code makes
+`.codeanvil/design/dependency_graph.html` with `const theme = 'dark'` and to
+`.codeanvil/design/dependency_graph_light.html` with `const theme = 'light'`.
+Change **only the `DATA` block at the top**. Both copies must have identical manifest,
+services, hardware and serviceContracts data; only `theme` differs. Never edit below it and
+never write the pages by hand: the fixed rendering code makes
 every agent runtime draw the same graph. It loads `assets/vis-network.min.js` from this skill's
 own folder by relative path, so it needs no network, but it must stay inside the project.
 
 | `DATA` field | Source |
 |--------------|--------|
+| `theme` | `'dark'` for `dependency_graph.html`, `'light'` for `dependency_graph_light.html`; do not change other data between versions |
 | `manifest` | `.codeanvil/project.yaml`: `id`, `name`, `gt`, `cycle`, copied as they are |
 | `services` | §1.1 per service, §1.3 for its base, §1.4 cards for its modules; module label is `module_id` and `required_vl` |
 | `hardware` | §0.1 devices; `to` lists the `SVC-xxx/module_id` of the `hw_dependency: true` modules that use the device |
@@ -155,12 +161,13 @@ Rules:
   appears that the design lacks.
 - Spiders have no module-to-module edge. Build order, internal contracts and `PATH-*` stay in the
   design document.
-- One color per functional layer, in template order. Purple and red are reserved for bases,
-  hardware and contracts.
+- One color per functional layer, in the template's declared order; reuse its color identifiers
+  in both copies. The renderer adapts those colors for contrast in each theme. Bases, hardware
+  and contracts use the renderer's reserved accents and shapes, not functional-layer colors.
 - A contract with several producers or consumers is one entry with arrays in `from` and `to`.
 - Keep `layout.randomSeed` fixed. One service means one spider and no service contracts.
 - `S1.md` is the only state: G1 and `codeanvil status` never read the HTML. A graph problem
-  blocks nothing; if it exposes a design error, fix the design and rewrite both.
+  blocks nothing; if it exposes a design error, fix the design and rewrite both graph versions.
 
 ## Report Contract
 
@@ -174,12 +181,12 @@ Write exactly one file: `.codeanvil/report/<cycle-name>/S1.md`, append-only.
   `| HITL | PASS |` or `| HITL | FEEDBACK |` (never both in one row, which `codeanvil status`
   reads as `UNKNOWN`). Then `### Description`.
 - The Description starts with the exact line `Based on: G0 iteration <N>`, where `N` is the latest
-  G0 iteration when the work starts, followed by the design and graph paths and the SHA-256 of
+  G0 iteration when the work starts, followed by the design and both graph paths and the SHA-256 of
   `.codeanvil/design/SDD.md` (command in `## Rework (bounded)`). On rework it also carries the
   design change set.
 - S1 is a **stage**: `PASS` means "output delivered". The human verdict belongs to G1.
 
 ## Output Contract
 
-Return the design path, the graph path, the report path with the iteration number, and the
+Return the design path, both graph paths, the report path with the iteration number, and the
 next step (`S1 complete. Run the G1 skill.`).

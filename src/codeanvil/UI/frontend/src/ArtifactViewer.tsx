@@ -46,6 +46,7 @@ export function ArtifactViewer({ artifact, projectPath, revision = 0 }: {
     <header className="artifact-toolbar">
       <div className="artifact-title"><strong>{artifact.label}</strong><small>{artifact.path}</small></div>
       {artifact.working_copy && <span className="tag tag-muted">Working copy · shared across cycles</span>}
+      {artifact.graph_theme && <span className="tag tag-muted">{artifact.graph_theme === 'light' ? 'Light' : 'Dark'} graph</span>}
       {document && document.iterations.length > 0 && <label className="iteration-control">
         <span>Iteration</span>
         <select aria-label="Report iteration" value={iteration} onChange={event => setIteration(event.target.value)}>
