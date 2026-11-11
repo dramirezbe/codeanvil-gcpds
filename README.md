@@ -142,6 +142,14 @@ evidence, not a new G2 verdict.
 | `codeanvil now [--machine]` | System timestamp: human-readable or filename-safe |
 | `codeanvil upgrade` | Reinstall codeanvil from the latest main branch (detects OS, uses uv) |
 
+In a project workspace, **Terminal** runs installed local CLIs (Claude Code,
+Codex and other configured terminal launchers) inside Linux/WSL. Leave
+**Sandbox mode** unchecked for your normal configuration, or check it to reuse
+the project-only settings of `codeanvil sandbox`. Click **Start terminal** to
+launch; stop the process before changing its mode. Returning to the panel
+reconnects to a running session. Native Windows/PowerShell-to-WSL launching is
+not implemented in this first terminal version.
+
 ### Delete a project
 
 `codeanvil delete "My Lab"` shows the selected name, full UUID, path and effect,

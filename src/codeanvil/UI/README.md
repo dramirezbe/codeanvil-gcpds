@@ -22,8 +22,30 @@ that must not be presented as released 0.7.0 capabilities.
 cycle and report-iteration browsing, shared stale/delivered states, safe
 Markdown, Design/Verification views and nested artifacts. The five synthetic
 [0.7.0 examples](../../../methodology/test/v0.7.0-example-artifacts/README.md)
-exercise the empty through G2 states. Terminal sessions, automatic refresh,
+exercise the empty through G2 states. The workspace terminal now runs installed
+local CLIs in a Linux/WSL PTY, with a normal/sandbox checkbox. Automatic refresh,
 hardware/telemetry surfaces and native packaging remain later work.
+
+### Use the local terminal (Linux / WSL)
+
+Open a project, select **Terminal**, choose an installed **Local CLI**, then
+click **Start terminal**. **Sandbox mode** is unchecked by default. Normal mode
+inherits your usual local agent configuration; checked mode uses the same
+project-only configuration recipe as `codeanvil sandbox <agent>`. This isolates
+agent settings, not filesystem access or process permissions. Stop the session
+before changing its CLI or mode.
+
+The panel displays the actual local process, including its prompts, keyboard
+input, Ctrl-C and output. Opening the view never starts a CLI or sends a prompt.
+Navigating away disconnects the browser while the process continues; reopening
+Terminal reconnects to it. **Stop terminal** or shutting down the UI server
+terminates its owned process group. Sessions and their bounded replay exist
+only in server memory. There is one running session per project and at most
+eight running sessions per server. No model API or stored transcript is added.
+
+This first terminal implementation runs inside Linux/WSL. Native Windows and
+macOS terminal backends, including launching WSL from PowerShell, remain deferred.
+The rest of the UI remains available on those platforms.
 
 ---
 
@@ -124,13 +146,15 @@ The WS/PTY core is identical across all four, so the MVP is not throwaway.
 - **PTY mirroring**: the backend allocates a real PTY (`pty` stdlib) that
   mirrors the terminal into the frontend. A CLI agent runs **inside this PTY** —
   the frontend is a live window into the same session, not a separate chat.
-- **Shell detection**: detects the shell (bash, zsh, fish) from `$SHELL` and
-  spawns the PTY with the right interpreter, preserving env, prompt and rc
-  files.
+- **Current terminal launch**: executes the configured CLI's argv directly in
+  the selected project, inheriting the local environment. It does not add a
+  login shell or interpret browser input as shell commands. A separate shell
+  launcher remains a possible extension.
 
 ### WSL bridge (O4)
 
-On Windows, if **WSL is detected**, the app:
+Deferred design, not part of the Linux/WSL implementation. On Windows, if
+**WSL is detected**, the future app:
 1. starts the WSL distro **in the background** at launch,
 2. scans for installed agents/editors **inside WSL** (§7 scan),
 3. then runs normally — from the user's point of view it is a native app; WSL
