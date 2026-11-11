@@ -6,7 +6,7 @@ Agent-agnostic project scaffolding, templates, and agent definitions for the **V
 
 Works with any AI coding agent: Claude, Codex, OpenCode, Pi, or others. Runs on **Linux, macOS and Windows**.
 
-**Current release:** [v0.7.1](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.7.1). Self-contained graphical workspace: Project creation/import, cycle and report browsing, safe artifact views, shared report state, local fonts and a complete global UI install. Includes the pending HIL packaging, setup and synchronization fixes already on main.
+**Current release:** [v0.7.2](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.7.2). Clearer project navigation and creation: Contextual launcher navigation, readable home-relative paths, user context, Documents/Documentos defaults, CLI-derived folder suggestions and a local Anvil favicon.
 
 **v0.7.0 background:** HIL harness groundwork: the telemetry collector becomes the `codeanvil telemetry` subcommand, and a remote-only MCP server (`vsil_hil_mcp`) runs the verification kit on a real compute unit over SSH — credential custody, a two-door command model and a per-target policy dial (trusted-policy MVP, not yet validated on hardware). The first realistic complete run, including a G2 → S1 rework loop, is archived under [`methodology/test/T0_FM-RPI-RTL-mock/`](methodology/test/T0_FM-RPI-RTL-mock/). Its [snapshot guide](methodology/test/T0_FM-RPI-RTL-mock/FIRST_FULL_FLOW_SNAPSHOT.md), [prototype run instructions](methodology/test/T0_FM-RPI-RTL-mock/first_full_flow_2026-11-05/RUN.md), and [review holdout](methodology/test/T0_FM-RPI-RTL-mock/S1_G1_review_holdout_2026-11-05.md) show the result and its limits.
 

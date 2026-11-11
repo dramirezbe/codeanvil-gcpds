@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
-  Anvil, Archive, ArrowDownRight, ArrowUpRight, BookOpen, ChevronDown,
+  Anvil, Archive, ArrowDownRight, ArrowLeft, ArrowUpRight, BookOpen, ChevronDown,
   Command, FileText, FolderOpen, HardDrive, LayoutDashboard, Menu, Moon,
   ShieldCheck, Sun, Terminal,
 } from 'lucide-react'
@@ -9,8 +9,21 @@ import { BackupsView } from './BackupsView'
 import { ProjectWorkflows } from './ProjectWorkflows'
 import { Workspace } from './Workspace'
 import { type Project, request } from './api'
+import './styles/launcher-feedback.css'
 
-type Bootstrap = { mode: 'launcher' | 'workspace'; project: Project | null; projects: Project[] }
+type LocalUser = { name: string; home: string }
+type Bootstrap = { mode: 'launcher' | 'workspace'; project: Project | null; projects: Project[]; user?: LocalUser }
+
+function displayPath(path: string, home: string | undefined) {
+  if (!home) return path
+  const windows = /^[a-z]:[\\/]|^\\\\/i.test(home)
+  const normalizedPath = windows ? path.replaceAll('\\', '/') : path
+  const normalizedHome = (windows ? home.replaceAll('\\', '/') : home).replace(/\/+$/, '')
+  const comparePath = windows ? normalizedPath.toLowerCase() : normalizedPath
+  const compareHome = windows ? normalizedHome.toLowerCase() : normalizedHome
+  if (comparePath === compareHome) return '~'
+  return comparePath.startsWith(`${compareHome}/`) ? `~/${normalizedPath.slice(normalizedHome.length + 1)}` : path
+}
 
 function useBootstrap(projectPath: string | undefined, revision: number) {
   const [data, setData] = useState<Bootstrap>({ mode: 'launcher', project: null, projects: [] })
@@ -63,6 +76,13 @@ export default function App() {
 
   const project = forceLauncher ? null : selected || data.project
   const showWorkspace = !forceLauncher && project !== null
+  const showLauncherReturn = showWorkspace || active === 'CLI actions'
+  const returnToLauncher = () => {
+    setSelected(null)
+    setForceLauncher(true)
+    setActive('Overview')
+    setMobile(false)
+  }
   const openProject = (value: Project) => {
     setSelected(value)
     setForceLauncher(false)
@@ -71,11 +91,14 @@ export default function App() {
   }
 
   return <div className={dark ? 'app' : 'app light'} style={{ zoom: uiZoom }}>
-    <header className="topbar">
+    <header className={`topbar${showLauncherReturn ? ' has-launcher-return' : ''}`}>
       <button className="icon-btn mobile-menu" onClick={() => setMobile(!mobile)} aria-label="Toggle navigation"><Menu size={18} /></button>
       <div className="brand"><span className="brand-mark"><Anvil size={19} /></span><span>CODE<span className="ember">ANVIL</span></span><span className="brand-tag">FORGE</span></div>
       <div className="top-separator" />
-      <button className="project-switch" onClick={() => { setSelected(null); setForceLauncher(true); setActive('Overview') }}>
+      {showLauncherReturn && <button className="secondary-button launcher-return" onClick={returnToLauncher}>
+        <ArrowLeft size={15} /><span>Project launcher</span>
+      </button>}
+      <button className="project-switch" aria-label={project ? 'Switch project' : 'Show project list'} onClick={returnToLauncher}>
         <span className="project-dot" /><span>{project?.name || 'Project launcher'}</span><ChevronDown size={14} />
       </button>
       <div className="top-spacer" />
@@ -86,7 +109,7 @@ export default function App() {
     <div className="shell">
       <nav className={`rail ${mobile ? 'rail-open' : ''}`} aria-label="Workspace navigation">
         <div className="rail-group"><span className="rail-label">WORKSPACE</span>
-          {navigation.map(([Icon, label]) => <button key={label} className={`rail-item ${active === label ? 'selected' : ''}`}
+          {navigation.filter(([, label]) => showWorkspace || label === 'CLI actions').map(([Icon, label]) => <button key={label} className={`rail-item ${active === label ? 'selected' : ''}`}
             aria-label={label} aria-current={active === label ? 'page' : undefined} onClick={() => { setActive(label); setMobile(false) }}>
             <Icon size={17} /><span>{label}</span>
           </button>)}
@@ -97,7 +120,7 @@ export default function App() {
         {active === 'CLI actions' ? <ActionsPanel projectPath={project?.path} onComplete={() => setRevision(value => value + 1)} />
           : showWorkspace && project ? active === 'Backups' ? <BackupsView key={project.path} projectPath={project.path} />
             : <Workspace key={project.path} project={project} active={active} onSetActive={setActive} revision={revision} />
-          : <Launcher projects={data.projects} loading={loading} error={error} onSelect={openProject} />}
+          : <Launcher projects={data.projects} user={data.user} loading={loading} error={error} onSelect={openProject} />}
       </main>
     </div>
     <footer className="statusbar"><span><span className="online-dot" /> CODEANVIL {__CODEANVIL_VERSION__}</span><span className="status-path">{project?.path || 'No project selected'}</span>
@@ -106,21 +129,25 @@ export default function App() {
   </div>
 }
 
-function Launcher({ projects, loading, error, onSelect }: {
-  projects: Project[]; loading: boolean; error: string; onSelect: (project: Project) => void
+function Launcher({ projects, user, loading, error, onSelect }: {
+  projects: Project[]; user?: LocalUser; loading: boolean; error: string; onSelect: (project: Project) => void
 }) {
   return <div className="launcher launcher-canvas">
     <div className="launcher-heading"><div className="eyebrow"><span className="eyebrow-line" /> PROJECT DESK</div>
       <h1>Choose your <span>workpiece.</span></h1><p className="lede">Your projects, gates, and tools in one place.</p>
       <ProjectWorkflows onComplete={onSelect} />
     </div>
-    <div className="section-heading"><div><span className="eyebrow">RECENT PROJECTS</span><h2>Projects in CodeAnvil</h2></div></div>
+    <div className="section-heading"><div><span className="eyebrow">RECENT PROJECTS</span><h2>Projects in CodeAnvil</h2></div>
+      {user && <div className="launcher-user" aria-label="Local user and home">
+        <span>User <strong>{user.name}</strong></span><span>Home <code title={user.home}>{user.home}</code></span>
+      </div>}
+    </div>
     <div className="project-grid">
       {error ? <div className="empty-projects" role="alert"><HardDrive size={21} /><div><b>Could not load projects</b><span>{error}</span></div></div>
         : loading ? <div className="empty-projects" role="status">Loading registered projects…</div>
         : projects.length ? projects.map(project => <button className="project-card" key={project.id || project.path} onClick={() => onSelect(project)}>
           <div className="card-top"><span className="project-icon"><Anvil size={18} /></span></div><strong>{project.name}</strong>
-          <span className="project-path" title={project.path}>{project.path}</span><div className="card-foot"><span><FolderOpen size={13} /> Open workspace</span><ArrowUpRight size={15} /></div>
+          <span className="project-path" title={project.path}>{displayPath(project.path, user?.home)}</span><div className="card-foot"><span><FolderOpen size={13} /> Open workspace</span><ArrowUpRight size={15} /></div>
         </button>) : <div className="empty-projects"><div className="empty-icon"><HardDrive size={21} /></div><div><b>No registered projects</b><span>Create a project or add an existing folder to get started.</span></div></div>}
     </div>
     <details className="upcoming-features"><summary>Coming next</summary><p>Live agent terminal, automatic file updates, hardware gallery, telemetry charts and native desktop packaging.</p></details>
