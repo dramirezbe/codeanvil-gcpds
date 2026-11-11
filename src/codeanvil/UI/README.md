@@ -7,45 +7,315 @@ It is **not implemented yet**. `ui.py` is intentionally empty.
 Nothing in the CLI, scaffold, or database layer depends on this package. It
 exists only to reserve the module path for future work.
 
-## Planned scope
+> **Status:** design in progress. This README is the working design brief we
+> refine before writing the `odd/tasks/ui/` feature document. O1–O6 are now
+> decided; §11 keeps a short "still to pin down" list.
 
-The GUI is a **management and access surface** for CodeAnvil projects, with a
-terminal-mirroring agent chat and a FastAPI backend.
+---
 
-### Architecture
+## 1. What it is
 
-- **Monolith deployment**: backend opens the frontend — single process, one
-  `codeanvil ui` command.
-- **Backend**: FastAPI (Python). Serves the frontend, exposes WebSocket
-  endpoints for terminal I/O and agent communication.
-- **Frontend → Backend**: WebSocket connection for real-time bidirectional
-  communication (terminal streams, agent messages, status updates).
-- **PTY mirroring**: the backend allocates a real PTY (via `pty` stdlib) that
-  mirrors the user's terminal into the frontend. The agent runtime
-  (OpenCode, Pi, Claude, Codex) runs inside this PTY — the frontend is a
-  live window into the same session the agent sees.
-- **Shell detection**: detects the user's shell (bash, zsh, fish) from
-  `$SHELL` and spawns the PTY with the correct interpreter, preserving
-  environment, prompt, and rc files.
+A **modern management and access surface** for CodeAnvil: see a project's
+V-SIL progress, reports and iterations; run every current CLI capability (and
+more) from buttons; and launch your favourite coding agent or editor — all in
+one app, themed like a **forge** (forge fire / anvil; WoW-style richness given
+a professional, restrained turn).
 
-### What it will do
+It is a **control surface over the methodology**, not a new agent runtime and
+not a new LLM integration. It **displays, relays and orchestrates the existing
+tooling** — it never interprets or replaces the harness.
 
-- Create projects
-- Search projects
-- View a project's reports, configs, and audits
-- Open a project directly in an external editor or coding agent
-  (VS Code, VSCodium, Codex, Claude, Pi, OpenCode)
-- Show application logs
-- **Agent chat**: a chat panel in the UI that mirrors the agent's terminal
-  session. The user types in the frontend, the agent executes in the PTY,
-  and output streams back over WebSocket in real time. This is not a
-  separate chat — it is the real terminal, rendered in the browser.
-- **Execute via WebSocket**: commands and agent interactions travel over the
-  WebSocket to the PTY — no REST polling, no stdin pipe hacks.
+## 2. Hard constraints
 
-### What it will NOT do
+1. **Project detection drives the whole app.** A project is detected by
+   **`.codeanvil/project.yaml`** — `config/paths.py` already exposes
+   `find_manifest()`, which walks up from the launch directory looking for
+   exactly that file. This decides which of the two top-level modes the app
+   opens in (§3).
+2. **Reuse the CLI's code, never shell out to the CLI.** The backend imports
+   and calls the existing Python logic **in-process** — no `subprocess` to the
+   `codeanvil` binary for anything the tool already does in Python. The CLI and
+   the UI are two front-ends over the same logic layer (§6). Launching
+   *external* agents/editors and running *verification commands* are genuinely
+   external processes and are the only exceptions (§7, §8).
+3. **Self-sustained backend that serves the UI.** One process, one launch
+   command (§4 picks the shell).
+4. **Native-desktop goal on all OS** (Linux, macOS, Windows), including a
+   Windows app that drives **WSL** for the terminal/agent side (§5).
+5. **No hard-fail without an agent.** Progress, reports, GT and design views
+   work with no agent running. Only the **chat/terminal** needs a live agent —
+   there the UI makes it visible that you must launch an agent first, instead
+   of failing (§7).
 
-- No standalone agent runtime — the UI mirrors an external agent session,
-  it does not replace it.
-- No custom LLM integration — agent orchestration stays with the harness
-  (the coding-agent runtime). The UI displays and relays, never interprets.
+## 3. Two modes — launcher vs workspace (O1)
+
+The app chooses its mode from `find_manifest()` at launch, and can switch at
+runtime:
+
+- **Launcher / dashboard** — when the launch folder has **no** `.codeanvil/`
+  project. Shows the **projects list** (`db/projects.list_projects()`) and a
+  **Create project** button (`init/create.scaffold_project()`), plus global
+  tool config (runtime, MCP, `init`, `upgrade`). Picking a project opens it in
+  workspace mode.
+- **Workspace** — when the folder **is** a project. Opens the full working
+  interface for that project: progress board, reports, GT/design viewers,
+  per-project actions, and the agent/editor sidebar (§7).
+
+So project-less actions (`create`, `list`, global config) live in the launcher;
+project-scoped views live in the workspace. No warning-and-exit — the launcher
+*is* the graceful fallback.
+
+## 4. Packaging — the "vs" (O2)
+
+The backend must run locally no matter what (it spawns PTYs and local
+processes), so the only real choice is the **shell** that renders the web
+frontend. Options, with CodeAnvil's constraints (Python backend, PTY/local
+process access, 3 OS, forge-grade polish):
+
+| Approach | Added stack | Native window & installers | Bundle size | PTY / local access | Build effort | Cross-OS |
+|----------|-------------|----------------------------|-------------|--------------------|--------------|----------|
+| **Browser-based** (serve to system browser) | none | ✗ (a browser tab) | ~0 | ✓ (local backend) | lowest | ✓ immediate |
+| **PyWebView** (system webview from Python) | 1 pip dep | ~ (window yes; installers DIY) | small | ✓ | low | ✓ (webview quirks per OS) |
+| **Tauri** (Rust shell + system webview, Python as sidecar) | Rust + Node + PyInstaller sidecar | ✓ real windows + per-OS installers | small (~10–20 MB) | ✓ (sidecar backend) | high | ✓ |
+| **Electron** (bundled Chromium) | Node + PyInstaller sidecar | ✓ | large (~120 MB+) | ✓ | medium | ✓ |
+
+**Recommendation (two-phase):**
+- **MVP → Browser-based.** Zero packaging, all three OS on day one, fastest
+  path to a working control surface. `codeanvil ui` starts FastAPI and opens
+  the browser.
+- **Ship → Tauri.** Real native windows and signed per-OS installers with a
+  small footprint; the FastAPI app is bundled as a **PyInstaller sidecar** the
+  Tauri shell launches. **PyWebView** is the pure-Python middle ground if we
+  want a window without adding the Rust/Node toolchain; **Electron** only if a
+  Tauri webview limitation forces it.
+
+The WS/PTY core is identical across all four, so the MVP is not throwaway.
+
+## 5. Architecture
+
+- **Monolith deployment**: the backend opens the frontend — single process,
+  one `codeanvil ui` command.
+- **Backend**: FastAPI (Python). Serves the frontend and exposes WebSocket
+  endpoints for terminal I/O, agent communication and live status. It calls the
+  CodeAnvil logic layer directly (§6).
+- **Frontend ↔ Backend**: a WebSocket carries real-time traffic (terminal
+  streams, agent messages, status pushes). Plain request/response is fine for
+  one-shot actions (list projects, read a report).
+- **PTY mirroring**: the backend allocates a real PTY (`pty` stdlib) that
+  mirrors the terminal into the frontend. A CLI agent runs **inside this PTY** —
+  the frontend is a live window into the same session, not a separate chat.
+- **Shell detection**: detects the shell (bash, zsh, fish) from `$SHELL` and
+  spawns the PTY with the right interpreter, preserving env, prompt and rc
+  files.
+
+### WSL bridge (O4)
+
+On Windows, if **WSL is detected**, the app:
+1. starts the WSL distro **in the background** at launch,
+2. scans for installed agents/editors **inside WSL** (§7 scan),
+3. then runs normally — from the user's point of view it is a native app; WSL
+   just loads first and the PTY/agent side runs in WSL, in the selected
+   project's path.
+
+## 6. Reuse boundary — the logic layer
+
+The backend imports these directly (no CLI subprocess):
+
+| Concern            | Module / functions |
+|--------------------|--------------------|
+| Project detection  | `config/paths.py` — `find_manifest()`, `PROJECT_*`, `WORKDIR`, `DB_PATH` |
+| Report/gate state  | `reports.py` — `ReportState`, `_report_state()`, `_cycle_reports()`, `_gate_order()`, `backup_entries()` |
+| Registry           | `db/projects.py` — `list_projects()`, `get_project_by_id/name()`, `register_project()`, `sync_project()`; `db/utils.connect_db()` |
+| Scaffold           | `init/create.py` — `scaffold_project()`, `write_project_manifest()` |
+| MCP lifecycle      | `init/mcp.py` — install/update/doctor/enable/disable/run |
+| Runtime            | `init/runtime.py` — `sync/add/remove/listing/path` |
+| System packages    | `init/system_packages.py` — `probe()`, `cached_probe()` |
+| Skills metadata    | `skills.py` — SKILL.md frontmatter parser |
+| Timestamps         | `config/time.py` — `format_timestamp[_machine]()` |
+| Config             | `templates/config.yaml` via `config.paths.CONFIG` |
+
+The recent refactor already split **pure logic** (above) from **CLI dispatch**
+(`parser.py` = arg defs only, `main.py` = thin dispatch, `CLI/commands/*` =
+per-command glue). Where a command module mixes logic with printing/`sys.exit`,
+the UI work extracts the pure function into a small **service layer** both
+front-ends call — the CLI keeps zero adherence to the UI and vice-versa.
+**(design task)**
+
+## 7. Agent & editor sidebar (O3)
+
+A left sidebar lists launchers in two groups, by whether they drive the PTY:
+
+- **No terminal (GUI apps)** — open the app on the project path, no PTY:
+  **Claude desktop**, **Codex desktop**, **OpenCode desktop**, **VS Code**,
+  **JetBrains**.
+- **Needs terminal (CLI agents)** — the launch logic **opens a terminal + runs
+  the agent**, both in the selected project path; the session is the PTY the
+  chat panel mirrors: **codex**, **claude**, **opencode**, **pi**.
+
+Behaviour:
+- **Install scan**: at launch (and inside WSL on Windows), scan what is
+  installed; **grey out / make opaque** anything not installed.
+- **Click-to-install**: clicking a greyed item tells the user it will be
+  installed, then installs it **only if the install needs no `sudo`** (the
+  common case). Needs sudo → warn and show the manual command.
+- **Shell refresh**: after an install, `source` the user's shell rc
+  (`~/.bashrc` / `~/.zshrc` / fish equivalent) so a freshly-installed binary is
+  found without restarting.
+- **Chat gating** (constraint §2.5): if no agent session is live, the chat
+  panel shows a clear "launch an agent first" state (with the launch buttons)
+  rather than erroring. Progress/reports/GT/design never gate on this.
+
+All launch and install recipes come from an editable YAML (§9), not hard-coded.
+
+## 8. Verification commands
+
+Running a project's `verification/run.sh vlN` and the telemetry collector are
+real subprocesses by nature (they execute the delivered prototype, possibly on
+a remote HIL target). These are the methodology's own external work, surfaced
+through the terminal/PTY and the WS stream — not the CLI-reuse exception.
+
+## 9. Launcher registry — editable YAML (O5)
+
+One **easily-editable YAML** holds every agent/editor entry so install and
+launch commands can be changed fast, per OS. Shape (sketch):
+
+```yaml
+launchers:
+  claude-desktop:
+    kind: gui            # gui | terminal
+    label: "Claude Desktop"
+    icon: claude
+    detect: { cmd: "claude-desktop --version" }   # or a path/registry probe
+    launch:
+      linux:   "claude-desktop {project}"
+      darwin:  "open -a Claude {project}"
+      windows: "..."                                # inside WSL when applicable
+    install:
+      linux:   "..."          # run only if no sudo needed
+      darwin:  "brew install --cask claude"
+      windows: "winget install ..."                # §: winget first, else warn
+  claude:
+    kind: terminal
+    label: "Claude Code"
+    icon: claude
+    detect: { cmd: "claude --version" }
+    launch: { any: "claude" }    # opened in a PTY at {project}
+    install:
+      linux:  "curl -fsSL https://claude.ai/install.sh | bash"
+      windows: "winget install ... || <warn: install manually>"
+```
+
+- **Windows installs prefer `winget`**; if winget can't provide it, the UI
+  **warns the user to install it manually** rather than guessing.
+- Icons: one per launcher (Claude, Codex, OpenCode, Pi, VS Code, VSCodium,
+  JetBrains).
+- This registry can live beside `config.yaml` (or a dedicated
+  `launchers.yaml`) — decided when the ODD task starts.
+
+## 10. Live refresh via watchdog (O6)
+
+A **watchdog** watches every **non-code project document** (the `.codeanvil/`
+tree: `report/`, `GT/`, `design/`, `backups/`, `project.yaml`, HIL audit log;
+not `src/` or `verification/` code). On a change (file saved, or its **SHA**
+differs):
+- re-read **only that file**, and
+- refresh **only the UI items bound to it** (e.g. a new `report/<cycle>/G1.md`
+  bumps the progress board and that gate's report view) via a WS push.
+
+No full rescans; targeted, SHA-gated updates keep the board live while an agent
+works.
+
+## 11. Look & feel
+
+- **Theme**: a forge — anvil, forge fire, hot-metal accents, hammered-steel
+  surfaces. Inspiration from rich game UIs (e.g. WoW) **re-tuned to a
+  professional, restrained register**: legible, calm by default, dramatic only
+  where it earns attention (active gate, running agent, PASS/FEEDBACK).
+- **Modern**: responsive, light/dark, keyboard-friendly, accessible contrast.
+- Data viz (progress, telemetry, dependency graph) uses a consistent,
+  accessible palette — brand tokens defined once, not per chart.
+
+## 12. Feature surface — everything the UI must expose
+
+Grounded in the current CLI (`parser.py`) and methodology. Every item exists
+today unless marked **(+ new)**.
+
+### View & understand
+- **Progress board**: `S0 → G0 → S1 → G1 → S2 → G2` (RFD from any stage), per
+  cycle, with delivered / stale / closed-cycle markers — from `reports.py`.
+- **Reports & iterations**: browse each cycle's gate reports and HITL verdicts;
+  diff iterations across cycles. **(+ new)**
+- **GT viewer**: `build_package.md`, `StRS.md`, `SyRS.md`.
+- **Design viewer**: render `SDD.md` and the interactive
+  `dependency_graph.html` inline. **(+ new)**
+- **Backups**: `.codeanvil/backups/<cycle>/` with MANIFEST SHA-256.
+- **Telemetry**: chart the JSON-lines telemetry (CPU/mem/temp). **(+ new)**
+- **HIL targets**: `targets:` from `project.yaml` + `.codeanvil/hil/audit.log`.
+  **(+ new)**
+- **HW COTS gallery**: a card per hardware component, with its image. **(+ new,
+  see §12.1)**
+- **Logs**: application logs.
+
+### Run (current CLI capabilities, as buttons)
+- Lifecycle: `create`, `list`, `sync`, `status`, `backup <stage>`, `now`.
+- Runtime: `runtime sync|add|remove|list|path`.
+- MCP: `mcp add|update|remove|list|doctor|run|enable|disable`.
+- Verification: `telemetry`, and run `verification/run.sh` levels (§8).
+- HIL: `credential-setup`.
+- Tool: `init`, `upgrade`.
+
+### Launch (external — §7)
+- Agents/editors sidebar, two groups.
+
+## 12.1 HW COTS gallery — public API, no key **(+ new)**
+
+Show a photo of every COTS hardware component the project targets, so the GT's
+hardware reads as real objects, not just identifiers.
+
+- **Source of the list**: the StRS `HWC-` blocks (and the SyRS). The UI already
+  knows the component names; it only needs an image per name.
+- **Image source — Wikimedia Commons / Wikidata, no API key.** Resolve each
+  component to its Wikidata entity and read the image property **`P18`**, then
+  pull the file from Commons. Both are public, keyless, rate-friendly APIs with
+  explicit CC licensing and (often) transparent-background product shots. Stock
+  APIs (Unsplash/Pexels/Pixabay) are rejected here: they have no specific
+  hardware, only generic photography.
+- **Cache + offline + reproducible**: the resolved image (and its license +
+  attribution) is cached under `.codeanvil/` on first fetch, so later views work
+  offline and the artifact is reproducible. Only the public component *name*
+  ever leaves the machine — no project or user data.
+- **Author override wins**: a `HWC-` block (or `project.yaml`) may pin an exact
+  image URL or a local path; that is canonical and author-controlled, like the
+  rest of the GT contract.
+- **Forge placeholder fallback**: when nothing resolves, show a steel-framed
+  line-art placeholder instead of a broken image.
+- **Pluggable provider**: the launcher-registry YAML (§9) may define an optional
+  alternate image provider (e.g. a keyed search API) for anyone who wants one —
+  off by default; the keyless Commons path is the default.
+- **Where the fetch runs**: in the **backend** (FastAPI), which has no sandbox
+  CSP. (In a published artifact preview the browser sandbox blocks external
+  images, so a mockup renders the cards as drawn SVG; the shipped UI shows the
+  real Commons photos.)
+- **Aesthetic fit**: frame each photo in a hard-edged steel "billet" card with
+  its `HWC-` chip and a license/attribution line; prefer Commons'
+  transparent-background files; an optional subtle duotone keeps glossy product
+  shots inside the forge palette.
+
+## 13. What it will NOT do
+
+- No standalone agent runtime — it mirrors an external agent session.
+- No custom LLM integration — orchestration stays with the harness; the UI
+  displays and relays, never interprets.
+- No shelling out to the `codeanvil` binary for logic the tool already does in
+  Python (§2.2).
+
+## 14. Still to pin down (at ODD-task time)
+
+- Exact home of the launcher registry (`launchers.yaml` vs a block in
+  `config.yaml`).
+- Service-layer extraction list: which `CLI/commands/*` functions need a pure
+  counterpart.
+- WSL transport specifics (localhost WS into a WSL-side backend vs
+  `wsl.exe`-spawned PTY from a Windows-side backend).
+- Install-without-sudo detection per package manager (how we know an install
+  won't prompt for sudo before running it).
