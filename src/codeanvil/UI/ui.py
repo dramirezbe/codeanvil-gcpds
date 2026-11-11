@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import threading
 import webbrowser
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
@@ -42,13 +43,25 @@ def create_app(cwd: Path | None = None):
         raise RuntimeError("CodeAnvil's web dependencies are missing. Reinstall CodeAnvil to repair the installation.") from exc
 
     root = (cwd or Path.cwd()).resolve()
-    app = FastAPI(title="CodeAnvil", docs_url="/api/docs")
+    from codeanvil.UI.terminal import create_terminal_router
+    from codeanvil.UI.terminal_sessions import SessionManager
+    terminals = SessionManager()
+
+    @asynccontextmanager
+    async def lifespan(app):
+        try:
+            yield
+        finally:
+            await terminals.close()
+
+    app = FastAPI(title="CodeAnvil", docs_url="/api/docs", lifespan=lifespan)
     from codeanvil.UI.actions import create_actions_router
     from codeanvil.UI.workflows import create_workflows_router
     from codeanvil.UI.workspace import create_workspace_router
     app.include_router(create_actions_router(root))
     app.include_router(create_workflows_router(root))
     app.include_router(create_workspace_router(root))
+    app.include_router(create_terminal_router(root, terminals))
 
     def selected_project(project_path: str | None = None):
         selected = Path(project_path).expanduser() if project_path else root
