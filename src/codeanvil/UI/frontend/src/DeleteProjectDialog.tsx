@@ -9,15 +9,14 @@ export function DeleteProjectDialog({ project, onClose, onDeleted }: {
   onClose: () => void
   onDeleted: () => void
 }) {
-  const [confirmation, setConfirmation] = useState('')
   const [removeFiles, setRemoveFiles] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const dialog = useRef<HTMLDivElement>(null)
-  const input = useRef<HTMLInputElement>(null)
-  const confirmed = !!project.id && confirmation === project.name
+  const cancel = useRef<HTMLButtonElement>(null)
+  const canDelete = !!project.id
 
-  useEffect(() => { input.current?.focus() }, [])
+  useEffect(() => { cancel.current?.focus() }, [])
   useEffect(() => { if (busy) dialog.current?.focus() }, [busy])
 
   function keyDown(event: KeyboardEvent<HTMLDivElement>) {
@@ -46,7 +45,7 @@ export function DeleteProjectDialog({ project, onClose, onDeleted }: {
 
   async function submit(event: FormEvent) {
     event.preventDefault()
-    if (!confirmed || busy) return
+    if (!canDelete || busy) return
     setBusy(true)
     setError('')
     try {
@@ -54,7 +53,7 @@ export function DeleteProjectDialog({ project, onClose, onDeleted }: {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           project_id: project.id, expected_path: project.path, remove_files: removeFiles,
-          confirm: true, confirmation_name: confirmation,
+          confirm: true, confirmation_name: project.name,
         }),
       })
       const result = await response.json()
@@ -71,7 +70,7 @@ export function DeleteProjectDialog({ project, onClose, onDeleted }: {
     <div className="dialog-surface delete-project-dialog" role="dialog" aria-modal="true" tabIndex={-1}
       aria-labelledby="delete-project-title" aria-describedby="delete-project-effect" ref={dialog} onKeyDown={keyDown}>
       <div className="panel-head">
-        <h2 id="delete-project-title">Delete project</h2>
+        <h2 id="delete-project-title">Are you sure you want to delete?</h2>
         <button type="button" className="icon-btn" aria-label="Close delete dialog" disabled={busy} onClick={onClose}><X size={18}/></button>
       </div>
       <p className="delete-project-name">{project.name}</p>
@@ -84,15 +83,11 @@ export function DeleteProjectDialog({ project, onClose, onDeleted }: {
             <span>Also delete the project folder and its contents</span>
           </label>
           {removeFiles && <p className="delete-files-warning" role="note">This permanently deletes all files in the folder shown above, including source code and reports.</p>}
-          <label className="action-field">
-            <b>Type the project name to confirm</b>
-            <input ref={input} value={confirmation} onChange={event => setConfirmation(event.target.value)} autoComplete="off" spellCheck={false}/>
-          </label>
         </fieldset>
         {error && <p className="workflow-error" role="alert">{error}</p>}
         <div className="workflow-actions">
-          <button type="button" className="secondary-button" disabled={busy} onClick={onClose}>Cancel</button>
-          <button type="submit" className="secondary-button destructive-button" disabled={!confirmed || busy}>{busy ? 'Deleting…' : 'Delete project'}</button>
+          <button ref={cancel} type="button" className="secondary-button" disabled={busy} onClick={onClose}>Cancel</button>
+          <button type="submit" className="secondary-button destructive-button" disabled={!canDelete || busy}>{busy ? 'Deleting…' : 'Delete'}</button>
         </div>
       </form>
     </div>
