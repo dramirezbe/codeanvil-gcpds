@@ -24,6 +24,33 @@ _HITL_RE = re.compile(r"^\|\s*HITL\s*\|\s*(PASS|FEEDBACK)\s*\|\s*$", re.MULTILIN
 # Chain links, read only from the latest iteration of a report.
 _BASED_ON_RE = re.compile(r"^Based on: (\S+) iteration (\d+)\s*$", re.MULTILINE)
 _SUPERSEDED_RE = re.compile(r"^Superseded by cycle: (\S+)\s*$", re.MULTILINE)
+_DESCRIPTION_RE = re.compile(r"^### Description\s*$", re.MULTILINE)
+
+
+def unfenced_text(text: str) -> str:
+    """Mask fenced examples while preserving offsets into the original text."""
+    visible = []
+    fence = None
+    for line in text.splitlines(keepends=True):
+        marker = re.match(r"^ {0,3}(`{3,}|~{3,})(.*?)(?:\r?\n)?$", line)
+        if fence is None and marker:
+            fence = (marker.group(1)[0], len(marker.group(1)))
+            visible.append(re.sub(r"[^\r\n]", " ", line))
+        elif fence is not None:
+            visible.append(re.sub(r"[^\r\n]", " ", line))
+            if marker and marker.group(1)[0] == fence[0] and len(marker.group(1)) >= fence[1] and not marker.group(2).strip():
+                fence = None
+        else:
+            visible.append(line)
+    return "".join(visible)
+
+
+def _verdict(content: str) -> str | None:
+    visible = unfenced_text(content)
+    description = _DESCRIPTION_RE.search(visible)
+    metadata = visible[:description.start()] if description else visible
+    verdicts = _HITL_RE.findall(metadata)
+    return verdicts[-1] if verdicts else None
 
 
 class ReportState(NamedTuple):
@@ -33,6 +60,29 @@ class ReportState(NamedTuple):
     superseded_by: str | None = None
 
 
+class ReportIteration(NamedTuple):
+    number: int
+    content: str
+    hitl: str | None
+
+
+def parse_report_iterations(text: str) -> list[ReportIteration]:
+    """Read appended sections in file order, including incomplete iterations."""
+    headings = list(_ITERATION_RE.finditer(unfenced_text(text)))
+    sections = []
+    for index, heading in enumerate(headings):
+        end = headings[index + 1].start() if index + 1 < len(headings) else len(text)
+        content = text[heading.start():end].rstrip()
+        sections.append(ReportIteration(int(heading.group(1)), content, _verdict(content)))
+    return sections
+
+
+def report_header(text: str) -> str:
+    """Return the original header before the first real iteration heading."""
+    heading = _ITERATION_RE.search(unfenced_text(text))
+    return text[:heading.start()] if heading else text
+
+
 def report_state(report_file: Path) -> ReportState:
     """Latest iteration number, HITL verdict and chain links in one report."""
     try:
@@ -40,17 +90,35 @@ def report_state(report_file: Path) -> ReportState:
     except OSError as exc:
         log.warning("cannot read %s: %s", report_file, exc)
         return ReportState(None, None)
-    headings = list(_ITERATION_RE.finditer(text))
-    verdicts = _HITL_RE.findall(text)
-    latest = text[headings[-1].end():] if headings else ""
+    sections = parse_report_iterations(text)
+    content = sections[-1].content if sections else text
+    latest = unfenced_text(content)
     based_on = _BASED_ON_RE.search(latest)
     superseded = _SUPERSEDED_RE.search(latest)
     return ReportState(
-        max(int(match.group(1)) for match in headings) if headings else None,
-        verdicts[-1] if verdicts else None,
+        sections[-1].number if sections else None,
+        _verdict(content),
         (based_on.group(1), int(based_on.group(2))) if based_on else None,
         superseded.group(1) if superseded else None,
     )
+
+
+def stale_reason(
+    gate: str, gates: dict[str, ReportState], seen: tuple[str, ...] = ()
+) -> str | None:
+    """Follow a report's recorded baseline, sharing the CLI's stale semantics."""
+    report = gates.get(gate)
+    if report is None or report.based_on is None:
+        return None
+    predecessor, number = report.based_on
+    if predecessor not in gates or predecessor == gate or predecessor in seen:
+        return None
+    latest = gates[predecessor].iteration
+    if latest is not None and number < latest:
+        return f"based on {predecessor} iteration {number}, {predecessor} is at {latest}"
+    if stale_reason(predecessor, gates, seen + (gate,)):
+        return f"{predecessor} is stale"
+    return None
 
 
 def gate_order(gate: str) -> tuple[int, int, str]:

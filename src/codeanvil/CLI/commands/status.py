@@ -13,34 +13,14 @@ from codeanvil.config.paths import (
 from codeanvil.db.projects import get_project_by_id, get_project_by_name, sync_project
 from codeanvil.db.schema import db_exists
 from codeanvil.db.utils import connect_db
-from codeanvil.reports import UNKNOWN_PRODUCER, ReportState, backup_entries, cycle_reports
+from codeanvil.reports import UNKNOWN_PRODUCER, backup_entries, cycle_reports
+from codeanvil.reports import stale_reason as _stale_reason
 
 log = get_logger(__name__)
 
 # Legacy gate report filenames: <gate>_<machine-timestamp>.md
 # (e.g. G0_2026-10-21_16-23-45-123.md), written before cycle-scoped reports.
 _REPORT_RE = re.compile(r"^(?P<gate>.+)_(?P<ts>\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}-\d{3})\.md$")
-
-
-def _stale_reason(
-    gate: str, gates: dict[str, ReportState], seen: tuple[str, ...] = ()
-) -> str | None:
-    """Why a report no longer reflects its predecessor, or None.
-
-    A missing `Based on` line or a predecessor absent from the cycle is never
-    stale, so old cycles and partial reports raise no false warning."""
-    based_on = gates[gate].based_on
-    if based_on is None:
-        return None
-    predecessor, number = based_on
-    if predecessor not in gates or predecessor == gate or predecessor in seen:
-        return None
-    latest = gates[predecessor].iteration
-    if latest is not None and number < latest:
-        return f"based on {predecessor} iteration {number}, {predecessor} is at {latest}"
-    if _stale_reason(predecessor, gates, seen + (gate,)):
-        return f"{predecessor} is stale"
-    return None
 
 
 def _latest_reports(report_dir: Path) -> dict[str, str]:
