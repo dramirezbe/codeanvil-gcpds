@@ -431,7 +431,8 @@ is rejected. The generic CLI action catalog directs users to this dedicated
 confirmation workflow.
 
 Trash buttons are available on project cards and in the active workspace.
-The dialog shows the exact name/path and requires typing that name. Removing
+The dialog shows the exact name/path and asks "Are you sure you want to delete?"
+with Cancel and a red Delete button; no name entry is required. Removing
 files is unchecked by default; cancelling keeps the project and restores focus.
 Success refreshes the list and returns to the launcher, including when the
 server was launched inside the now-unregistered project.

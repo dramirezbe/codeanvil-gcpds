@@ -6,7 +6,7 @@ Agent-agnostic project scaffolding, templates, and agent definitions for the **V
 
 Works with any AI coding agent: Claude, Codex, OpenCode, Pi, or others. Runs on **Linux, macOS and Windows**.
 
-**Current release:** [v0.7.4](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.7.4). Project deletion in CLI and UI: Shared guarded project deletion, the delete CLI command, explicit file-removal option, and a dedicated UI confirmation dialog. Directory identity is revalidated before removal.
+**Current release:** [v0.7.5](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.7.5). Simple red-button deletion confirmation: Replaces typed-name UI confirmation with a direct question, Cancel and a red Delete button. Keeps explicit file-removal selection and existing identity/path safeguards.
 
 **v0.7.0 background:** HIL harness groundwork: the telemetry collector becomes the `codeanvil telemetry` subcommand, and a remote-only MCP server (`vsil_hil_mcp`) runs the verification kit on a real compute unit over SSH — credential custody, a two-door command model and a per-target policy dial (trusted-policy MVP, not yet validated on hardware). The first realistic complete run, including a G2 → S1 rework loop, is archived under [`methodology/test/T0_FM-RPI-RTL-mock/`](methodology/test/T0_FM-RPI-RTL-mock/). Its [snapshot guide](methodology/test/T0_FM-RPI-RTL-mock/FIRST_FULL_FLOW_SNAPSHOT.md), [prototype run instructions](methodology/test/T0_FM-RPI-RTL-mock/first_full_flow_2026-11-05/RUN.md), and [review holdout](methodology/test/T0_FM-RPI-RTL-mock/S1_G1_review_holdout_2026-11-05.md) show the result and its limits.
 

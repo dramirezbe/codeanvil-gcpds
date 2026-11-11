@@ -12,6 +12,6 @@
 .delete-project-path { display: block; margin: 9px 0 14px; font: 11px/1.6 var(--mono); overflow-wrap: anywhere; }
 .delete-project-dialog .confirm-action { margin: 0; }
 .delete-files-warning { padding: 10px 12px; border: 1px solid var(--ember-soft); border-radius: 4px; color: var(--ember); font-size: 12px; line-height: 1.6; }
-.delete-project-dialog .destructive-button { color: var(--ember); border-color: var(--ember-soft); }
-.destructive-button:not(:disabled):hover { background: #f0783c15; border-color: var(--ember); }
-.light .delete-files-warning, .light .destructive-button { color: #92421c; }
+.delete-project-dialog .destructive-button { color: #fff; background: #dc2626; border-color: #dc2626; }
+.delete-project-dialog .destructive-button:not(:disabled):hover { background: #b91c1c; border-color: #b91c1c; }
+.light .delete-files-warning { color: #92421c; }

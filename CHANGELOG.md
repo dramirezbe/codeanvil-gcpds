@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.5 — Simple red-button deletion confirmation
+
+Replaces typed-name UI confirmation with a direct question, Cancel and a red Delete button. Keeps explicit file-removal selection and existing identity/path safeguards.
+
+Validation: 606 Python tests passed, 1 skipped; 30 frontend tests passed; frontend and distributions built.
+
 ## 0.7.4 — Project deletion in CLI and UI
 
 Shared guarded project deletion, the delete CLI command, explicit file-removal option, and a dedicated UI confirmation dialog. Directory identity is revalidated before removal.
