@@ -121,7 +121,7 @@ Pure Python script. No LLM, no AI agent — just `g0_validate.py`.
 ### S1 — Design of layered services (agent)
 
 - **Skill**: `templates/skills/S1_design_services/SKILL.md`, with the design template and graph template in `references/` and vis-network in `assets/`.
-- **Output**: `.codeanvil/design/SDD.md` and `.codeanvil/design/dependency_graph.html` (one spider per service). `S1.md` is the only state.
+- **Output**: `.codeanvil/design/SDD.md`, dark `.codeanvil/design/dependency_graph.html` and light `.codeanvil/design/dependency_graph_light.html` (same topology, one spider per service, UI palette). `S1.md` is the only state.
 - **Runnable contract**: design §0.5 names one project-root command, the services and runtime HAL it starts, URL, visible result and clean shutdown. G1 checks this in G1.15.
 
 ### G1 — Human design review
@@ -265,7 +265,7 @@ myproj/
 │   │   ├── build_package.md         ← user-authored; S0 reads it
 │   │   ├── StRS.md                  ← written by S0 (IEEE 29148 §9.4)
 │   │   └── SyRS.md                  ← written by S0 (IEEE 29148 §9.5)
-│   ├── design/                      ← S1 working copy: SDD.md, dependency_graph.html
+│   ├── design/                      ← S1 working copy: SDD.md, dependency_graph.html (dark), dependency_graph_light.html
 │   ├── backups/                     ← written only by `codeanvil backup <stage>`
 │   ├── custody/                     ← empty; left from the retired custody chain, unused
 │   ├── project.yaml                 ← project identity (UUIDv7, name, GT pointers, cycle)

@@ -98,6 +98,24 @@ def test_backup_uses_the_active_cycle_and_writes_the_manifest(tmp_path, monkeypa
     }
 
 
+def test_s1_backup_preserves_both_graph_themes_and_their_digests(tmp_path, monkeypatch):
+    project = _make_project(tmp_path)
+    monkeypatch.chdir(project)
+    _write_report(project, "01_run", "S1", [(1, "PASS")])
+    design = _design(project)
+    (design / "dependency_graph.html").write_text("<html>Dark graph</html>\n", encoding="utf-8")
+    (design / "dependency_graph_light.html").write_text("<html>Light graph</html>\n", encoding="utf-8")
+
+    cmd_backup("S1")
+
+    folder = project / PROJECT_BACKUPS / "01_run" / "S1_iter1"
+    digests = {entry["source"]: entry["sha256"] for entry in _manifest(folder)["files"]}
+    for name in ("dependency_graph.html", "dependency_graph_light.html"):
+        original = (design / name).read_bytes()
+        assert (folder / name).read_bytes() == original
+        assert digests[f".codeanvil/design/{name}"] == hashlib.sha256(original).hexdigest()
+
+
 def test_backup_follows_the_rfd_supersede_chain(tmp_path, monkeypatch, capsys):
     """A new cycle overwrites the design of the cycle its RFD superseded."""
     project = _make_project(tmp_path, cycle="02_new")

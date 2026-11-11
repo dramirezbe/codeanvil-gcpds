@@ -49,7 +49,7 @@ Otherwise check, in this order, writing **no iteration** when you stop:
 | Path | Role |
 |------|------|
 | `.codeanvil/design/SDD.md` | The design under review |
-| `.codeanvil/design/dependency_graph.html` | Reading aid, named in `S1.md` |
+| `.codeanvil/design/dependency_graph.html`, `.codeanvil/design/dependency_graph_light.html` | Dark/light reading aids with the same topology, named in `S1.md` |
 | `.codeanvil/GT/StRS.md`, `.codeanvil/GT/SyRS.md` | Read-only: requirements the design must cover |
 | `templates/skills/G1_design_review/references/G1_CHECKLIST.md` | This skill's checklist and filled form |
 | `templates/skills/G1_design_review/references/TRIAGE.md` | Failure triage + draft mode, shared with S0 and G0 |
@@ -73,7 +73,7 @@ Otherwise check, in this order, writing **no iteration** when you stop:
 
 ## Steps
 
-1. Give the human the graph's path from `S1.md`: its spiders support the topology and
+1. Give the human both graph paths from `S1.md` (dark and light): their spiders support the topology and
    runtime-loop review (G1.9); the build order is reviewed in the design's §2 (G1.1).
 2. Fill the checklist, including G1.11–G1.16 and the kit row.
 3. **Validate the toolchain (G1.14).** For every `Toolchain` entry, run the `--version` of its

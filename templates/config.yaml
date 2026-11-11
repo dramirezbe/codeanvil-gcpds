@@ -39,7 +39,7 @@ stage_reports: ["S0", "S1", "S2"]
 # the single writer of .codeanvil/backups/ — skills never copy by hand.
 backup_targets:
   S0: [".codeanvil/GT/StRS.md", ".codeanvil/GT/SyRS.md"]
-  S1: [".codeanvil/design/SDD.md", ".codeanvil/design/dependency_graph.html"]
+  S1: [".codeanvil/design/SDD.md", ".codeanvil/design/dependency_graph.html", ".codeanvil/design/dependency_graph_light.html"]
   S2: [".codeanvil/report/{cycle}/S2_artifacts/test_run.md"]
   G2: [".codeanvil/report/{cycle}/G2_artifacts/verified_prototype.md"]
 

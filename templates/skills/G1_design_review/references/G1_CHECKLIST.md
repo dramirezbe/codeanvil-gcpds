@@ -9,7 +9,7 @@ Section numbers (§) refer to the S1 design document.
 
 | Row | Agent checks and shows | Marked `open` when |
 |-----|------------------------|--------------------|
-| Graph | `dependency_graph.html` shows every service, module, device and service contract of the design, and its text panel matches `.codeanvil/project.yaml` | Something is missing or differs, because the human would review the wrong picture. A missing file is `advisory` |
+| Graph | Dark `dependency_graph.html` and light `dependency_graph_light.html` show the same services, modules, devices and service contracts, and their text panels match `.codeanvil/project.yaml` | Something is missing or differs, because the human would review the wrong picture. A missing file or theme variant is `advisory` |
 | G1.1 DAG | Derives the topological order from the §1.4 cards and compares it with §2.2. Service contracts (§3.4) create no edge: runtime message loops do not create implementation dependency cycles | A cycle exists |
 | G1.2 interface completeness | Each contract named by a card exists in §3, with all fields | An implementer would have to ask the designer |
 | G1.3 requirement coverage | `SYS-*` in §4.1, `NRM-*` in §4.3, cross-service `SYS-*` in §4.4 | A requirement is uncovered. A module without `SYS-*` is `advisory` |

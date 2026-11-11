@@ -138,7 +138,8 @@ These files are **inputs**. You **MUST NOT** modify them to make a gate pass.
 Every stage and gate writes **one** report file: `.codeanvil/report/<cycle-name>/<id>.md`
 (for example `S0.md`, `G0.md`, `S1.md`, `G1.md`, `S2.md`, `G2.md`, `RFD.md`). Iterations are
 appended sections in that file — never separate files. S1 writes its working design to
-`.codeanvil/design/` (`SDD.md` and `dependency_graph.html`). S2, G2 and RFD also write
+`.codeanvil/design/` (`SDD.md`, dark `dependency_graph.html` and
+light `dependency_graph_light.html`). S2, G2 and RFD also write
 working files to `.codeanvil/report/<cycle-name>/<ID>_artifacts/` (`S2_artifacts/` with
 `test_run.md`, `G2_artifacts/` with `verified_prototype.md`, the cycle's terminal output,
 and `RFD_artifacts/`), overwritten on rework and not report iterations.
@@ -200,7 +201,7 @@ Rules:
 | Path | What it holds |
 |------|---------------|
 | `.codeanvil/GT/` | Human-authored Ground Truth. Read-only during gates unless the author approves an edit. |
-| `.codeanvil/design/` | S1's working design: `SDD.md` and `dependency_graph.html`. Overwritten on rework. |
+| `.codeanvil/design/` | S1's working design: `SDD.md`, dark `dependency_graph.html` and light `dependency_graph_light.html`. Both graphs share the same topology. Overwritten on rework. |
 | `.codeanvil/backups/` | Stage artifacts saved by `codeanvil backup <stage>`. |
 | `.codeanvil/project.yaml` | Project identity (`id`, `name`, GT pointers) plus the active `cycle`. |
 | `.codeanvil/report/<cycle-name>/` | One iterative report per gate, scoped to the cycle. |
@@ -215,7 +216,7 @@ Rules:
     AGENTS.md              <- you are here (canonical instructions)
     .codeanvil/            <- methodology tree (GT, design, reports, backups, identity)
     │   GT                 <- ground truth documents (human-authored): .codeanvil/GT/
-    │   design/            <- S1 working design: SDD.md + dependency_graph.html
+    │   design/            <- S1 working design: SDD.md + dependency_graph.html (dark) + dependency_graph_light.html
     │   project.yaml       <- project identity (id, name, GT pointers, cycle)
     │   report/            <- per-cycle gate reports (<cycle-name>/<gate>.md)
     │                          <cycle-name>/S2_artifacts/  <- test_run.md

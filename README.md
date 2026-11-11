@@ -196,7 +196,7 @@ codeanvil create [<name> | --name <label> [--folder <dir>]] [-p <path>] [--mcp m
        │    │    ├── build_package.md     ← you author; S0 reads it
        │    │    ├── StRS.md              ← written by S0 (IEEE 29148 §9.4)
        │    │    └── SyRS.md              ← written by S0 (IEEE 29148 §9.5)
-       │    ├── design/                    ← S1 working design: SDD.md, dependency_graph.html
+       │    ├── design/                    ← S1 working design: SDD.md, dependency_graph.html (dark), dependency_graph_light.html
        │    ├── backups/                   ← written only by `codeanvil backup <stage>`
        │    ├── project.yaml              ← project identity (UUIDv7, no machine paths)
        │    └── report/                    ← per-cycle iterative reports (<cycle>/<id>.md)
@@ -240,7 +240,9 @@ GT reference templates are **locked** inside the skills that use them (`.agents/
 7. **G2 verifies** — the `vsil-verifier` subagent re-runs those commands in a fresh, read-only context, including entry-point smoke evidence; a human answers PASS, FEEDBACK (module or design defect) or RFD. PASS writes the Verified Prototype with run instructions.
 8. **RFD** — when a requirement is infeasible on the declared COTS platform, a decision document suspends the cycle until the Build Package author decides.
 
-The S1 design lives in `.codeanvil/design/` (`SDD.md` and `dependency_graph.html`, a single working copy).
+The S1 design lives in `.codeanvil/design/`: `SDD.md`, dark `dependency_graph.html`
+and light `dependency_graph_light.html`. Both graphs share the same topology,
+use the UI palette, and are working copies overwritten together on rework.
 G2's Verified Prototype stays under `.codeanvil/report/<cycle>/G2_artifacts/`. Before S0, S1, S2 or G2 overwrites
 its outputs, it runs `codeanvil backup <stage>`. Code under `src/` and `verification/` is not backed up; use git for it.
 Projects scaffolded before v0.5.0 keep their old paths for the cycle they are in; there is no migration.
