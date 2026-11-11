@@ -16,6 +16,7 @@ from codeanvil.db.schema import db_exists
 from codeanvil.init.mcp import is_mcp_installed, server_rows
 from codeanvil.init.sync import run_sync
 from codeanvil.UI.project_context import ProjectManifestError, project_context, project_summary
+from codeanvil.UI.user_context import default_folder
 
 _CREATE_LOCK = threading.Lock()
 _PICKER_UNAVAILABLE = "Native folder selection is unavailable. Enter the folder path instead."
@@ -69,6 +70,18 @@ def create_workflows_router(root: Path) -> APIRouter:
     root = root.resolve()
     router = APIRouter(prefix="/api/workflows", tags=["workflows"])
 
+    @router.get("/defaults")
+    def defaults():
+        return {"path": str(default_folder())}
+
+    @router.get("/folder-name")
+    def folder_name(name: str = ""):
+        try:
+            _, folder = resolve_create_inputs(None, name, None)
+        except CreateInputError as exc:
+            return {"folder": "", "error": str(exc)}
+        return {"folder": folder, "error": None}
+
     @router.get("/mcp")
     def mcp_catalog():
         rows = server_rows()
@@ -78,7 +91,7 @@ def create_workflows_router(root: Path) -> APIRouter:
 
     @router.post("/pick-folder")
     def pick_folder(request: FolderRequest):
-        initial = _existing_folder(request.initial_path, root) if request.initial_path else root
+        initial = _existing_folder(request.initial_path, root) if request.initial_path else default_folder()
         try:
             result = subprocess.run(
                 [sys.executable, "-m", "codeanvil.UI.folder_picker", str(initial)],

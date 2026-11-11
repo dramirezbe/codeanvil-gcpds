@@ -393,6 +393,16 @@ This runs the checkout's implementation. Development checks are
 `uv run --extra dev pytest tests templates/tests -q` and, from `frontend/`, `pnpm test`
 and `pnpm build`.
 
+### Local user context and folder defaults
+
+The bootstrap response includes the local user's name and home directory.
+Folder dialogs start in an existing `~/Documents`, then `~/Documentos`, or
+the home directory when neither exists, independently of the launch directory.
+An explicit valid path takes precedence. Folder-name previews call the shared
+CLI creation logic, so the default follows the TUI's naming rules.
+The locally bundled Lucide Anvil favicon is served at both `/favicon.svg` and
+`/favicon.ico`; its upstream license ships with the frontend assets.
+
 ### Global installation and dependency ownership
 
 The standard CodeAnvil package includes FastAPI, Uvicorn, HTTPX and watchdog

@@ -23,12 +23,14 @@ def test_app_routes_share_project_and_artifact_contract(tmp_path, monkeypatch):
     create_schema(conn)
     conn.close()
     monkeypatch.setattr(ui, "DB_PATH", database)
+    monkeypatch.setattr(ui, "local_user", lambda: {"name": "Local user", "home": str(tmp_path)})
     project = EXAMPLES / "panel_prototipo"
 
     async def exercise():
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app=create_app(tmp_path)), base_url="http://localhost") as client:
             landing = await client.get("/api/ui/bootstrap")
-            assert landing.json() == {"mode": "launcher", "project": None, "projects": []}
+            assert landing.json() == {"mode": "launcher", "project": None, "projects": [],
+                                      "user": {"name": "Local user", "home": str(tmp_path)}}
             query = {"project_path": str(project)}
             bootstrap = await client.get("/api/ui/bootstrap", params=query)
             assert bootstrap.json()["project"]["name"] == "Panel de prototipo"
@@ -45,6 +47,26 @@ def test_app_routes_share_project_and_artifact_contract(tmp_path, monkeypatch):
             catalog = await client.get("/api/workflows/mcp")
             assert catalog.status_code == 200
             assert {row["name"] for row in catalog.json()["servers"]} == {"marconi", "vsil_hil_mcp"}
+
+    asyncio.run(exercise())
+
+
+def test_favicon_routes_serve_the_packaged_svg(tmp_path, monkeypatch):
+    from codeanvil.UI import ui
+
+    dist = tmp_path / "dist"
+    (dist / "assets").mkdir(parents=True)
+    icon = '<svg xmlns="http://www.w3.org/2000/svg"><path d="M1 2"/></svg>'
+    (dist / "favicon.svg").write_text(icon)
+    monkeypatch.setattr(ui, "validate_frontend", lambda _: dist)
+
+    async def exercise():
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=create_app(tmp_path)), base_url="http://localhost") as client:
+            for path in ("/favicon.ico", "/favicon.svg"):
+                response = await client.get(path)
+                assert response.status_code == 200
+                assert response.headers["content-type"] == "image/svg+xml"
+                assert response.text == icon
 
     asyncio.run(exercise())
 

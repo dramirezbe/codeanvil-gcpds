@@ -17,6 +17,7 @@ from codeanvil.db.utils import connect_db
 from codeanvil.db.projects import list_projects
 from codeanvil.UI.project_context import project_context, project_summary
 from codeanvil.UI.assets import validate_frontend
+from codeanvil.UI.user_context import local_user
 
 
 def _json_safe(value: Any) -> Any:
@@ -98,6 +99,7 @@ def create_app(cwd: Path | None = None):
             "mode": "workspace" if project else "launcher",
             "project": project_summary(*project) if project else None,
             "projects": registered_projects(),
+            "user": local_user(),
         }
 
     @app.get("/api/projects")
@@ -106,6 +108,11 @@ def create_app(cwd: Path | None = None):
 
     dist = validate_frontend(Path(__file__).parent / "frontend" / "dist")
     app.mount("/assets", StaticFiles(directory=dist / "assets"), name="assets")
+
+    @app.get("/favicon.ico", include_in_schema=False)
+    @app.get("/favicon.svg", include_in_schema=False)
+    def favicon():
+        return FileResponse(dist / "favicon.svg", media_type="image/svg+xml")
 
     @app.get("/")
     def index():
