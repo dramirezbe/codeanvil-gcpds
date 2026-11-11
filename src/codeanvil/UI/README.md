@@ -366,6 +366,12 @@ MCP servers and permits activation of installed ones. Global MCP installation,
 contextual backup/runtime/telemetry controls and other guided settings remain
 available through the advanced action catalog until their own workflows land.
 
+Without a selected project, the WORKSPACE sidebar contains only CLI actions.
+Opening a project reveals its navigation; a labeled Project launcher button
+returns to the project list, including from global CLI actions. Recent projects
+show the local user/home context and abbreviate paths inside that home as
+`~/…`, retaining full paths in tooltips and exact paths outside the home.
+
 The workspace now exposes GT, Design, reports and Verification with cycle and
 iteration selection, useful missing-artifact states and a synthetic-fixture
 notice. A completed cycle requires current stage/gate reports plus a prototype

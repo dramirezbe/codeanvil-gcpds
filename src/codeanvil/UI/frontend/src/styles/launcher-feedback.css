@@ -1,0 +1,17 @@
+.launcher-return { flex: none; }
+.project-switch { min-width: 0; }
+.project-switch > span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.project-switch > svg, .project-dot { flex: none; }
+.launcher-canvas .section-heading { flex-wrap: wrap; align-items: start; gap: 12px 24px; }
+.launcher-user { display: flex; flex-direction: column; gap: 5px; min-width: 0; color: var(--muted); font: 11px/1.5 var(--mono); }
+.launcher-user strong { color: var(--text); font-weight: 500; }
+.launcher-user code { color: var(--text); font: inherit; overflow-wrap: anywhere; }
+.launcher-canvas .project-path { white-space: normal; overflow-wrap: anywhere; line-height: 1.6; }
+
+@media (max-width: 1000px) {
+  .has-launcher-return .project-switch, .has-launcher-return .status-pill { display: none; }
+}
+@media (max-width: 560px) {
+  .launcher-return { padding: 0 9px; gap: 5px; font-size: 10px; }
+  .launcher-user { font-size: 10px; }
+}
