@@ -22,6 +22,8 @@ jobs:
       - uses: astral-sh/setup-uv@v4
       - run: pnpm install --frozen-lockfile
         working-directory: src/codeanvil/UI/frontend
+      - run: pnpm test
+        working-directory: src/codeanvil/UI/frontend
       - run: pnpm build
         working-directory: src/codeanvil/UI/frontend
       - run: uv build
@@ -36,6 +38,6 @@ jobs:
       - uses: astral-sh/setup-uv@v4
       - run: uv python install ${{ matrix.python-version }}
       - name: Run tool tests
-        run: uv run --extra dev pytest tests/ -v
+        run: uv run --extra dev --extra ui pytest tests/ -v
       - name: Run methodology tests
         run: uv run --extra dev pytest templates/tests/ -v
