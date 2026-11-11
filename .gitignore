@@ -5,6 +5,8 @@ __pycache__/
 build/
 /dist/
 .venv/
+node_modules/
+*.tsbuildinfo
 
 # Local skill registry (generated per machine)
 .atl/

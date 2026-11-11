@@ -1,11 +1,12 @@
 # UI — graphical companion for CodeAnvil
 
-The UI is an optional graphical companion to the existing CLI. It presents
+The UI is a bundled graphical companion to the existing CLI. It presents
 CodeAnvil's current project, MCP, runtime and methodology capabilities through
 purpose-built views while reusing their existing Python logic.
 
 > **Status:** implementation in progress. This README is the UI design brief;
-> `odd/tasks/ui/` tracks delivery. Keep the UI optional and additive: do not
+> `odd/tasks/ui/` tracks delivery. Opening the UI is optional; its dependencies
+> and built assets ship with the normal global installation. Keep it additive: do not
 > change CLI behavior, project formats or database schema just to support UI
 > workflows.
 
@@ -374,23 +375,47 @@ are shown explicitly. Backups currently list the latest per stage/cycle;
 history and manifest inspection are still pending. The graph runs in a
 sandboxed iframe with its copied library inlined for offline display.
 
-Validation: 526 Python tests passed (one optional test skipped), 11 frontend
+Validation: 537 Python tests passed (one optional test skipped), 11 frontend
 tests passed, and the production frontend built. A real Chromium run covered
 the five fixture states, add/create, iteration selection, the interactive graph,
 light/dark themes and mobile navigation against an isolated temporary DB.
 Native folder-dialog interaction is covered by mocked tests, not a cross-OS
-desktop acceptance claim. The global release installation is unchanged.
+desktop acceptance claim. The global tool now uses this branch's self-contained
+wheel; the published release tag remains unchanged.
 
 To run this branch's UI from the repository root:
 
 ```bash
-uv run --extra ui codeanvil ui
+uv run codeanvil ui
 ```
 
-This runs the checkout's implementation; it does not require replacing the
-globally installed release 0.7.0. Development checks are `uv run --extra dev
---extra ui pytest tests templates/tests -q` and, from `frontend/`, `pnpm test`
+This runs the checkout's implementation. Development checks are
+`uv run --extra dev pytest tests templates/tests -q` and, from `frontend/`, `pnpm test`
 and `pnpm build`.
+
+### Global installation and dependency ownership
+
+The standard CodeAnvil package includes FastAPI, Uvicorn, HTTPX and watchdog
+in its own global tool environment. React, Markdown, icons and local fonts
+are compiled by the frontend build and shipped under `UI/frontend/dist/`.
+The browser fetches those assets from CodeAnvil's local server, with no font
+CDN or frontend package installation at startup.
+
+`codeanvil init` validates the complete HTML/JS/CSS/font bundle and Python
+web imports, seeds the editable global launcher registry once, and prepares
+the DB and methodology runtime. It preserves existing project registrations
+and launcher edits. Afterwards `codeanvil ui` works from the global binary
+without an `[ui]` extra, Node or pnpm. These are development tools only;
+distribution builds require the prebuilt frontend and never install them.
+
+The global wheel installation and `init` passed with Node and pnpm absent from
+PATH. Chromium loaded the global UI, all three font families and the completed
+prototype with external requests blocked (zero attempted). The six existing
+project registrations and database bytes remained unchanged.
+
+The native folder picker remains optional OS integration: when Python/Tk or
+a desktop display is unavailable, the project form accepts a manual path.
+MCP servers and external agents keep their separate explicit install flows.
 
 ### Launch (external — §7)
 - Agents/editors sidebar, two groups.

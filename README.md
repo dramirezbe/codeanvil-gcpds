@@ -60,8 +60,11 @@ uv pip install -e .
 ## Quick start
 
 ```bash
-# Initialize workdir and database
+# Prepare the global DB, methodology runtime and bundled UI
 codeanvil init
+
+# Open the graphical workspace (no Node, pnpm or extra Python install needed)
+codeanvil ui
 
 # Scaffold a new project interactively (project name, folder name, confirm)
 codeanvil create
@@ -124,7 +127,8 @@ evidence, not a new G2 verdict.
 
 | Command | Purpose |
 |---------|---------|
-| `codeanvil init [--mcp <name>]` | Create `~/.codeanvil-config/` (DB + optional MCP installs) |
+| `codeanvil init [--mcp <name>]` | Prepare global DB/runtime, validate bundled UI and seed launcher settings; optional MCP installs |
+| `codeanvil ui [--port 8765] [--no-browser]` | Serve the bundled graphical workspace locally |
 | `codeanvil create` | Scaffold interactively: project name, folder name (default derived), confirm |
 | `codeanvil create --name <label> [--folder <dir>] [-p <path>] [--mcp <name>]` | Scaffold non-interactively (agents, scripts, CI); folder defaults to the derived snake_case name |
 | `codeanvil create <name> [-p <path>] [--mcp <name>]` | Legacy form: name is both project label and folder name (deprecated) |

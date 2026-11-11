@@ -43,7 +43,7 @@ CodeAnvil implements the V-SIL v3 flow `S0 → G0 → S1 → G1 → S2 → G2` a
 
 ```
 curl | bash ───────► install.sh (Linux/macOS) or irm | iex ► install.ps1 (Windows)
-codeanvil init ────► ~/.codeanvil-config/ (config + SQLite DB only)
+codeanvil init ────► ~/.codeanvil-config/ (DB + methodology runtime + UI launcher settings)
 codeanvil create ──► scaffold project anywhere
                        ├─ AGENTS.md            (generated, canonical instructions)
                        ├─ CLAUDE.md → AGENTS.md (symlink)
@@ -313,7 +313,7 @@ Agent runtimes discover skills via their own symlinked directory. All point to t
 
 ## Packaging and distribution
 
-- **`pyproject.toml`** — PEP 621, hatch backend. Console script: `codeanvil = codeanvil.CLI.main:main`. Runtime deps: `pyyaml`, `beaupy` (interactive prompts). Templates bundled in wheel via `force-include`.
+- **`pyproject.toml`** — PEP 621, hatch backend. Console script: `codeanvil = codeanvil.CLI.main:main`. Runtime deps include `pyyaml`, `beaupy`, `psutil` and the web backend (`fastapi`, `uvicorn[standard]`, `httpx`, `watchdog`). The UI is included in the normal global install, with prebuilt JS/CSS/fonts; end users need no Node, pnpm or `[ui]` extra. `codeanvil init` validates these assets/dependencies and seeds `~/.codeanvil-config/launchers.yaml` without overwriting it. Only frontend development/CI runs pnpm. Templates are bundled via `force-include`.
 - **`install.sh`** — curl one-liner installer. Checks Python 3.10+, installs `uv` if missing, runs `uv tool install` from GitHub. Detects shell (bash/zsh/fish via `$SHELL`), injects `~/.local/bin` PATH with sentinel comments (`# >>> codeanvil >>>` / `# <<< codeanvil <<<`). Supports `bash install.sh uninstall`.
 - **Template resolution** — `_find_templates_dir()` in `init/create.py`: editable installs use the source tree (`templates/`), wheel installs use `importlib.resources` (`codeanvil/templates/`).
 

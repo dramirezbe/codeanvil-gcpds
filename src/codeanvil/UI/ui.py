@@ -1,6 +1,6 @@
 """Local FastAPI application for the CodeAnvil workspace UI.
 
-The UI is an optional extra so importing the CLI never requires web packages.
+The Python web dependencies and prebuilt frontend ship with CodeAnvil.
 """
 
 from __future__ import annotations
@@ -16,6 +16,7 @@ from codeanvil.db.schema import db_exists
 from codeanvil.db.utils import connect_db
 from codeanvil.db.projects import list_projects
 from codeanvil.UI.project_context import project_context, project_summary
+from codeanvil.UI.assets import validate_frontend
 
 
 def _json_safe(value: Any) -> Any:
@@ -36,8 +37,8 @@ def create_app(cwd: Path | None = None):
         from fastapi import FastAPI, HTTPException, Request
         from fastapi.responses import FileResponse
         from fastapi.staticfiles import StaticFiles
-    except ImportError as exc:  # pragma: no cover - depends on optional extra
-        raise RuntimeError("The UI requires the optional dependencies. Install with `uv tool install 'codeanvil[ui]'`.") from exc
+    except ImportError as exc:  # pragma: no cover - damaged installation
+        raise RuntimeError("CodeAnvil's web dependencies are missing. Reinstall CodeAnvil to repair the installation.") from exc
 
     root = (cwd or Path.cwd()).resolve()
     app = FastAPI(title="CodeAnvil", docs_url="/api/docs")
@@ -103,13 +104,12 @@ def create_app(cwd: Path | None = None):
     def projects():
         return registered_projects()
 
-    dist = Path(__file__).parent / "frontend" / "dist"
-    if (dist / "index.html").is_file():
-        app.mount("/assets", StaticFiles(directory=dist / "assets"), name="assets")
+    dist = validate_frontend(Path(__file__).parent / "frontend" / "dist")
+    app.mount("/assets", StaticFiles(directory=dist / "assets"), name="assets")
 
-        @app.get("/")
-        def index():
-            return FileResponse(dist / "index.html")
+    @app.get("/")
+    def index():
+        return FileResponse(dist / "index.html")
 
     return app
 
@@ -118,11 +118,12 @@ def run_ui(port: int = 8765, *, open_browser: bool = True) -> None:
     """Run the local-only UI server and optionally open the system browser."""
     try:
         import uvicorn
-    except ImportError as exc:  # pragma: no cover - depends on optional extra
-        raise RuntimeError("The UI requires the optional dependencies. Install with `codeanvil[ui]`.") from exc
+    except ImportError as exc:  # pragma: no cover - damaged installation
+        raise RuntimeError("CodeAnvil's web dependencies are missing. Reinstall CodeAnvil to repair the installation.") from exc
 
+    app = create_app()
     host = "127.0.0.1"
     url = f"http://{host}:{port}/"
     if open_browser:
         threading.Timer(0.8, webbrowser.open, args=(url,)).start()
-    uvicorn.run(create_app(), host=host, port=port)
+    uvicorn.run(app, host=host, port=port)
