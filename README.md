@@ -6,7 +6,7 @@ Agent-agnostic project scaffolding, templates, and agent definitions for the **V
 
 Works with any AI coding agent: Claude, Codex, OpenCode, Pi, or others. Runs on **Linux, macOS and Windows**.
 
-**Current release:** [v0.7.3](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.7.3). Matching light and dark dependency graphs: S1 delivers dark and light graphs from one offline renderer; backups preserve both, and the UI follows its active theme. Removes the duplicate launcher return control.
+**Current release:** [v0.7.4](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.7.4). Project deletion in CLI and UI: Shared guarded project deletion, the delete CLI command, explicit file-removal option, and a dedicated UI confirmation dialog. Directory identity is revalidated before removal.
 
 **v0.7.0 background:** HIL harness groundwork: the telemetry collector becomes the `codeanvil telemetry` subcommand, and a remote-only MCP server (`vsil_hil_mcp`) runs the verification kit on a real compute unit over SSH — credential custody, a two-door command model and a per-target policy dial (trusted-policy MVP, not yet validated on hardware). The first realistic complete run, including a G2 → S1 rework loop, is archived under [`methodology/test/T0_FM-RPI-RTL-mock/`](methodology/test/T0_FM-RPI-RTL-mock/). Its [snapshot guide](methodology/test/T0_FM-RPI-RTL-mock/FIRST_FULL_FLOW_SNAPSHOT.md), [prototype run instructions](methodology/test/T0_FM-RPI-RTL-mock/first_full_flow_2026-11-05/RUN.md), and [review holdout](methodology/test/T0_FM-RPI-RTL-mock/S1_G1_review_holdout_2026-11-05.md) show the result and its limits.
 
@@ -135,11 +135,35 @@ evidence, not a new G2 verdict.
 | `codeanvil create --name <label> [--folder <dir>] [-p <path>] [--mcp <name>]` | Scaffold non-interactively (agents, scripts, CI); folder defaults to the derived snake_case name |
 | `codeanvil create <name> [-p <path>] [--mcp <name>]` | Legacy form: name is both project label and folder name (deprecated) |
 | `codeanvil sync` | Register or move a cloned project (reads `.codeanvil/project.yaml`) |
+| `codeanvil delete [PROJECT] [--remove-files] [-y]` | Remove a registration by exact name/full UUID, or the current registered project; keep files unless `--remove-files` is explicit |
 | `codeanvil status [name]` | Latest report per stage/gate in flow order, with `delivered`, `stale`, `closed` markers and the latest backup per stage (from cwd, or by project name) |
 | `codeanvil backup <S0\|S1\|S2\|G2>` | Copy the stage's current outputs to `.codeanvil/backups/<cycle>/<stage>_iter<N>/` with `MANIFEST.yaml` before a skill overwrites them; a no-op when nothing exists |
 | `codeanvil list` | Registered projects (short UUID + local path) |
 | `codeanvil now [--machine]` | System timestamp: human-readable or filename-safe |
 | `codeanvil upgrade` | Reinstall codeanvil from the latest main branch (detects OS, uses uv) |
+
+### Delete a project
+
+`codeanvil delete "My Lab"` shows the selected name, full UUID, path and effect,
+then asks for confirmation (default No). Without a name/UUID it selects the
+registered project containing the current directory. Duplicate names require
+the full UUID from the registry. Deletion never auto-registers a project.
+
+The default removes only its local registration; its files remain and can be
+registered again with `codeanvil sync`. Add `--remove-files` to permanently
+remove the project folder and everything inside it. Noninteractive use requires
+`--yes` (or `-y`):
+
+```bash
+codeanvil delete "My Lab" --yes
+codeanvil delete FULL_UUID --remove-files --yes
+```
+
+Physical removal validates the root manifest and directory identity, and refuses
+protected paths or folders containing other registered projects. If removal
+fails, the registration stays and the error identifies the restored or recovery
+folder. Some files may already have been removed; filesystem deletion and the
+SQLite transaction cannot be rolled back together.
 
 ## MCP server integration (optional)
 
@@ -278,7 +302,8 @@ codeanvil-gcpds/
 │   │   ├── prompts.py       # interactive create TUI (beaupy + Rich)
 │   │   └── commands/        # one module per subcommand (create, init, list, ...)
 │   ├── reports.py           # Report parser shared by `status` and `backup`
-│   ├── UI/ui.py             # PySide6 graphical interface (planned)
+│   ├── project_delete.py    # Shared project removal for CLI and UI
+│   ├── UI/ui.py             # Local FastAPI server and bundled React interface
 │   ├── config/
 │   │   ├── paths.py         # Canonical paths (~/.codeanvil-config/)
 │   │   ├── identity.py      # UUIDv7 project IDs (stdlib-only)

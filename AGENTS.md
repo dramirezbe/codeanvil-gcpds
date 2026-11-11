@@ -56,6 +56,7 @@ codeanvil create ──► scaffold project anywhere
                        └─ DB registration (idempotent)
 codeanvil sync ─────► register/move a cloned project in the local DB
                        (reads the project's .codeanvil/project.yaml — no re-scaffold)
+codeanvil delete ───► unregister a selected project; --remove-files also removes its folder
 
 the harness (agent runtime) asks for a cycle, then loads skills; each skill
 checks its predecessor's report before it runs:
@@ -312,6 +313,13 @@ Agent runtimes discover skills via their own symlinked directory. All point to t
 `src/`, `verification/` and the root manifests (`pyproject.toml`, `uv.lock`, `package.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`) are not scaffolded: S2 creates them.
 
 ## Packaging and distribution
+
+Project deletion is shared in `src/codeanvil/project_delete.py` by the CLI and UI.
+It keeps files by default. Physical removal requires a matching root manifest
+and registered identity, refuses protected/shared trees and rechecks filesystem
+identity after moving to private staging on the same filesystem. A failed removal
+keeps the registration and reports restoration or recovery paths without replacing
+concurrent content. Deletion is registry/file management, not a gate.
 
 - **`pyproject.toml`** — PEP 621, hatch backend. Console script: `codeanvil = codeanvil.CLI.main:main`. Runtime deps include `pyyaml`, `beaupy`, `psutil` and the web backend (`fastapi`, `uvicorn[standard]`, `httpx`, `watchdog`). The UI is included in the normal global install, with prebuilt JS/CSS/fonts; end users need no Node, pnpm or `[ui]` extra. `codeanvil init` validates these assets/dependencies and seeds `~/.codeanvil-config/launchers.yaml` without overwriting it. Only frontend development/CI runs pnpm. Templates are bundled via `force-include`.
 - **`install.sh`** — curl one-liner installer. Checks Python 3.10+, installs `uv` if missing, runs `uv tool install` from GitHub. Detects shell (bash/zsh/fish via `$SHELL`), injects `~/.local/bin` PATH with sentinel comments (`# >>> codeanvil >>>` / `# <<< codeanvil <<<`). Supports `bash install.sh uninstall`.

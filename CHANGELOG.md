@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.4 — Project deletion in CLI and UI
+
+Shared guarded project deletion, the delete CLI command, explicit file-removal option, and a dedicated UI confirmation dialog. Directory identity is revalidated before removal.
+
+Validation: 606 Python tests passed, 1 skipped; 30 frontend tests passed; frontend and distributions built.
+
 ## 0.7.3 — Matching light and dark dependency graphs
 
 S1 delivers dark and light graphs from one offline renderer; backups preserve both, and the UI follows its active theme. Removes the duplicate launcher return control.

@@ -3,6 +3,7 @@
 from codeanvil.CLI.commands.backup import cmd_backup
 from codeanvil.CLI.commands.create import cmd_create
 from codeanvil.CLI.commands.credential_setup import cmd_credential_setup
+from codeanvil.CLI.commands.delete import cmd_delete
 from codeanvil.CLI.commands.init import cmd_init
 from codeanvil.CLI.commands.list import cmd_list
 from codeanvil.CLI.commands.mcp import cmd_mcp
@@ -16,7 +17,7 @@ from codeanvil.CLI.commands.telemetry import cmd_telemetry
 from codeanvil.CLI.commands.upgrade import cmd_upgrade
 
 __all__ = [
-    "cmd_backup", "cmd_create", "cmd_credential_setup", "cmd_init", "cmd_list", "cmd_mcp", "cmd_now",
+    "cmd_backup", "cmd_create", "cmd_credential_setup", "cmd_delete", "cmd_init", "cmd_list", "cmd_mcp", "cmd_now",
     "cmd_python", "cmd_runtime", "cmd_sandbox", "cmd_status", "cmd_sync",
     "cmd_telemetry", "cmd_upgrade",
 ]
