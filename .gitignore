@@ -2,8 +2,8 @@ __pycache__/
 *.pyc
 *.pyo
 *.egg-info/
-dist/
 build/
+/dist/
 .venv/
 
 # Local skill registry (generated per machine)

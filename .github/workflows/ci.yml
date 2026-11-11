@@ -7,6 +7,25 @@ on:
     branches: [main]
 
 jobs:
+  ui-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.24.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: src/codeanvil/UI/frontend/pnpm-lock.yaml
+      - uses: astral-sh/setup-uv@v4
+      - run: pnpm install --frozen-lockfile
+        working-directory: src/codeanvil/UI/frontend
+      - run: pnpm build
+        working-directory: src/codeanvil/UI/frontend
+      - run: uv build
+
   test:
     runs-on: ubuntu-latest
     strategy:

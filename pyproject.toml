@@ -16,6 +16,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest", "tomli; python_version < '3.11'"]
+ui = ["fastapi>=0.115", "uvicorn[standard]>=0.30", "watchdog>=5", "httpx>=0.27"]
 
 [project.scripts]
 codeanvil = "codeanvil.CLI.main:main"
@@ -25,6 +26,10 @@ testpaths = ["tests", "templates/tests"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/codeanvil"]
+artifacts = ["src/codeanvil/UI/frontend/dist/**"]
+
+[tool.hatch.build.hooks.custom]
+path = "src/codeanvil/UI/build_hook.py"
 
 [tool.hatch.build.targets.wheel.force-include]
 "templates/skills" = "codeanvil/templates/skills"
@@ -36,3 +41,6 @@ packages = ["src/codeanvil"]
 "templates/agents" = "codeanvil/templates/agents"
 "templates/runtime" = "codeanvil/templates/runtime"
 "templates/mcp" = "codeanvil/templates/mcp"
+
+[tool.hatch.build.targets.sdist.force-include]
+"src/codeanvil/UI/frontend/dist" = "src/codeanvil/UI/frontend/dist"

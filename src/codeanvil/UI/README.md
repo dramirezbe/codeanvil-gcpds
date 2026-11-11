@@ -1,15 +1,13 @@
-# UI — future feature
+# UI — graphical companion for CodeAnvil
 
-This package is a placeholder for a planned graphical interface for CodeAnvil.
+The UI is an optional graphical companion to the existing CLI. It presents
+CodeAnvil's current project, MCP, runtime and methodology capabilities through
+purpose-built views while reusing their existing Python logic.
 
-It is **not implemented yet**. `ui.py` is intentionally empty.
-
-Nothing in the CLI, scaffold, or database layer depends on this package. It
-exists only to reserve the module path for future work.
-
-> **Status:** design in progress. This README is the working design brief we
-> refine before writing the `odd/tasks/ui/` feature document. O1–O6 are now
-> decided; §11 keeps a short "still to pin down" list.
+> **Status:** implementation in progress. This README is the UI design brief;
+> `odd/tasks/ui/` tracks delivery. Keep the UI optional and additive: do not
+> change CLI behavior, project formats or database schema just to support UI
+> workflows.
 
 ---
 
@@ -33,9 +31,9 @@ tooling** — it never interprets or replaces the harness.
    exactly that file. This decides which of the two top-level modes the app
    opens in (§3).
 2. **Reuse the CLI's code, never shell out to the CLI.** The backend imports
-   and calls the existing Python logic **in-process** — no `subprocess` to the
-   `codeanvil` binary for anything the tool already does in Python. The CLI and
-   the UI are two front-ends over the same logic layer (§6). Launching
+   and calls the existing Python logic **in-process**. The CLI and UI are two
+   front-ends over the same logic layer; the UI does not launch the
+   `codeanvil` binary for capabilities already available in Python (§6). Launching
    *external* agents/editors and running *verification commands* are genuinely
    external processes and are the only exceptions (§7, §8).
 3. **Self-sustained backend that serves the UI.** One process, one launch
@@ -46,6 +44,11 @@ tooling** — it never interprets or replaces the harness.
    work with no agent running. Only the **chat/terminal** needs a live agent —
    there the UI makes it visible that you must launch an agent first, instead
    of failing (§7).
+6. **UI-only feature glue.** Add UI routes, forms and presentation under
+   `src/codeanvil/UI/`; call existing CLI/domain functions in-process. Do not
+   add parallel CLI, database, project-manifest or MCP lifecycle logic for a
+   UI feature. Extend the shared core only if review proves the capability is
+   genuinely missing from the CLI as well.
 
 ## 3. Two modes — launcher vs workspace (O1)
 
@@ -237,14 +240,19 @@ works.
 
 ## 12. Feature surface — everything the UI must expose
 
-Grounded in the current CLI (`parser.py`) and methodology. Every item exists
-today unless marked **(+ new)**.
+Grounded in the current CLI (`parser.py`) and methodology. This section is the
+target UI contract; the current implementation note distinguishes existing
+views from planned workflows.
 
 ### View & understand
 - **Progress board**: `S0 → G0 → S1 → G1 → S2 → G2` (RFD from any stage), per
   cycle, with delivered / stale / closed-cycle markers — from `reports.py`.
 - **Reports & iterations**: browse each cycle's gate reports and HITL verdicts;
   diff iterations across cycles. **(+ new)**
+- **Themed Markdown viewer**: render reports, GT and design documents as
+  formatted HTML (headings, tables, links, quotes and code blocks), rather than
+  showing Markdown source. Use the forge palette, spacing and surfaces in both
+  light and dark themes. **(+ new; pending)**
 - **GT viewer**: `build_package.md`, `StRS.md`, `SyRS.md`.
 - **Design viewer**: render `SDD.md` and the interactive
   `dependency_graph.html` inline. **(+ new)**
@@ -256,13 +264,55 @@ today unless marked **(+ new)**.
   see §12.1)**
 - **Logs**: application logs.
 
-### Run (current CLI capabilities, as buttons)
-- Lifecycle: `create`, `list`, `sync`, `status`, `backup <stage>`, `now`.
-- Runtime: `runtime sync|add|remove|list|path`.
-- MCP: `mcp add|update|remove|list|doctor|run|enable|disable`.
-- Verification: `telemetry`, and run `verification/run.sh` levels (§8).
-- HIL: `credential-setup`.
-- Tool: `init`, `upgrade`.
+### Feature workflows (the primary UI)
+
+CLI capabilities should appear where users need them, as guided controls with
+the right project context, status and result. The generic **CLI actions** page
+remains available as an advanced fallback; it is not the main way to use the
+UI.
+
+| CLI capability | UI workflow |
+|----------------|-------------|
+| `list` | The launcher already shows registered projects. |
+| `create` | A project creation wizard asks for name and location, then lets the user activate selected MCP servers that are installed globally. |
+| `sync` | An **Add existing project** action opens the operating system's folder picker, validates `.codeanvil/project.yaml`, registers or updates the project, then shows it in the launcher. |
+| `status` | The workspace progress board is the status view; no separate status command is needed. |
+| `backup` | Offer a backup action in the relevant stage/artifact view with its result and manifest. |
+| `runtime` | Runtime settings expose package sync/add/remove/list/path with clear global scope. |
+| `mcp` | The launcher has an MCP catalog (marketplace-style) showing available servers and install state. Users can install a server there; project creation then offers installed servers to activate for that project. Project settings show health and wiring actions. |
+| `telemetry` | Verification and telemetry views display collected data and offer bounded capture controls. |
+| `credential-setup` | A guided HIL target setup flow collects target details and credentials securely. |
+| `init`, `upgrade` | Global setup/update controls show confirmation, progress and result. |
+| `now` | Use internally for timestamps; it does not need a prominent user action. |
+| `python`, `sandbox`, `mcp run`, `verification/run.sh` | Run through the live terminal/PTY workflow (§5/§8). |
+
+The generic CLI action catalog is generated from the argument parser and
+dispatches existing Python handlers in-process. Keep it for advanced use and
+debugging. The feature workflows should use the same underlying logic while
+providing purpose-built forms, folder selection, contextual navigation,
+confirmation and result display.
+
+**MCP lifecycle:** the launcher catalog is based on the MCP servers CodeAnvil
+knows from its shipped configuration. Installing a server uses the existing
+global `mcp add` lifecycle; creating a project only offers servers already
+installed, and activating one writes that project's MCP manifest, agent
+configuration and skills. This keeps global installation separate from
+project-level activation. The catalog is marketplace-style UI, not a remote
+third-party marketplace.
+
+The current code already provides the needed operations: `server_rows()` lists
+configured servers and installed state; `doctor()` reports readiness;
+`install_mcp_server()` implements global installation; `cmd_create()` accepts
+installed MCP names and delegates scaffold/config generation to
+`scaffold_project()`; and `enable_server()` wires a server into an existing
+project. The UI should call these through its in-process action adapter or a
+small UI route. Do not add a second registry, installer, or project-wiring
+implementation.
+
+**Current implementation:** the launcher already implements `list`; the
+generic action page can dispatch one-shot handlers. The project creation
+wizard, native folder picker for `sync`, and the other feature-specific
+workflows above are still pending.
 
 ### Launch (external — §7)
 - Agents/editors sidebar, two groups.

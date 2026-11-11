@@ -1,0 +1,50 @@
+launchers:
+  codex-desktop:
+    kind: gui
+    label: Codex Desktop
+    icon: openai-codex
+    detect: [codex]
+    launch:
+      linux: [codex, "{project}"]
+      darwin: [open, -a, Codex, "{project}"]
+      windows: [codex, "{project}"]
+  vscode:
+    kind: gui
+    label: Visual Studio Code
+    icon: vscode
+    detect: [code]
+    launch: {any: [code, "{project}"]}
+    install:
+      linux: [code]
+      darwin: [brew, install, --cask, visual-studio-code]
+      windows: [winget, install, --id, Microsoft.VisualStudioCode]
+  jetbrains:
+    kind: gui
+    label: JetBrains IDE
+    icon: jetbrains
+    detect: [idea]
+    launch: {any: [idea, "{project}"]}
+  claude:
+    kind: terminal
+    label: Claude Code
+    icon: claude
+    detect: [claude]
+    launch: {any: [claude]}
+  codex:
+    kind: terminal
+    label: Codex CLI
+    icon: openai-codex
+    detect: [codex]
+    launch: {any: [codex]}
+  opencode:
+    kind: terminal
+    label: OpenCode
+    icon: opencode-light
+    detect: [opencode]
+    launch: {any: [opencode]}
+  pi:
+    kind: terminal
+    label: Pi
+    icon: pi
+    detect: [pi]
+    launch: {any: [pi]}

@@ -72,6 +72,9 @@ def choose_option(args: argparse.Namespace) -> None:
             )
         case "upgrade":
             cmd_upgrade()
+        case "ui":
+            from codeanvil.UI.ui import run_ui
+            run_ui(args.port, open_browser=not args.no_browser)
 
 
 def main() -> None:

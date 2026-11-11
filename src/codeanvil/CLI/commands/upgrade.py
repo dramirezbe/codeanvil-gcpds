@@ -30,7 +30,11 @@ def cmd_upgrade() -> None:
         log.warning("Unknown OS %r — attempting upgrade anyway", os_name)
 
     log.info("Running: %s", " ".join(cmd))
-    result = subprocess.run(cmd)
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.stdout:
+        log.info("%s", result.stdout.rstrip())
+    if result.stderr:
+        log.info("%s", result.stderr.rstrip())
     if result.returncode != 0:
         log.error("Upgrade failed (exit %d)", result.returncode)
         raise SystemExit(result.returncode)
@@ -42,7 +46,11 @@ def cmd_upgrade() -> None:
     if new_binary is None:
         log.warning("codeanvil is not on PATH — run 'codeanvil runtime sync' once it is")
         return
-    sync = subprocess.run([new_binary, "runtime", "sync"])
+    sync = subprocess.run([new_binary, "runtime", "sync"], capture_output=True, text=True)
+    if sync.stdout:
+        log.info("%s", sync.stdout.rstrip())
+    if sync.stderr:
+        log.info("%s", sync.stderr.rstrip())
     if sync.returncode != 0:
         log.error("runtime sync failed after the upgrade (exit %d) — rerun 'codeanvil runtime sync'",
                   sync.returncode)
