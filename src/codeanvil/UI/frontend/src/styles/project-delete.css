@@ -1,0 +1,17 @@
+.launcher-canvas .project-card { position: relative; padding: 0; }
+.project-open {
+  display: flex; flex: 1; flex-direction: column; align-items: stretch;
+  min-width: 0; padding: 15px; border: 0; border-radius: inherit;
+  background: transparent; text-align: left;
+}
+.project-open .card-top { padding-right: 35px; }
+.project-card-delete { position: absolute; top: 15px; right: 15px; }
+.project-card-delete:hover, .workspace-project-delete:hover { color: var(--ember); }
+.workspace-project-delete { flex: none; }
+.delete-project-name { margin-top: 18px; font-weight: 600; }
+.delete-project-path { display: block; margin: 9px 0 14px; font: 11px/1.6 var(--mono); overflow-wrap: anywhere; }
+.delete-project-dialog .confirm-action { margin: 0; }
+.delete-files-warning { padding: 10px 12px; border: 1px solid var(--ember-soft); border-radius: 4px; color: var(--ember); font-size: 12px; line-height: 1.6; }
+.delete-project-dialog .destructive-button { color: var(--ember); border-color: var(--ember-soft); }
+.destructive-button:not(:disabled):hover { background: #f0783c15; border-color: var(--ember); }
+.light .delete-files-warning, .light .destructive-button { color: #92421c; }

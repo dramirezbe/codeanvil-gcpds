@@ -34,7 +34,7 @@ describe('Launcher navigation', () => {
     await user.click(screen.getByRole('button', { name: 'Project launcher' }))
     expect(screen.getByRole('heading', { name: 'Projects in CodeAnvil' })).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: /Sample project/ }))
+    await user.click(screen.getByRole('button', { name: 'Open project: Sample project' }))
     expect(screen.getByRole('heading', { name: 'Sample project · Overview' })).toBeInTheDocument()
     expect(screen.getByLabelText('Current project')).toHaveTextContent('Sample project')
     expect(screen.queryByRole('button', { name: 'Switch project' })).not.toBeInTheDocument()
@@ -54,6 +54,38 @@ describe('Launcher navigation', () => {
     await user.click(screen.getByRole('button', { name: 'Project launcher' }))
     expect(await screen.findByRole('heading', { name: 'Projects in CodeAnvil' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Reports' })).not.toBeInTheDocument()
+  })
+
+  it('cancels card deletion without opening a workspace and restores button focus', async () => {
+    const user = userEvent.setup()
+    bootstrap()
+    render(<App />)
+    const opener = await screen.findByRole('button', { name: 'Delete project: Sample project' })
+    await user.click(opener)
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Sample project · Overview' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(opener).toHaveFocus()
+  })
+
+  it('refreshes the registry and stays in the launcher after deleting a startup project', async () => {
+    const user = userEvent.setup()
+    let deleted = false
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (url.endsWith('/delete')) {
+        deleted = true
+        return new Response(JSON.stringify({ project, removed_files: false }))
+      }
+      return new Response(JSON.stringify({ mode: 'workspace', project, projects: deleted ? [] : [project], user: localUser }))
+    }))
+    render(<App />)
+    await user.click(await screen.findByRole('button', { name: 'Delete project: Sample project' }))
+    await user.type(screen.getByRole('textbox', { name: 'Type the project name to confirm' }), project.name)
+    await user.click(screen.getByRole('button', { name: 'Delete project' }))
+    expect(await screen.findByText('No registered projects')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Sample project · Overview' })).not.toBeInTheDocument()
   })
 })
 
