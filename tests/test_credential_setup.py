@@ -29,7 +29,7 @@ def _capture(monkeypatch, returncode=0):
 
     def fake_run(cmd, **kw):
         calls.append((cmd, kw))
-        return argparse.Namespace(returncode=returncode)
+        return argparse.Namespace(returncode=returncode, stdout="", stderr="")
 
     monkeypatch.setattr(mod.subprocess, "run", fake_run)
     return calls
