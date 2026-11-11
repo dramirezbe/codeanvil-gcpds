@@ -137,6 +137,21 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
 
+    delete = sub.add_parser(
+        "delete",
+        help="Remove a registered project, keeping its files unless requested",
+        description=(
+            "Removes one project from the local registry. Its folder and files are\n"
+            "kept unless --remove-files is explicitly supplied. Select a unique\n"
+            "project name or full UUID; without PROJECT, use the registered project\n"
+            "found in the current directory. Shows the target and asks for\n"
+            "confirmation. Non-interactive callers must pass --yes."
+        ),
+    )
+    delete.add_argument("project", nargs="?", metavar="PROJECT", help="Unique project name or full UUID (default: current project)")
+    delete.add_argument("--remove-files", action="store_true", help="Permanently delete the project folder and all its contents too")
+    delete.add_argument("-y", "--yes", action="store_true", help="Confirm the displayed deletion without an interactive prompt")
+
     status = sub.add_parser(
         "status",
         help="Show stage and gate progress for a project",
