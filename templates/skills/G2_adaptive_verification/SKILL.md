@@ -101,8 +101,8 @@ The pre-HW review checkpoint below then follows enrollment; it is not a second c
 
 Before remote update/deployment or any local device test, the G2 parent shows the code/kit,
 published branch/commit, equipment/device and intended preparation/test commands. Require a
-clean Git tree and all candidate commits pushed on its upstream; staged or untracked source and
-failed pushes cannot reach hardware. Keep the delivered-project repo/ref separate from the
+clean Git tree and the candidate committed — pushed to its upstream when the branch tracks a remote, or a local-only commit flagged unpublished otherwise; staged or untracked source and
+failed pushes (when a remote is tracked) cannot reach hardware. Keep the delivered-project repo/ref separate from the
 CodeAnvil tool repo/ref. Do not invent tags, change code to make tests pass or force push.
 
 **Stop and wait for explicit `continue`**, including in full-access mode. Silence/timeouts are

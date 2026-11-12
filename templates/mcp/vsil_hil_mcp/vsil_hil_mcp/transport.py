@@ -109,31 +109,65 @@ def _git(root: Path, *args: str) -> str:
     return result.stdout.strip()
 
 
-def _published_revision(root: Path) -> str:
-    """Require a clean project branch synchronized with its freshly fetched upstream."""
+def _git_config(root: Path, key: str) -> str:
+    """`git config --get`, returning '' when the key is unset instead of raising
+    (unlike `_git`, which treats git's exit 1 for a missing key as a failure)."""
+    try:
+        result = subprocess.run(["git", "-C", str(root), "config", "--get", key],
+                                capture_output=True, text=True, timeout=TIMEOUT_S)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise ConfigError(f"cannot prepare published candidate: {exc}") from exc
+    return result.stdout.strip() if result.returncode == 0 else ""
+
+
+def _has_commit(root: Path) -> bool:
+    """True when HEAD resolves to a real commit (a fresh repo has none)."""
+    try:
+        result = subprocess.run(["git", "-C", str(root), "rev-parse", "--verify", "--quiet", "HEAD"],
+                                capture_output=True, text=True, timeout=TIMEOUT_S)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise ConfigError(f"cannot prepare published candidate: {exc}") from exc
+    return result.returncode == 0 and bool(result.stdout.strip())
+
+
+def _deploy_revision(root: Path) -> tuple[str, bool]:
+    """Resolve the committed revision to deploy and whether it is published.
+
+    The floor is always a clean tree and a real commit: the deploy is
+    `git archive <revision>`, so the deployed bytes equal a named commit and the
+    HIL evidence pins to it. When the branch tracks a remote upstream the commit
+    must be pushed there (returns published=True), so third parties can reproduce
+    it. A branch with no upstream deploys its local commit and is flagged
+    unpublished (published=False) — reproducible from this machine's repository
+    only. The local path needs only a `git commit`: no remote, no push, no GitHub.
+    """
     if Path(_git(root, "rev-parse", "--show-toplevel")).resolve() != root.resolve():
         raise ConfigError("deployment requires the project root to be the Git repository root")
     branch = _git(root, "symbolic-ref", "--quiet", "--short", "HEAD")
-    _git(root, "rev-parse", "--verify", "@{upstream}")
-    remote = _git(root, "config", "--get", f"branch.{branch}.remote")
-    upstream_ref = _git(root, "config", "--get", f"branch.{branch}.merge")
-    if not remote or remote == ".":
-        raise ConfigError("deployment requires a branch published to a remote upstream")
+    if not _has_commit(root):
+        raise ConfigError("deployment requires at least one commit; commit the source and kit changes")
     if _git(root, "status", "--porcelain", "--untracked-files=all"):
-        raise ConfigError("deployment requires a clean Git tree; commit and push all source and kit changes")
+        raise ConfigError("deployment requires a clean Git tree; commit all source and kit changes")
+    revision = _git(root, "rev-parse", "HEAD")
+    remote = _git_config(root, f"branch.{branch}.remote")
+    if not remote or remote == ".":
+        return revision, False  # local-only candidate: no remote upstream, no push required
+    upstream_ref = _git_config(root, f"branch.{branch}.merge")
     # Fetch the actual upstream branch, rather than relying on a possibly stale
     # tracking ref or a remote fetch refspec that excludes this branch.
     _git(root, "fetch", "--quiet", "--no-tags", "--", remote, upstream_ref)
-    revision = _git(root, "rev-parse", "HEAD")
     if revision != _git(root, "rev-parse", "FETCH_HEAD") or revision != _git(root, "rev-parse", "@{upstream}"):
-        raise ConfigError("deployment requires HEAD to match the fetched upstream; publish or update the candidate")
-    return revision
+        raise ConfigError("deployment requires HEAD to match the fetched upstream; push or update the candidate")
+    return revision, True
 
 
 def rsync_push(target: Target, deploy_key: Path, local_workspace: Path) -> dict:
-    """Deploy only a clean, published Git export; ignored host files never enter it."""
+    """Deploy only a clean, committed Git export; ignored host files never enter it.
+
+    The result carries `published`: True when the deployed commit is pushed to the
+    branch's remote upstream, False for a local-only commit (no remote required)."""
     root = local_workspace.resolve()
-    revision = _published_revision(root)
+    revision, published = _deploy_revision(root)
     with tempfile.TemporaryDirectory(prefix="codeanvil-deploy-") as directory:
         temporary = Path(directory)
         archive_path = temporary / "candidate.tar"
@@ -157,7 +191,8 @@ def rsync_push(target: Target, deploy_key: Path, local_workspace: Path) -> dict:
             raise ConfigError(f"unsafe or unreadable Git archive: {exc}") from exc
         if _git(root, "rev-parse", "HEAD") != revision or _git(root, "status", "--porcelain", "--untracked-files=all"):
             raise ConfigError("candidate changed during export; review and publish it before deployment")
-        return {"revision": revision, **_run(rsync_push_argv(target, deploy_key, source))}
+        return {"revision": revision, "published": published,
+                **_run(rsync_push_argv(target, deploy_key, source))}
 
 
 def rsync_pull_argv(

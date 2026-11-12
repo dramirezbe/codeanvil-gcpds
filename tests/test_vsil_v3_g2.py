@@ -120,7 +120,7 @@ def test_g2_parent_prepares_but_fresh_verifier_executes_reviewed_hw():
     assert "No declared `targets:` means local execution" in text
     assert "never silently substitute the developer host" in text
     assert "Stop and wait for explicit `continue`" in text
-    assert "clean Git tree and all candidate commits pushed" in text
+    assert "clean Git tree and the candidate committed" in text
     assert "parent completes preparation before launching it" in text
     assert "fresh verifier runs the recorded real HW command" in text
     assert "not an exact-SemVer gate" in text

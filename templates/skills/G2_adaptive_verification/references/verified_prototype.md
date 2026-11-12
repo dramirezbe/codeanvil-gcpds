@@ -33,7 +33,9 @@ One row per service, copied from the design Meta.
 |------------------|-----------------------|-----------------------------|----------------------------------|-------------------------------------|---------------|
 | <IDs> | <actual run type> | <declared identity> | <actual location> | <observations> | <versions used> |
 
-Record the clean published code/kit branch+commit, completed pre-HW checkpoint, actual tool/app
+- Deployment: <published at <remote> @ <commit> | local-only commit @ <commit> (not pushed; reproducible on this machine only)>
+
+Record the clean code/kit branch+commit (state which case above applied), completed pre-HW checkpoint, actual tool/app
 refs updated, dependencies and clock preparation. Name run IDs, files, commands and results;
 no deployment manifest, per-file digest, version equality or formal capture request is required.
 

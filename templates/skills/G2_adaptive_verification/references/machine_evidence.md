@@ -14,7 +14,7 @@ updates/deployment and local hardware tests, even with full host access. It is t
 narrative `Checkpoint:` line in the completed stage report, not a new gate or state. A fresh G2
 verifier never asks the human: the G2 parent owns the pause, preparation and trusted operations.
 
-Code and kit must be clean and pushed. After the review, the agent updates tool/application and
+Code and kit must be clean and committed; pushed to the upstream when the branch tracks a remote, otherwise deployed as a local-only (unpublished) commit. After the review, the agent updates tool/application and
 dependencies from their respective published references, synchronizes clocks before measuring
 and diagnoses failures. Neither tool version equality nor a deployment manifest is required.
 Normal tests run through the authorized runtime; clearly destructive operations go to trusted.

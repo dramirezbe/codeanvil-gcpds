@@ -60,11 +60,12 @@ def test_export_deploys_only_committed_files_and_cleans_up(published, tmp_path, 
 
     monkeypatch.setattr(transport, '_run', fake_rsync)
     result = transport.rsync_push(target(), tmp_path / 'key', root)
-    assert result == {'revision': git(root, 'rev-parse', 'HEAD'), 'stdout': 'sent\n', 'stderr': '', 'exit_code': 0}
+    assert result == {'revision': git(root, 'rev-parse', 'HEAD'), 'published': True,
+                      'stdout': 'sent\n', 'stderr': '', 'exit_code': 0}
     assert len(sources) == 1 and not sources[0].exists()
 
 
-@pytest.mark.parametrize('state', ['untracked', 'unstaged', 'staged', 'ahead', 'no-upstream', 'detached', 'missing-remote'])
+@pytest.mark.parametrize('state', ['untracked', 'unstaged', 'staged', 'ahead', 'detached', 'missing-remote'])
 def test_unpublished_or_dirty_candidate_never_reaches_transport(published, tmp_path, monkeypatch, state):
     root, _ = published
     if state == 'untracked':
@@ -75,14 +76,45 @@ def test_unpublished_or_dirty_candidate_never_reaches_transport(published, tmp_p
             git(root, 'add', 'app.py')
         elif state == 'ahead':
             commit(root)
-    elif state == 'no-upstream':
-        git(root, 'branch', '--unset-upstream')
     elif state == 'detached':
         git(root, 'checkout', '--detach', '-q')
     else:
         git(root, 'remote', 'set-url', 'origin', str(tmp_path / 'not-a-remote'))
     monkeypatch.setattr(transport, '_run', lambda *args: pytest.fail('unapproved candidate reached SSH/rsync'))
     with pytest.raises(config.ConfigError):
+        transport.rsync_push(target(), tmp_path / 'key', root)
+
+
+def test_local_only_committed_candidate_deploys_unpublished(tmp_path, monkeypatch):
+    """A clean, committed branch with NO remote upstream deploys as unpublished."""
+    root = tmp_path / 'local'
+    root.mkdir()
+    git(root, 'init', '-q', '-b', 'main')
+    (root / 'app.py').write_text('local code', encoding='utf-8')
+    (root / '.gitignore').write_text('verification/telemetry/\n', encoding='utf-8')
+    commit(root)
+    seen = {}
+
+    def fake_rsync(argv):
+        seen['called'] = True
+        return {'stdout': 'sent\n', 'stderr': '', 'exit_code': 0}
+
+    monkeypatch.setattr(transport, '_run', fake_rsync)
+    result = transport.rsync_push(target(), tmp_path / 'key', root)
+    assert seen.get('called') is True
+    assert result['published'] is False
+    assert result['revision'] == git(root, 'rev-parse', 'HEAD')
+    assert result['exit_code'] == 0
+
+
+def test_repo_without_a_commit_is_refused(tmp_path, monkeypatch):
+    """A freshly initialised repo (no commit) cannot deploy: there is no revision to pin."""
+    root = tmp_path / 'empty'
+    root.mkdir()
+    git(root, 'init', '-q', '-b', 'main')
+    (root / 'app.py').write_text('uncommitted', encoding='utf-8')
+    monkeypatch.setattr(transport, '_run', lambda *args: pytest.fail('uncommitted candidate reached SSH/rsync'))
+    with pytest.raises(config.ConfigError, match='commit'):
         transport.rsync_push(target(), tmp_path / 'key', root)
 
 
