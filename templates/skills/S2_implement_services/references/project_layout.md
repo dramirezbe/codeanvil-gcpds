@@ -110,6 +110,7 @@ verification/
 │   │                      #   simulated condition, expected output
 │   └── <vector files>
 ├── telemetry/             # one JSONL file per run, written by `codeanvil telemetry`
+│   └── <cycle>_<iteration>_<timestamp>/ # measurement.json v2, named telemetry and script outputs
 └── <package>/             # one folder per service, in that service's language
     ├── mock_hal/          # VL-0 vectors and the VL-1 synthetic generator
     ├── stubs/             # one stub per contract of a module not built yet
@@ -124,13 +125,44 @@ HAL's VL-0 tests use.
 
 `verification/run.sh <vl0|vl1>`:
 
+Set `export PATH="$HOME/.local/bin:$PATH"` inside `run.sh` before starting the collector or any
+package-manager command. Non-login SSH does not load shell startup files, so set the target's
+PATH explicitly rather than relying on the host's environment.
+
 1. starts the telemetry collector in the background:
-   `codeanvil telemetry --pid $$ --output verification/telemetry/<level>-<timestamp>.jsonl &`,
+   `codeanvil telemetry --pid $$ --output verification/telemetry/<run_id>/<run_id>.jsonl &`,
    with the design §1.7 `--interval`, and `--counters` when the HAL or services expose counters;
+   add `--fsync` only when the design requests durable per-sample writes (default off);
 2. runs `uv run pytest -m <level>` when a Python service exists;
 3. runs `pnpm -r --filter "./verification/*" test:<level>` when a TS service exists;
 4. stops the companion and attaches its readings to the run output;
 5. exits non-zero if any run failed.
+
+The run ID is `<cycle>_<iteration>_<codeanvil now --machine>`: the current S2/G2 iteration,
+not a new HIL counter. A retry gets another timestamp. Use fresh outputs without overwriting.
+The companion degrades on disk failure; exit 0 does not certify telemetry coverage. Investigate
+missing/partial telemetry, notify the parent and decide whether affected measures need repeating
+or unaffected evidence can continue. Never turn a missing reading into zero. A reader may skip
+only a torn final JSONL line with notice; earlier corruption needs diagnosis.
+
+In `mock+real`, `verification/run.sh vl2` uses the Real HW HAL and measurement scripts appropriate
+to the GT, writes `measurement.json` v2 and script/capture outputs beside telemetry, and stops the
+device/companion on errors. Test orchestration/failure paths with a fake API, but never claim
+those fake results as real hardware evidence. This skill's locked `references/machine_evidence.md`
+and `measurement.schema.json` describe the small record. Functional tests need no universal
+oracle, file hashes or calibration budget; satisfy lab inputs when the GT/conclusion needs them.
+
+Before remote updates/deployment or local HW tests, the parent shows the clean, pushed candidate
+and planned operations and waits for explicit `continue`. After review the agent updates tool,
+app and dependencies from their own published refs, synchronizes clocks before measurement and
+uses monotonic durations while acquiring. No deployment manifest or per-file checker is built.
+`code_sync` exports only the published Git candidate and preserves target databases/state; do not
+send ignored host source. Read-only inventory may precede review, actual device tests may not.
+
+`fetch_evidence` returns `local_path`, a fresh host snapshot of remote telemetry. Select this
+run's files within it; older remote runs may also be present. Local runs read their local output.
+The existing S2 pause schedule, `Checkpoint:` narrative and append-only report format remain;
+no partial iteration or extra HITL state represents an operational stop.
 
 Never shipped: no service imports or depends on anything under `verification/`. Python kit
 dependencies live only in the dev group and the wheel holds no `verification/` file; no service

@@ -17,6 +17,7 @@
 | G0 approved    | {{SHA-256 of StRS.md and SyRS.md; information only}}  |
 | Gate H         | {{date + who authorised, copied from G0.md}}                |
 | Services       | {{service IDs; a single service is valid}}                  |
+| Target(s)      | {{local, or the names selected from project.yaml targets:; one target per service}} |
 | HAL mode       | {{mock-only / mock+real}}                                   |
 | Toolchain      | {{one entry per service: SVC-xxx: <package> · <language> · <package manager> · <test runner>}} |
 | ML model       | {{omit if not used; otherwise reference to the supplied package}} |
@@ -28,6 +29,12 @@
      TypeScript · pnpm · vitest". Allowed: Python · uv · pytest and TypeScript · pnpm · vitest.
      <package> is a valid identifier and names src/<package>/. S2 builds with it and never
      chooses another. -->
+
+<!-- Target(s) is the execution location, independent of HAL mode and verification level.
+     No targets: block means local execution. Otherwise use declared target names, never infer
+     an IP or copy a personal SSH identity. Resolve multiple possible targets before delivery;
+     S1 reads project.yaml but never enrolls a target. Remote VL-0/VL-1 use the Mock HAL on the
+     real compute unit (PIL) and remain VERIFIED: no real RF or VL-2 claim follows from SSH. -->
 
 ---
 
@@ -73,9 +80,9 @@ flowchart LR
 
 ### 0.4 Deployment and links between services
 
-| Service ID | Process / deployment target | HWC-* used | Links to other services | Restart / disconnected operation |
-|------------|-----------------------------|------------|-------------------------|-----------------------------------|
-| SVC-001    |                             |            |                         |                                   |
+| Service ID | Process / deployment target | Execution target (`local` or declared name) | HWC-* used | Links to other services | Restart / disconnected operation |
+|------------|-----------------------------|---------------------------------------------|------------|-------------------------|-----------------------------------|
+| SVC-001    |                             |                                             |            |                         |                                   |
 
 <!-- One machine may host several services; a service may have no HWC-* of its own. State the
      real process, network and failure boundaries. A module in the same process is not a service. -->
@@ -245,6 +252,18 @@ flowchart LR
      module between verification levels. The Mock HAL is always designed. The Real HW HAL exists
      only in mock+real: omit its subsection in mock-only. -->
 
+**Where each level runs:**
+
+| Level | Service / PATH-* | Execution target | HAL | Required target capabilities |
+|-------|------------------|------------------|-----|------------------------------|
+| VL-0 | | <!-- local or declared target name --> | Mock HAL / fake device API | |
+| VL-1 | | <!-- same declared target, or justify another --> | Mock HAL synthetic inputs | |
+| VL-2 (mock+real only) | | | Real HW HAL | <!-- device and PROTO-* prerequisites --> |
+
+<!-- Omit the VL-2 row in mock-only. The execution location does not raise the level: PIL is
+     VL-0/VL-1 on the actual compute unit. Every target must have a matching §1.7 envelope.
+     For remote targets, S2 deploys and runs through vsil_hil_mcp; local runs use the host tools. -->
+
 #### Mock HAL
 
 | Field | Value |
@@ -269,15 +288,22 @@ flowchart LR
 |-------|-------|
 | Base-layer port | <!-- same contract as the Mock HAL --> |
 | COTS device | <!-- HWC-NNN --> |
-| Lab procedures | <!-- PROTO-* rows of SyRS.md §6 it executes --> |
-| Correction chains | <!-- SyRS.md §4 terms it applies --> |
-| Declared tolerances | <!-- SyRS.md §5 budgets it applies --> |
-| Calibration grade | <!-- development-team screening grade, not normative --> |
+| Measurement method | <!-- functional/metric test scripts, SYS-* criteria, sufficient resolution and tolerances --> |
+| Lab procedures | <!-- PROTO-* from SyRS §6 when needed; otherwise describe the functional procedure --> |
+| Reference / calibration | <!-- source and provenance when required by GT or the conclusion; otherwise justify not required --> |
+| Correction chains | <!-- SyRS §4 terms when required; do not invent them --> |
+| Declared tolerances | <!-- GT criterion and applicable uncertainty/decision rule, if needed --> |
+| Calibration grade | <!-- if needed: development-team screening grade, not normative --> |
+| Device probe | <!-- non-transmitting command, observed identity/driver/capabilities and failure output --> |
+| Capability guard | <!-- ranges/modes rejected before configure/acquire; never bypass via raw device API --> |
+| Safe stop | <!-- close device, stop TX, release resources on timeout/disconnect --> |
 | Fake device API | <!-- how the Real HW HAL runs at VL-0 without the device --> |
 
-<!-- Calibration grade and tolerances are Build Package inputs carried by the SyRS, not V-SIL
-     claims. A SyRS §6 holding "Not applicable: no lab inputs in the Build Package." cannot
-     support mock+real: record the gap as a risk in §6. -->
+<!-- Functional HW tests need no universal oracle/calibration budget. Justify the method against
+     the actual requirement. When GT or the conclusion requires calibration/corrections, missing
+     inputs make that claim inconclusive, not passing. The agent prepares and runs real tests
+     after the parent's explicit pre-HW checkpoint. measurement.json v2 records actual outcomes;
+     no deployment manifest, capture hash or human capture operator is required. -->
 
 **Substitution check:**
 
@@ -299,7 +325,13 @@ flowchart LR
 | Output format | <!-- e.g. CSV with timestamp, JSON lines --> |
 | Evidence attachment | <!-- how readings attach to each evidence record --> |
 
-**Compute-unit operating envelope:**
+**Compute-unit operating envelope (repeat per execution target):**
+
+| Field | Value |
+|-------|-------|
+| Execution target | <!-- local or the project.yaml target name --> |
+| Services / PATH-* | <!-- evidence governed by this target's envelope --> |
+| COTS basis | <!-- HWC-* and the source of each threshold; never invent a limit --> |
 
 | Signal | Nominal threshold | Action if exceeded |
 |--------|-------------------|--------------------|
@@ -309,7 +341,10 @@ flowchart LR
 | Scheduling latency | <!-- e.g. ≤ X ms --> | <!-- flag evidence --> |
 
 <!-- Evidence recorded outside the envelope is flagged as potentially invalid. If the companion's
-     own footprint exceeds its budget, that is an infrastructure defect, not a system defect. -->
+     own footprint exceeds its budget, that is an infrastructure defect, not a system defect.
+     Readings must be captured on the named compute unit. Host readings cannot stand in for a
+     remote target. Missing readings prompt notice, diagnosis and a decision whether to repeat
+     or continue with unaffected evidence; never replace a missing reading with zero. -->
 
 ---
 

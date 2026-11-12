@@ -13,6 +13,7 @@ def cmd_telemetry(
     interval: float = 1.0,
     duration: float = 0.0,
     counters: Path | None = None,
+    fsync: bool = False,
 ) -> None:
     from codeanvil.telemetry.collector import main
 
@@ -23,6 +24,8 @@ def cmd_telemetry(
         argv += ["--output", str(output)]
     if counters is not None:
         argv += ["--counters", str(counters)]
+    if fsync:
+        argv.append("--fsync")
     code = main(argv)
     if code:
         sys.exit(code)

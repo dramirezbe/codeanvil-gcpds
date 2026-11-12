@@ -17,6 +17,7 @@ from pathlib import Path
 
 import yaml
 
+from codeanvil import __version__
 from codeanvil.config.logger import get_logger
 from codeanvil.config.paths import CONFIG, MCP_DIR, SKILLS_DIRNAME, TEMPLATES_DIR, find_manifest
 from codeanvil.init import system_packages as syspkg
@@ -301,7 +302,8 @@ def doctor(name: str) -> list[tuple[str, bool, str]]:
 def _expand(value: str, install_path: Path, project_dir: Path) -> str:
     return (value.replace("{install_path}", str(install_path))
                  .replace("{venv_bin}", str(venv_bin(install_path)))
-                 .replace("{project_dir}", str(project_dir)))
+                 .replace("{project_dir}", str(project_dir))
+                 .replace("{codeanvil_version}", __version__))
 
 
 def launch_spec(name: str, cwd: Path) -> tuple[list[str], dict[str, str]]:

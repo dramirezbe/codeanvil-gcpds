@@ -109,11 +109,28 @@ subagents:
       claude:
         path: ".claude/agents/vsil-verifier.md"
         format: "markdown"
-        frontmatter: {name: "vsil-verifier", tools: "Read, Grep, Glob, Bash"}
+        # Exact MCP tool names keep deployment and privileged setup out of G2.
+        # https://code.claude.com/docs/en/sub-agents#restrict-which-tools-a-subagent-can-use
+        frontmatter:
+          name: "vsil-verifier"
+          tools: "Read, Grep, Glob, Bash, mcp__vsil_hil_mcp__probe_target, mcp__vsil_hil_mcp__ssh_exec_cmd, mcp__vsil_hil_mcp__fetch_evidence"
       opencode:
         path: ".opencode/agents/vsil-verifier.md"
         format: "markdown"
-        frontmatter: {mode: "subagent", permission: {edit: "deny", webfetch: "deny", bash: "allow"}}
+        # Preserve the supported V1 form; V2 translates it without rewriting.
+        # https://opencode.ai/docs/migrate-v1#permissions-and-tools
+        frontmatter:
+          mode: "subagent"
+          permission:
+            edit: "deny"
+            webfetch: "deny"
+            bash: "allow"
+            vsil_hil_mcp_probe_target: "allow"
+            vsil_hil_mcp_ssh_exec_cmd: "allow"
+            vsil_hil_mcp_fetch_evidence: "allow"
+            vsil_hil_mcp_code_sync: "deny"
+            vsil_hil_mcp_init_codeanvil: "deny"
+            vsil_hil_mcp_ssh_exec_cmd_trusted: "deny"
       codex:
         path: ".codex/agents/vsil-verifier.toml"
         format: "toml"
@@ -128,6 +145,16 @@ g0_skill: "G0_valid_req_and_GT"
 gt_reference_templates:
   - "StRS.md"
   - "SyRS.md"
+
+# Canonical assets maintained by one skill and copied into self-contained consumers.
+# Paths are relative to the producer/consumer skill; copied Markdown is rebound
+# to its consumer before the normal repo-root -> project-root rewrite.
+shared_skill_assets:
+  G2_adaptive_verification:
+    S2_implement_services:
+      - "references/measurement.schema.json"
+      - "scripts/validate_measurement.py"
+      - "references/machine_evidence.md"
 
 # Repo-root paths inside SKILL.md / RULES.md become project-relative after
 # copy. Order matters: applied in insertion order.
@@ -229,6 +256,7 @@ mcp_servers:
     args: []
     env:
       VSIL_HIL_WORKSPACE: "{project_dir}"
+      VSIL_HIL_CODEANVIL_VERSION: "{codeanvil_version}"
     skills_subdir: "skills"
     skill_prefix: "vsil-hil"
     description: "Hardware-in-the-loop proxy — deploy, run and fetch evidence on a COTS target over ssh/rsync"

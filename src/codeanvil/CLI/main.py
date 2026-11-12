@@ -58,9 +58,7 @@ def choose_option(args: argparse.Namespace) -> None:
                 password=args.password,
                 sudo_password=args.sudo_password,
                 ip=args.ip,
-                workspace=args.workspace,
                 port=args.port,
-                target=args.target,
                 os_=args.os,
             )
         case "sandbox":
@@ -72,6 +70,7 @@ def choose_option(args: argparse.Namespace) -> None:
                 interval=args.interval,
                 duration=args.duration,
                 counters=args.counters,
+                fsync=args.fsync,
             )
         case "upgrade":
             cmd_upgrade()

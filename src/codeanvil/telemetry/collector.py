@@ -13,6 +13,12 @@ Application counters (dropped buffers, queue depth, scheduling latency) are not
 measured here: the collector copies them from the JSON object the HAL or the
 service instrumentation writes to ``--counters``.
 
+Output files are created exclusively: a retry cannot overwrite an earlier run.
+Every sample is flushed; ``--fsync`` additionally syncs it to disk. A write failure
+warns on stderr and ends the companion successfully so it cannot abort the kit.
+That status is not evidence of success: missing or incomplete telemetry must be
+reported as unavailable by the evidence consumer.
+
 psutil is the only measurement source (CPU, memory, temperature, CPU count) and is
 a CodeAnvil dependency. Without it the collector exits 2 before writing anything.
 """
@@ -231,6 +237,8 @@ def _parse_args(argv):
                         help="JSON object written by the HAL or the service instrumentation")
     parser.add_argument("--pid", type=int, default=None,
                         help="root of the process tree to measure (default: the collector's parent)")
+    parser.add_argument("--fsync", action="store_true",
+                        help="sync every sample to disk (default: flush to the OS cache only)")
     args = parser.parse_args(argv)
     if args.interval <= 0:
         parser.error("--interval must be greater than 0")
@@ -259,10 +267,13 @@ def main(argv=None) -> int:
 
     try:
         output.parent.mkdir(parents=True, exist_ok=True)
-        stream = output.open("w", encoding="utf-8")
+        # A collector invocation owns one new evidence file. A retry must never
+        # erase the earlier run, including an explicitly supplied --output.
+        stream = output.open("x", encoding="utf-8")
     except OSError as exc:
-        print(f"telemetry collector: cannot write {output}: {exc}", file=sys.stderr)
-        return 1
+        print(f"telemetry collector: evidence unavailable; cannot create {output}: {exc}",
+              file=sys.stderr)
+        return 0  # the background companion must not abort the verification kit
 
     deadline = time.monotonic() + args.duration if args.duration > 0 else None
     try:
@@ -275,6 +286,8 @@ def main(argv=None) -> int:
             while not stop.is_set():
                 stream.write(json.dumps(_sample(tree, args.counters), ensure_ascii=False) + "\n")
                 stream.flush()
+                if args.fsync:
+                    os.fsync(stream.fileno())
                 now = time.monotonic()
                 if deadline is not None and now >= deadline:
                     break
@@ -283,8 +296,9 @@ def main(argv=None) -> int:
                     next_at = now + args.interval
                 stop.wait(next_at - now)
     except OSError as exc:
-        print(f"telemetry collector: write failed: {exc}", file=sys.stderr)
-        return 1
+        print(f"telemetry collector: evidence incomplete; write failed for {output}: {exc}",
+              file=sys.stderr)
+        return 0
     return 0
 
 

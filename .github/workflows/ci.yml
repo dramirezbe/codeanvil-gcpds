@@ -41,3 +41,12 @@ jobs:
         run: uv run --extra dev pytest tests/ -v
       - name: Run methodology tests
         run: uv run --extra dev pytest templates/tests/ -v
+
+  hil-mcp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv python install 3.12
+      - name: Run bundled HIL server and stdio protocol tests
+        run: uv run --project templates/mcp/vsil_hil_mcp --python 3.12 --frozen --group dev pytest templates/mcp/vsil_hil_mcp/tests/ -v

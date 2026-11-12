@@ -1,156 +1,170 @@
+"""Server dispatch and observation tests; transports never reach hardware."""
+
 import json
-import os
-import stat
+import shlex
 import subprocess
+from pathlib import Path
 
 import pytest
 import yaml
 
-from vsil_hil_mcp import classifier, config, server, transport
-
-PUB = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAItestkey{n} vsil-hil-{k}-pi"
+from vsil_hil_mcp import config, identity, server, transport
 
 
 @pytest.fixture
 def env(tmp_path, monkeypatch):
-    home = tmp_path / "home"
+    home, root = tmp_path / "home", tmp_path / "project"
     home.mkdir()
-    root = tmp_path / "proj"
     (root / ".codeanvil").mkdir(parents=True)
-    (root / ".codeanvil" / "project.yaml").write_text(yaml.safe_dump({
-        "name": "p",
-        "targets": [{"name": "pi", "host": "10.0.0.5", "user": "hil",
-                     "workspace": "/home/hil/ws", "device": "rtlsdr"}],
-    }))
+    (root / ".codeanvil/project.yaml").write_text(yaml.safe_dump({
+        "name": "fixture", "targets": [{"name": "pi", "host": "fixture.invalid", "user": "codeanvil-agent",
+        "workspace": "/home/codeanvil-agent/workspace", "port": 2222}]}))
     monkeypatch.setenv("HOME", str(home))
     monkeypatch.setenv("VSIL_HIL_WORKSPACE", str(root))
+    monkeypatch.setenv("VSIL_HIL_CODEANVIL_VERSION", "0.7.5")
+    keys = config.ensure_key_dir("pi")
+    for kind in ("exec", "deploy"):
+        keys[kind].write_text("test-only private key")
     calls = []
-
-    def fake_run(argv, **kw):
+    def fake_run(argv, **kwargs):
         calls.append(argv)
-        assert isinstance(argv, list) and not kw.get("shell")
-        if argv[0] == "ssh-keygen":
-            path = argv[argv.index("-f") + 1]
-            n = "d" if "deploy" in path else "e"
-            open(path, "w").write("PRIVATE")
-            open(path + ".pub", "w").write(PUB.format(n=n, k="deploy" if n == "d" else "exec") + "\n")
-        return subprocess.CompletedProcess(argv, 0, stdout="out", stderr="")
-
+        return subprocess.CompletedProcess(argv, 0, stdout="raw á\n", stderr="raw warning\n")
     monkeypatch.setattr(subprocess, "run", fake_run)
-    return root, home, calls
+    return root, keys, calls
 
 
-def _keys(home, name="pi"):
-    d = home / ".codeanvil-config" / "hil" / name
-    return d, d / "deploy_ed25519", d / "exec_ed25519"
+@pytest.mark.parametrize("command", ["sudo apt install driver", "python3 metric.py", "verification/run.sh vl2",
+                                     "export VALUE=1 && echo $VALUE"])
+def test_normal_lab_operations_execute_without_a_vocabulary_gate(env, command):
+    root, keys, calls = env
+    result = json.loads(server.ssh_exec_cmd(command))
+    assert result == {"stdout": "raw á\n", "stderr": "raw warning\n", "exit_code": 0}
+    assert calls[0][-1] == command and str(keys["exec"]) in calls[0]
+    assert "IdentityAgent=none" in calls[0]
+    assert calls[0][calls[0].index("-p") + 1] == "2222"
+    assert json.loads((root / ".codeanvil/hil/audit.log").read_text())["exit"] == 0
 
 
-def test_classifier():
-    assert classifier.classify("sudo apt install x") == classifier.PRIVILEGED
-    assert classifier.classify("ls -l && sudo reboot") == classifier.PRIVILEGED
-    assert classifier.classify("cat /etc/sudoers") == classifier.ALLOW
-    assert classifier.classify("uname -a") == classifier.ALLOW
-
-
-def test_exec_bounces_sudo_without_subprocess(env):
+@pytest.mark.parametrize("command", ["sudo reboot", "systemctl status app", "rm -rf data", "sqlite3 live.db 'DELETE FROM x'"])
+def test_destructive_operations_redirect_without_executing(env, command):
     root, _, calls = env
-    out = json.loads(server.ssh_exec_cmd("sudo reboot"))
-    assert out["status"] == "use_trusted" and out["command"] == "sudo reboot"
-    assert calls == []
-    assert '"exit": null' in (root / ".codeanvil/hil/audit.log").read_text()
+    result = json.loads(server.ssh_exec_cmd(command))
+    assert result["status"] == "use_trusted" and result["command"] == command
+    assert not calls
+    assert json.loads((root / ".codeanvil/hil/audit.log").read_text())["exit"] is None
 
 
-def test_exec_uses_exec_key_and_audits(env):
-    root, home, calls = env
-    server.init_codeanvil("pi")
-    calls.clear()
-    out = json.loads(server.ssh_exec_cmd("uname -a"))
-    assert out["exit_code"] == 0
-    argv = calls[0]
-    assert argv[0] == "ssh" and str(_keys(home)[2]) in argv and argv[-1] == "uname -a"
-    assert "hil@10.0.0.5" in argv and "IdentitiesOnly=yes" in argv
-    assert "uname -a" in (root / ".codeanvil/hil/audit.log").read_text()
+def test_trusted_runs_exact_command_and_preserves_failure(env, monkeypatch):
+    root, _, calls = env
+    raw = {"stdout": "partial\n", "stderr": "failed\n", "exit_code": 23}
+    monkeypatch.setattr(transport, "ssh_run", lambda target, key, cmd: calls.append(cmd) or raw)
+    assert json.loads(server.ssh_exec_cmd_trusted("sudo reboot")) == raw
+    assert calls == ["sudo reboot"]
+    assert json.loads((root / ".codeanvil/hil/audit.log").read_text())["exit"] == 23
 
 
-def test_trusted_runs_sudo_with_exec_key(env):
-    _, home, calls = env
-    server.init_codeanvil("pi")
-    calls.clear()
-    server.ssh_exec_cmd_trusted("sudo apt-get install -y rtl-sdr")
-    assert calls[0][0] == "ssh" and str(_keys(home)[2]) in calls[0]
-    assert calls[0][-1] == "sudo apt-get install -y rtl-sdr"
+def test_update_installs_explicit_tool_ref_with_existing_exec_key(env):
+    root, keys, calls = env
+    result = json.loads(server.init_codeanvil(source_ref="published-tool-commit"))
+    assert result["exit_code"] == 0
+    command = calls[0][-1]
+    assert "codeanvil-gcpds.git@published-tool-commit" in command
+    assert "codeanvil telemetry --help" in command and "codeanvil now --machine" in command
+    assert str(keys["exec"]) in calls[0] and calls[0][0] == "ssh"
+    assert not any(call[0] == "ssh-keygen" for call in calls)
+    assert json.loads((root / ".codeanvil/hil/audit.log").read_text())["tool"] == "init_codeanvil"
 
 
-def test_code_sync_separate_excludes_and_deploy_key(env):
-    root, home, calls = env
-    server.init_codeanvil("pi")
-    calls.clear()
+def test_update_requires_a_tool_source_not_a_guessed_version(env):
+    _, _, calls = env
+    with pytest.raises(ValueError, match="published"):
+        server.init_codeanvil()
+    assert not calls
+
+
+def test_missing_key_names_the_one_time_enrollment(env):
+    _, keys, calls = env
+    keys["exec"].unlink()
+    with pytest.raises(config.ConfigError, match="credential-setup"):
+        server.ssh_exec_cmd("uname -a")
+    assert not calls
+
+
+def test_fetch_returns_fresh_snapshots_and_keeps_receiver_paths(env):
+    root, _, calls = env
+    results = [json.loads(server.fetch_evidence()) for _ in range(2)]
+    paths = [Path(result["local_path"]) for result in results]
+    assert paths[0] != paths[1]
+    for path, argv in zip(paths, calls):
+        assert path.parent == root / "verification/telemetry/pi"
+        assert argv[-1] == f"{path}/"
+        assert argv[-2].endswith(":/home/codeanvil-agent/workspace/verification/telemetry/")
+
+
+def test_code_sync_uses_deploy_key_and_reports_published_revision(env, monkeypatch):
+    root, keys, calls = env
+    def push(target, key, directory):
+        calls.append((target, key, directory))
+        return {"stdout": "deployed", "stderr": "", "exit_code": 0, "revision": "published"}
+    monkeypatch.setattr(transport, "rsync_push", push)
+    assert json.loads(server.code_sync())["revision"] == "published"
+    assert calls[0][1:] == (keys["deploy"], root)
+
+
+def test_adopted_legacy_keys_resolve_through_mac_identity(env, monkeypatch):
+    root, keys, calls = env
+    device_id, _ = identity.remember_device(["02:00:00:00:00:01"], "fixture.invalid", 2222, "pi", key_identity="pi")
+    path = root / ".codeanvil/project.yaml"
+    data = yaml.safe_load(path.read_text())
+    data["targets"][0].update(device_id=device_id, mac_addresses=["02:00:00:00:00:01"],
+                              deploy_root="/home/codeanvil-agent/projects", workspace="/home/codeanvil-agent/projects/project-uuid")
+    path.write_text(yaml.safe_dump(data))
+    server.ssh_exec_cmd("uname -a")
+    assert str(keys["exec"]) in calls[0]
+    assert "UserKnownHostsFile=" + str(keys["known_hosts"]) in calls[0]
+    used = []
+    monkeypatch.setattr(transport, "rsync_push", lambda target, key, directory: used.append(key) or
+                        {"stdout": "", "stderr": "", "exit_code": 0, "revision": "published"})
     server.code_sync()
-    argv = calls[0]
-    assert argv[0] == "rsync" and "--delete" in argv
-    for e in (".git", "__pycache__", "*.pyc", "verification/telemetry/", ".env", "*.key", "*.pem"):
-        assert f"--exclude={e}" in argv
-    assert str(_keys(home)[1]) in argv[argv.index("-e") + 1]
-    # rrsync -wo roots the deploy key at the workspace, so the dest is the root
-    # (empty path), not the absolute workspace path (verified on a real target).
-    assert argv[-2] == f"{root}/" and argv[-1] == "hil@10.0.0.5:"
+    assert used == [keys["exec"]]  # old deploy confinement remains usable by old projects
 
 
-def test_fetch_pulls_only_telemetry(env):
+@pytest.mark.parametrize("version,matched", [("codeanvil 0.7.5", True), ("codeanvil 0.8.0.dev1", False), ("", False)])
+def test_probe_versions_are_observed_diagnostics_not_a_gate(env, monkeypatch, version, matched):
+    text = f"VSIL_OS=Linux\nVSIL_ARCH=aarch64\nVSIL_CODEANVIL={version}\nVSIL_USB_AVAILABLE=yes\nVSIL_USB_BEGIN\nUSB fixture\n"
+    raw = {"stdout": text, "stderr": "", "exit_code": 0}
+    monkeypatch.setattr(transport, "ssh_run", lambda *args: raw)
+    result = json.loads(server.probe_target())
+    assert result["stdout"] == text and result["exit_code"] == 0
+    assert result["metadata"]["version_match"] is matched
+    assert result["metadata"]["codeanvil_version"] == (version.removeprefix("codeanvil ") or None)
+
+
+def test_probe_works_without_host_version_configuration(env, monkeypatch):
+    monkeypatch.delenv("VSIL_HIL_CODEANVIL_VERSION")
+    result = json.loads(server.probe_target())
+    assert result["metadata"]["expected_version"] is None
+    assert result["exit_code"] == 0
+
+
+@pytest.mark.parametrize("field,value", [("port", 0), ("port", True), ("workspace", "../bad"), ("os", "bare-metal")])
+def test_invalid_target_fields_fail_before_ssh(env, field, value):
     root, _, calls = env
-    server.init_codeanvil("pi")
-    calls.clear()
-    server.fetch_evidence()
-    argv = calls[0]
-    assert argv[-2] == "hil@10.0.0.5:/home/hil/ws/verification/telemetry/"
-    assert argv[-1] == f"{root}/verification/telemetry/"
-    assert not any(a.startswith("--exclude") for a in argv)
-
-
-def test_init_script_keys_and_perms(env):
-    root, home, calls = env
-    text = server.init_codeanvil("pi")
-    assert "AAAAC3NzaC1lZDI1NTE5AAAAItestkeyd" in text and "AAAAC3NzaC1lZDI1NTE5AAAAItestkeye" in text
-    assert 'command=\\"$RRSYNC -wo $HIL_WS\\",restrict' in text
-    d, dep, ex = _keys(home)
-    assert stat.S_IMODE(d.stat().st_mode) == 0o700
-    assert stat.S_IMODE(dep.stat().st_mode) == 0o600 and stat.S_IMODE(ex.stat().st_mode) == 0o600
-    kg = [c for c in calls if c[0] == "ssh-keygen"]
-    assert kg[0][:7] == ["ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-C"]
-    assert all(c[0] == "ssh-keygen" for c in calls)  # no ssh during init
-
-
-def test_init_registers_new_target(env):
-    root, *_ = env
-    server.init_codeanvil("lab", host="192.168.1.9", user="hil", device="hackrf")
-    names = [t["name"] for t in yaml.safe_load((root / ".codeanvil/project.yaml").read_text())["targets"]]
-    assert names == ["pi", "lab"]
+    path = root / ".codeanvil/project.yaml"
+    data = yaml.safe_load(path.read_text())
+    data["targets"][0][field] = value
+    path.write_text(yaml.safe_dump(data))
     with pytest.raises(config.ConfigError):
-        server.ssh_exec_cmd("ls")  # two targets now: must name one
+        server.ssh_exec_cmd("uname -a")
+    assert not calls
 
 
-@pytest.mark.parametrize("field,value", [
-    ("host", "-oProxyCommand=x"), ("user", "a b"), ("workspace", "/x;rm -rf /"), ("workspace", "rel"),
-])
-def test_bad_target_fields_refused(env, field, value):
-    kw = {"host": "h", "user": "u", "workspace": "/w", field: value}
-    with pytest.raises(config.ConfigError):
-        server.init_codeanvil("new", **kw)
-
-
-@pytest.mark.parametrize("policy", ["guarded", "locked"])
-def test_non_trusted_policies_not_implemented(env, policy):
-    root, *_ = env
-    p = root / ".codeanvil/project.yaml"
-    data = yaml.safe_load(p.read_text())
-    data["targets"][0]["hil_policy"] = policy
-    p.write_text(yaml.safe_dump(data))
-    for call in (lambda: server.ssh_exec_cmd("ls"), lambda: server.ssh_exec_cmd_trusted("ls"),
-                 server.code_sync, server.fetch_evidence, lambda: server.init_codeanvil("pi")):
-        with pytest.raises(NotImplementedError, match="guarded/locked"):
-            call()
-
-
-def test_exec_without_keys_fails_clearly(env):
-    with pytest.raises(config.ConfigError, match="init_codeanvil"):
-        server.ssh_exec_cmd("ls")
+def test_unsupported_windows_target_fails_before_ssh(env):
+    root, _, calls = env
+    path = root / ".codeanvil/project.yaml"
+    data = yaml.safe_load(path.read_text())
+    data["targets"][0]["os"] = "windows"
+    path.write_text(yaml.safe_dump(data))
+    with pytest.raises(config.ConfigError, match="Linux"):
+        server.ssh_exec_cmd("uname -a")
+    assert not calls
