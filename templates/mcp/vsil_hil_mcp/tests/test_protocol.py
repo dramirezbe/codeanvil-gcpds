@@ -10,6 +10,7 @@ from datetime import timedelta
 import json
 import os
 from pathlib import Path
+import shlex
 import shutil
 import subprocess
 import sys
@@ -23,18 +24,38 @@ import yaml
 pytestmark = pytest.mark.skipif(os.name == "nt", reason="POSIX executable fixture; CI runs on Linux")
 
 
-@pytest.fixture
-def protocol_target(tmp_path):
+@pytest.fixture(params=["legacy", "canonical-mac", "adopted-mac"])
+def protocol_target(tmp_path, request):
     home = tmp_path / "home"
     project = tmp_path / "project"
     (project / ".codeanvil").mkdir(parents=True)
+    device_id = "mac_b827eb010203"
+    project_id = "019a73ea-1e23-7000-8000-000000000001"
+    target = {"name": "pi", "host": "fixture.invalid", "user": "codeanvil-agent",
+              "workspace": "/home/codeanvil-agent/workspace", "port": 2202}
+    key_identity, deploy_role, deploy_destination = "pi", "deploy", ""
+    if request.param != "legacy":
+        target.update(name=device_id if request.param == "canonical-mac" else "old_alias",
+                      device_id=device_id, mac_addresses=["b8:27:eb:01:02:03"],
+                      deploy_root="/home/codeanvil-agent/projects",
+                      workspace=f"/home/codeanvil-agent/projects/{project_id}")
+        key_identity = device_id if request.param == "canonical-mac" else "legacy_keys"
+        deploy_role = "deploy" if request.param == "canonical-mac" else "exec"
+        deploy_destination = project_id if request.param == "canonical-mac" else target["workspace"]
+        store = home / ".codeanvil-config/hil"
+        store.mkdir(parents=True)
+        (store / "devices.yaml").write_text(yaml.safe_dump({
+            "version": 1, "devices": {device_id: {
+                "key_identity": key_identity, "mac_addresses": target["mac_addresses"],
+                "endpoints": [{"host": target["host"], "port": target["port"]}],
+                "bootstrap_user": "pi",
+            }},
+        }), encoding="utf-8")
     (project / ".codeanvil/project.yaml").write_text(yaml.safe_dump({
-        "name": "protocol-test",
-        "targets": [{"name": "pi", "host": "fixture.invalid", "user": "codeanvil-agent",
-                     "workspace": "/home/codeanvil-agent/workspace", "port": 2202}],
+        "name": "protocol-test", "id": project_id, "targets": [target],
     }), encoding="utf-8")
-    key_dir = home / ".codeanvil-config/hil/pi"
-    key_dir.mkdir(parents=True)
+    key_dir = home / ".codeanvil-config/hil" / key_identity
+    key_dir.mkdir(parents=True, exist_ok=True)
     for name in ("exec_ed25519", "deploy_ed25519", "known_hosts"):
         (key_dir / name).write_text("test-only\n", encoding="utf-8")
     executables = tmp_path / "bin"
@@ -94,7 +115,9 @@ else:
         "VSIL_HIL_WORKSPACE": str(project), "VSIL_HIL_CODEANVIL_VERSION": "0.7.5",
         "PYTHONIOENCODING": "utf-8",
     }
-    return project, calls, env
+    expected = {"target": target, "key_dir": key_dir, "deploy_role": deploy_role,
+                "deploy_destination": deploy_destination}
+    return project, calls, env, expected
 
 
 def _payload(result):
@@ -103,7 +126,8 @@ def _payload(result):
 
 
 def test_stdio_deploy_run_fetch_and_policy(protocol_target):
-    project, calls, env = protocol_target
+    project, calls, env, expected = protocol_target
+    target = expected["target"]
     fetched_paths = []
 
     async def scenario():
@@ -133,7 +157,7 @@ def test_stdio_deploy_run_fetch_and_policy(protocol_target):
                 fetched = _payload(await session.call_tool("fetch_evidence", {}))
                 assert fetched["exit_code"] == 0
                 snapshot = Path(fetched["local_path"])
-                assert snapshot.parent == project / "verification/telemetry/pi"
+                assert snapshot.parent == project / "verification/telemetry" / target["name"]
                 assert snapshot.name.startswith("fetch-")
                 fetched_paths.append(snapshot)
                 assert json.loads((snapshot / "telemetry-remote.jsonl").read_text()) == {"sample": 1}
@@ -147,23 +171,28 @@ def test_stdio_deploy_run_fetch_and_policy(protocol_target):
     assert len(executed) == 4  # deploy, normal execution, trusted failure, fetch
     push, ordinary, trusted, pull = executed
     assert Path(push[0]).name == "rsync" and "--delete" in push
-    assert "deploy_ed25519" in push[push.index("-e") + 1]
+    deploy_ssh = shlex.split(push[push.index("-e") + 1])
+    assert Path(deploy_ssh[deploy_ssh.index("-i") + 1]) == expected["key_dir"] / f"{expected['deploy_role']}_ed25519"
+    assert push[-1] == f"codeanvil-agent@fixture.invalid:{expected['deploy_destination']}"
     assert Path(ordinary[ordinary.index("-i") + 1]).name == "exec_ed25519"
+    assert Path(ordinary[ordinary.index("-i") + 1]).parent == expected["key_dir"]
+    assert f"UserKnownHostsFile={expected['key_dir'] / 'known_hosts'}" in ordinary
     assert ordinary[ordinary.index("-p") + 1] == "2202"
     assert ordinary[ordinary.index("-F") + 1] == os.devnull
     assert "IdentityAgent=none" in ordinary
     assert trusted[-1] == "fixture-failure"
-    assert pull[-2] == "codeanvil-agent@fixture.invalid:/home/codeanvil-agent/workspace/verification/telemetry/"
+    assert pull[-2] == f"codeanvil-agent@fixture.invalid:{target['workspace']}/verification/telemetry/"
     assert pull[-1] == f"{fetched_paths[0]}/"
     audit = [json.loads(line) for line in (project / ".codeanvil/hil/audit.log").read_text().splitlines()]
     assert [(entry["tool"], entry["exit"]) for entry in audit] == [
         ("ssh_exec_cmd", None), ("code_sync", 0), ("ssh_exec_cmd", 0),
         ("ssh_exec_cmd_trusted", 23), ("fetch_evidence", 0),
     ]
+    assert {entry["target"] for entry in audit} == {target["name"]}
 
 
 def test_stdio_reports_timeout_and_missing_transport(protocol_target):
-    project, calls, env = protocol_target
+    project, calls, env, _ = protocol_target
 
     async def scenario():
         # Shorten only the server's transport timeout; the real protocol and
@@ -191,7 +220,8 @@ def test_stdio_reports_timeout_and_missing_transport(protocol_target):
 
 
 def test_stdio_probe_observes_parity_and_missing_data(protocol_target):
-    project, calls, env = protocol_target
+    project, calls, env, expected = protocol_target
+    target_name = expected["target"]["name"]
 
     async def scenario():
         params = StdioServerParameters(command=sys.executable,
@@ -205,10 +235,10 @@ def test_stdio_probe_observes_parity_and_missing_data(protocol_target):
                 assert probe.annotations.destructiveHint is False
                 for mode, expected_version in (("match", "0.7.5"), ("mismatch", "0.7.4"), ("missing", None)):
                     calls.with_name("probe-mode").write_text(mode, encoding="utf-8")
-                    observed = _payload(await session.call_tool("probe_target", {"target": "pi"}))
+                    observed = _payload(await session.call_tool("probe_target", {"target": target_name}))
                     metadata = observed["metadata"]
                     assert observed["exit_code"] == 0 and observed["stderr"] == ""
-                    assert observed["target"] == "pi"
+                    assert observed["target"] == target_name
                     assert metadata["expected_version"] == "0.7.5"
                     assert metadata["codeanvil_version"] == expected_version
                     assert metadata["version_match"] is (mode == "match")

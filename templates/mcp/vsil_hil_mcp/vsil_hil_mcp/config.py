@@ -18,10 +18,9 @@ from . import identity
 POLICIES = ("trusted", "guarded", "locked")
 DEFAULT_POLICY = "trusted"
 AGENT_USER = "codeanvil-agent"
-_RELEASE_VERSION_RE = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+")
 
 # Strict allowlists: these values end up in ssh/rsync argv and in a shell script
-# the human runs as root on the target, so anything outside the pattern is refused.
+# bootstrap runs as root on the target, so anything outside the pattern is refused.
 _NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
 _USER_RE = re.compile(r"^[a-z_][a-z0-9_-]{0,31}$")
 _HOST_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.:-]{0,252}$")  # no leading '-', no whitespace
@@ -30,21 +29,6 @@ _WORKSPACE_RE = re.compile(r"^/[A-Za-z0-9._/+@-]+$")  # absolute, no shell metac
 
 class ConfigError(ValueError):
     """Bad or missing project / target configuration."""
-
-
-def release_version(value: str) -> str:
-    """Validate a released version before interpolating its git tag in a script."""
-    if not _RELEASE_VERSION_RE.fullmatch(value):
-        raise ConfigError("expected a released CodeAnvil version X.Y.Z; development installs need an explicit release")
-    return value
-
-
-def host_version() -> str:
-    """The launcher supplies its own installed package version; never guess a pin."""
-    value = os.environ.get("VSIL_HIL_CODEANVIL_VERSION", "")
-    if not value:
-        raise ConfigError("missing host CodeAnvil version: launch through codeanvil mcp run vsil_hil_mcp")
-    return release_version(value)
 
 
 @dataclass(frozen=True)
@@ -184,7 +168,7 @@ def resolve_target(name: str = "", root: Path | None = None) -> Target:
     """The named target, or the only declared one when `name` is empty."""
     targets = load_targets(root or project_root())
     if not targets:
-        raise ConfigError("no remote target declared in .codeanvil/project.yaml `targets:` (run init_codeanvil)")
+        raise ConfigError("no remote target declared in .codeanvil/project.yaml `targets:` (run codeanvil credential-setup)")
     if not name:
         if len(targets) == 1:
             return next(iter(targets.values()))

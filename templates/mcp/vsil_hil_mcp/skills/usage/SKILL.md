@@ -1,116 +1,109 @@
 ---
 name: vsil-hil-usage
-description: Run a V-SIL verification kit on a real remote COTS target (Raspberry Pi, Jetson, x86 box) through the vsil_hil_mcp server — deploy the code, run the kit on the real processor, fetch the telemetry back. Use when a project declares a remote `targets:` block and you need PIL (VL-0/VL-1 on real hardware) or to drive a declared target over SSH.
+description: Deploy a published V-SIL project to enrolled Linux equipment, run PIL or real HW tests, and fetch telemetry through vsil_hil_mcp. Use for remote equipment declared in project.yaml; local devices use the normal runtime tools.
 ---
 
-# vsil-hil-usage
+# Operate remote PIL/HIL equipment
 
-`vsil_hil_mcp` is the bridge that lets this project's verification kit run on a
-**real remote compute unit** over SSH instead of only on the dev host. Running the
-kit there turns VL-0/VL-1 into **processor-in-the-loop (PIL)** evidence: the same
-tests, Mock HAL and `SYS-*` thresholds, but measured on the real UC's CPU, thermals
-and throttling.
+Use `vsil_hil_mcp` to prepare and test enrolled equipment. Normal commands, scripts,
+packages and `sudo` run directly. Clearly destructive operations use trusted.
+Follow the current S2/G2 skill: it owns the pre-HW pause, tests and report contract.
+The MCP is a command proxy, with credentials kept in local storage, not an orchestrator.
+Never read private keys or start a separate direct SSH/rsync session.
 
-You drive the target **only through this server's MCP tools**. You never type a
-`codeanvil`/`ssh`/`rsync` shell command for the remote target yourself, never hold a
-credential, and never get an interactive shell. The server is the credential
-custodian; each tool call is one capability.
+## Access and equipment
 
-## When this applies
+A human enrolls equipment from a project with:
 
-- The project declares a remote target in `.codeanvil/project.yaml` under `targets:`.
-  No target declared ⇒ the SDR is local (PC→SDR) ⇒ **do not use this server**; run
-  `verification/run.sh` directly on the host.
-- A human has already provisioned the target (keys installed, CodeAnvil present).
-  See **If the target is not provisioned yet** below if the tools report missing keys.
-
-## The tools
-
-| Tool | What it does | You use it for |
-|------|--------------|----------------|
-| `code_sync(target="")` | rsync the project code → target workspace (deploy key, write-only). Excludes `.git`, `__pycache__`, telemetry, secrets. | Deploy before every run after a code change. |
-| `ssh_exec_cmd(cmd, target="")` | Known diagnostics and full `codeanvil`; returns raw `{stdout, stderr, exit_code}`. Python/uv/pytest and `verification/run.sh vl0\|vl1` require an exact `cd <declared workspace> &&` prefix. Unknown commands and shell expansion redirect to trusted. | Run the kit, probe the device, read logs. **The main interface.** |
-| `ssh_exec_cmd_trusted(cmd, target="")` | The **only** privileged door: carries `sudo`/mutating commands, once, verbatim, audited. | OS packages, udev rules, service restarts — see the redirect flow. |
-| `fetch_evidence(target="")` | rsync **only** remote `verification/telemetry/` into a fresh `verification/telemetry/<target>/fetch-<unique>/` host snapshot; returns `local_path`. | Read and hash this run's evidence at `local_path`, preserving earlier fetches. |
-| `probe_target(target="")` | Read OS/architecture/CodeAnvil version and optional USB enumeration; return `metadata.version_match` against the host release plus raw stdout/stderr/exit code. | Preflight parity. `declared_device` is configuration, never a detected device claim. |
-| `init_codeanvil(target, host, user, …)` | Generate the target's keys and emit a provisioning **script** for the human. No SSH happens. | First contact only — relay the script to the human. |
-
-`target` may be **omitted** when exactly one target is declared; pass it by name when
-several are.
-
-## The core loop: deploy → run → fetch
-
-For a PIL run of a verification level (`vl0`, `vl1`):
-
-First call `probe_target()` and record its observed OS, architecture and CodeAnvil
-version. A false `metadata.version_match`, failed probe or missing observation blocks
-acceptance of evidence. The launcher supplies `VSIL_HIL_CODEANVIL_VERSION`; provisioning
-pins that release, never `main`. Matching versions do not prove unpublished source identity;
-the verification kit checks its deployed input manifest separately.
-
-1. **Deploy.** `code_sync()` — push the current code to the target workspace.
-2. **Run.** `ssh_exec_cmd("cd <workspace> && verification/run.sh vl0")`. `run.sh`
-   starts `codeanvil telemetry` on the target itself, so the collector samples the
-   **real UC** while the kit runs. Read the raw stdout/exit_code to judge pass/fail.
-3. **Fetch.** `fetch_evidence()` — pull the telemetry into a fresh host snapshot under
-   `verification/telemetry/<target>/fetch-<unique>/`. Read evidence at the returned `local_path`;
-   record the current run's exact files and hashes. A snapshot also contains any old logs still
-   present remotely, so freshness must be checked. Earlier snapshots and other targets' files
-   are preserved. A nonzero transfer exit marks a partial snapshot, never complete evidence.
-
-Diagnose before fixing (all read-only, auto-allowed through `ssh_exec_cmd`):
-`uname -a`, `cat /proc/cpuinfo`, `lsusb` (is the SDR enumerated?), `dmesg | tail`,
-`df -h`, `free -m`, `vcgencmd get_throttled` (RPi undervolt/throttle),
-`SoapySDRUtil --find`, `rtl_test`. You are genuinely strong at reading these — this is
-real value. Name physical faults (antenna, USB power, RF); you cannot fix them.
-
-## Privileged commands — the `use_trusted` redirect
-
-`ssh_exec_cmd` **refuses** unknown commands, mutations, privilege markers, redirection,
-substitution and unsupported shell syntax. It runs nothing and returns:
-
-```json
-{"status": "use_trusted", "command": "<cmd>", "reason": "..."}
+```sh
+codeanvil credential-setup -u <admin-user> -i <host> --port 22
 ```
 
-When you see this, **do not retry it on `ssh_exec_cmd`**. Instead:
+Physical MACs discovered over authenticated SSH identify the equipment. The admin
+user authorizes enrollment; it does not select or regenerate keys. A known PC
+reuses its keys across projects/IP changes. A new PC needs one admin authorization
+to append its own public keys to the same `codeanvil-agent`. Never copy another
+PC's private keys. Project metadata contains the equipment/endpoint and a workspace
+under `/home/codeanvil-agent/projects/<project UUID>`, without local key paths.
+Legacy identities remain readable and their existing access is preserved.
 
-1. Tell the human plainly: *"the target needs `<command>` because `<reason>`"*.
-2. Re-issue the **exact same command** through `ssh_exec_cmd_trusted("<command>")`.
-3. The host runtime's configured permissions decide whether that distinct tool needs
-   a human approval prompt. The server cannot verify approval, and full-access runtimes
-   may run it without a prompt. Do not claim approval happened unless observed. On
-   decline, nothing runs — report that and stop.
+No `targets:` means local execution; do not use this server for a device attached
+to the developer host. A sole declared target may be implicit in MCP calls; with
+several, pass the intended declared identity. Do not ask for a user-invented alias.
+If access is missing, explain the enrollment command to the human; tool updates
+through `init_codeanvil` require existing access and do not enroll a machine.
 
-Use the trusted door for OS packages, udev rules (non-root SDR access needs the agent
-user in `plugdev`), service restarts — anything that mutates the target. Draft the
-exact command (you can build an install command from the OS family), present it, let
-the human approve. Never try to smuggle `sudo` inside a `python`/`pytest` script to
-dodge the prompt — that defeats the audit and the whole point of the gate.
+## Tools
 
-In automation, the runtime must explicitly deny or separately authorize the trusted
-tool. The server does not enforce interactive approval or deny it by default.
+| Tool | Use |
+|------|-----|
+| `probe_target(target="")` | Observe actual OS/architecture/CodeAnvil and optional USB enumeration. Versions are diagnostic; `declared_device` is configuration, not detected hardware. |
+| `init_codeanvil(target="", source_ref="<published tool ref>", source_repo="<tool repo>")` | Update CodeAnvil on enrolled equipment and check runtime, telemetry and clock commands. Distinguish the CodeAnvil tool repo/ref from the delivered project. |
+| `code_sync(target="")` | Fetch upstream, require a clean published Git candidate and rsync its temporary Git export. Preserve databases, SQLite sidecars and declared `persistent_paths`. |
+| `ssh_exec_cmd(cmd, target="")` | Execute normal commands verbatim, including scripts, packages and sudo; return raw stdout/stderr/exit code. Use the declared workspace for relative project commands. |
+| `ssh_exec_cmd_trusted(cmd, target="")` | Execute a clearly destructive command once, verbatim and audited, under host runtime permissions. |
+| `fetch_evidence(target="")` | Fetch only remote `verification/telemetry/` to a new host snapshot and return `local_path`. Select the current run inside it. |
 
-## If the target is not provisioned yet
+## Prepare → run → fetch
 
-If a tool reports a missing key (`missing key … run init_codeanvil first`) or the
-target isn't declared, the target needs one-time human bootstrap. **You cannot do this
-yourself** — first contact is human-consented by design. Two human paths:
+1. Finish local code/kit/tests and inspect Git status. Require committed, clean
+   staged/unstaged/untracked inputs and HEAD equal to the freshly fetched upstream.
+   Publish the candidate using existing user authorization; a failed push blocks HW.
+2. Show code/kit changes, published branch/commit, local results, equipment/device
+   and intended preparation/test scope. **Stop and wait for explicit `continue`**
+   before updates, deployment or local HW tests, even in full-access mode. Inventory
+   probes may precede review. Silence/timeouts are not consent. A changed candidate,
+   target, scope or iteration renews the pause. Follow S2's unchanged Pause Schedule;
+   record the completed checkpoint in its normal narrative, never a partial report.
+3. After review, update tool/app/dependencies from their respective published refs.
+   Use an actual published CodeAnvil ref with `init_codeanvil`, not a tag guessed
+   from SemVer or the DUT's commit. Diagnose capability failures rather than requiring
+   identical tool versions. Synchronize clocks before acquisition, never during it;
+   use monotonic durations for measurements. `systemctl` uses trusted.
+4. Deploy with `code_sync`. It sends only the Git export, excluding ignored files,
+   telemetry, secrets and databases. Persistent destination state survives overwrite
+   and `--delete`. If a test must change protected state, do so explicitly via trusted.
+5. Run the kit from the equipment's workspace, such as
+   `cd <workspace> && verification/run.sh vl0`. S2 writes required tests and metric
+   scripts; the fresh G2 verifier runs recorded commands plus auxiliary diagnostics
+   within reviewed scope, without changing product/test code. The G2 parent owns
+   preparation, expanded scope and trusted operations; the verifier never asks the human.
+6. Name attempts `<cycle>_<iteration>_<codeanvil now --machine>` using the current
+   S2/G2 iteration. Keep named JSONL telemetry, `measurement.json` v2 and script/capture
+   outputs in `verification/telemetry/<run_id>/`; retry with a new timestamp.
+   Fetch and read only this attempt's files inside returned `local_path`, which may
+   also contain older remote logs. Local attempts use their local output directory.
+7. Investigate missing/partial telemetry, notify the parent and decide which measures
+   need repeating or which claims remain supported. Collector exit 0 is not complete
+   coverage. Never use missing readings as zeros. Preserve failed attempts.
 
-- **Recommended (automated):** the human runs, from inside the project,
-  `codeanvil credential-setup -u <admin-user> -i <target-ip>` — it generates the
-  confined keys, bootstraps the target over SSH, and registers it in `project.yaml`.
-- **Printed-script:** call `init_codeanvil(target="<name>", host="<ip>")`,
-  then relay the returned `provision.sh` to the human to run **once, as root, on the
-  target**. It creates the confined user, installs the two restricted keys, and
-  installs CodeAnvil there.
+## Destructive commands and trusted
 
-Either way, surface the instruction to the human and wait. Do not fabricate access.
+The ordinary door returns `{"status":"use_trusted","command":"...","reason":"..."}`
+for visible destructive operations: `systemctl`, reboot/shutdown/poweroff/halt,
+recursive `rm`, disk erasers and database writes/tools that can modify state.
+Simple database file reads remain normal. Reissue the exact command through
+`ssh_exec_cmd_trusted`; host runtime permissions govern native approval prompts.
+Full-access mode may have no native prompt, but the skill's pre-HW review still
+requires an actual `continue` response. No repeated permission is needed for each
+ordinary command inside the reviewed scope.
 
-## Honesty about what PIL buys
+The router recognizes tokens/options, not arbitrary program behavior. If a script
+will erase data or perform another destructive action, use trusted explicitly;
+do not hide it inside a permitted script. Unknown normal commands are allowed.
 
-Running the kit on the real UC is **VERIFIED on real hardware (PIL)** — no real RF.
-It is *not* VL-2/HIL validation: that needs the Real HW HAL against the SDR, an oracle
-and the correction chains, which this server carries and runs but does not supply. When
-you report results, name the UC (host, os, arch, CodeAnvil version, device) in the
-evidence, and keep the VERIFIED-vs-VALIDATED line honest.
+## Results and feedback
+
+PIL runs Mock HAL tests on the real processor and remains VERIFIED. A real hardware
+claim needs the actual device test against GT criteria. Choose suitable tools/scripts
+and justify measurement resolution against the tolerance. Calibration/corrections
+are required only when the GT or conclusion needs them; never widen GT or fabricate
+readings. The G2 machine-evidence guide defines measurement v2's small structural
+record. No per-file deployment manifest, capture request or universal oracle is needed.
+
+G2 feedback explains observed/expected result, command/equipment, evidence, cause or
+pending hypothesis, affected requirement/module/path and next action. Module/kit
+rework goes to S2; design rework goes through S1 → G1 → S2 in the same cycle;
+infeasibility goes to RFD. Operational faults remain operational. Preserve normal
+`Based on`, append-only iterations, HITL and stale handling. A valid JSON record is
+not a passing test or a human gate verdict.

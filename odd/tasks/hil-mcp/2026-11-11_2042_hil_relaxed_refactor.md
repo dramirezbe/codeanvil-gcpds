@@ -420,3 +420,11 @@ Las comprobaciones y límites de rollback se añaden aquí al cerrar cada unidad
   helper, wrapper shell, ancla estable del registro y tests de esta unidad.
   Migración coherente de **992 líneas añadidas+eliminadas**, con tests y retirada
   del motor anterior; se informa sobrepaso sin comprimir ni separar el contrato.
+- R5 interfaz operativa: skill de uso MCP alineada con alta por MAC, preparación,
+  ejecución autónoma y trusted destructivo; se retiran helpers de pin SemVer sin
+  callers y el error de acceso dirige a credential-setup. **127 tests passed**
+  del servidor aislado. Escenario MCP stdio real con SSH/rsync simulados: **9
+  passed**, variantes legacy/MAC canónica/MAC adoptada, Git remoto bare local,
+  clave y pin correctos, destinos de deploy, snapshots, errores y auditoría.
+  Rollback: guía de uso, limpieza de config y parametrización de `test_protocol`;
+  no cambia enrolamiento ni el parser de reportes.
