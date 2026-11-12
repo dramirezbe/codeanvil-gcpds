@@ -177,6 +177,28 @@ def test_port_and_personal_identity_isolation(env):
         assert "IdentityAgent=none" in ssh and "IdentitiesOnly=yes" in ssh
 
 
+@pytest.mark.parametrize("host,rsync_host", [
+    ("2001:db8::5", "[2001:db8::5]"),
+    ("2001:db8:0:1:2:3:4:5", "[2001:db8:0:1:2:3:4:5]"),
+    ("10.0.0.5", "10.0.0.5"),
+    ("lab-host", "lab-host"),
+])
+def test_rsync_ipv6_endpoints_do_not_change_ssh_host_or_port(env, host, rsync_host):
+    root, home, _ = env
+    target = config.Target("pi", host, "hil", "/home/hil/ws", port=2222)
+    key = _keys(home)[2]
+    push = transport.rsync_push_argv(target, key, root)
+    pull = transport.rsync_pull_argv(target, key, root)
+    ssh = transport.ssh_argv(target, key, "uname -a")
+    assert push[-1] == f"hil@{rsync_host}:"
+    assert pull[-2] == f"hil@{rsync_host}:/home/hil/ws/verification/telemetry/"
+    assert ssh[-2] == f"hil@{host}"
+    assert ssh[ssh.index("-p") + 1] == "2222"
+    for command in (push, pull):
+        nested = shlex.split(command[command.index("-e") + 1])
+        assert nested[nested.index("-p") + 1] == "2222"
+
+
 @pytest.mark.parametrize("port", [0, 65536, True, "22"])
 def test_bad_declared_port_refused(env, port):
     root, _, calls = env

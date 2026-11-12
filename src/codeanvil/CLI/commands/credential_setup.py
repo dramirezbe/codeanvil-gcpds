@@ -37,33 +37,6 @@ def _derive_target(ip: str) -> str:
     return re.sub(r"[.:]", "_", ip)
 
 
-def _hil_dir(target: str) -> Path:
-    return Path.home() / ".codeanvil-config" / "hil" / target
-
-
-def _ensure_keys(target: str) -> Path:
-    """Create the two confined ed25519 keys (idempotent) — used on the windows path."""
-    hil = _hil_dir(target)
-    hil.mkdir(parents=True, exist_ok=True)
-    for d in (hil.parent, hil):
-        os.chmod(d, 0o700)
-    known = hil / "known_hosts"
-    known.touch(mode=0o600)
-    for role in ("deploy", "exec"):
-        key = hil / f"{role}_ed25519"
-        if key.exists():
-            continue
-        res = subprocess.run(
-            ["ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-C", f"vsil-hil-{role}-{target}", "-f", str(key)],
-            check=False,
-        )
-        if res.returncode != 0:
-            log.error("ssh-keygen failed for the %s key (exit %s)", role, res.returncode)
-            sys.exit(1)
-        if key.exists():
-            os.chmod(key, 0o600)
-    return hil
-
 
 def _register_target(project_yaml: Path, entry: dict) -> bool:
     """Append `entry` to `targets:` unless that name exists. True when written."""
@@ -169,39 +142,29 @@ def cmd_credential_setup(
         sys.exit(1)
     sudo_password = sudo_password or password
 
-    if os_ == "linux":
-        script = TEMPLATES_DIR / _SCRIPTS / "setup_credentials_ssh_hil.sh"
-        if not script.is_file():
-            log.error("bundled script not found: %s", script)
-            sys.exit(1)
-        cmd = [
-            "bash", str(script), "-u", user, "-i", ip, "--port", str(port),
-            "-a", AGENT_USER, "-t", target, "-w", workspace,
-        ]
-        log.info("bootstrapping %s@%s as admin '%s' (target '%s')", AGENT_USER, ip, user, target)
-        res = subprocess.run(
-            cmd,
-            env={**os.environ, PASSWORD_ENV: password, SUDO_PASSWORD_ENV: sudo_password},
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        if res.stdout:
-            print(res.stdout, end="")
-        if res.stderr:
-            print(res.stderr, end="", file=sys.stderr)
-        if res.returncode != 0:
-            log.error("remote bootstrap failed (exit %s) — project.yaml not modified", res.returncode)
-            sys.exit(1)
-    else:
-        hil = _ensure_keys(target)
-        ps1 = TEMPLATES_DIR / _SCRIPTS / "setup_credentials_ssh_hil.ps1"
-        log.info("Windows target: automatic bootstrap is not supported from this host.")
-        log.info("Run this script ON the target as Administrator:")
-        log.info("  %s", ps1)
-        log.info("Public keys to install for user '%s':", AGENT_USER)
-        log.info("  deploy: %s", hil / "deploy_ed25519.pub")
-        log.info("  exec:   %s", hil / "exec_ed25519.pub")
+    script = TEMPLATES_DIR / _SCRIPTS / "setup_credentials_ssh_hil.sh"
+    if not script.is_file():
+        log.error("bundled script not found: %s", script)
+        sys.exit(1)
+    cmd = [
+        "bash", str(script), "-u", user, "-i", ip, "--port", str(port),
+        "-a", AGENT_USER, "-t", target, "-w", workspace,
+    ]
+    log.info("bootstrapping %s@%s as admin '%s' (target '%s')", AGENT_USER, ip, user, target)
+    res = subprocess.run(
+        cmd,
+        env={**os.environ, PASSWORD_ENV: password, SUDO_PASSWORD_ENV: sudo_password},
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if res.stdout:
+        print(res.stdout, end="")
+    if res.stderr:
+        print(res.stderr, end="", file=sys.stderr)
+    if res.returncode != 0:
+        log.error("remote bootstrap failed (exit %s) — project.yaml not modified", res.returncode)
+        sys.exit(1)
 
     if _register_target(manifest, entry):
         log.info("registered target '%s' in %s", target, manifest)
@@ -210,4 +173,4 @@ def cmd_credential_setup(
 
     log.info("done. The vsil_hil_mcp tools (ssh_exec_cmd, code_sync, fetch_evidence, ...) can now use target '%s'.", target)
     log.info("Next: running the verification kit on the target also needs CodeAnvil installed there "
-             "(install.sh as '%s'); this command sets up access only.", AGENT_USER)
+             "(use init_codeanvil provisioning for the matching host release); this command sets up access only.")

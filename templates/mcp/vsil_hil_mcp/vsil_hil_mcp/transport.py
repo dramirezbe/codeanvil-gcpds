@@ -67,6 +67,12 @@ def _rsync_e(target: Target, key: Path) -> str:
     return shlex.join(["ssh", *_ssh_opts(target, key)])
 
 
+def _rsync_host(target: Target) -> str:
+    # rsync uses ':' to separate host and path; literal IPv6 needs brackets.
+    host = f"[{target.host}]" if ":" in target.host else target.host
+    return f"{target.user}@{host}"
+
+
 def rsync_push_argv(target: Target, deploy_key: Path, local_workspace: Path) -> list[str]:
     return [
         "rsync", "-az", "--delete",
@@ -77,7 +83,7 @@ def rsync_push_argv(target: Target, deploy_key: Path, local_workspace: Path) -> 
         # client path at the workspace. So the destination is that root (empty
         # path), NOT the absolute workspace path — otherwise rrsync nests it as
         # <workspace>/<workspace>/ and fails (verified against a real target).
-        f"{target.user}@{target.host}:",
+        f"{_rsync_host(target)}:",
     ]
 
 
@@ -89,7 +95,7 @@ def rsync_pull_argv(target: Target, key: Path, local_workspace: Path) -> list[st
     return [
         "rsync", "-az",
         "-e", _rsync_e(target, key),
-        f"{target.user}@{target.host}:{target.workspace}/{TELEMETRY_REL}",
+        f"{_rsync_host(target)}:{target.workspace}/{TELEMETRY_REL}",
         f"{local_workspace}/{TELEMETRY_REL}",
     ]
 
