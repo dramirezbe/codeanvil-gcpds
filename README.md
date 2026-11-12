@@ -6,15 +6,16 @@ Agent-agnostic project scaffolding, templates, and agent definitions for the **V
 
 Works with any AI coding agent: Claude, Codex, OpenCode, Pi, or others. Runs on **Linux, macOS and Windows**.
 
-**Current release:** [v0.7.5](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.7.5). Simple red-button deletion confirmation: Replaces typed-name UI confirmation with a direct question, Cancel and a red Delete button. Keeps explicit file-removal selection and existing identity/path safeguards.
+**Current release:** [v0.8.0](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.8.0). Agent-operated HIL/PIL with reusable MAC-based equipment access, published Git deployment and a simpler measurement contract.
 
-**On `feat/hil-pil` (unreleased):** the stages support remote PIL through the bundled
+The stages support remote PIL through the bundled
 [`vsil_hil_mcp`](templates/mcp/vsil_hil_mcp/README.md) server. Equipment is recognized
 by MAC and each PC reuses its own access keys across projects. The agent prepares
 and tests hardware after an explicit code-review pause; normal commands run directly
 and destructive actions use trusted. A fresh verifier checks GT criteria with a
 small measurement record. Remote Mock HAL tests remain VERIFIED (PIL). Final
-integrated hardware validation of this branch is still pending.
+release acceptance tests, including integrated hardware validation, remain pending
+in the [implementation plan](odd/tasks/hil-mcp/2026-11-11_2042_hil_relaxed_refactor.md#13-publicación-v080-y-tests-pendientes).
 
 The first complete mock run, including a G2 → S1 rework loop, is archived under
 [`methodology/test/T0_FM-RPI-RTL-mock/`](methodology/test/T0_FM-RPI-RTL-mock/).

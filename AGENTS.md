@@ -260,7 +260,7 @@ codeanvil mcp enable marconi       → (inside a project) wire it later, or rewr
 - Real-time spectrum analyzer (soapy_hackrf_source → qtgui sinks) via escape-hatch
 - DC blocker insertion for direct-conversion receiver artifact removal
 
-### Implemented on `feat/hil-pil`: agent-operated PIL/HIL
+### Implemented in v0.8.0: agent-operated PIL/HIL
 
 The bundled `templates/mcp/vsil_hil_mcp/` server is opt-in, installed with
 `codeanvil mcp add vsil_hil_mcp` and wired with `mcp enable` or `create --mcp`.
@@ -275,7 +275,8 @@ It remains a command proxy, not an orchestrator or an adversarial sandbox.
 See its [README](templates/mcp/vsil_hil_mcp/README.md) for setup, published Git
 deployment, database preservation and diagnostics. Linux execution is implemented; Windows target
 provisioning and `guarded`/`locked` policies remain deferred. Existing RPi access
-smoke evidence predates this branch's final integrated hardware validation.
+smoke evidence predates final integrated hardware validation. Release acceptance
+tests remain pending in the HIL refactor implementation plan.
 
 `codeanvil telemetry` creates new evidence files exclusively, flushes samples and
 supports optional `--fsync`. Disk errors degrade the companion with a diagnostic;

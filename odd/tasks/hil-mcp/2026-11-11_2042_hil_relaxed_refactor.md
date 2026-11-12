@@ -1,7 +1,9 @@
 # Refactor HIL — autonomía de laboratorio y revisión antes del hardware
 
-**Estado: refactor implementado con subagentes y validación local completa;
-validación física final pendiente.** Base revisada:
+**Estado: refactor implementado; tests finales de aceptación pendientes por
+instrucción del usuario. Publicación v0.8.0 autorizada mediante PR a main y tag.**
+Las comprobaciones anteriores se conservan como evidencia histórica, no como
+cierre de los tests de la versión publicada (sección 13). Base revisada:
 `a155f01` en `feat/hil-pil`. Este documento recoge las seis correcciones del
 usuario a la [implementación anterior](2026-11-10_1057_hil_mcp.md).
 
@@ -436,7 +438,7 @@ Las comprobaciones y límites de rollback se añaden aquí al cerrar cada unidad
   sin código ejecutable; el escenario stdio de R5 la sustenta. Rollback: README
   del servidor y esta entrada, sin cambiar comportamiento.
 
-## 11. Cierre y validación local
+## 11. Evidencia de implementación y validación local anterior
 
 R0–R5 implementados. `AGENTS.md`, README principal y plantilla pasiva generada
 describen el mismo flujo que las skills. Los reportes históricos no se reescriben;
@@ -444,7 +446,7 @@ el registro anterior se marca como histórico. Las claves legacy y el estado de
 los equipos no se migran destructivamente. No hay PR, release, instalación global
 ni ejecución contra hardware durante esta implementación.
 
-Comprobaciones finales del padre:
+Comprobaciones anteriores del padre (no cierran los tests pendientes de publicación):
 
 - `.venv/bin/python -m pytest tests/ templates/tests/ -q -rs` con Python 3.12.13:
   **683 passed, 1 skipped**. La misma suite con Python 3.10.20 en un venv temporal:
@@ -501,3 +503,38 @@ y argumentos CodeAnvil con su parser real. Sin ejecución remota. Metadata y rut
 de skills existentes no cambian, por lo que no hace falta refrescar el registro.
 Rollback: sección inicial de `usage/SKILL.md`, nueva referencia y esta entrada;
 sin cambios en credenciales, gates ni reportes.
+
+## 13. Publicación v0.8.0 y tests pendientes
+
+El usuario autoriza commit/push, PR y merge a `main`, y publicación con git tag.
+Se incrementa la versión minor de 0.7.5 a **0.8.0** por el alcance de la funcionalidad
+HIL/PIL. `pyproject.toml` sigue siendo la fuente de versión; el lock y README se
+actualizan con ella. El tag anotado `v0.8.0` se creará sobre el merge de `main`.
+El workflow de release publica la versión al recibir ese tag.
+
+La entrega se integra en un único PR, como solicita el usuario, conservando sus
+commits por unidad mediante merge commit. El diff supera el presupuesto habitual
+de 400 líneas (`size:exception`); no se comprime código ni se separa retroactivamente
+el refactor ya integrado. Los límites de revisión y rollback constan en sección 10.
+
+**Tests pendientes de aceptación del release:**
+
+- [ ] Repetir la regresión de herramienta y metodología en Python 3.10 y 3.12
+  sobre la versión publicada.
+- [ ] Validar el MCP publicado, protocolo stdio y rutas legacy/MAC/adopción.
+- [ ] Validar instalación, wheel/scaffold, guía de acceso y UI de la versión publicada.
+- [ ] Probar alta real desde dos PCs, reutilización entre proyectos y conservación
+  de claves/workspaces en el equipo físico.
+- [ ] Completar el flujo físico PIL/HIL: revisión pre-HW, despliegue limpio/pusheado,
+  protección DB/estado, preparación y relojes, mediciones/telemetría y feedback G2.
+
+Por petición del usuario no se vuelven a ejecutar suites locales durante esta
+publicación. Las ejecuciones anteriores quedan como histórico en secciones 10–12;
+la CI automática del PR/main no sustituye la aceptación integral pendiente. Ninguna
+prueba física se ejecuta ni se da por aprobada al publicar el tag.
+
+Validación de la unidad de publicación: coherencia versión/lock y `git diff --check`;
+runtime adicional N/A, cambios de metadata/documentación. Rollback: incremento de
+versión/lock y anuncios de release, manteniendo el código funcional HIL/PIL. Un
+tag publicado no se mueve ni elimina para corregirlo; una corrección se publica
+con una versión posterior.
