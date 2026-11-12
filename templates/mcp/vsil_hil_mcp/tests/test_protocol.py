@@ -10,6 +10,8 @@ from datetime import timedelta
 import json
 import os
 from pathlib import Path
+import shutil
+import subprocess
 import sys
 
 from mcp import ClientSession, StdioServerParameters
@@ -74,6 +76,19 @@ else:
         executable = executables / name
         executable.write_text(fake, encoding="utf-8")
         executable.chmod(0o755)
+    # Deployment now exports a committed, published candidate. This origin is a
+    # local bare repository: fetching it cannot connect to any hardware.
+    git = shutil.which("git")
+    if git is None:
+        pytest.skip("deployment protocol fixture requires Git")
+    (executables / "git").symlink_to(git)
+    (project / ".gitignore").write_text("verification/telemetry/\n.codeanvil/hil/\n", encoding="utf-8")
+    origin = tmp_path / "origin.git"
+    for args in (["init", "-q", "-b", "main"], ["add", "."],
+                 ["-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid", "commit", "-qm", "candidate"],
+                 ["init", "--bare", "-q", str(origin)], ["remote", "add", "origin", str(origin)],
+                 ["push", "-qu", "origin", "main"]):
+        subprocess.run([git, "-C", str(project), *args], check=True, capture_output=True, timeout=10)
     env = {
         "HOME": str(home), "PATH": str(executables),
         "VSIL_HIL_WORKSPACE": str(project), "VSIL_HIL_CODEANVIL_VERSION": "0.7.5",
@@ -110,6 +125,7 @@ def test_stdio_deploy_run_fetch_and_policy(protocol_target):
                 deployed = _payload(await session.call_tool("code_sync", {}))
                 assert deployed["exit_code"] == 0
                 assert deployed["stdout"] == "transfer complete\n"
+                assert len(deployed["revision"]) == 40
                 observed = _payload(await session.call_tool("ssh_exec_cmd", {"cmd": "uname -a"}))
                 assert observed == {"stdout": "line one\nline two: á\n", "stderr": "", "exit_code": 0}
                 failure = _payload(await session.call_tool("ssh_exec_cmd_trusted", {"cmd": "fixture-failure"}))

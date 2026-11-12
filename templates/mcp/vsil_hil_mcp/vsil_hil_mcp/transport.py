@@ -5,10 +5,11 @@ from __future__ import annotations
 import os
 import shlex
 import subprocess
+import tarfile
 import tempfile
 from pathlib import Path
 
-from .config import Target, key_paths
+from .config import ConfigError, Target, key_paths
 
 EXCLUDES = (
     ".git", "__pycache__", "*.pyc", "verification/telemetry/",
@@ -41,7 +42,7 @@ def _ssh_opts(target: Target, key: Path) -> list[str]:
         "-o", "IdentitiesOnly=yes",
         "-o", "IdentityAgent=none",
         "-o", "StrictHostKeyChecking=accept-new",
-        "-o", f"UserKnownHostsFile={key_paths(target.name)['known_hosts']}",
+        "-o", f"UserKnownHostsFile={key_paths(target.key_identity)['known_hosts']}",
         "-o", "BatchMode=yes",
         "-o", "ConnectTimeout=15",
     ]
@@ -80,21 +81,83 @@ def rsync_push_argv(target: Target, deploy_key: Path, local_workspace: Path) -> 
     # Default rsync exclusions are symmetric: hide sender files AND protect
     # existing receiver files from --delete. Never add --delete-excluded here.
     excludes = (*EXCLUDES, *(f"/{path}" for path in getattr(target, "persistent_paths", ())))
+    if target.sync_via_exec:
+        # An adopted legacy client keeps its old restricted deploy key intact.
+        # Its existing exec identity can reach the new project workspace directly.
+        remote_path = target.workspace
+    elif target.deploy_root:
+        remote_path = str(Path(target.workspace).relative_to(target.deploy_root))
+    else:
+        remote_path = ""  # legacy forced command already roots at the workspace
     return [
         "rsync", "-az", "--delete",
         "-e", _rsync_e(target, deploy_key),
         *[f"--exclude={e}" for e in excludes],
         f"{local_workspace}/",
-        # The deploy key is forced to `rrsync -wo <workspace>`, which roots every
-        # client path at the workspace. So the destination is that root (empty
-        # path), NOT the absolute workspace path — otherwise rrsync nests it as
-        # <workspace>/<workspace>/ and fails (verified against a real target).
-        f"{_rsync_host(target)}:",
+        f"{_rsync_host(target)}:{remote_path}",
     ]
 
 
+def _git(root: Path, *args: str) -> str:
+    try:
+        result = subprocess.run(["git", "-C", str(root), *args], capture_output=True,
+                                text=True, timeout=TIMEOUT_S)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise ConfigError(f"cannot prepare published candidate: {exc}") from exc
+    if result.returncode:
+        raise ConfigError(f"cannot prepare published candidate: git {args[0]} failed: {result.stderr.strip()}")
+    return result.stdout.strip()
+
+
+def _published_revision(root: Path) -> str:
+    """Require a clean project branch synchronized with its freshly fetched upstream."""
+    if Path(_git(root, "rev-parse", "--show-toplevel")).resolve() != root.resolve():
+        raise ConfigError("deployment requires the project root to be the Git repository root")
+    branch = _git(root, "symbolic-ref", "--quiet", "--short", "HEAD")
+    _git(root, "rev-parse", "--verify", "@{upstream}")
+    remote = _git(root, "config", "--get", f"branch.{branch}.remote")
+    upstream_ref = _git(root, "config", "--get", f"branch.{branch}.merge")
+    if not remote or remote == ".":
+        raise ConfigError("deployment requires a branch published to a remote upstream")
+    if _git(root, "status", "--porcelain", "--untracked-files=all"):
+        raise ConfigError("deployment requires a clean Git tree; commit and push all source and kit changes")
+    # Fetch the actual upstream branch, rather than relying on a possibly stale
+    # tracking ref or a remote fetch refspec that excludes this branch.
+    _git(root, "fetch", "--quiet", "--no-tags", "--", remote, upstream_ref)
+    revision = _git(root, "rev-parse", "HEAD")
+    if revision != _git(root, "rev-parse", "FETCH_HEAD") or revision != _git(root, "rev-parse", "@{upstream}"):
+        raise ConfigError("deployment requires HEAD to match the fetched upstream; publish or update the candidate")
+    return revision
+
+
 def rsync_push(target: Target, deploy_key: Path, local_workspace: Path) -> dict:
-    return _run(rsync_push_argv(target, deploy_key, local_workspace))
+    """Deploy only a clean, published Git export; ignored host files never enter it."""
+    root = local_workspace.resolve()
+    revision = _published_revision(root)
+    with tempfile.TemporaryDirectory(prefix="codeanvil-deploy-") as directory:
+        temporary = Path(directory)
+        archive_path = temporary / "candidate.tar"
+        with archive_path.open("wb") as archive_output:
+            try:
+                archived = subprocess.run(["git", "-C", str(root), "archive", revision],
+                                          stdout=archive_output, stderr=subprocess.PIPE,
+                                          timeout=TIMEOUT_S)
+            except (OSError, subprocess.TimeoutExpired) as exc:
+                raise ConfigError(f"cannot export published candidate: {exc}") from exc
+        if archived.returncode:
+            raise ConfigError(f"cannot export published candidate: {archived.stderr.decode(errors='replace').strip()}")
+        source = temporary / "source"
+        source.mkdir()
+        try:
+            with tarfile.open(archive_path) as archive:
+                # The server requires Python 3.12+: the stdlib data filter refuses
+                # escaping paths/links and special-device members during extraction.
+                archive.extractall(source, filter="data")
+        except (OSError, tarfile.TarError) as exc:
+            raise ConfigError(f"unsafe or unreadable Git archive: {exc}") from exc
+        if _git(root, "rev-parse", "HEAD") != revision or _git(root, "status", "--porcelain", "--untracked-files=all"):
+            raise ConfigError("candidate changed during export; review and publish it before deployment")
+        return {"revision": revision, **_run(rsync_push_argv(target, deploy_key, source))}
 
 
 def rsync_pull_argv(

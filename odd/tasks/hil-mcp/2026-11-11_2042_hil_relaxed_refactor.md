@@ -388,3 +388,9 @@ Las comprobaciones y límites de rollback se añaden aquí al cerrar cada unidad
   **30 tests passed** de dispatch y actualización; Bash ejecuta las capacidades
   con herramientas falsas y se detiene en fallo. Rollback: server/provision y sus
   tests; la preparación de acceso permanece en credential-setup.
+- R2 transporte: `code_sync` exige árbol limpio y rama sincronizada con upstream
+  recién consultado, exporta el commit publicado con Git y despliega solo ese
+  árbol temporal. **16 tests passed** de despliegue/rsync/protocolo, con remotos Git
+  bare locales, casos sucios/no publicados y enlaces que escapan. Sin manifiesto
+  ni hashes HIL. Rollback: exportación/chequeo Git y destinos compatibles del
+  transporte, fixtures de protocolo y tests de despliegue.

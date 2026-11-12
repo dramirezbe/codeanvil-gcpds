@@ -3,7 +3,6 @@
 from pathlib import Path
 import shutil
 import subprocess
-from types import SimpleNamespace
 
 import pytest
 
@@ -16,9 +15,8 @@ def test_code_sync_excludes_preserve_receiver_database_and_declared_state(tmp_pa
     source.mkdir()
     destination.mkdir()
     target = config.Target('pi', 'fixture.invalid', 'codeanvil-agent', '/home/codeanvil-agent/workspace')
-    fields = vars(target).copy()
-    fields['persistent_paths'] = ('keep/runtime-state',)
-    target = SimpleNamespace(**fields)
+    from dataclasses import replace
+    target = replace(target, persistent_paths=('keep/runtime-state',))
     protected = ['live.db', 'live.db-wal', 'live.db-shm', 'live.db-journal',
                  'nested/store.sqlite', 'nested/store.sqlite-wal',
                  'nested/store.sqlite3', 'nested/store.sqlite3-shm',
