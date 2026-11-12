@@ -362,3 +362,9 @@ como una medición física. El checkpoint previo a HW se aplica también a cualq
 validación física que se proponga durante esta entrega.
 
 Las comprobaciones y límites de rollback se añaden aquí al cerrar cada unidad.
+
+- R0a: registro local de equipos por MAC, aliases de interfaces y adopción de
+  identidades de claves existentes; metadata pública separada de claves privadas.
+  `test_identity.py`: **17 passed**. Escenario: registro/fusión y resolución de
+  claves en directorios temporales, sin SSH. Rollback: `identity.py`, extensiones
+  de `config.py` y sus tests; el bootstrap público se integra en la siguiente unidad.

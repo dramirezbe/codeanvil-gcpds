@@ -9,8 +9,11 @@ import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from pathlib import PurePosixPath
 
 import yaml
+
+from . import identity
 
 POLICIES = ("trusted", "guarded", "locked")
 DEFAULT_POLICY = "trusted"
@@ -55,6 +58,15 @@ class Target:
     device: str = ""
     hil_policy: str = DEFAULT_POLICY
     port: int = 22
+    device_id: str = ""
+    deploy_root: str = ""
+    mac_addresses: tuple[str, ...] = ()
+    bootstrap_user: str = ""
+    persistent_paths: tuple[str, ...] = ()
+
+    @property
+    def key_identity(self) -> str:
+        return identity.local_key_identity(self.device_id) if self.device_id else self.name
 
 
 def project_root() -> Path:
@@ -104,6 +116,9 @@ def validate_target_fields(name: str, host: str, user: str, workspace: str, poli
 def _to_target(name: str, raw: dict) -> Target:
     if not isinstance(raw, dict):
         raise ConfigError(f"target {name!r} is not a mapping")
+    for field in ("mac_addresses", "persistent_paths"):
+        if field in raw and not isinstance(raw[field], list):
+            raise ConfigError(f"{field} must be a list")
     t = Target(
         name=name,
         host=str(raw.get("host", "")),
@@ -114,8 +129,32 @@ def _to_target(name: str, raw: dict) -> Target:
         device=str(raw.get("device", "")),
         hil_policy=str(raw.get("hil_policy", DEFAULT_POLICY)),
         port=raw.get("port", 22),
+        device_id=str(raw.get("device_id", "")),
+        deploy_root=str(raw.get("deploy_root", "")),
+        mac_addresses=tuple(raw.get("mac_addresses", [])),
+        bootstrap_user=str(raw.get("bootstrap_user", "")),
+        persistent_paths=tuple(raw.get("persistent_paths", [])),
     )
     validate_target_fields(t.name, t.host, t.user, t.workspace, t.hil_policy, t.port, t.os)
+    if t.device_id:
+        try:
+            if identity.mac_device_id(t.device_id.removeprefix("mac_")) != t.device_id:
+                raise ValueError("invalid equipment identity")
+            if any(identity.normalize_mac(mac) != mac for mac in t.mac_addresses):
+                raise ValueError("MAC aliases must be normalized")
+        except ValueError as exc:
+            raise ConfigError(str(exc)) from exc
+    if t.deploy_root:
+        if not _WORKSPACE_RE.fullmatch(t.deploy_root) or ".." in t.deploy_root.split("/"):
+            raise ConfigError("invalid deploy_root")
+        if not PurePosixPath(t.workspace).is_relative_to(PurePosixPath(t.deploy_root)) or t.workspace == t.deploy_root:
+            raise ConfigError("workspace must be a project subdirectory of deploy_root")
+    for relative in t.persistent_paths:
+        if not isinstance(relative, str) or not re.fullmatch(r"[A-Za-z0-9._/@+-]+", relative):
+            raise ConfigError("persistent_paths must contain plain relative paths")
+        path = PurePosixPath(relative)
+        if path.is_absolute() or relative in ("", ".") or ".." in path.parts:
+            raise ConfigError("persistent_paths must stay inside the workspace")
     return t
 
 
@@ -168,6 +207,11 @@ def register_target(root: Path, target: Target) -> bool:
         "device": target.device, "hil_policy": target.hil_policy,
         "port": target.port,
     }
+    if target.device_id:
+        fields.update(device_id=target.device_id, deploy_root=target.deploy_root,
+                      mac_addresses=list(target.mac_addresses), bootstrap_user=target.bootstrap_user)
+    if target.persistent_paths:
+        fields["persistent_paths"] = list(target.persistent_paths)
     if isinstance(block, dict):
         if target.name in block:
             return False
