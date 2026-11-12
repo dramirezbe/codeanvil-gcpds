@@ -32,8 +32,9 @@ S1, G1 and S2. Its original G2 PASS predates the later runnable-entry-point
 correction; `RUN.md` records that correction's separate smoke evidence. Do not
 present it as a new G2 verdict. The holdout is an observation log; the refactor plan
 [`2026-11-06_1410_t3_holdout_refactor.md`](odd/tasks/t3-holdout-refactor/2026-11-06_1410_t3_holdout_refactor.md)
-implements its document renames, telemetry collector and pause policy, while the
-VL-2 machine interface remains a proposal.
+implements its document renames, telemetry collector and pause policy. The HIL
+branch adds agent-operated hardware tests and a small measurement record; physical
+validation remains separate from that archived run.
 
 ## Overview
 
@@ -124,6 +125,9 @@ Pure Python script. No LLM, no AI agent — just `g0_validate.py`.
 - **Skill**: `templates/skills/S1_design_services/SKILL.md`, with the design template and graph template in `references/` and vis-network in `assets/`.
 - **Output**: `.codeanvil/design/SDD.md`, dark `.codeanvil/design/dependency_graph.html` and light `.codeanvil/design/dependency_graph_light.html` (same topology, one spider per service, UI palette). `S1.md` is the only state.
 - **Runnable contract**: design §0.5 names one project-root command, the services and runtime HAL it starts, URL, visible result and clean shutdown. G1 checks this in G1.15.
+- **Execution contract**: Meta `Target(s)` maps services and paths to local or named
+  `project.yaml` targets. §1.6 names where each level runs; §1.7 supplies that target's
+  COTS-based telemetry envelope. PIL remains VERIFIED at VL-0/VL-1 with Mock HAL inputs.
 
 ### G1 — Human design review
 
@@ -131,8 +135,16 @@ Pure Python script. No LLM, no AI agent — just `g0_validate.py`.
 
 ### S2 — Implement services (agent)
 
-- **Skill**: `templates/skills/S2_implement_services/SKILL.md`, with `references/project_layout.md`, the locked `references/logger.py` and `references/logger.ts`, and the locked `scripts/telemetry_collector.py` that `run.sh` runs in place through `codeanvil python` (psutil from the methodology runtime).
+- **Skill**: `templates/skills/S2_implement_services/SKILL.md`, with `references/project_layout.md`
+  and the locked `references/logger.py` and `references/logger.ts`. `run.sh` starts
+  `codeanvil telemetry` on the execution target; the collector is in
+  `src/codeanvil/telemetry/`, with psutil in the tool environment.
 - **Output**: the delivered code in `src/<service>/`, the verification kit in `verification/`, the root manifests, `S2.md` and `S2_artifacts/test_run.md` (the two `verification/run.sh vl0|vl1` commands and `Possible infeasibility`). S2 implements §0.5 and a VL-0 smoke test of the actual entry point, including the URL and observed result. Only S2 writes code; a design defect is a `Verdict: design defect` iteration routed to S1.
+- **Hardware preparation**: S2 preserves its configurable Pause Schedule and also
+  waits for explicit `continue` before remote update/deployment or local HW tests.
+  It deploys a clean, pushed Git candidate through `vsil_hil_mcp`, updates tool and
+  dependencies, synchronizes clocks and retrieves the run's telemetry. No per-file
+  deployment manifest or exact tool-version match is required.
 
 ### G2 — Adaptive verification (human verdict)
 
@@ -141,7 +153,12 @@ Pure Python script. No LLM, no AI agent — just `g0_validate.py`.
 ### `vsil-verifier` subagent
 
 - **Body**: `templates/agents/vsil-verifier.md`, one shared body; `subagents` in `templates/config.yaml` lists one file per runtime. `codeanvil create` writes `.claude/agents/vsil-verifier.md`, `.opencode/agents/vsil-verifier.md` and `.codex/agents/vsil-verifier.toml`.
-- **Contract**: fresh context, read-only, runs only the `test_run.md` commands, never writes a report and never asks the human; it returns a results table to G2. Runtimes without subagents (Copilot, Pi) run G2 in a fresh session.
+- **Contract**: fresh context, runs recorded tests including reviewed real HW
+  commands and auxiliary diagnostics, without editing product/test code, asking
+  the human or deciding HITL. The G2 parent owns pre-HW review, preparation and
+  trusted actions; the verifier uses remote probe/run/fetch and returns results,
+  measured criteria and causal feedback. Runtimes without subagents (Copilot, Pi)
+  run G2 in a fresh session.
 
 ### RFD — Request for Deviation (outside the chain)
 
@@ -184,7 +201,14 @@ rework, S2 pause schedule, module subagents and telemetry collector are
 implemented on `main` (unreleased until v0.5.0). The plan and its Log are in
 `odd/tasks/t3-holdout-refactor/2026-11-06_1410_t3_holdout_refactor.md`.
 
-Still deferred, and **not** implemented: the VL-2 machine interface, reader-facing
+The measurement v2 schema/basic checker and hardware workflow are defined in G2.
+The agent selects methods with adequate resolution for GT tolerances; calibration,
+corrections and uncertainty apply when the requirement or conclusion needs them.
+The checker does not supply a device driver or decide a human hardware verdict.
+G0 remains the deterministic structural gate; its later v2 metrology-content
+rules are not implemented. S1/G1 review the lab prerequisites for the current flow.
+
+Still deferred, and **not** implemented: reader-facing
 `reports/` (`verified_prototype.md` stays in `report/<cycle>/G2_artifacts/`),
 `validation_levels.md`, optional `GT/SRS.md` and an MCP telemetry facade. Change
 the skills, scaffold, documentation and tests together before treating a
@@ -236,6 +260,30 @@ codeanvil mcp enable marconi       → (inside a project) wire it later, or rewr
 - Real-time spectrum analyzer (soapy_hackrf_source → qtgui sinks) via escape-hatch
 - DC blocker insertion for direct-conversion receiver artifact removal
 
+### Implemented in v0.8.0: agent-operated PIL/HIL
+
+The bundled `templates/mcp/vsil_hil_mcp/` server is opt-in, installed with
+`codeanvil mcp add vsil_hil_mcp` and wired with `mcp enable` or `create --mcp`.
+`credential-setup -u <admin> -i <host>` discovers physical MACs and reuses this
+client's keys across projects. Another PC adds its own public keys to the same
+`codeanvil-agent`; private paths stay local. Workspaces use the project's UUID.
+Normal commands, scripts, packages and sudo run directly; clearly destructive
+operations use the audited trusted tool. Host permissions govern its native
+prompt; the skills still wait for explicit pre-HW `continue` in full-access mode.
+It remains a command proxy, not an orchestrator or an adversarial sandbox.
+
+See its [README](templates/mcp/vsil_hil_mcp/README.md) for setup, published Git
+deployment, database preservation and diagnostics. Linux execution is implemented; Windows target
+provisioning and `guarded`/`locked` policies remain deferred. Existing RPi access
+smoke evidence predates final integrated hardware validation. Release acceptance
+tests remain pending in the HIL refactor implementation plan.
+
+`codeanvil telemetry` creates new evidence files exclusively, flushes samples and
+supports optional `--fsync`. Disk errors degrade the companion with a diagnostic;
+exit 0 alone does not prove usable telemetry. Missing/incomplete evidence prompts
+notice, diagnosis and a reasoned repeat/continue decision for the affected claims;
+consumers disclose a skipped torn final JSONL line and lost coverage.
+
 ### Planned
 
 - **Project DB** — query project metadata (UUID registry)
@@ -284,8 +332,8 @@ myproj/
 │   │   ├── S0_normalise_build_package/   ← templates/ (StRS.md, SyRS.md blueprints)
 │   │   ├── S1_design_services/           ← references/ (SDD.md, dependency_graph_template.html) + assets/ (vis-network)
 │   │   ├── G1_design_review/             ← references/G1_CHECKLIST.md
-│   │   ├── S2_implement_services/        ← references/ (project_layout.md, logger.py/.ts, telemetry_collector.py)
-│   │   ├── G2_adaptive_verification/     ← references/verified_prototype.md
+│   │   ├── S2_implement_services/        ← references/ (project_layout.md, logger.py/.ts)
+│   │   ├── G2_adaptive_verification/     ← prototype + measurement schema/reference + validator
 │   │   ├── RFD_request_for_deviation/
 │   │   └── marconi-*/               ← (if --mcp marconi) 6 RF/SDR skills
 │   │       └── SKILL.md

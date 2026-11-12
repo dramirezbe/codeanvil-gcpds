@@ -1,9 +1,17 @@
 """T7: G2 runs the S2 evidence through the verifier subagent and writes the Verified Prototype."""
 
+import json
+import shutil
+import subprocess
+import sys
+
+import pytest
+
 from codeanvil.CLI.commands.create import cmd_create
-from codeanvil.config.paths import TEMPLATES_DIR
+from codeanvil.config.paths import CONFIG, TEMPLATES_DIR
 from codeanvil.init.create import _parse_skill_frontmatter
 from test_create import _scaffold_skill, _skill_text, db_path  # noqa: F401  (db_path is a fixture)
+from test_hil_measurements import captured  # noqa: F401 (fixture)
 
 SKILL = "G2_adaptive_verification"
 PROTOTYPE = TEMPLATES_DIR / "skills" / SKILL / "references" / "verified_prototype.md"
@@ -104,3 +112,91 @@ def test_g2_rejects_placeholder_telemetry_as_measured_evidence():
 
     assert "A constant or placeholder telemetry reading is not measured evidence" in text
     assert "Reject a constant or placeholder reading as measured evidence" in text
+
+
+def test_g2_parent_prepares_but_fresh_verifier_executes_reviewed_hw():
+    text = " ".join(_g2_text().split())
+    prototype = " ".join(PROTOTYPE.read_text(encoding="utf-8").split())
+    assert "No declared `targets:` means local execution" in text
+    assert "never silently substitute the developer host" in text
+    assert "Stop and wait for explicit `continue`" in text
+    assert "clean Git tree and all candidate commits pushed" in text
+    assert "parent completes preparation before launching it" in text
+    assert "fresh verifier runs the recorded real HW command" in text
+    assert "not an exact-SemVer gate" in text
+    assert "actual published tool ref" in text
+    assert "the next G2 iteration number" in text
+    assert "last appended G2 iteration number plus 1" in text
+    assert "affected measures or proceed with the supported scope" in text
+    assert "Execution equipment and preparation" in prototype
+    assert "deployment_manifest.json" not in text
+    assert "capture_request.json" not in text
+
+
+def test_scaffolded_g2_and_verifier_keep_parent_pauses_and_causal_feedback(tmp_path, db_path):
+    cmd_create(None, tmp_path, project_name="Proj")
+    g2 = " ".join(_scaffold_skill(tmp_path, SKILL, "SKILL.md").read_text().split())
+    verifier = " ".join((tmp_path / "proj" / ".claude" / "agents" / "vsil-verifier.md").read_text().split())
+    for text in (g2, verifier):
+        assert "fetch_evidence" in text and "local_path" in text
+        assert "monotonic" in text or "synchronizes clocks" in text
+        assert "concrete next action" in text
+        assert "torn final JSONL line" in text
+        assert "module" in text and "S2" in text and "design" in text and "RFD" in text
+        assert "check_deployment.py" not in text
+    assert "never asks the human" in g2
+    assert "Ask the human anything" in verifier
+    assert "without editing the DUT" in verifier
+    assert "the next G2 iteration number" in verifier
+    assert "templates/skills/" not in g2
+
+
+def test_machine_record_accepts_general_metrics_without_hil_attestation():
+    machine = (PROTOTYPE.parent / "machine_evidence.md").read_text(encoding="utf-8")
+
+    assert "number, text or boolean" in machine
+    assert "schema_version: 2" in machine
+    assert "finite numeric values" in machine
+    assert "not a passing test or a gate verdict" in machine
+    assert "The agent runs functional or metrological tests" in machine
+    assert "No file hash, deployment digest" in machine
+    assert "`fetch_evidence` returns `local_path`" in machine
+
+
+def test_scaffold_rewrites_the_machine_validation_command_and_ships_references(tmp_path, db_path):
+    cmd_create(None, tmp_path, project_name="Proj")
+    machine = _scaffold_skill(tmp_path, SKILL, "references", "machine_evidence.md").read_text()
+    s2 = _scaffold_skill(tmp_path, "S2_implement_services", "SKILL.md").read_text()
+
+    assert "templates/skills/" not in machine
+    assert ".agents/skills/G2_adaptive_verification/scripts/validate_measurement.py" in machine
+    assert ".agents/skills/S2_implement_services/references/machine_evidence.md" in s2
+    assert _scaffold_skill(tmp_path, SKILL, "references", "measurement.schema.json").is_file()
+
+
+def test_s2_owns_an_executable_copy_of_canonical_measurement_assets(tmp_path, db_path, captured):
+    record, _ = captured
+    cmd_create(None, tmp_path, project_name="Proj")
+    producer = _scaffold_skill(tmp_path, SKILL)
+    consumer = _scaffold_skill(tmp_path, "S2_implement_services")
+    for relative in ("scripts/validate_measurement.py", "references/measurement.schema.json"):
+        assert (consumer / relative).read_bytes() == (producer / relative).read_bytes()
+    guide = (consumer / "references/machine_evidence.md").read_text()
+    assert ".agents/skills/S2_implement_services/scripts/validate_measurement.py" in guide
+    assert ".agents/skills/G2_adaptive_verification/" not in guide
+
+    # Removing the producer from this temporary scaffold proves the consumer is standalone.
+    shutil.rmtree(producer)
+    script = consumer / "scripts/validate_measurement.py"
+    args = [sys.executable, str(script), str(record)]
+    result = subprocess.run(args, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout)["verdict"] == "human review required"
+
+
+@pytest.mark.parametrize("asset,error", [("references/missing.json", FileNotFoundError),
+                                         ("../outside.json", ValueError)])
+def test_broken_shared_asset_configuration_fails_explicitly(tmp_path, db_path, monkeypatch, asset, error):
+    monkeypatch.setitem(CONFIG, "shared_skill_assets", {SKILL: {"S2_implement_services": [asset]}})
+    with pytest.raises(error, match="shared skill asset"):
+        cmd_create(None, tmp_path, project_name="Proj")

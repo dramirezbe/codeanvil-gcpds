@@ -1,17 +1,20 @@
-"""FastMCP server exposing the five HIL tools (remote targets only, `trusted` policy MVP).
+"""FastMCP server exposing HIL tools (remote targets only, `trusted` policy MVP).
 
 Self-contained: `mcp`, `pyyaml` and the stdlib only; never imports `codeanvil`.
 """
 
 import json
+import os
+import re
 from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
+from mcp.types import ToolAnnotations
 
 from . import config, transport
 from .audit import audit
 from .classifier import PRIVILEGED, classify
-from .provision import render_script
+from .provision import DEFAULT_REPO, render_update_command
 
 mcp = FastMCP("vsil_hil_mcp")
 
@@ -27,12 +30,14 @@ def _context(target: str) -> tuple[Path, config.Target, dict[str, Path]]:
     root = config.project_root()
     tgt = config.resolve_target(target, root)
     _require_trusted(tgt)
-    return root, tgt, config.key_paths(tgt.name)
+    if tgt.os != "linux":
+        raise config.ConfigError("remote execution is implemented for Linux targets only")
+    return root, tgt, config.key_paths(tgt.key_identity)
 
 
 def _need_key(path: Path) -> Path:
     if not path.is_file():
-        raise config.ConfigError(f"missing key {path}: run init_codeanvil first")
+        raise config.ConfigError(f"missing key {path}: run codeanvil credential-setup first")
     return path
 
 
@@ -45,83 +50,42 @@ def _exec(tool: str, cmd: str, target: str) -> dict:
 
 
 @mcp.tool()
-def init_codeanvil(
-    target: str = "", host: str = "", user: str = "", workspace: str = "",
-    os: str = "linux", arch: str = "", device: str = "", hil_policy: str = "trusted",
-) -> str:
-    """Prepare a remote target: create its keys and return the provisioning script.
+def init_codeanvil(target: str = "", source_ref: str = "", source_repo: str = DEFAULT_REPO) -> str:
+    """Install/update CodeAnvil as the enrolled agent user, then check its commands.
 
-    No SSH happens here. The returned script must be read and run ONCE, as root,
-    by the human on the target. If `target` is not yet declared in
-    `.codeanvil/project.yaml` `targets:`, pass host/user (and optionally
-    workspace/os/arch/device/hil_policy) to register it.
+    The calling stage must complete its pre-hardware review checkpoint first.
+    Enroll access once with codeanvil credential-setup; no keys are generated here.
+    The agent supplies an actually published CodeAnvil release/commit, independently
+    of the delivered project's Git ref. No exact host/target version equality gate.
 
     Args:
-        target: target name; may be empty when exactly one target is declared.
-        host: target address (only to register a new target).
-        user: unprivileged user to create on the target (new target).
-        workspace: absolute workspace path on the target (default /home/<user>/workspace).
-        os: target OS, "linux" or "windows" (windows provisioning is not implemented).
-        arch: target architecture, e.g. aarch64.
-        device: declared SDR device.
-        hil_policy: trusted (only mode implemented).
+        target: declared device ID (empty if exactly one device is declared).
+        source_ref: published CodeAnvil release tag or commit to install.
+        source_repo: Git repository of the tool, not the DUT repository.
     """
-    root = config.project_root()
-    declared = config.load_targets(root)
-    if target in declared or (not target and len(declared) == 1):
-        tgt = declared[target] if target else next(iter(declared.values()))
-    else:
-        if not target or not host or not user:
-            raise config.ConfigError("undeclared target: pass target, host and user to register it")
-        ws = workspace or f"/home/{user}/workspace"
-        config.validate_target_fields(target, host, user, ws, hil_policy)
-        tgt = config.Target(target, host, user, ws, os, arch, device, hil_policy)
-    _require_trusted(tgt)
-    if tgt.os.lower() != "linux":
-        return f"init_codeanvil: provisioning for os={tgt.os!r} is not implemented (linux only)."
-
-    keys = config.ensure_key_dir(tgt.name)
-    for kind in ("deploy", "exec"):
-        if not keys[kind].exists():
-            res = transport.keygen(keys[kind], f"vsil-hil-{kind}-{tgt.name}")
-            if res["exit_code"] != 0:
-                raise RuntimeError(f"ssh-keygen failed: {res['stderr'].strip()}")
-    config.lock_key_perms(keys)
-
-    deploy_pub = keys["deploy"].with_name("deploy_ed25519.pub").read_text(encoding="utf-8")
-    exec_pub = keys["exec"].with_name("exec_ed25519.pub").read_text(encoding="utf-8")
-    script = render_script(tgt, deploy_pub, exec_pub)
-    registered = config.register_target(root, tgt)
-    audit(root, tgt.name, "init_codeanvil", "ssh-keygen + provisioning script emitted", 0)
-    return (
-        f"INSTRUCTIONS FOR THE HUMAN (target {tgt.name!r}, registered={registered}).\n"
-        f"1. Copy the script below to {tgt.user}@{tgt.host} (or any admin account there) and read it.\n"
-        "2. Run it once as root on the target: sudo bash provision.sh\n"
-        "3. Compare the printed host key fingerprints with what ssh records on first contact\n"
-        f"   (stored in {keys['known_hosts']}).\n"
-        "4. Then use code_sync / ssh_exec_cmd. The agent holds no credentials.\n"
-        "----- provision.sh -----\n" + script
-    )
+    cmd = render_update_command(source_ref, source_repo)
+    return json.dumps(_exec("init_codeanvil", cmd, target))
 
 
 @mcp.tool()
 def ssh_exec_cmd(cmd: str, target: str = "") -> str:
-    """Run a non-privileged command on the remote target; returns raw {stdout, stderr, exit_code}.
+    """Run a normal lab command on the remote target; returns raw {stdout, stderr, exit_code}.
 
-    A command containing `sudo` is refused: re-issue it via ssh_exec_cmd_trusted.
+    Ordinary commands, sudo and test scripts are allowed. Explicit destructive
+    operations redirect to ssh_exec_cmd_trusted before anything executes.
 
     Args:
         cmd: the shell command line to run on the target.
         target: target name (empty if exactly one is declared).
     """
-    if classify(cmd) == PRIVILEGED:
-        root, tgt, _ = _context(target)
+    root, tgt, _ = _context(target)
+    if classify(cmd, tgt.workspace) == PRIVILEGED:
         audit(root, tgt.name, "ssh_exec_cmd", cmd, None)
         return json.dumps({
             "status": "use_trusted",
             "command": cmd,
-            "reason": "command contains sudo; nothing was run. Re-issue the same command "
-                      "through ssh_exec_cmd_trusted so the human can approve it.",
+            "reason": "command contains an explicitly destructive operation; nothing was run. "
+                      "Use ssh_exec_cmd_trusted under the host runtime's permission policy.",
         })
     return json.dumps(_exec("ssh_exec_cmd", cmd, target))
 
@@ -130,7 +94,8 @@ def ssh_exec_cmd(cmd: str, target: str = "") -> str:
 def ssh_exec_cmd_trusted(cmd: str, target: str = "") -> str:
     """Run any command (including sudo) on the remote target, verbatim, once.
 
-    The runtime's permission prompt on this tool is the human's approval.
+    The host runtime must configure permissions for this distinct tool. The server
+    cannot verify human approval; a full-access runtime may execute it without a prompt.
 
     Args:
         cmd: the shell command line to run on the target.
@@ -141,22 +106,69 @@ def ssh_exec_cmd_trusted(cmd: str, target: str = "") -> str:
 
 @mcp.tool()
 def code_sync(target: str = "") -> str:
-    """Deploy the project's code to the target workspace (rsync, deploy key, write-only)."""
+    """Deploy the clean, published Git candidate after the stage's pre-hardware checkpoint."""
     root, tgt, keys = _context(target)
-    argv = transport.rsync_push_argv(tgt, _need_key(keys["deploy"]), root)
-    res = transport.rsync_push(tgt, keys["deploy"], root)
-    audit(root, tgt.name, "code_sync", " ".join(argv), res["exit_code"])
+    role = "exec" if getattr(tgt, "sync_via_exec", False) else "deploy"
+    try:
+        res = transport.rsync_push(tgt, _need_key(keys[role]), root)
+    except config.ConfigError:
+        audit(root, tgt.name, "code_sync", "unpublished or uncommitted deployment refused", None)
+        raise
+    audit(root, tgt.name, "code_sync", f"deploy published Git candidate {res.get('revision', '')}", res["exit_code"])
     return json.dumps({"summary": f"code_sync -> {tgt.name}:{tgt.workspace}", **res})
 
 
 @mcp.tool()
 def fetch_evidence(target: str = "") -> str:
-    """Pull ONLY verification/telemetry/ from the target into the project."""
+    """Pull ONLY remote telemetry into a fresh host snapshot; return its local_path.
+
+    The host destination is verification/telemetry/<target>/fetch-<unique>/.
+    A nonzero exit marks a partial transfer; it cannot support an evidence claim.
+    """
     root, tgt, keys = _context(target)
-    argv = transport.rsync_pull_argv(tgt, _need_key(keys["exec"]), root)
-    res = transport.rsync_pull(tgt, keys["exec"], root)
+    res = transport.rsync_pull(tgt, _need_key(keys["exec"]), root)
+    argv = transport.rsync_pull_argv(tgt, keys["exec"], root, Path(res["local_path"]))
     audit(root, tgt.name, "fetch_evidence", " ".join(argv), res["exit_code"])
-    return json.dumps({"summary": f"fetch_evidence <- {tgt.name}:{tgt.workspace}/verification/telemetry/", **res})
+    return json.dumps({"summary": f"fetch_evidence <- {tgt.name}:{tgt.workspace}/verification/telemetry/ "
+                                 f"into {res['local_path']}", **res})
+
+
+@mcp.tool(annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False))
+def probe_target(target: str = "") -> str:
+    """Read OS, architecture, installed CodeAnvil version and USB visibility.
+
+    The device declaration is reported separately from observed lsusb output.
+    Versions are diagnostic; the agent prepares missing capabilities after review.
+    This probe does not transmit RF, install packages or edit target configuration.
+    """
+    root, tgt, keys = _context(target)
+    expected = os.environ.get("VSIL_HIL_CODEANVIL_VERSION") or None
+    res = transport.ssh_run(tgt, _need_key(keys["exec"]), transport.PROBE_CMD)
+    audit(root, tgt.name, "probe_target", transport.PROBE_CMD, res["exit_code"])
+    fields, usb_lines = {}, []
+    in_usb = False
+    for line in res["stdout"].splitlines():
+        if line == "VSIL_USB_BEGIN":
+            in_usb = True
+        elif in_usb:
+            usb_lines.append(line)
+        elif line.startswith("VSIL_") and "=" in line:
+            key, value = line.split("=", 1)
+            fields[key] = value
+    version_text = fields.get("VSIL_CODEANVIL", "")
+    match = re.fullmatch(r"codeanvil (\S+)", version_text)
+    observed_version = match.group(1) if match else None
+    metadata = {
+        "os": fields.get("VSIL_OS") or None,
+        "arch": fields.get("VSIL_ARCH") or None,
+        "codeanvil_version": observed_version,
+        "expected_version": expected,
+        "version_match": res["exit_code"] == 0 and observed_version == expected,
+        "declared_device": tgt.device,
+        "usb_probe_available": fields.get("VSIL_USB_AVAILABLE") == "yes",
+        "usb_devices": "\n".join(usb_lines),
+    }
+    return json.dumps({"target": tgt.name, "metadata": metadata, **res})
 
 
 def main() -> None:

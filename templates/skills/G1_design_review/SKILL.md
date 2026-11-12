@@ -2,7 +2,7 @@
 name: g1-design-review
 description: "Trigger: G1, design review, review the S1 design, are design choices resolved. Prepare a design review of the S1 document for a human, with a filled checklist and a recommendation, and record the human's PASS, FEEDBACK or RFD answer."
 license: Apache-2.0
-compatibility: "No scripts. Network only to install a missing toolchain tool after the user agrees. Writes only .codeanvil/report/<cycle-name>/G1.md."
+compatibility: "No scripts. Read-only toolchain/version probes on the named execution targets, through vsil_hil_mcp when remote. S2/G2 prepare target tools after the pre-HW review. Writes only .codeanvil/report/<cycle-name>/G1.md."
 metadata:
   author: "gcpds"
   version: "1.0"
@@ -17,7 +17,7 @@ G1 answers one question: **are all implementation-critical design choices resolv
 recommends; only the human's answer sets the verdict.
 
 **G1 runs no script.** The agent is the reviewer's analyst: it validates by reading, reasoning
-and running the tools on this machine itself, and spends the tokens a thorough review needs.
+and running read-only tool probes on each execution target, and spends the tokens a thorough review needs.
 Its findings inform the human; they are never an automatic verdict.
 
 ## Prerequisite and Cycle
@@ -69,21 +69,22 @@ Otherwise check, in this order, writing **no iteration** when you stop:
   re-derive every row yourself: the topological order from the §1.4 cards, coverage from the full `SYS-*` list, each
   contract field by field. Never trust the design's own summaries (§2.2 order, §4 tables)
   without checking them against the source sections.
-- Tools are checked on this machine (G1.14). Install a missing one only after the user agrees.
+- Tools are checked on the named execution targets (G1.14), locally only when the design says
+  local. G1 identifies capabilities and needed preparation; S2/G2 automatically install
+  necessary tools and project dependencies after the pre-HW review. Missing installable
+  dependencies do not demand that S2 start before G1 passes.
 
 ## Steps
 
 1. Give the human both graph paths from `S1.md` (dark and light): their spiders support the topology and
    runtime-loop review (G1.9); the build order is reviewed in the design's §2 (G1.1).
 2. Fill the checklist, including G1.11–G1.16 and the kit row.
-3. **Validate the toolchain (G1.14).** For every `Toolchain` entry, run the `--version` of its
-   language runtime and package manager yourself (for example `python3`, `uv`, `node`, `pnpm`,
-   and `tsc` for TypeScript); the test runner comes with S2's lock. Record each version. When a
-   tool is missing or older than the design needs, ask the user briefly, one question for all
-   of them: `Install <tools> now?` with `yes` and `no`, with the native question tool or in
-   chat. Install it only after a yes, at user level with the tool's documented installer, and
-   never with `sudo` unless the user says so; then run `--version` again. A refused or failed
-   install is an `open` G1.14 finding.
+3. **Validate the toolchain (G1.14).** Observe the runtime/package manager versions and
+   capabilities needed on each execution target (`ssh_exec_cmd`/`probe_target` when remote).
+   Record tools present and the automatic preparation needed from S2/G2 after the pre-HW review.
+   Version differences alone are not defects; assess whether the required commands work. Keep
+   tool and delivered-project repositories/refs separate. Missing installable tools do not block
+   G1 when the design includes a viable setup; an impossible tool/capability is an open finding.
 4. Recompute the GT digests with the system's hash command (`sha256sum .codeanvil/GT/StRS.md
    .codeanvil/GT/SyRS.md`; `shasum -a 256` on macOS, `Get-FileHash` in PowerShell) and show the human
    whether they match the design's Meta row. Information only: it never blocks. Compute the

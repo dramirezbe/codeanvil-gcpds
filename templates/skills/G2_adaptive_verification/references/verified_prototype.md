@@ -16,7 +16,8 @@ delete no section. -->
 ## 2. HAL mode
 
 `<mock-only | mock+real>`, from the S1 design Meta. In `mock-only`, every claim is capped at VL-1
-and no claim rests on real hardware.
+and uses Mock HAL inputs. PIL may run these inputs on the actual compute unit; it is not real-RF
+or VL-2 validation.
 
 ## 3. Toolchain
 
@@ -25,6 +26,16 @@ One row per service, copied from the design Meta.
 | Service | Package | Language | Package manager | Test runner |
 |---------|---------|----------|-----------------|-------------|
 | SVC-xxx | <package> | <language> | <uv / pnpm> | <pytest / vitest> |
+
+**Execution equipment and preparation:**
+
+| Service / PATH-* | Local / PIL / real HW | Equipment MAC or local host | Endpoint / user / port / workspace | Observed OS / architecture / device | Tool versions |
+|------------------|-----------------------|-----------------------------|----------------------------------|-------------------------------------|---------------|
+| <IDs> | <actual run type> | <declared identity> | <actual location> | <observations> | <versions used> |
+
+Record the clean published code/kit branch+commit, completed pre-HW checkpoint, actual tool/app
+refs updated, dependencies and clock preparation. Name run IDs, files, commands and results;
+no deployment manifest, per-file digest, version equality or formal capture request is required.
 
 ## 4. Module evidence
 
@@ -41,14 +52,23 @@ One row per service, copied from the design Meta.
 ## 6. Telemetry report
 
 Envelope from design §1.7, readings from the telemetry companion, and every result flagged outside
-the envelope with the human's decision on it.
+the envelope with the human's decision on it. Name the execution target per evidence file. Report
+unavailable readings, investigated causes, affected claims and the decision to repeat or continue
+with supported evidence. Name any skipped torn trailing line; collector exit 0 alone does not
+establish complete coverage. Missing telemetry does not invalidate unrelated tests by itself.
 
 ## 7. Honesty declaration
 
-- VERIFIED (VL-0, VL-1): <modules and paths>.
-- VALIDATED (VL-2, `mock+real` only, `PROTO-*` on the Real HW HAL): <modules and paths, or "none">.
+- VERIFIED (VL-0, VL-1): <modules and paths; execution target and whether PIL>.
+- VALIDATED (VL-2, `mock+real`, actual Real HW HAL tests): <supported modules/paths or "none">.
 - Not claimed: <what was not verified this cycle and why, including a Real HW HAL declared at VL-0>.
 - No ML evidence: no model is measured this round.
+
+For each real HW claim, cite actual G2 measurement v2/script outputs, the GT criterion and
+method/resolution justification. Add calibration, corrections and uncertainty only when the
+requirement or conclusion needs them; absent required inputs make that claim inconclusive.
+A valid JSON record alone is not a metrological verdict. Record human judgment, gaps and causal
+feedback; never invent readings or expand tolerances to obtain PASS.
 
 ## 8. Delivered tree and verification kit
 

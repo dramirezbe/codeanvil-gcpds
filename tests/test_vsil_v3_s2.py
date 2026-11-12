@@ -324,3 +324,48 @@ def test_layout_starts_the_collector_through_the_runtime():
     # psutil comes from the runtime, never from the kit's dev group.
     assert 'dev = ["pytest"]' in text
     assert "never lists `psutil`" in text
+
+
+def test_s2_requires_published_candidate_and_a_real_pre_hw_stop():
+    text = " ".join(_skill_text(SKILL).split())
+    assert "No `targets:` means **local**" in text
+    assert "discovered MAC" in text and "project UUID workspace" in text
+    assert "git status --porcelain" in text
+    assert "HEAD is committed, clean and fully pushed" in text
+    assert "Stop and wait for explicit `continue`" in text
+    assert "Silence, timeouts and full host access are not consent" in text
+    assert "Do not create a partial iteration" in text
+    assert "Checkpoint: pre-HW review" in text
+    assert "systemctl" in text and "ordinary door" in text
+    assert "same reviewed acquisition within scope" in text
+
+
+def test_s2_agent_runs_hw_with_small_records_and_conditional_metrology():
+    skill = " ".join(_skill_text(SKILL).split())
+    layout = " ".join(_layout_text().split())
+    assert "the agent runs actual hardware tests" in skill
+    assert "Functional HW tests need no universal oracle or calibration" in skill
+    assert "inconclusive" in skill
+    assert "<cycle>_<iteration>_<codeanvil now --machine>" in skill
+    assert 'export PATH="$HOME/.local/bin:$PATH"' in layout
+    assert "No deployment manifest or per-file checker is built" in layout
+    assert "`fetch_evidence` returns `local_path`" in layout
+    assert "investigate" in skill.lower() and "unaffected evidence may remain usable" in skill
+    assert "verification/deployment_manifest.json" not in layout
+
+
+def test_scaffolded_local_hw_uses_checkpoint_and_keeps_existing_report_state(tmp_path, db_path):
+    cmd_create(None, tmp_path, project_name="Proj")
+    project = tmp_path / "proj"
+    assert "targets:" not in (project / ".codeanvil/project.yaml").read_text()
+    skill = " ".join(_scaffold_skill(tmp_path, SKILL, "SKILL.md").read_text().split())
+    layout = " ".join(_scaffold_skill(tmp_path, SKILL, "references", "project_layout.md").read_text().split())
+    guide = " ".join(_scaffold_skill(tmp_path, SKILL, "references", "machine_evidence.md").read_text().split())
+    assert "testing a local device" in skill
+    assert "On `stop`, write no iteration" in skill
+    assert "Based on: G1 iteration <N>" in skill
+    assert "Checkpoint:" in layout
+    assert "waits for explicit `continue`" in guide
+    assert "not a new gate or state" in guide
+    assert "deployment_manifest.json" not in skill
+    assert "check_deployment.py --expected" not in skill

@@ -33,6 +33,21 @@ def test_s1_skill_designs_the_telemetry_companion_in_the_kit():
     assert "verification/" in text
 
 
+def test_s1_separates_execution_targets_from_hal_and_levels():
+    """PIL must not accidentally raise a Mock HAL claim to VL-2."""
+    text = " ".join(_skill_text("S1_design_services").split())
+    design = _design_template()
+
+    assert "No targets means local execution" in text
+    assert "never pick the first silently" in text
+    assert "do not require `mock+real`" in text
+    assert "PIL and remain **VERIFIED**" in text
+    assert "| Target(s)" in design
+    assert "**Where each level runs:**" in design
+    assert "operating envelope (repeat per execution target)" in design
+    assert "Host readings cannot stand in for a" in design
+
+
 def test_s1_skill_accepts_design_defect_rework():
     text = _skill_text("S1_design_services")
 

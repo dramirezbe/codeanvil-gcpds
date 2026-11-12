@@ -452,6 +452,23 @@ def test_bundled_doctor_does_not_ask_for_a_git_pin(stub_install):
     assert checks["bundled source"] and "pinned ref" not in checks and checks["venv"]
 
 
+def test_hil_launcher_passes_host_version_and_relocatable_workspace(stub_install, tmp_path, monkeypatch):
+    mcp.install_mcp_server("vsil_hil_mcp")
+    monkeypatch.setattr(mcp, "__version__", "0.7.5")
+    monkeypatch.setenv("VSIL_HIL_CODEANVIL_VERSION", "unrelated-version")
+    project = tmp_path / "moved" / "project"
+    nested = project / "nested"
+    nested.mkdir(parents=True)
+    (project / ".codeanvil").mkdir()
+    (project / ".codeanvil" / "project.yaml").write_text("name: project\n")
+
+    argv, env = mcp.launch_spec("vsil_hil_mcp", nested)
+
+    assert env["VSIL_HIL_CODEANVIL_VERSION"] == "0.7.5"
+    assert env["VSIL_HIL_WORKSPACE"] == str(project)
+    assert "vsil-hil-mcp" in argv[0]
+
+
 def test_bundled_skill_is_copied_with_the_vsil_hil_prefix(stub_install, tmp_path):
     mcp.install_mcp_server("vsil_hil_mcp")
     project = tmp_path / "proj"

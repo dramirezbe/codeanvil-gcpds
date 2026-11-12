@@ -14,8 +14,8 @@ metadata:
 # S2 — Implement the Services and the Verification Kit
 
 Turn the G1-approved design into running code plus the verification kit, prove the VL-0 floor and
-leave the VL-1 tests ready for G2. The agent runs every test itself: the Mock HAL and the kit exist
-so it can, without hardware or a human in the loop. A human judges the result at G2.
+leave the VL-1 tests ready for G2. The Mock HAL and the kit let the agent test without real device
+inputs. It runs locally or on the declared remote compute unit (PIL). A human judges at G2.
 
 ## Prerequisite and Cycle
 
@@ -39,7 +39,8 @@ writing **no iteration** when you stop:
 
 | Path | Role |
 |------|------|
-| `.codeanvil/design/SDD.md` | Read-only: Meta `HAL mode` and `Toolchain`, §1.3.4 kit, §1.5, §1.6 HAL ladder, §1.7 telemetry, §2.2 order, §3 contracts and vectors, §4 traceability |
+| `.codeanvil/design/SDD.md` | Read-only: Meta `Target(s)`, `HAL mode` and `Toolchain`, §1.3.4 kit, §1.5, §1.6 HAL ladder, §1.7 telemetry per target, §2.2 order, §3 contracts and vectors, §4 traceability |
+| `.codeanvil/project.yaml` | Read-only: declared `targets:` and the active cycle; credentials stay with the MCP custodian |
 | `.codeanvil/GT/SyRS.md` | Read-only: `SYS-*` thresholds for the VL-1 tests |
 | `.codeanvil/report/<cycle-name>/G2.md` | Rework only: latest iteration with `Verdict: module defect` |
 | `.codeanvil/report/<cycle-name>/G1.md` | Rework only: the latest PASS iteration's impact map (files to edit vs paths to retest only) |
@@ -74,6 +75,11 @@ writing **no iteration** when you stop:
 - Expected values come from the design's §3 vectors and `verification/golden/manifest.md`, never
   computed by the agent. Changing a vector invalidates the evidence that used it.
 - In `mock+real`, the Real HW HAL's VL-0 tests use the fake device API; S2 never needs the hardware.
+- Follow design `Target(s)` and the execution contract below. A missing or ambiguous target,
+  missing target envelope or contradictory service placement is a **design defect**; stop rather
+  than substitute the developer host. Diagnose connection/deployment/tool faults as operational
+  problems and resolve them within the reviewed scope; if they prevent testing, explain and
+  pause rather than inventing a product defect. Different versions alone do not block delivery.
 - Report only results of runs that actually happened, with their command.
 - **Infeasibility is reported through G2.** S2 never runs the RFD skill. When a requirement looks
   unreachable on the declared COTS platform, record it in `test_run.md` under
@@ -81,6 +87,73 @@ writing **no iteration** when you stop:
 - **Resume, do not restart.** On a re-run, continue from what already exists in `src/` and
   `verification/`: re-run its tests, keep what passes, build what is missing. Never rewrite working
   code to start over.
+
+## Execution target and deployment
+
+No `targets:` means **local** execution through the runtime's normal tools. Otherwise use the
+approved equipment declaration (discovered MAC; legacy IDs remain readable) and its project UUID
+workspace. Select the intended declared equipment when several could apply; do not ask the human
+for an invented target alias. Never read private keys or put their local paths in project metadata.
+Remote VL-0/VL-1 remain **VERIFIED (PIL)** with Mock HAL inputs, even in `mock-only`.
+
+**Mandatory pre-HW checkpoint, in addition to the unchanged Pause Schedule below:**
+
+1. Finish the candidate code/kit and local tests. Check `git status --porcelain`, fetch the
+   upstream and verify that HEAD is committed, clean and fully pushed on the published branch.
+   Staged/untracked source is pending work too. A failed push blocks hardware; never force push,
+   discard user work or invent a remote. Commits/push use the user's existing authorization.
+2. Show relevant code/kit diffs and files, published branch/commit, local results, equipment,
+   device and planned update/deploy/test commands. **Stop and wait for explicit `continue`**
+   before updating or deploying remotely, or testing a local device. A read-only inventory probe
+   may precede the pause. Silence, timeouts and full host access are not consent. This checkpoint
+   applies to every pause-schedule choice; combine coincident pauses into one review.
+3. On `rework`, correct the candidate and review again. On `stop`, write no iteration and leave
+   work for resume. New code, target, scope, delivery or iteration requires a renewed checkpoint;
+   retrying the same reviewed acquisition within scope only needs a fresh run timestamp. Record
+   `Checkpoint: pre-HW review — continue — <equipment, candidate and scope>` in the completed
+   iteration's Description. Do not create a partial iteration, gate, capture-request file or
+   additional HITL state while waiting; acknowledge stopped attempts in conversation.
+4. After `continue`, prepare the equipment automatically. Probe actual OS/architecture, device
+   and tool capabilities; update CodeAnvil using `init_codeanvil(source_ref=<published-tool-ref>)`
+   with its actual tool repository, separately from the delivered project's published repo/ref. A branch commit without
+   a release is valid; never infer a tag from a version number or install the DUT ref as CodeAnvil.
+   Install needed dependencies in the correct environment and verify the commands used; record
+   versions without an exact-SemVer gate. First enrollment still uses human bootstrap credentials;
+   use existing MAC-associated local keys and the declared project workspace afterward.
+5. Synchronize clocks using available system tools before measuring. `systemctl` and other
+   clearly destructive operations use trusted; normal commands, packages and `sudo` use the
+   ordinary door. Do not change wall time during acquisition; use monotonic durations. Diagnose
+   and repair clock problems, record any measurement effect and repeat when needed.
+6. `code_sync` sends only the clean published Git candidate, preserving destination databases
+   and persistent state; it must not send ignored host source files. Run the kit on that equipment
+   through `ssh_exec_cmd`, then `fetch_evidence`. Use its returned `local_path` snapshot and only
+   the current run's files; older logs may also be present. Local tests read their local run path.
+   The published Git candidate is the deployment input; no additional file inventory is built.
+
+The parent owns trusted operations and any change of reviewed scope. A distinct tool name alone
+cannot guarantee a native approval prompt; the explicit pre-HW stop remains mandatory.
+
+## Real HW tests and measurements
+
+In `mock+real`, implement the declared HAL and its device/driver/capability observation,
+unsupported-configuration checks and safe disconnect. Exercise failure paths with the fake
+API at VL-0. After the pre-HW checkpoint, the agent runs actual hardware tests; no separate human
+operator is required. Never label synthetic or failed-device data as a real measurement.
+
+Choose tools or write scripts that measure the GT metric and justify resolution against its
+tolerance. Functional HW tests need no universal oracle or calibration. When the requirement or
+conclusion requires calibration/corrections, obtain those inputs or mark the affected result
+inconclusive; never widen tolerances or invent readings. Preserve design vectors and golden
+manifest governance. G2 can diagnose but a required missing test returns to S2 to implement it.
+
+Implement `verification/run.sh vl2` for real tests and record its arguments in `test_run.md`.
+Use run ID `<cycle>_<iteration>_<codeanvil now --machine>` from the existing stage iteration;
+retries get a new timestamp, not another HIL counter. Store telemetry named
+`<cycle>_<iteration>_<timestamp>.jsonl`, `measurement.json` v2 and script/capture outputs under
+`verification/telemetry/<run_id>/`, without overwriting an earlier attempt. Follow this skill's
+locked `templates/skills/S2_implement_services/references/machine_evidence.md` and basic checker.
+No formal capture request, file digests, expected deployment digest or host time-bound flag is
+needed. Old records are left unchanged. G2 runs its own fresh tests rather than claiming S2 runs.
 
 ## Pause Schedule
 
@@ -152,7 +225,9 @@ Before step 1 of every iteration, ask the pause schedule as **Pause Schedule** s
    input.
    Implement §0.5 and write a VL-0 smoke test that starts the actual entry point, connects the
    real service processes, observes a valid update, and shuts down cleanly. Run the documented
-   command with runtime dependencies only (`uv sync --frozen --no-dev` for Python). Keep the
+   command with runtime dependencies only (`uv sync --frozen --no-dev` for Python). If this
+   smoke test touches a real device or remote deployment, complete the mandatory pre-HW review
+   and preparation before starting it; local Mock HAL tests can run before that checkpoint. Keep the
    command, URL and observed result for `test_run.md`; do not touch `test_run.md` before step 6
    has backed up the previous one.
 5. **VL-1 tests, written, not claimed.** For every module and `PATH-*` with `required_vl` VL-1 or
@@ -163,8 +238,12 @@ Before step 1 of every iteration, ask the pause schedule as **Pause Schedule** s
    root. If it exits nonzero, stop and show its message; write no iteration. Cite the printed
    backup path in the iteration's Description. Backups never cover `src/` or `verification/`:
    code recovery relies on git.
-7. **Floor run.** Run `verification/run.sh vl0`: the whole VL-0 suite with the telemetry collector
-   attached. Fix failures (step 3) until it exits 0. Write `test_run.md`.
+7. **Floor run.** Run `verification/run.sh vl0` on each designed execution target: the whole VL-0
+   suite with telemetry captured there. Before remote preparation/deployment follow **Execution
+   target and deployment**, including the real human stop, and fetch the evidence. Fix failures
+   (step 3), review changed candidates again and rerun. Investigate missing telemetry and decide
+   whether affected measures need repetition; unaffected evidence may remain usable. Write
+   `test_run.md` with the decision and last real run.
 8. Write the iteration and return `S2 complete. Run the G2 skill.`
 
 Rework, module defect: a G2 iteration with `Verdict: module defect` names the modules to fix,
@@ -183,13 +262,19 @@ in `S2.md` the changed IDs, files, commands, results and the G2 iteration it ans
 
 Write `.codeanvil/report/<cycle-name>/S2_artifacts/test_run.md`, overwritten on every pass:
 
-- the two commands G2 runs, exactly `verification/run.sh vl0` and `verification/run.sh vl1`;
-- the last VL-0 run: command, exit code, passed, failed and skipped counts per service;
-- the §0.5 runnable entry point, its smoke-test command and result, and the URL and visible
-  behaviour a user should expect;
-- the environment: OS, CPU, language and tool versions, `HAL mode`;
-- the telemetry collector's summary for that run;
-- `Possible infeasibility`: requirement IDs and the run that shows it, or `None`.
+- exact `verification/run.sh vl0` and `verification/run.sh vl1` commands, remote workspace
+  payloads and, in `mock+real`, the real HW command/scripts and structural-record checker;
+- execution equipment identity/MAC or local host, endpoint/user/port/workspace, observed OS,
+  architecture, device and tool versions, needed capabilities and the published Git candidate;
+- preparation performed after review: tool/project refs updated, dependencies, clock diagnosis/
+  synchronization and the completed pre-HW checkpoint's candidate, scope and answer;
+- last VL-0 command, exit code and passed/failed/skipped counts per service;
+- §0.5 entry point, smoke command/result, URL and visible behaviour;
+- actual run IDs, times, telemetry/measurement/script output paths and fetched `local_path`;
+- telemetry summary, any missing signals, investigated cause, affected claims and repeat/continue
+  decision. A collector exit 0 does not certify full coverage; never use missing readings as zero.
+  Readers may skip a torn final JSONL line with notice; earlier corruption needs investigation;
+- `Possible infeasibility`: requirement IDs and the run showing it, or `None`.
 
 ## Report Contract
 

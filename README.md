@@ -6,9 +6,23 @@ Agent-agnostic project scaffolding, templates, and agent definitions for the **V
 
 Works with any AI coding agent: Claude, Codex, OpenCode, Pi, or others. Runs on **Linux, macOS and Windows**.
 
-**Current release:** [v0.7.5](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.7.5). Simple red-button deletion confirmation: Replaces typed-name UI confirmation with a direct question, Cancel and a red Delete button. Keeps explicit file-removal selection and existing identity/path safeguards.
+**Current release:** [v0.8.0](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.8.0). Agent-operated HIL/PIL with reusable MAC-based equipment access, published Git deployment and a simpler measurement contract.
 
-**v0.7.0 background:** HIL harness groundwork: the telemetry collector becomes the `codeanvil telemetry` subcommand, and a remote-only MCP server (`vsil_hil_mcp`) runs the verification kit on a real compute unit over SSH — credential custody, a two-door command model and a per-target policy dial (trusted-policy MVP, not yet validated on hardware). The first realistic complete run, including a G2 → S1 rework loop, is archived under [`methodology/test/T0_FM-RPI-RTL-mock/`](methodology/test/T0_FM-RPI-RTL-mock/). Its [snapshot guide](methodology/test/T0_FM-RPI-RTL-mock/FIRST_FULL_FLOW_SNAPSHOT.md), [prototype run instructions](methodology/test/T0_FM-RPI-RTL-mock/first_full_flow_2026-11-05/RUN.md), and [review holdout](methodology/test/T0_FM-RPI-RTL-mock/S1_G1_review_holdout_2026-11-05.md) show the result and its limits.
+The stages support remote PIL through the bundled
+[`vsil_hil_mcp`](templates/mcp/vsil_hil_mcp/README.md) server. Equipment is recognized
+by MAC and each PC reuses its own access keys across projects. The agent prepares
+and tests hardware after an explicit code-review pause; normal commands run directly
+and destructive actions use trusted. A fresh verifier checks GT criteria with a
+small measurement record. Remote Mock HAL tests remain VERIFIED (PIL). Final
+release acceptance tests, including integrated hardware validation, remain pending
+in the [implementation plan](odd/tasks/hil-mcp/2026-11-11_2042_hil_relaxed_refactor.md#13-publicación-v080-y-tests-pendientes).
+
+The first complete mock run, including a G2 → S1 rework loop, is archived under
+[`methodology/test/T0_FM-RPI-RTL-mock/`](methodology/test/T0_FM-RPI-RTL-mock/).
+Its [snapshot guide](methodology/test/T0_FM-RPI-RTL-mock/FIRST_FULL_FLOW_SNAPSHOT.md),
+[prototype run instructions](methodology/test/T0_FM-RPI-RTL-mock/first_full_flow_2026-11-05/RUN.md)
+and [review holdout](methodology/test/T0_FM-RPI-RTL-mock/S1_G1_review_holdout_2026-11-05.md)
+retain their original evidence and limits.
 
 > This methodology does not design hardware. It targets software running on Commercial Off-The-Shelf devices (not necessarily out-of-the-box), where the GT defines what constraints that hardware imposes.
 
@@ -206,6 +220,35 @@ cd ~/projects/sdr-lab && claude mcp list
 - DC spike correction for direct-conversion receivers (dc_blocker_cc via escape-hatch)
 
 **Marconi v1.0 limitations**: simulation and file-based analysis only. No live hardware source blocks or real-time GUI sinks in the vocabulary — use the escape-hatch skill to write raw GRC flowgraphs or Python scripts for those. Hardware support (RTL-SDR, HackRF, USRP via gr-soapy/gr-uhd) is planned for Marconi v1.2.
+
+### Agent-operated PIL/HIL
+
+Use this only when the compute unit is a separate Linux machine reached over SSH.
+An SDR attached to the developer host uses the local workflow.
+
+```bash
+codeanvil mcp add vsil_hil_mcp
+codeanvil mcp enable vsil_hil_mcp
+codeanvil credential-setup -u <admin-user> -i <target-host> --port 22
+```
+
+The bootstrap discovers MACs and adds this PC's public keys to `codeanvil-agent`.
+Repeating it in another project reuses access; another PC authorizes its own keys
+without replacing yours. Local private keys never enter the project's metadata.
+
+S2 retains its configurable pauses and also stops for explicit `continue` before
+HW update/deployment/testing. The agent then updates tool and dependencies from
+their published refs, synchronizes clocks and deploys the clean, pushed Git
+candidate. Sync preserves databases and declared persistent paths. Normal sudo,
+scripts and package commands run directly; destructive actions use trusted.
+The G2 parent prepares the target and its fresh verifier runs the actual tests.
+
+The [server guide](templates/mcp/vsil_hil_mcp/README.md) covers setup and observed
+target probes. [Measurement v2](templates/skills/G2_adaptive_verification/references/machine_evidence.md)
+records functional or metrological criteria without deployment hashes. Calibration
+is needed when GT/the conclusion requires it. Missing telemetry is investigated
+to decide which measures need repeating; it is never replaced with zeros. Real
+hardware conclusions require real tests, beyond running Mock HAL on a remote CPU.
 
 ## How it works
 

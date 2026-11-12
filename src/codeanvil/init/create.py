@@ -111,7 +111,45 @@ def _copy_skills(project_dir: Path) -> None:
 
     skills_dest = project_dir / SKILLS_DIRNAME
     shutil.copytree(skills_src, skills_dest, dirs_exist_ok=True, ignore=shutil.ignore_patterns(*CONFIG["copy_ignore"]))
+    _copy_shared_skill_assets(skills_src, skills_dest)
     log.debug("copied skills to %s", skills_dest)
+
+
+def _copy_shared_skill_assets(skills_src: Path, skills_dest: Path) -> None:
+    """Copy canonical locked assets into each configured, self-contained consumer.
+
+    Assets are maintained once in the producer skill. Copied Markdown references
+    are rebound to the consumer before the usual project-path rewrite.
+    """
+    def skill_dir(root: Path, name: str) -> Path:
+        if not isinstance(name, str) or name in ("", ".", "..") or "/" in name or "\\" in name:
+            raise ValueError(f"invalid shared asset skill name: {name!r}")
+        path = root / name
+        if not (path / "SKILL.md").is_file():
+            raise FileNotFoundError(f"shared asset skill not found: {path}")
+        return path.resolve()
+
+    for producer, consumers in CONFIG.get("shared_skill_assets", {}).items():
+        source_dir = skill_dir(skills_src, producer)
+        for consumer, assets in consumers.items():
+            destination_dir = skill_dir(skills_dest, consumer)
+            for relative in assets:
+                path = Path(relative)
+                if path.is_absolute() or ".." in path.parts or "\\" in relative:
+                    raise ValueError(f"shared skill asset path must be relative: {relative!r}")
+                source = (source_dir / path).resolve()
+                destination = (destination_dir / path).resolve()
+                if not source.is_relative_to(source_dir) or not destination.is_relative_to(destination_dir):
+                    raise ValueError(f"shared skill asset escapes its skill: {relative!r}")
+                if not source.is_file():
+                    raise FileNotFoundError(f"shared skill asset not found: {source}")
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, destination)
+                if destination.suffix == ".md":
+                    text = destination.read_text(encoding="utf-8")
+                    destination.write_text(text.replace(f"templates/skills/{producer}/",
+                                                        f"templates/skills/{consumer}/"), encoding="utf-8")
+                log.debug("copied shared skill asset %s -> %s", source, destination)
 
 
 def _copy_gt_reference_templates(project_dir: Path) -> None:
