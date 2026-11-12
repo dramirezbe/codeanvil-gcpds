@@ -68,6 +68,11 @@ class Target:
     def key_identity(self) -> str:
         return identity.local_key_identity(self.device_id) if self.device_id else self.name
 
+    @property
+    def sync_via_exec(self) -> bool:
+        # Adoption never changes the old deploy key's forced-command confinement.
+        return bool(self.device_id and self.key_identity != self.device_id)
+
 
 def project_root() -> Path:
     """`VSIL_HIL_WORKSPACE`, else the nearest ancestor of cwd holding `.codeanvil/`."""

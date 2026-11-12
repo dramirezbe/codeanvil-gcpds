@@ -374,3 +374,10 @@ Las comprobaciones y límites de rollback se añaden aquí al cerrar cada unidad
   escenario rsync real local conserva estado, actualiza código y borra código
   obsoleto. Rollback: router, excludes y tests de política/transporte, sin tocar
   identidad MAC ni la preparación Git de la unidad siguiente.
+- R0b: discovery autenticado con claves existentes o administrador y payload
+  aditivo de `authorized_keys`. La adopción de exec legacy no cambia la clave
+  deploy antigua: conserva proyectos previos y usa exec para nuevos workspaces.
+  **8 tests passed**, incluido Bash real sobre archivos temporales que conserva
+  claves de otros PCs y repeticiones sin duplicación. Registro MAC: **17 passed**.
+  Rollback: helper de alta, payload, tests y propiedad local de compatibilidad;
+  el CLI se conecta a estas funciones en R0c.
