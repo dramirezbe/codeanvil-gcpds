@@ -37,6 +37,7 @@ class Target:
     arch: str = ""
     device: str = ""
     hil_policy: str = DEFAULT_POLICY
+    port: int = 22
 
 
 def project_root() -> Path:
@@ -65,7 +66,8 @@ def _read_project(root: Path) -> dict:
     return data
 
 
-def validate_target_fields(name: str, host: str, user: str, workspace: str, policy: str) -> None:
+def validate_target_fields(name: str, host: str, user: str, workspace: str, policy: str,
+                           port: int = 22, os_name: str = "linux") -> None:
     if not _NAME_RE.match(name):
         raise ConfigError(f"invalid target name {name!r}")
     if not _HOST_RE.match(host):
@@ -76,6 +78,10 @@ def validate_target_fields(name: str, host: str, user: str, workspace: str, poli
         raise ConfigError(f"invalid workspace {workspace!r}: must be an absolute path of [A-Za-z0-9._/+@-]")
     if policy not in POLICIES:
         raise ConfigError(f"invalid hil_policy {policy!r}: expected one of {POLICIES}")
+    if type(port) is not int or not 1 <= port <= 65535:
+        raise ConfigError("invalid SSH port: expected an integer from 1 to 65535")
+    if os_name not in ("linux", "windows"):
+        raise ConfigError(f"unsupported target OS {os_name!r}: expected linux or windows")
 
 
 def _to_target(name: str, raw: dict) -> Target:
@@ -90,8 +96,9 @@ def _to_target(name: str, raw: dict) -> Target:
         arch=str(raw.get("arch", "")),
         device=str(raw.get("device", "")),
         hil_policy=str(raw.get("hil_policy", DEFAULT_POLICY)),
+        port=raw.get("port", 22),
     )
-    validate_target_fields(t.name, t.host, t.user, t.workspace, t.hil_policy)
+    validate_target_fields(t.name, t.host, t.user, t.workspace, t.hil_policy, t.port, t.os)
     return t
 
 
@@ -106,6 +113,8 @@ def load_targets(root: Path) -> dict[str, Target]:
     else:
         raise ConfigError("`targets:` must be a list or a map")
     for name, raw in items:
+        if name in out:
+            raise ConfigError(f"duplicate target name {name!r}")
         out[name] = _to_target(name, raw)
     return out
 
@@ -130,11 +139,17 @@ def register_target(root: Path, target: Target) -> bool:
     Rewrites project.yaml through yaml.safe_dump (comments are not preserved).
     """
     data = _read_project(root)
+    existing = load_targets(root).get(target.name)
+    if existing is not None:
+        if existing != target:
+            raise ConfigError(f"target {target.name!r} already exists with different connection settings")
+        return False
     block = data.get("targets") or []
     fields = {
         "name": target.name, "host": target.host, "user": target.user,
         "workspace": target.workspace, "os": target.os, "arch": target.arch,
         "device": target.device, "hil_policy": target.hil_policy,
+        "port": target.port,
     }
     if isinstance(block, dict):
         if target.name in block:

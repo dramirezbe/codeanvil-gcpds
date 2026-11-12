@@ -23,6 +23,9 @@ log = get_logger(__name__)
 
 # Mirrors vsil_hil_mcp.config._NAME_RE.
 _NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
+_USER_RE = re.compile(r"^[a-z_][a-z0-9_-]{0,31}$")
+_HOST_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.:-]{0,252}$")
+_WORKSPACE_RE = re.compile(r"^/[A-Za-z0-9._/+@-]+$")
 _SCRIPTS = Path("mcp") / "vsil_hil_mcp" / "scripts"
 PASSWORD_ENV = "CODEANVIL_HIL_PASSWORD"
 SUDO_PASSWORD_ENV = "CODEANVIL_HIL_SUDO_PASSWORD"
@@ -84,6 +87,34 @@ def _register_target(project_yaml: Path, entry: dict) -> bool:
     return True
 
 
+def _check_existing_target(project_yaml: Path, entry: dict) -> None:
+    """Refuse a name collision before changing credentials on any target."""
+    data = yaml.safe_load(project_yaml.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError("project.yaml must be a mapping")
+    block = data.get("targets") or []
+    if isinstance(block, dict):
+        rows = [dict(value, name=name) for name, value in block.items() if isinstance(value, dict)]
+        if len(rows) != len(block):
+            raise ValueError("each target must be a mapping")
+    elif isinstance(block, list):
+        rows = block
+    else:
+        raise ValueError("`targets:` must be a list or a map")
+    names = set()
+    for row in rows:
+        if not isinstance(row, dict) or not isinstance(row.get("name"), str):
+            raise ValueError("each target must have a name")
+        if row["name"] in names:
+            raise ValueError(f"duplicate target name {row['name']!r}")
+        names.add(row["name"])
+        if row["name"] == entry["name"]:
+            for key, value in entry.items():
+                actual = row.get(key, 22 if key == "port" else "trusted" if key == "hil_policy" else None)
+                if actual != value:
+                    raise ValueError(f"target {entry['name']!r} already exists with different {key}")
+
+
 def cmd_credential_setup(
     user: str,
     ip: str,
@@ -108,6 +139,23 @@ def cmd_credential_setup(
         log.error("invalid target name '%s' (allowed: letters, digits, '_' and '-', max 64) — pass -t", target)
         sys.exit(1)
     workspace = workspace or f"/home/{AGENT_USER}/workspace"
+    entry = {
+        "name": target, "host": ip, "user": AGENT_USER, "workspace": workspace,
+        "os": os_, "hil_policy": "trusted", "port": port,
+    }
+    try:
+        if os_ != "linux":
+            raise ValueError("credential bootstrap is implemented for Linux targets only")
+        if type(port) is not int or not 1 <= port <= 65535:
+            raise ValueError("SSH port must be an integer from 1 to 65535")
+        if not _USER_RE.fullmatch(user) or not _HOST_RE.fullmatch(ip):
+            raise ValueError("invalid admin user or target host")
+        if not _WORKSPACE_RE.fullmatch(workspace) or ".." in workspace.split("/"):
+            raise ValueError("invalid absolute target workspace")
+        _check_existing_target(manifest, entry)
+    except (ValueError, yaml.YAMLError) as exc:
+        log.error("%s", exc)
+        sys.exit(1)
 
     # Prompt securely when -p is omitted; sudo reuses the SSH password unless a
     # different one is given (or entered at the second prompt).
@@ -155,10 +203,6 @@ def cmd_credential_setup(
         log.info("  deploy: %s", hil / "deploy_ed25519.pub")
         log.info("  exec:   %s", hil / "exec_ed25519.pub")
 
-    entry = {
-        "name": target, "host": ip, "user": AGENT_USER, "workspace": workspace,
-        "os": os_, "hil_policy": "trusted",
-    }
     if _register_target(manifest, entry):
         log.info("registered target '%s' in %s", target, manifest)
     else:

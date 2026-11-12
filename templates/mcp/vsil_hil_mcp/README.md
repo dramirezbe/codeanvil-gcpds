@@ -81,6 +81,13 @@ sudo differs from SSH), `-w/--workspace`, `--port`, `-t/--target` (name; default
 IP with `.`/`:` → `_`), `--os linux|windows`. Run `codeanvil credential-setup -h` for
 the full list.
 
+The SSH port is saved with the target and used for execution, deployment and evidence
+retrieval. An existing target name cannot be reused with different connection settings;
+correct its declaration explicitly before reconfiguring it. MCP SSH calls ignore personal
+SSH configuration and the SSH agent, and use only the target's dedicated key store.
+Windows bootstrap and remote execution currently fail before changing credentials or
+registering a target; the Windows provisioning design remains deferred.
+
 > The agent user is **always `codeanvil-agent`** (fixed, for traceability) — not
 > configurable.
 

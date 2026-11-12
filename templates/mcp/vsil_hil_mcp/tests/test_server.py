@@ -1,5 +1,6 @@
 import json
 import os
+import shlex
 import stat
 import subprocess
 
@@ -154,3 +155,58 @@ def test_non_trusted_policies_not_implemented(env, policy):
 def test_exec_without_keys_fails_clearly(env):
     with pytest.raises(config.ConfigError, match="init_codeanvil"):
         server.ssh_exec_cmd("ls")
+
+
+def test_port_and_personal_identity_isolation(env):
+    root, home, calls = env
+    p = root / ".codeanvil/project.yaml"
+    data = yaml.safe_load(p.read_text())
+    data["targets"][0]["port"] = 2222
+    p.write_text(yaml.safe_dump(data))
+    server.init_codeanvil("pi")
+    calls.clear()
+    server.ssh_exec_cmd("uname -a")
+    server.code_sync()
+    server.fetch_evidence()
+    assert config.resolve_target("pi").port == 2222
+    for argv in calls:
+        ssh = argv if argv[0] == "ssh" else shlex.split(argv[argv.index("-e") + 1])
+        assert ssh[ssh.index("-p") + 1] == "2222"
+        assert ssh[ssh.index("-F") + 1] == os.devnull
+        assert "IdentityAgent=none" in ssh and "IdentitiesOnly=yes" in ssh
+
+
+@pytest.mark.parametrize("port", [0, 65536, True, "22"])
+def test_bad_declared_port_refused(env, port):
+    root, _, calls = env
+    p = root / ".codeanvil/project.yaml"
+    data = yaml.safe_load(p.read_text())
+    data["targets"][0]["port"] = port
+    p.write_text(yaml.safe_dump(data))
+    with pytest.raises(config.ConfigError, match="port"):
+        server.init_codeanvil("pi")
+    assert not calls
+
+
+def test_duplicate_target_name_refused(env):
+    root, _, calls = env
+    p = root / ".codeanvil/project.yaml"
+    data = yaml.safe_load(p.read_text())
+    data["targets"].append(dict(data["targets"][0], host="other"))
+    p.write_text(yaml.safe_dump(data))
+    with pytest.raises(config.ConfigError, match="duplicate"):
+        server.init_codeanvil("pi")
+    assert not calls
+
+
+def test_windows_execution_refused_and_unknown_os_invalid(env):
+    root, _, calls = env
+    p = root / ".codeanvil/project.yaml"
+    data = yaml.safe_load(p.read_text())
+    data["targets"][0]["os"] = "windows"
+    p.write_text(yaml.safe_dump(data))
+    with pytest.raises(config.ConfigError, match="Linux targets only"):
+        server.ssh_exec_cmd("uname -a")
+    assert not calls
+    with pytest.raises(config.ConfigError, match="unsupported target OS"):
+        server.init_codeanvil("new", host="host", user="agent", os="bare-metal")

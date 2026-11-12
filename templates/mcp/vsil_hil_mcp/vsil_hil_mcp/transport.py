@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import shlex
 import subprocess
 from pathlib import Path
@@ -18,8 +19,11 @@ TIMEOUT_S = 600
 
 def _ssh_opts(target: Target, key: Path) -> list[str]:
     return [
+        "-F", os.devnull,
         "-i", str(key),
+        "-p", str(target.port),
         "-o", "IdentitiesOnly=yes",
+        "-o", "IdentityAgent=none",
         "-o", "StrictHostKeyChecking=accept-new",
         "-o", f"UserKnownHostsFile={key_paths(target.name)['known_hosts']}",
         "-o", "BatchMode=yes",

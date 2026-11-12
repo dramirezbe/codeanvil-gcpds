@@ -82,7 +82,7 @@ def test_registers_target_with_fixed_agent_user(project_dir, monkeypatch):
     assert data["name"] == "demo"  # rest of the file preserved
     assert data["targets"] == [{
         "name": "10_0_0_5", "host": "10.0.0.5", "user": "codeanvil-agent",
-        "workspace": "/home/codeanvil-agent/workspace", "os": "linux", "hil_policy": "trusted",
+        "workspace": "/home/codeanvil-agent/workspace", "os": "linux", "hil_policy": "trusted", "port": 22,
     }]
 
 
@@ -119,17 +119,34 @@ def test_separate_sudo_password(project_dir, monkeypatch):
     assert kw["env"][mod.SUDO_PASSWORD_ENV] == "sudo-pw"
 
 
-def test_windows_prints_instructions_and_registers(project_dir, monkeypatch, caplog):
+def test_windows_refused_before_credentials_or_registration(project_dir, monkeypatch, caplog):
     calls = _capture(monkeypatch)
-    caplog.set_level("INFO")
-    cmd_credential_setup("u", "win-box", password=PASSWORD, os_="windows")
-    assert not any(c[0][0] == "bash" for c in calls)
-    assert all(c[0][0] == "ssh-keygen" for c in calls)
-    assert "setup_credentials_ssh_hil.ps1" in caplog.text
-    assert "deploy_ed25519.pub" in caplog.text
+    with pytest.raises(SystemExit):
+        cmd_credential_setup("u", "win-box", password=PASSWORD, os_="windows")
+    assert not calls
+    assert "Linux targets only" in caplog.text
     assert PASSWORD not in caplog.text
-    row = _targets(project_dir)["targets"][0]
-    assert row["os"] == "windows" and row["user"] == "codeanvil-agent"
+    assert "targets" not in _targets(project_dir)
+
+
+def test_custom_port_persisted_and_conflicting_rerun_refused(project_dir, monkeypatch):
+    calls = _capture(monkeypatch)
+    cmd_credential_setup("u", "10.0.0.5", password=PASSWORD, port=2222)
+    assert calls[0][0][calls[0][0].index("--port") + 1] == "2222"
+    assert _targets(project_dir)["targets"][0]["port"] == 2222
+    calls.clear()
+    with pytest.raises(SystemExit):
+        cmd_credential_setup("u", "10.0.0.5", password=PASSWORD, port=22)
+    assert not calls
+
+
+@pytest.mark.parametrize("port", [0, 65536, True, "22"])
+def test_invalid_port_refused_before_prompt(project_dir, monkeypatch, port):
+    calls = _capture(monkeypatch)
+    monkeypatch.setattr(mod.getpass, "getpass", lambda *a: pytest.fail("prompted before validation"))
+    with pytest.raises(SystemExit):
+        cmd_credential_setup("u", "10.0.0.5", port=port)
+    assert not calls
 
 
 def test_parser_optional_password_and_ip_alias():

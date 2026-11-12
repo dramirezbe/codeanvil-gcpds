@@ -27,6 +27,8 @@ def _context(target: str) -> tuple[Path, config.Target, dict[str, Path]]:
     root = config.project_root()
     tgt = config.resolve_target(target, root)
     _require_trusted(tgt)
+    if tgt.os != "linux":
+        raise config.ConfigError("remote execution is implemented for Linux targets only")
     return root, tgt, config.key_paths(tgt.name)
 
 
@@ -47,7 +49,7 @@ def _exec(tool: str, cmd: str, target: str) -> dict:
 @mcp.tool()
 def init_codeanvil(
     target: str = "", host: str = "", user: str = "", workspace: str = "",
-    os: str = "linux", arch: str = "", device: str = "", hil_policy: str = "trusted",
+    os: str = "linux", arch: str = "", device: str = "", hil_policy: str = "trusted", port: int = 22,
 ) -> str:
     """Prepare a remote target: create its keys and return the provisioning script.
 
@@ -65,6 +67,7 @@ def init_codeanvil(
         arch: target architecture, e.g. aarch64.
         device: declared SDR device.
         hil_policy: trusted (only mode implemented).
+        port: SSH port, from 1 to 65535 (new target).
     """
     root = config.project_root()
     declared = config.load_targets(root)
@@ -74,8 +77,8 @@ def init_codeanvil(
         if not target or not host or not user:
             raise config.ConfigError("undeclared target: pass target, host and user to register it")
         ws = workspace or f"/home/{user}/workspace"
-        config.validate_target_fields(target, host, user, ws, hil_policy)
-        tgt = config.Target(target, host, user, ws, os, arch, device, hil_policy)
+        config.validate_target_fields(target, host, user, ws, hil_policy, port, os)
+        tgt = config.Target(target, host, user, ws, os, arch, device, hil_policy, port)
     _require_trusted(tgt)
     if tgt.os.lower() != "linux":
         return f"init_codeanvil: provisioning for os={tgt.os!r} is not implemented (linux only)."
