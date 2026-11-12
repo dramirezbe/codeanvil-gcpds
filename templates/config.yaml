@@ -245,6 +245,7 @@ mcp_servers:
     args: []
     env:
       VSIL_HIL_WORKSPACE: "{project_dir}"
+      VSIL_HIL_CODEANVIL_VERSION: "{codeanvil_version}"
     skills_subdir: "skills"
     skill_prefix: "vsil-hil"
     description: "Hardware-in-the-loop proxy — deploy, run and fetch evidence on a COTS target over ssh/rsync"

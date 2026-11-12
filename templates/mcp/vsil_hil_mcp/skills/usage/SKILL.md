@@ -32,6 +32,7 @@ custodian; each tool call is one capability.
 | `ssh_exec_cmd(cmd, target="")` | Known diagnostics and full `codeanvil`; returns raw `{stdout, stderr, exit_code}`. Python/uv/pytest and `verification/run.sh vl0\|vl1` require an exact `cd <declared workspace> &&` prefix. Unknown commands and shell expansion redirect to trusted. | Run the kit, probe the device, read logs. **The main interface.** |
 | `ssh_exec_cmd_trusted(cmd, target="")` | The **only** privileged door: carries `sudo`/mutating commands, once, verbatim, audited. | OS packages, udev rules, service restarts — see the redirect flow. |
 | `fetch_evidence(target="")` | rsync **only** `verification/telemetry/` target → host. | Pull evidence back so G2 reads it on the host. |
+| `probe_target(target="")` | Read OS/architecture/CodeAnvil version and optional USB enumeration; return `metadata.version_match` against the host release plus raw stdout/stderr/exit code. | Preflight parity. `declared_device` is configuration, never a detected device claim. |
 | `init_codeanvil(target, host, user, …)` | Generate the target's keys and emit a provisioning **script** for the human. No SSH happens. | First contact only — relay the script to the human. |
 
 `target` may be **omitted** when exactly one target is declared; pass it by name when
@@ -40,6 +41,12 @@ several are.
 ## The core loop: deploy → run → fetch
 
 For a PIL run of a verification level (`vl0`, `vl1`):
+
+First call `probe_target()` and record its observed OS, architecture and CodeAnvil
+version. A false `metadata.version_match`, failed probe or missing observation blocks
+acceptance of evidence. The launcher supplies `VSIL_HIL_CODEANVIL_VERSION`; provisioning
+pins that release, never `main`. Matching versions do not prove unpublished source identity;
+the verification kit checks its deployed input manifest separately.
 
 1. **Deploy.** `code_sync()` — push the current code to the target workspace.
 2. **Run.** `ssh_exec_cmd("cd <workspace> && verification/run.sh vl0")`. `run.sh`
@@ -90,7 +97,7 @@ yourself** — first contact is human-consented by design. Two human paths:
 - **Recommended (automated):** the human runs, from inside the project,
   `codeanvil credential-setup -u <admin-user> -i <target-ip>` — it generates the
   confined keys, bootstraps the target over SSH, and registers it in `project.yaml`.
-- **Printed-script:** call `init_codeanvil(target="<name>", host="<ip>", user="<user>")`,
+- **Printed-script:** call `init_codeanvil(target="<name>", host="<ip>")`,
   then relay the returned `provision.sh` to the human to run **once, as root, on the
   target**. It creates the confined user, installs the two restricted keys, and
   installs CodeAnvil there.

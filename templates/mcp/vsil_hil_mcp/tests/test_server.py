@@ -25,6 +25,7 @@ def env(tmp_path, monkeypatch):
     }))
     monkeypatch.setenv("HOME", str(home))
     monkeypatch.setenv("VSIL_HIL_WORKSPACE", str(root))
+    monkeypatch.setenv("VSIL_HIL_CODEANVIL_VERSION", "0.7.5")
     calls = []
 
     def fake_run(argv, **kw):
@@ -123,7 +124,7 @@ def test_init_script_keys_and_perms(env):
 
 def test_init_registers_new_target(env):
     root, *_ = env
-    server.init_codeanvil("lab", host="192.168.1.9", user="hil", device="hackrf")
+    server.init_codeanvil("lab", host="192.168.1.9", device="hackrf")
     names = [t["name"] for t in yaml.safe_load((root / ".codeanvil/project.yaml").read_text())["targets"]]
     assert names == ["pi", "lab"]
     with pytest.raises(config.ConfigError):
@@ -207,6 +208,74 @@ def test_windows_execution_refused_and_unknown_os_invalid(env):
     p.write_text(yaml.safe_dump(data))
     with pytest.raises(config.ConfigError, match="Linux targets only"):
         server.ssh_exec_cmd("uname -a")
+    with pytest.raises(config.ConfigError, match="Linux targets only"):
+        server.init_codeanvil("pi")
     assert not calls
     with pytest.raises(config.ConfigError, match="unsupported target OS"):
         server.init_codeanvil("new", host="host", user="agent", os="bare-metal")
+
+
+def test_provisioning_pins_host_release_and_fixes_new_user(env):
+    root, _, _ = env
+    script = server.init_codeanvil("new", host="newbox", port=2222)
+    assert "CODEANVIL_VERSION=0.7.5" in script
+    assert "codeanvil-gcpds.git@v$CODEANVIL_VERSION" in script
+    assert "main/install.sh" not in script
+    assert 'codeanvil --version)' in script and "CodeAnvil version mismatch" in script
+    assert config.resolve_target("new").user == "codeanvil-agent"
+    with pytest.raises(config.ConfigError, match="fixed codeanvil-agent"):
+        server.init_codeanvil("other", host="otherbox", user="someone")
+
+
+@pytest.mark.parametrize("value", [None, "0.7.5;reboot", "0.7.5.dev0"])
+def test_provisioning_without_a_valid_host_release_never_generates_keys(env, monkeypatch, value):
+    root, _, calls = env
+    if value is None:
+        monkeypatch.delenv("VSIL_HIL_CODEANVIL_VERSION")
+    else:
+        monkeypatch.setenv("VSIL_HIL_CODEANVIL_VERSION", value)
+    with pytest.raises(config.ConfigError, match="version"):
+        server.init_codeanvil("new", host="newbox")
+    assert not calls
+    assert "new" not in config.load_targets(root)
+
+
+@pytest.mark.parametrize("version,exit_code,matched", [
+    ("codeanvil 0.7.5", 0, True), ("codeanvil 0.7.4", 0, False),
+    ("", 1, False), ("unknown", 0, False),
+])
+def test_probe_reports_observed_parity_without_inventing_device_detection(env, monkeypatch, version, exit_code, matched):
+    root, _, calls = env
+    server.init_codeanvil("pi")
+    stdout = f"VSIL_OS=Linux\nVSIL_ARCH=aarch64\nVSIL_CODEANVIL={version}\nVSIL_USB_AVAILABLE=yes\nVSIL_USB_BEGIN\nBus 001 Device 001: controller\n"
+    raw = {"stdout": stdout, "stderr": "raw stderr", "exit_code": exit_code}
+    monkeypatch.setattr(transport, "ssh_run", lambda *args: raw)
+    result = json.loads(server.probe_target("pi"))
+    assert all(result[key] == value for key, value in raw.items())
+    metadata = result["metadata"]
+    assert metadata["version_match"] is matched
+    assert metadata["os"] == "Linux" and metadata["arch"] == "aarch64"
+    assert metadata["declared_device"] == "rtlsdr"
+    assert metadata["usb_devices"] == "Bus 001 Device 001: controller"
+    assert '"tool": "probe_target"' in (root / ".codeanvil/hil/audit.log").read_text()
+
+
+def test_probe_without_usb_or_remote_observations_is_explicit(env, monkeypatch):
+    server.init_codeanvil("pi")
+    monkeypatch.setattr(transport, "ssh_run", lambda *args: {"stdout": "", "stderr": "SSH failed", "exit_code": 255})
+    result = json.loads(server.probe_target())
+    assert result["metadata"]["codeanvil_version"] is None
+    assert result["metadata"]["os"] is None
+    assert result["metadata"]["version_match"] is False
+    assert result["metadata"]["usb_probe_available"] is False
+
+
+def test_pinned_provisioning_script_is_valid_bash(env):
+    server.init_codeanvil("pi")
+    target = config.resolve_target("pi")
+    from vsil_hil_mcp.provision import render_script
+    script = render_script(target, PUB.format(n="d", k="deploy"), PUB.format(n="e", k="exec"), "0.7.5")
+    # Popen is real: check generated shell syntax without executing the script.
+    result = subprocess.Popen(["bash", "-n"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    _, stderr = result.communicate(script.encode(), timeout=5)
+    assert result.returncode == 0, stderr.decode()

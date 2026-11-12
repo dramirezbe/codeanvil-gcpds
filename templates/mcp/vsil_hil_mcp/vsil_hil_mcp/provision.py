@@ -8,11 +8,9 @@ once, as root, on the target. Every interpolated value is validated upstream
 import re
 import shlex
 
-from .config import Target
+from .config import Target, release_version
 
 _PUB_RE = re.compile(r"^ssh-ed25519 [A-Za-z0-9+/]+={0,2}( [A-Za-z0-9._@-]+)?$")
-
-INSTALL_URL = "https://raw.githubusercontent.com/dramirezbe/codeanvil-gcpds/main/install.sh"
 
 _TEMPLATE = r"""#!/usr/bin/env bash
 # vsil_hil_mcp provisioning for target "@@NAME@@" (@@HOST@@).
@@ -23,6 +21,7 @@ set -euo pipefail
 HIL_USER=@@USER@@
 HIL_WS=@@WS@@
 HIL_POLICY=@@POLICY@@
+CODEANVIL_VERSION=@@VERSION@@
 DEPLOY_PUB=@@DEPLOY_PUB@@
 EXEC_PUB=@@EXEC_PUB@@
 
@@ -66,8 +65,8 @@ add_key() { grep -qxF -- "$1" "$AK" || printf '%s\n' "$1" >> "$AK"; }
 add_key "command=\"$RRSYNC -wo $HIL_WS\",restrict $DEPLOY_PUB"
 add_key "restrict $EXEC_PUB"
 
-# 4. policy "trusted": passwordless sudo for the exec user (privileged commands still
-#    need a human approval on ssh_exec_cmd_trusted). This makes the user root-equivalent:
+# 4. policy "trusted": passwordless sudo for the exec user. The host runtime must
+#    configure approval for ssh_exec_cmd_trusted. This makes the user root-equivalent:
 #    only do it on a lab box you accept is reflashable.
 if [ "$HIL_POLICY" = trusted ]; then
   printf 'Grant %s passwordless sudo (root-equivalent)? [y/N] ' "$HIL_USER"
@@ -80,9 +79,16 @@ if [ "$HIL_POLICY" = trusted ]; then
   fi
 fi
 
-# 5. CodeAnvil + methodology runtime, as the confined user (not pinned to the host version)
-runuser -u "$HIL_USER" -- bash -lc 'curl -fsSL @@INSTALL_URL@@ | bash'
-runuser -u "$HIL_USER" -- bash -lc 'export PATH="$HOME/.local/bin:$PATH"; codeanvil init && codeanvil runtime sync'
+# 5. Install the same released CodeAnvil version as the host, as the agent user.
+# A release tag is intentional: never install an evolving main branch here.
+runuser -u "$HIL_USER" -- env CODEANVIL_VERSION="$CODEANVIL_VERSION" bash -lc '
+  set -euo pipefail
+  export PATH="$HOME/.local/bin:$PATH"
+  command -v uv >/dev/null 2>&1 || { curl -LsSf https://astral.sh/uv/install.sh | sh; }
+  uv tool install --force "git+https://github.com/dramirezbe/codeanvil-gcpds.git@v$CODEANVIL_VERSION"
+  [ "$(codeanvil --version)" = "codeanvil $CODEANVIL_VERSION" ] || { echo "CodeAnvil version mismatch" >&2; exit 1; }
+  codeanvil init
+  codeanvil runtime sync'
 
 # 6. project dependencies (needs the code: re-run after the first code_sync if absent)
 runuser -u "$HIL_USER" -- env HIL_WS="$HIL_WS" bash -lc '
@@ -104,7 +110,7 @@ def _pub(pub_text: str) -> str:
     return line
 
 
-def render_script(target: Target, deploy_pub: str, exec_pub: str) -> str:
+def render_script(target: Target, deploy_pub: str, exec_pub: str, codeanvil_version: str) -> str:
     subs = {
         "@@NAME@@": target.name,  # validated, comment line only
         "@@HOST@@": target.host,
@@ -113,7 +119,7 @@ def render_script(target: Target, deploy_pub: str, exec_pub: str) -> str:
         "@@POLICY@@": shlex.quote(target.hil_policy),
         "@@DEPLOY_PUB@@": shlex.quote(_pub(deploy_pub)),
         "@@EXEC_PUB@@": shlex.quote(_pub(exec_pub)),
-        "@@INSTALL_URL@@": INSTALL_URL,
+        "@@VERSION@@": shlex.quote(release_version(codeanvil_version)),
     }
     out = _TEMPLATE
     for k, v in subs.items():

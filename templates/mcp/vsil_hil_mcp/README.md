@@ -101,11 +101,13 @@ running it — it creates a user, installs restricted keys, and installs CodeAnv
 ### Install CodeAnvil on the target
 
 `credential-setup` sets up **access**. To actually run the kit, the target also needs
-CodeAnvil installed (it brings the telemetry collector). The provisioning script does
-this; if you bootstrapped another way, install it as `codeanvil-agent`:
+CodeAnvil installed (it brings the telemetry collector). The provisioning script pins
+the host's release version and checks it after installation. If you bootstrapped another
+way, install the same release as `codeanvil-agent` (with `uv` already available):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/dramirezbe/codeanvil-gcpds/main/install.sh | bash
+# Replace X.Y.Z with the version reported by codeanvil --version on the host.
+uv tool install --force 'git+https://github.com/dramirezbe/codeanvil-gcpds.git@vX.Y.Z'
 codeanvil init && codeanvil runtime sync
 ```
 
@@ -128,6 +130,12 @@ This writes the per-agent MCP configs (`.mcp.json`, `.vscode/`, `opencode.json`,
 agent discovers the tools over MCP. `codeanvil mcp list` shows install status;
 `codeanvil mcp disable` / `remove` tear it down.
 
+The launcher passes its installed version through `VSIL_HIL_CODEANVIL_VERSION`.
+Provisioning fails before generating keys if this version is missing or is not a release
+`X.Y.Z`; it never guesses a version or installs `main`. Equal release versions establish
+collector version parity, not identity of unpublished source changes. DUT identity is
+checked separately against the deployed input manifest.
+
 ---
 
 ## What the agent can and cannot do
@@ -140,6 +148,7 @@ The security model is deliberate: the server enforces, the skill only teaches.
 | **Privileged** | `ssh_exec_cmd_trusted` | `sudo` / mutating commands. Configure your runtime to require approval for this distinct tool. Runs once, verbatim, audited. |
 | **Deploy** | `code_sync` | rsync host → target workspace (write-only, confined by `rrsync`). |
 | **Fetch** | `fetch_evidence` | rsync **only** `verification/telemetry/` back to the host. |
+| **Probe** | `probe_target` | Read OS, architecture, CodeAnvil version and optional `lsusb` output; compare observed and host release versions. No installs or RF transmission. |
 
 Every call — including refusals — is logged to `.codeanvil/hil/audit.log` (target,
 command, exit code): attributable and replayable.
@@ -164,10 +173,13 @@ problems — it names the symptom; you act.
 
 Once set up, the agent drives the loop through MCP tool calls:
 
-1. `code_sync()` — deploy the current code.
-2. `ssh_exec_cmd("cd <workspace> && verification/run.sh vl0")` — run the level; `run.sh`
+1. `probe_target()` — record the observed OS, architecture and CodeAnvil version. Stop
+   before claiming evidence if `metadata.version_match` is false. `declared_device` is
+   configuration; `usb_devices` is observed enumeration and does not prove SDR capability.
+2. `code_sync()` — deploy the current code (S2 only; the independent G2 verifier never deploys).
+3. `ssh_exec_cmd("cd <workspace> && verification/run.sh vl0")` — run the level; `run.sh`
    starts `codeanvil telemetry` on the target so the collector samples the real UC.
-3. `fetch_evidence()` — pull the telemetry back; G2 reads it on the host.
+4. `fetch_evidence()` — pull the telemetry back; G2 reads it on the host.
 
 You only step in to approve a `ssh_exec_cmd_trusted` prompt when the target genuinely
 needs a privileged command (OS packages, udev rules for non-root SDR access). The agent

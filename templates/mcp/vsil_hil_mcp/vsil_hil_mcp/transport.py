@@ -16,6 +16,19 @@ EXCLUDES = (
 TELEMETRY_REL = "verification/telemetry/"
 TIMEOUT_S = 600
 
+# Fixed read-only diagnostic; the target receives no agent-authored shell here.
+PROBE_CMD = r'''vsil_probe_status=0
+printf 'VSIL_OS='; uname -s || vsil_probe_status=1
+printf 'VSIL_ARCH='; uname -m || vsil_probe_status=1
+printf 'VSIL_CODEANVIL='
+if command -v codeanvil >/dev/null 2>&1; then codeanvil --version || vsil_probe_status=1
+else "$HOME/.local/bin/codeanvil" --version || vsil_probe_status=1; fi
+if command -v lsusb >/dev/null 2>&1; then
+  printf 'VSIL_USB_AVAILABLE=yes\nVSIL_USB_BEGIN\n'
+  lsusb || vsil_probe_status=1
+else printf 'VSIL_USB_AVAILABLE=no\nVSIL_USB_BEGIN\n'; fi
+exit "$vsil_probe_status"'''
+
 
 def _ssh_opts(target: Target, key: Path) -> list[str]:
     return [

@@ -1,12 +1,14 @@
-"""FastMCP server exposing the five HIL tools (remote targets only, `trusted` policy MVP).
+"""FastMCP server exposing HIL tools (remote targets only, `trusted` policy MVP).
 
 Self-contained: `mcp`, `pyyaml` and the stdlib only; never imports `codeanvil`.
 """
 
 import json
+import re
 from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
+from mcp.types import ToolAnnotations
 
 from . import config, transport
 from .audit import audit
@@ -48,7 +50,7 @@ def _exec(tool: str, cmd: str, target: str) -> dict:
 
 @mcp.tool()
 def init_codeanvil(
-    target: str = "", host: str = "", user: str = "", workspace: str = "",
+    target: str = "", host: str = "", user: str = "codeanvil-agent", workspace: str = "",
     os: str = "linux", arch: str = "", device: str = "", hil_policy: str = "trusted", port: int = 22,
 ) -> str:
     """Prepare a remote target: create its keys and return the provisioning script.
@@ -61,7 +63,7 @@ def init_codeanvil(
     Args:
         target: target name; may be empty when exactly one target is declared.
         host: target address (only to register a new target).
-        user: unprivileged user to create on the target (new target).
+        user: fixed codeanvil-agent user for new targets; existing declarations retain their user.
         workspace: absolute workspace path on the target (default /home/<user>/workspace).
         os: target OS, "linux" or "windows" (windows provisioning is not implemented).
         arch: target architecture, e.g. aarch64.
@@ -78,10 +80,13 @@ def init_codeanvil(
             raise config.ConfigError("undeclared target: pass target, host and user to register it")
         ws = workspace or f"/home/{user}/workspace"
         config.validate_target_fields(target, host, user, ws, hil_policy, port, os)
+        if user != config.AGENT_USER:
+            raise config.ConfigError("new targets must use the fixed codeanvil-agent user")
         tgt = config.Target(target, host, user, ws, os, arch, device, hil_policy, port)
     _require_trusted(tgt)
     if tgt.os.lower() != "linux":
-        return f"init_codeanvil: provisioning for os={tgt.os!r} is not implemented (linux only)."
+        raise config.ConfigError("provisioning is implemented for Linux targets only")
+    version = config.host_version()
 
     keys = config.ensure_key_dir(tgt.name)
     for kind in ("deploy", "exec"):
@@ -93,7 +98,7 @@ def init_codeanvil(
 
     deploy_pub = keys["deploy"].with_name("deploy_ed25519.pub").read_text(encoding="utf-8")
     exec_pub = keys["exec"].with_name("exec_ed25519.pub").read_text(encoding="utf-8")
-    script = render_script(tgt, deploy_pub, exec_pub)
+    script = render_script(tgt, deploy_pub, exec_pub, version)
     registered = config.register_target(root, tgt)
     audit(root, tgt.name, "init_codeanvil", "ssh-keygen + provisioning script emitted", 0)
     return (
@@ -162,6 +167,44 @@ def fetch_evidence(target: str = "") -> str:
     res = transport.rsync_pull(tgt, keys["exec"], root)
     audit(root, tgt.name, "fetch_evidence", " ".join(argv), res["exit_code"])
     return json.dumps({"summary": f"fetch_evidence <- {tgt.name}:{tgt.workspace}/verification/telemetry/", **res})
+
+
+@mcp.tool(annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False))
+def probe_target(target: str = "") -> str:
+    """Read OS, architecture, installed CodeAnvil version and USB visibility.
+
+    The device declaration is reported separately from observed lsusb output.
+    Version mismatch or an unavailable observation is never reported as parity.
+    This probe does not transmit RF, install packages or edit target configuration.
+    """
+    root, tgt, keys = _context(target)
+    expected = config.host_version()
+    res = transport.ssh_run(tgt, _need_key(keys["exec"]), transport.PROBE_CMD)
+    audit(root, tgt.name, "probe_target", transport.PROBE_CMD, res["exit_code"])
+    fields, usb_lines = {}, []
+    in_usb = False
+    for line in res["stdout"].splitlines():
+        if line == "VSIL_USB_BEGIN":
+            in_usb = True
+        elif in_usb:
+            usb_lines.append(line)
+        elif line.startswith("VSIL_") and "=" in line:
+            key, value = line.split("=", 1)
+            fields[key] = value
+    version_text = fields.get("VSIL_CODEANVIL", "")
+    match = re.fullmatch(r"codeanvil ([0-9]+\.[0-9]+\.[0-9]+)", version_text)
+    observed_version = match.group(1) if match else None
+    metadata = {
+        "os": fields.get("VSIL_OS") or None,
+        "arch": fields.get("VSIL_ARCH") or None,
+        "codeanvil_version": observed_version,
+        "expected_version": expected,
+        "version_match": res["exit_code"] == 0 and observed_version == expected,
+        "declared_device": tgt.device,
+        "usb_probe_available": fields.get("VSIL_USB_AVAILABLE") == "yes",
+        "usb_devices": "\n".join(usb_lines),
+    }
+    return json.dumps({"target": tgt.name, "metadata": metadata, **res})
 
 
 def main() -> None:

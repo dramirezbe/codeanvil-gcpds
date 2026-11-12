@@ -14,6 +14,8 @@ import yaml
 
 POLICIES = ("trusted", "guarded", "locked")
 DEFAULT_POLICY = "trusted"
+AGENT_USER = "codeanvil-agent"
+_RELEASE_VERSION_RE = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+")
 
 # Strict allowlists: these values end up in ssh/rsync argv and in a shell script
 # the human runs as root on the target, so anything outside the pattern is refused.
@@ -25,6 +27,21 @@ _WORKSPACE_RE = re.compile(r"^/[A-Za-z0-9._/+@-]+$")  # absolute, no shell metac
 
 class ConfigError(ValueError):
     """Bad or missing project / target configuration."""
+
+
+def release_version(value: str) -> str:
+    """Validate a released version before interpolating its git tag in a script."""
+    if not _RELEASE_VERSION_RE.fullmatch(value):
+        raise ConfigError("expected a released CodeAnvil version X.Y.Z; development installs need an explicit release")
+    return value
+
+
+def host_version() -> str:
+    """The launcher supplies its own installed package version; never guess a pin."""
+    value = os.environ.get("VSIL_HIL_CODEANVIL_VERSION", "")
+    if not value:
+        raise ConfigError("missing host CodeAnvil version: launch through codeanvil mcp run vsil_hil_mcp")
+    return release_version(value)
 
 
 @dataclass(frozen=True)
