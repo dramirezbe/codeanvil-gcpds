@@ -109,11 +109,27 @@ subagents:
       claude:
         path: ".claude/agents/vsil-verifier.md"
         format: "markdown"
-        frontmatter: {name: "vsil-verifier", tools: "Read, Grep, Glob, Bash"}
+        # Exact MCP tool names keep deployment and privileged setup out of G2.
+        # https://code.claude.com/docs/en/sub-agents#restrict-which-tools-a-subagent-can-use
+        frontmatter:
+          name: "vsil-verifier"
+          tools: "Read, Grep, Glob, Bash, mcp__vsil_hil_mcp__ssh_exec_cmd, mcp__vsil_hil_mcp__fetch_evidence"
       opencode:
         path: ".opencode/agents/vsil-verifier.md"
         format: "markdown"
-        frontmatter: {mode: "subagent", permission: {edit: "deny", webfetch: "deny", bash: "allow"}}
+        # Preserve the supported V1 form; V2 translates it without rewriting.
+        # https://opencode.ai/docs/migrate-v1#permissions-and-tools
+        frontmatter:
+          mode: "subagent"
+          permission:
+            edit: "deny"
+            webfetch: "deny"
+            bash: "allow"
+            vsil_hil_mcp_ssh_exec_cmd: "allow"
+            vsil_hil_mcp_fetch_evidence: "allow"
+            vsil_hil_mcp_code_sync: "deny"
+            vsil_hil_mcp_init_codeanvil: "deny"
+            vsil_hil_mcp_ssh_exec_cmd_trusted: "deny"
       codex:
         path: ".codex/agents/vsil-verifier.toml"
         format: "toml"

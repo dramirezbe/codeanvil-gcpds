@@ -2,7 +2,7 @@
 name: g2-adaptive-verification
 description: "Trigger: G2, adaptive verification, verify the S2 build, Verified Prototype. Run the S2 evidence at the declared levels in a fresh context, present it to a human and record the PASS, FEEDBACK or RFD answer."
 license: Apache-2.0
-compatibility: "No network access, no scripts. Runs only the test_run.md commands. Writes only .codeanvil/report/<cycle-name>/G2.md and G2_artifacts/."
+compatibility: "Runs only the test_run.md level and read-only preflight commands, locally or through the declared vsil_hil_mcp target. Fetches telemetry; never deploys or repairs code. Writes only .codeanvil/report/<cycle-name>/G2.md and G2_artifacts/."
 metadata:
   author: "gcpds"
   version: "1.0"
@@ -38,8 +38,9 @@ Check, in this order, writing **no iteration** when you stop:
 
 | Path | Role |
 |------|------|
-| `.codeanvil/report/<cycle-name>/S2_artifacts/test_run.md` | The only commands G2 runs: `verification/run.sh vl0` and `verification/run.sh vl1`; `Possible infeasibility` entries |
-| `.codeanvil/design/SDD.md` | Meta `HAL mode` and `Toolchain`, `required_vl` per module and `PATH-*`, §1.6 HAL ladder, §1.7 telemetry envelope |
+| `.codeanvil/report/<cycle-name>/S2_artifacts/test_run.md` | The only commands G2 runs: `verification/run.sh vl0`, `verification/run.sh vl1` and recorded read-only target/deployment preflights; target block and `Possible infeasibility` entries |
+| `.codeanvil/project.yaml` | Target declarations, compared with SDD and the S2 target block before any remote execution |
+| `.codeanvil/design/SDD.md` | Meta `Target(s)`, `HAL mode` and `Toolchain`, `required_vl` per module and `PATH-*`, §1.6 HAL ladder, §1.7 telemetry envelope per target |
 | `.codeanvil/GT/SyRS.md` | Read-only: `SYS-*` thresholds; §6 `PROTO-*`, §4 correction chains, §5 tolerances for VL-2 |
 | `templates/skills/G2_adaptive_verification/references/verified_prototype.md` | The Verified Prototype template |
 
@@ -53,11 +54,17 @@ Check, in this order, writing **no iteration** when you stop:
   entry-point smoke test is a module defect routed to S2, even when other tests pass.
 - Never reuse S2's results: always re-run.
 - Levels by HAL mode: `mock-only` caps every claim at VL-1, so refuse a VL-2 declaration and state
-  that no claim rests on real hardware. `mock+real` allows VL-2 per module or path; a Real HW HAL
+  that no claim uses real device inputs. PIL may use the actual processor with Mock HAL inputs
+  and stays VERIFIED. `mock+real` allows VL-2 per module or path; a Real HW HAL
   declared at VL-0 for this cycle means G2.2 does not fire, and the honesty declaration says so.
 - A result outside the §1.7 telemetry envelope is shown flagged, never silently accepted.
 - A constant or placeholder telemetry reading is not measured evidence: report it as a module
   defect, never as an envelope result.
+- A target/configuration mismatch, failed provenance or version preflight, missing command,
+  missing/empty/corrupt telemetry or unavailable required readings is an **evidence gap**. Show
+  it explicitly; it cannot be reported as a passing or in-envelope result. A collector exit 0
+  alone is insufficient. Skip only a torn final JSONL line, disclose it and assess the remaining
+  coverage; do not silently discard earlier corruption.
 - No model is measured this round (FW-ML-4): the Verified Prototype has no ML evidence.
 
 ## Who runs what
@@ -70,11 +77,43 @@ say so and ask the user to run G2 in a fresh session; run nothing in the session
 In a fresh session that did not run S2, G2 runs steps 2–5 itself and records
 `Verifier` = `fresh session`.
 
+## Local or remote execution
+
+No declared `targets:` means local execution. Otherwise use the SDD's named execution targets,
+matching every service/path with `test_run.md`; several declared targets require explicit names.
+The target block names host, user, port, workspace, observed OS/architecture, device and host and
+target CodeAnvil versions. Missing or conflicting values stop that target's run as an evidence gap;
+never silently substitute the developer host.
+
+S2 has already deployed the delivered code and kit. The fresh verifier uses only
+`ssh_exec_cmd(cmd="<exact recorded payload>", target="<name>")` and `fetch_evidence` remotely:
+
+1. Execute the recorded read-only version/OS/architecture probes and compare the observed
+   CodeAnvil version to the host and S2 record. Then run the recorded
+   `python3 verification/check_deployment.py --expected <manifest-SHA256>` preflight from the
+   target workspace. The expected digest and clean delivered git revision come from the host's
+   S2 record; `.git` is not deployed. A missing preflight or nonzero exit stops the run.
+2. Relay `verification/run.sh vl0` and, when declared, `verification/run.sh vl1` exactly as
+   recorded, with the workspace `cd` prefix and explicit target. The kit collects telemetry on
+   that compute unit. Recheck deployment identity after the runs; a changed baseline invalidates
+   the affected evidence even if the tests exited 0.
+3. `fetch_evidence(target="<name>")` retrieves telemetry. Match the exact new files to this run,
+   record their SHA-256 hashes and apply that target's §1.7 envelope. Old telemetry is not a fresh
+   result. The report and Verified Prototype name the real compute unit and identify PIL.
+
+Never call `code_sync`, `init_codeanvil` or `ssh_exec_cmd_trusted` from the verifier. A setup
+problem returns to S2 or the human; the verifier cannot change its command or repair access.
+Tool availability and runtime permissions are separate: a tool name alone does not guarantee a
+human prompt. Claude/OpenCode constrain the shipped MCP tool set; Codex's shared body is an
+instruction boundary, not an OS sandbox. If the runtime cannot supply the permitted MCP tools,
+use a fresh session with them or report the gap instead of invoking direct SSH.
+
 ## Steps
 
 1. **Declare levels.** Show each module and `PATH-*` with its `required_vl`. The human declares
    the level for this cycle (default VL-0).
-2. **G2.0, always.** Fresh run of `verification/run.sh vl0` with the telemetry companion.
+2. **G2.0, always.** Resolve local/remote execution and complete the recorded preflights above.
+   Fresh run of `verification/run.sh vl0` with the telemetry companion on that execution target.
    Check its §0.5 entry-point smoke result and the exact command recorded in `test_run.md`.
 3. **G2.1, when VL-1 is declared.** Run `verification/run.sh vl1`: Mock HAL synthetic inputs per
    §1.6, metrics against the `SYS-*` thresholds.
@@ -82,8 +121,10 @@ In a fresh session that did not run S2, G2 runs steps 2–5 itself and records
    §1.6, on the Real HW HAL, with the §4 correction chains and §5 tolerances. The subagent prepares
    the procedure; if no hardware is reachable from the session, the human runs it and pastes the
    measurements.
-5. **Telemetry check.** Flag every result produced outside the §1.7 envelope. Reject a constant or
-   placeholder reading as measured evidence: it is a module defect.
+5. **Telemetry check.** Fetch remote evidence and complete the post-run identity check above.
+   Flag every result produced outside that target's §1.7 envelope. Reject a constant or
+   placeholder reading as measured evidence: it is a module defect. Report unavailable evidence
+   and incomplete coverage rather than assigning an in-envelope result.
 6. **Infeasibility.** Show every `Possible infeasibility` entry from `test_run.md` next to the G2
    result that confirms or refutes it. When the defect-or-RFD test points to RFD, the
    recommendation names it.

@@ -104,3 +104,31 @@ def test_g2_rejects_placeholder_telemetry_as_measured_evidence():
 
     assert "A constant or placeholder telemetry reading is not measured evidence" in text
     assert "Reject a constant or placeholder reading as measured evidence" in text
+
+
+def test_g2_checks_provenance_without_redeploying_or_substituting_the_host():
+    text = " ".join(_g2_text().split())
+    prototype = " ".join(PROTOTYPE.read_text(encoding="utf-8").split())
+
+    assert "No declared `targets:` means local execution" in text
+    assert "never silently substitute the developer host" in text
+    assert "expected digest and clean delivered git revision come from the host" in text
+    assert "Recheck deployment identity after the runs" in text
+    assert "Never call `code_sync`, `init_codeanvil` or `ssh_exec_cmd_trusted`" in text
+    assert "missing/empty/corrupt telemetry" in text
+    assert "collector exit 0 alone is insufficient" in text
+    assert "Execution targets and provenance" in prototype
+    assert "before/after provenance checks" in prototype
+
+
+def test_scaffolded_g2_and_verifier_keep_the_same_remote_contract(tmp_path, db_path):
+    cmd_create(None, tmp_path, project_name="Proj")
+    g2 = _scaffold_skill(tmp_path, SKILL, "SKILL.md").read_text(encoding="utf-8")
+    verifier = (tmp_path / "proj" / ".claude" / "agents" / "vsil-verifier.md").read_text()
+
+    for text in (g2, verifier):
+        assert "verification/check_deployment.py --expected" in text
+        assert "fetch_evidence" in text
+        assert "evidence gap" in text
+        assert "torn final JSONL line" in text
+    assert "templates/skills/" not in g2

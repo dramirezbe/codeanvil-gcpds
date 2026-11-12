@@ -16,7 +16,8 @@ delete no section. -->
 ## 2. HAL mode
 
 `<mock-only | mock+real>`, from the S1 design Meta. In `mock-only`, every claim is capped at VL-1
-and no claim rests on real hardware.
+and uses Mock HAL inputs. PIL may run these inputs on the actual compute unit; it is not real-RF
+or VL-2 validation.
 
 ## 3. Toolchain
 
@@ -25,6 +26,16 @@ One row per service, copied from the design Meta.
 | Service | Package | Language | Package manager | Test runner |
 |---------|---------|----------|-----------------|-------------|
 | SVC-xxx | <package> | <language> | <uv / pnpm> | <pytest / vitest> |
+
+**Execution targets and provenance:**
+
+| Service / PATH-* | Local / PIL | Target name | Host / user / port / workspace | Observed OS / architecture | Device | Host / target CodeAnvil versions | Parity |
+|------------------|-------------|-------------|--------------------------------|----------------------------|--------|---------------------------------|--------|
+| <IDs> | <local / PIL> | <name or local> | <actual location> | <actual observed values> | <declared device or none> | <versions> | <match> |
+
+For PIL, record the clean delivered git revision, deployment manifest SHA-256 and successful
+before/after provenance checks. Include the exact per-run evidence paths and SHA-256 hashes.
+Local records identify the host; remote-only fields are `not applicable`, never invented.
 
 ## 4. Module evidence
 
@@ -41,11 +52,13 @@ One row per service, copied from the design Meta.
 ## 6. Telemetry report
 
 Envelope from design §1.7, readings from the telemetry companion, and every result flagged outside
-the envelope with the human's decision on it.
+the envelope with the human's decision on it. Name the execution target per evidence file. Report
+unavailable readings, lost coverage and any skipped torn trailing line; collector exit 0 alone
+does not establish valid evidence or an in-envelope result.
 
 ## 7. Honesty declaration
 
-- VERIFIED (VL-0, VL-1): <modules and paths>.
+- VERIFIED (VL-0, VL-1): <modules and paths; execution target and whether PIL>.
 - VALIDATED (VL-2, `mock+real` only, `PROTO-*` on the Real HW HAL): <modules and paths, or "none">.
 - Not claimed: <what was not verified this cycle and why, including a Real HW HAL declared at VL-0>.
 - No ML evidence: no model is measured this round.

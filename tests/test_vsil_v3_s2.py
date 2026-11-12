@@ -324,3 +324,21 @@ def test_layout_starts_the_collector_through_the_runtime():
     # psutil comes from the runtime, never from the kit's dev group.
     assert 'dev = ["pytest"]' in text
     assert "never lists `psutil`" in text
+
+
+def test_s2_prepares_a_named_remote_baseline_before_g2():
+    text = " ".join(_skill_text(SKILL).split())
+    layout = " ".join(_layout_text().split())
+
+    assert "No `targets:` means **local**" in text
+    assert "several require explicit names on every MCP call" in text
+    assert 'code_sync(target="<name>")' in text
+    assert "clean git revision" in text
+    assert "manifest-SHA256" in text
+    assert "observed OS and architecture" in text
+    assert "unequal versions block delivery" in text
+    assert "collector exit 0 does not prove evidence exists" in text
+    assert "before and after" in layout
+    assert "missing, changed or additional files" in layout
+    assert "symlinks escaping the workspace" in layout
+    assert "S2 tests this checker with an altered input" in layout

@@ -105,6 +105,8 @@ dependencies, and only as a recorded design decision.
 ```
 verification/
 ├── run.sh                 # verification/run.sh vl0 | verification/run.sh vl1
+├── deployment_manifest.json # remote only: input hashes for the final S2 deployment
+├── check_deployment.py     # remote only: stdlib, read-only manifest preflight for G2
 ├── golden/
 │   ├── manifest.md        # one row per vector: id, SHA-256, generation parameters,
 │   │                      #   simulated condition, expected output
@@ -127,10 +129,40 @@ HAL's VL-0 tests use.
 1. starts the telemetry collector in the background:
    `codeanvil telemetry --pid $$ --output verification/telemetry/<level>-<timestamp>.jsonl &`,
    with the design §1.7 `--interval`, and `--counters` when the HAL or services expose counters;
+   add `--fsync` only when the design requests durable per-sample writes (default off);
 2. runs `uv run pytest -m <level>` when a Python service exists;
 3. runs `pnpm -r --filter "./verification/*" test:<level>` when a TS service exists;
 4. stops the companion and attaches its readings to the run output;
 5. exits non-zero if any run failed.
+
+The companion degrades on a disk write failure; its successful exit is not evidence of a valid
+run. Attach only this run's JSONL file and report missing, empty or corrupt evidence as
+`unavailable`, never as a zero or an in-envelope measurement. A reader may skip a torn final
+line with an explicit warning, never corruption before the tail.
+
+## Remote deployment identity (PIL)
+
+S2 creates the manifest and checker only when a remote target is selected. They are verification
+infrastructure, not delivered service dependencies. The manifest records the clean delivered git
+revision, its selected input roots, and sorted project-relative paths with SHA-256 hashes and
+executable bits. Include all service code, kit tests and vectors, the checker itself, lockfiles,
+root manifests and runnable entry-point/configuration files. Exclude only declared outputs and
+volatile caches: `verification/telemetry/`, the manifest itself, `.venv`, `__pycache__`, `*.pyc`,
+and tooling state (`.git`, `.codeanvil`, agent configuration). Never exclude executable inputs
+just to make a preflight pass. Record exclusions explicitly; secrets are not deployed inputs.
+
+`python3 verification/check_deployment.py --expected <manifest-SHA256>` uses only the stdlib,
+reads the manifest and selected roots, prints the identity and exits 0 only when the manifest's
+own hash equals `--expected` and every input matches. Reject missing, changed or additional files
+within the selected roots, unsafe paths, and symlinks escaping the workspace. For allowed internal
+symlinks record and check both the link target and the resolved input digest. Do not rewrite the
+manifest, install dependencies, deploy or run tests in this preflight. Its expected digest comes
+from the host `test_run.md`, not from the remote manifest it is checking.
+
+S2 tests this checker with an altered input before delivery. G2 repeats it before and after the
+recorded level commands. Any mismatch returns to S2; the verifier never calls `code_sync` to
+make a changed deployment look like the approved one. Keep test outputs outside the selected
+input roots or explicitly excluded, so executing the kit does not change its own baseline.
 
 Never shipped: no service imports or depends on anything under `verification/`. Python kit
 dependencies live only in the dev group and the wheel holds no `verification/` file; no service

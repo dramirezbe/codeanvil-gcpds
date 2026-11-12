@@ -67,6 +67,25 @@ def test_the_subagent_has_no_edit_or_write_tools(tmp_path):
     assert opencode["permission"]["edit"] == "deny"
 
 
+def test_verifier_mcp_tools_allow_run_fetch_but_never_deploy_or_setup(tmp_path):
+    project = _scaffold(tmp_path)
+    claude, _ = _split_markdown(project / CLAUDE)
+    claude_tools = {tool.strip() for tool in claude["tools"].split(",")}
+    opencode, _ = _split_markdown(project / OPENCODE)
+    permissions = opencode["permission"]
+
+    for tool in ("ssh_exec_cmd", "fetch_evidence"):
+        assert f"mcp__vsil_hil_mcp__{tool}" in claude_tools
+        assert permissions[f"vsil_hil_mcp_{tool}"] == "allow"
+    for tool in ("code_sync", "init_codeanvil", "ssh_exec_cmd_trusted"):
+        assert f"mcp__vsil_hil_mcp__{tool}" not in claude_tools
+        assert permissions[f"vsil_hil_mcp_{tool}"] == "deny"
+
+    body = BODY.read_text(encoding="utf-8")
+    assert "Codex inherits its host permissions" in body
+    assert "never call `code_sync`, `init_codeanvil`" in body
+
+
 def test_rescaffolding_writes_the_same_bytes(tmp_path):
     project = _scaffold(tmp_path)
     first = {rel: (project / rel).read_bytes() for rel in (CLAUDE, OPENCODE, CODEX)}
