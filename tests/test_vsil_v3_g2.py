@@ -11,7 +11,7 @@ from codeanvil.CLI.commands.create import cmd_create
 from codeanvil.config.paths import CONFIG, TEMPLATES_DIR
 from codeanvil.init.create import _parse_skill_frontmatter
 from test_create import _scaffold_skill, _skill_text, db_path  # noqa: F401  (db_path is a fixture)
-from test_hil_measurements import REQUESTED_AT, SHA, captured  # noqa: F401 (fixture)
+from test_hil_measurements import captured  # noqa: F401 (fixture)
 
 SKILL = "G2_adaptive_verification"
 PROTOTYPE = TEMPLATES_DIR / "skills" / SKILL / "references" / "verified_prototype.md"
@@ -114,47 +114,53 @@ def test_g2_rejects_placeholder_telemetry_as_measured_evidence():
     assert "Reject a constant or placeholder reading as measured evidence" in text
 
 
-def test_g2_checks_provenance_without_redeploying_or_substituting_the_host():
+def test_g2_parent_prepares_but_fresh_verifier_executes_reviewed_hw():
     text = " ".join(_g2_text().split())
     prototype = " ".join(PROTOTYPE.read_text(encoding="utf-8").split())
-
     assert "No declared `targets:` means local execution" in text
     assert "never silently substitute the developer host" in text
-    assert "expected digest and clean delivered git revision come from the host" in text
-    assert "Recheck deployment identity after the runs" in text
-    assert "Never call `code_sync`, `init_codeanvil` or `ssh_exec_cmd_trusted`" in text
-    assert "missing/empty/corrupt telemetry" in text
-    assert "collector exit 0 alone is insufficient" in text
-    assert "Execution targets and provenance" in prototype
-    assert "before/after provenance checks" in prototype
+    assert "Stop and wait for explicit `continue`" in text
+    assert "clean Git tree and all candidate commits pushed" in text
+    assert "parent completes preparation before launching it" in text
+    assert "fresh verifier runs the recorded real HW command" in text
+    assert "not an exact-SemVer gate" in text
+    assert "actual published tool ref" in text
+    assert "the next G2 iteration number" in text
+    assert "last appended G2 iteration number plus 1" in text
+    assert "affected measures or proceed with the supported scope" in text
+    assert "Execution equipment and preparation" in prototype
+    assert "deployment_manifest.json" not in text
+    assert "capture_request.json" not in text
 
 
-def test_scaffolded_g2_and_verifier_keep_the_same_remote_contract(tmp_path, db_path):
+def test_scaffolded_g2_and_verifier_keep_parent_pauses_and_causal_feedback(tmp_path, db_path):
     cmd_create(None, tmp_path, project_name="Proj")
-    g2 = _scaffold_skill(tmp_path, SKILL, "SKILL.md").read_text(encoding="utf-8")
-    verifier = (tmp_path / "proj" / ".claude" / "agents" / "vsil-verifier.md").read_text()
-
+    g2 = " ".join(_scaffold_skill(tmp_path, SKILL, "SKILL.md").read_text().split())
+    verifier = " ".join((tmp_path / "proj" / ".claude" / "agents" / "vsil-verifier.md").read_text().split())
     for text in (g2, verifier):
-        assert "verification/check_deployment.py --expected" in text
-        assert "fetch_evidence" in text
-        assert "evidence gap" in text
+        assert "fetch_evidence" in text and "local_path" in text
+        assert "monotonic" in text or "synchronizes clocks" in text
+        assert "concrete next action" in text
         assert "torn final JSONL line" in text
+        assert "module" in text and "S2" in text and "design" in text and "RFD" in text
+        assert "check_deployment.py" not in text
+    assert "never asks the human" in g2
+    assert "Ask the human anything" in verifier
+    assert "without editing the DUT" in verifier
+    assert "the next G2 iteration number" in verifier
     assert "templates/skills/" not in g2
 
 
-def test_g2_demands_a_fresh_operator_capture_and_never_promotes_validator_success():
-    text = " ".join(_g2_text().split())
+def test_machine_record_accepts_general_metrics_without_hil_attestation():
     machine = (PROTOTYPE.parent / "machine_evidence.md").read_text(encoding="utf-8")
 
-    for required in ("capture_request.json", "--not-before", "never sets `HITL`",
-                     "S2's development capture is not fresh G2 evidence"):
-        assert required in text
-    assert "scalar measurement" in machine
-    assert "Other predicates require an explicitly reviewed schema" in machine
-    assert "never calls the trusted tool" in machine
-    assert "including records with measured" in machine
-    assert "<fetch-local-path>/<run-id>/measurement.json" in machine
-    assert "Every fetch returns `local_path`" in machine
+    assert "number, text or boolean" in machine
+    assert "schema_version: 2" in machine
+    assert "finite numeric values" in machine
+    assert "not a passing test or a gate verdict" in machine
+    assert "The agent runs functional or metrological tests" in machine
+    assert "No file hash, deployment digest" in machine
+    assert "`fetch_evidence` returns `local_path`" in machine
 
 
 def test_scaffold_rewrites_the_machine_validation_command_and_ships_references(tmp_path, db_path):
@@ -182,8 +188,7 @@ def test_s2_owns_an_executable_copy_of_canonical_measurement_assets(tmp_path, db
     # Removing the producer from this temporary scaffold proves the consumer is standalone.
     shutil.rmtree(producer)
     script = consumer / "scripts/validate_measurement.py"
-    args = [sys.executable, str(script), str(record), "--target", "pi", "--run-id", "synthetic-001",
-            "--deployment-sha256", SHA, "--codeanvil-version", "0.7.5", "--not-before", REQUESTED_AT]
+    args = [sys.executable, str(script), str(record)]
     result = subprocess.run(args, capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
     assert json.loads(result.stdout)["verdict"] == "human review required"

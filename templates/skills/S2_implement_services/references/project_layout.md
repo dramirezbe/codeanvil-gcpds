@@ -105,14 +105,12 @@ dependencies, and only as a recorded design decision.
 ```
 verification/
 ├── run.sh                 # verification/run.sh vl0 | verification/run.sh vl1
-├── deployment_manifest.json # remote PIL or any VL-2: final input hashes
-├── check_deployment.py     # remote PIL or any VL-2: stdlib, read-only G2 preflight
 ├── golden/
 │   ├── manifest.md        # one row per vector: id, SHA-256, generation parameters,
 │   │                      #   simulated condition, expected output
 │   └── <vector files>
 ├── telemetry/             # one JSONL file per run, written by `codeanvil telemetry`
-│   └── <run-id>/          # conditional VL-2: immutable measurement.json, telemetry and captures
+│   └── <cycle>_<iteration>_<timestamp>/ # measurement.json v2, named telemetry and script outputs
 └── <package>/             # one folder per service, in that service's language
     ├── mock_hal/          # VL-0 vectors and the VL-1 synthetic generator
     ├── stubs/             # one stub per contract of a module not built yet
@@ -128,11 +126,11 @@ HAL's VL-0 tests use.
 `verification/run.sh <vl0|vl1>`:
 
 Set `export PATH="$HOME/.local/bin:$PATH"` inside `run.sh` before starting the collector or any
-package-manager command. Non-login SSH does not load shell startup files; do not rely on the
-host's PATH or send an environment-expanding shell command through the auto MCP door.
+package-manager command. Non-login SSH does not load shell startup files, so set the target's
+PATH explicitly rather than relying on the host's environment.
 
 1. starts the telemetry collector in the background:
-   `codeanvil telemetry --pid $$ --output verification/telemetry/<level>-<timestamp>.jsonl &`,
+   `codeanvil telemetry --pid $$ --output verification/telemetry/<run_id>/<run_id>.jsonl &`,
    with the design §1.7 `--interval`, and `--counters` when the HAL or services expose counters;
    add `--fsync` only when the design requests durable per-sample writes (default off);
 2. runs `uv run pytest -m <level>` when a Python service exists;
@@ -140,53 +138,31 @@ host's PATH or send an environment-expanding shell command through the auto MCP 
 4. stops the companion and attaches its readings to the run output;
 5. exits non-zero if any run failed.
 
-The companion degrades on a disk write failure; its successful exit is not evidence of a valid
-run. Attach only this run's JSONL file and report missing, empty or corrupt evidence as
-`unavailable`, never as a zero or an in-envelope measurement. A reader may skip a torn final
-line with an explicit warning, never corruption before the tail.
+The run ID is `<cycle>_<iteration>_<codeanvil now --machine>`: the current S2/G2 iteration,
+not a new HIL counter. A retry gets another timestamp. Use fresh outputs without overwriting.
+The companion degrades on disk failure; exit 0 does not certify telemetry coverage. Investigate
+missing/partial telemetry, notify the parent and decide whether affected measures need repeating
+or unaffected evidence can continue. Never turn a missing reading into zero. A reader may skip
+only a torn final JSONL line with notice; earlier corruption needs diagnosis.
 
-In `mock+real` with all lab prerequisites supplied, add `verification/run.sh vl2 --run-id <id>`.
-The operator command checks the approved protocol/oracle and explicit authorization, creates a
-new output directory exclusively, checks deployment identity, records the actual HAL probe,
-rejects unsupported device configuration, captures telemetry and raw device data, applies the
-declared correction chain and writes `measurement.json` with capture SHA-256 hashes. Always stop
-the device and telemetry on error; preserve partial failed evidence without overwriting it.
-Test the orchestration and failure paths with a fake device API; fake results never count as
-real VL-2 evidence. This skill's locked `references/machine_evidence.md` and `measurement.schema.json` define
-the capture contract and scalar interval limitation. No declared oracle means no VL-2 run.
+In `mock+real`, `verification/run.sh vl2` uses the Real HW HAL and measurement scripts appropriate
+to the GT, writes `measurement.json` v2 and script/capture outputs beside telemetry, and stops the
+device/companion on errors. Test orchestration/failure paths with a fake API, but never claim
+those fake results as real hardware evidence. This skill's locked `references/machine_evidence.md`
+and `measurement.schema.json` describe the small record. Functional tests need no universal
+oracle, file hashes or calibration budget; satisfy lab inputs when the GT/conclusion needs them.
 
-On the target, captures are under `verification/telemetry/<run-id>/`. Each `fetch_evidence` call
-returns `local_path`, a new host snapshot under `verification/telemetry/<target>/fetch-<unique>/`.
-Read the selected `<run-id>/measurement.json` inside that returned directory; older remote runs
-may also be present in the snapshot and are not fresh evidence. Local captures stay under
-`verification/telemetry/<run-id>/`. Preserve per-run relative paths inside each record.
+Before remote updates/deployment or local HW tests, the parent shows the clean, pushed candidate
+and planned operations and waits for explicit `continue`. After review the agent updates tool,
+app and dependencies from their own published refs, synchronizes clocks before measurement and
+uses monotonic durations while acquiring. No deployment manifest or per-file checker is built.
+`code_sync` exports only the published Git candidate and preserves target databases/state; do not
+send ignored host source. Read-only inventory may precede review, actual device tests may not.
 
-## Deployment identity (remote PIL or any VL-2)
-
-S2 creates the manifest and checker for remote PIL or any planned VL-2 capture, including local
-PC-to-device HIL with no remote target. Local VL-0/VL-1 alone do not need them. Local VL-2 uses
-target name `local`, the host CodeAnvil version and the same expected manifest digest checks;
-it needs no MCP or deployment sync. They are verification infrastructure, not delivered service
-dependencies. The manifest records the clean delivered git
-revision, its selected input roots, and sorted project-relative paths with SHA-256 hashes and
-executable bits. Include all service code, kit tests and vectors, the checker itself, lockfiles,
-root manifests and runnable entry-point/configuration files. Exclude only declared outputs and
-volatile caches: `verification/telemetry/`, the manifest itself, `.venv`, `__pycache__`, `*.pyc`,
-and tooling state (`.git`, `.codeanvil`, agent configuration). Never exclude executable inputs
-just to make a preflight pass. Record exclusions explicitly; secrets are not deployed inputs.
-
-`python3 verification/check_deployment.py --expected <manifest-SHA256>` uses only the stdlib,
-reads the manifest and selected roots, prints the identity and exits 0 only when the manifest's
-own hash equals `--expected` and every input matches. Reject missing, changed or additional files
-within the selected roots, unsafe paths, and symlinks escaping the workspace. For allowed internal
-symlinks record and check both the link target and the resolved input digest. Do not rewrite the
-manifest, install dependencies, deploy or run tests in this preflight. Its expected digest comes
-from the host `test_run.md`, not from the remote manifest it is checking.
-
-S2 tests this checker with an altered input before delivery. G2 repeats it before and after the
-recorded level commands. Any mismatch returns to S2; the verifier never calls `code_sync` to
-make a changed deployment look like the approved one. Keep test outputs outside the selected
-input roots or explicitly excluded, so executing the kit does not change its own baseline.
+`fetch_evidence` returns `local_path`, a fresh host snapshot of remote telemetry. Select this
+run's files within it; older remote runs may also be present. Local runs read their local output.
+The existing S2 pause schedule, `Checkpoint:` narrative and append-only report format remain;
+no partial iteration or extra HITL state represents an operational stop.
 
 Never shipped: no service imports or depends on anything under `verification/`. Python kit
 dependencies live only in the dev group and the wheel holds no `verification/` file; no service

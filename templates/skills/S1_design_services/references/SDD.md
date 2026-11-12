@@ -288,22 +288,22 @@ flowchart LR
 |-------|-------|
 | Base-layer port | <!-- same contract as the Mock HAL --> |
 | COTS device | <!-- HWC-NNN --> |
-| Lab procedures | <!-- PROTO-* rows of SyRS.md §6 it executes --> |
-| Oracle / reference | <!-- GT source, value/unit, standard uncertainty and calibration provenance; missing blocks VL-2 --> |
-| Correction chains | <!-- SyRS.md §4 terms it applies --> |
-| Declared tolerances | <!-- SyRS.md §5 uncertainty/tolerance budgets and decision rule --> |
-| Calibration grade | <!-- development-team screening grade, not normative --> |
+| Measurement method | <!-- functional/metric test scripts, SYS-* criteria, sufficient resolution and tolerances --> |
+| Lab procedures | <!-- PROTO-* from SyRS §6 when needed; otherwise describe the functional procedure --> |
+| Reference / calibration | <!-- source and provenance when required by GT or the conclusion; otherwise justify not required --> |
+| Correction chains | <!-- SyRS §4 terms when required; do not invent them --> |
+| Declared tolerances | <!-- GT criterion and applicable uncertainty/decision rule, if needed --> |
+| Calibration grade | <!-- if needed: development-team screening grade, not normative --> |
 | Device probe | <!-- non-transmitting command, observed identity/driver/capabilities and failure output --> |
 | Capability guard | <!-- ranges/modes rejected before configure/acquire; never bypass via raw device API --> |
 | Safe stop | <!-- close device, stop TX, release resources on timeout/disconnect --> |
 | Fake device API | <!-- how the Real HW HAL runs at VL-0 without the device --> |
 
-<!-- Calibration grade and tolerances are Build Package inputs carried by the SyRS, not V-SIL
-     claims. A SyRS §6 holding "Not applicable: no lab inputs in the Build Package." cannot
-     support mock+real: record the gap as a risk in §6. No oracle or incomplete §4/§5 budgets means
-     VL-2 remains blocked. Define machine capture in verification/run.sh vl2 only when these
-     prerequisites are supplied; G2 requests a fresh capture executed by a human/authorized
-     operator and reads the resulting per-run measurement.json, never LLM-invented numbers. -->
+<!-- Functional HW tests need no universal oracle/calibration budget. Justify the method against
+     the actual requirement. When GT or the conclusion requires calibration/corrections, missing
+     inputs make that claim inconclusive, not passing. The agent prepares and runs real tests
+     after the parent's explicit pre-HW checkpoint. measurement.json v2 records actual outcomes;
+     no deployment manifest, capture hash or human capture operator is required. -->
 
 **Substitution check:**
 
@@ -343,7 +343,8 @@ flowchart LR
 <!-- Evidence recorded outside the envelope is flagged as potentially invalid. If the companion's
      own footprint exceeds its budget, that is an infrastructure defect, not a system defect.
      Readings must be captured on the named compute unit. Host readings cannot stand in for a
-     remote target; missing or unavailable required readings are evidence gaps, never zeros. -->
+     remote target. Missing readings prompt notice, diagnosis and a decision whether to repeat
+     or continue with unaffected evidence; never replace a missing reading with zero. -->
 
 ---
 

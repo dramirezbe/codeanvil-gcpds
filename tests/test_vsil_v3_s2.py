@@ -326,55 +326,46 @@ def test_layout_starts_the_collector_through_the_runtime():
     assert "never lists `psutil`" in text
 
 
-def test_s2_prepares_a_named_remote_baseline_before_g2():
+def test_s2_requires_published_candidate_and_a_real_pre_hw_stop():
     text = " ".join(_skill_text(SKILL).split())
-    layout = " ".join(_layout_text().split())
-
     assert "No `targets:` means **local**" in text
-    assert "several require explicit names on every MCP call" in text
-    assert 'code_sync(target="<name>")' in text
-    assert "clean git revision" in text
-    assert "manifest-SHA256" in text
-    assert "observed OS and architecture" in text
-    assert "unequal versions block delivery" in text
-    assert "collector exit 0 does not prove evidence exists" in text
-    assert "before and after" in layout
-    assert "missing, changed or additional files" in layout
-    assert "symlinks escaping the workspace" in layout
-    assert "S2 tests this checker with an altered input" in layout
+    assert "discovered MAC" in text and "project UUID workspace" in text
+    assert "git status --porcelain" in text
+    assert "HEAD is committed, clean and fully pushed" in text
+    assert "Stop and wait for explicit `continue`" in text
+    assert "Silence, timeouts and full host access are not consent" in text
+    assert "Do not create a partial iteration" in text
+    assert "Checkpoint: pre-HW review" in text
+    assert "systemctl" in text and "ordinary door" in text
+    assert "same reviewed acquisition within scope" in text
 
 
-def test_s2_capture_contract_keeps_rf_authorized_and_evidence_exclusive():
+def test_s2_agent_runs_hw_with_small_records_and_conditional_metrology():
     skill = " ".join(_skill_text(SKILL).split())
     layout = " ".join(_layout_text().split())
-
-    assert "metadata.version_match: true" in skill
-    assert "generating and testing `verification/check_deployment.py`" in skill
-    assert "Do not create or edit the checker after taking this baseline" in skill
-    assert "VL-2 remains blocked" in skill
-    assert "G2 requests a separate fresh run" in skill
-    assert "Refuse an existing run ID" in skill
+    assert "the agent runs actual hardware tests" in skill
+    assert "Functional HW tests need no universal oracle or calibration" in skill
+    assert "inconclusive" in skill
+    assert "<cycle>_<iteration>_<codeanvil now --machine>" in skill
     assert 'export PATH="$HOME/.local/bin:$PATH"' in layout
-    assert "creates a new output directory exclusively" in layout
-    assert "capability" in skill and "fake device API" in skill
-    assert "verification/telemetry/<target>/fetch-<unique>/" in layout
-    assert "returns `local_path`" in layout
+    assert "No deployment manifest or per-file checker is built" in layout
+    assert "`fetch_evidence` returns `local_path`" in layout
+    assert "investigate" in skill.lower() and "unaffected evidence may remain usable" in skill
+    assert "verification/deployment_manifest.json" not in layout
 
 
-def test_scaffolded_local_hil_requires_provenance_without_remote_access(tmp_path, db_path):
-    """A local SDR capture needs the same identity fields as the VL-2 record schema."""
+def test_scaffolded_local_hw_uses_checkpoint_and_keeps_existing_report_state(tmp_path, db_path):
     cmd_create(None, tmp_path, project_name="Proj")
     project = tmp_path / "proj"
     assert "targets:" not in (project / ".codeanvil/project.yaml").read_text()
     skill = " ".join(_scaffold_skill(tmp_path, SKILL, "SKILL.md").read_text().split())
     layout = " ".join(_scaffold_skill(tmp_path, SKILL, "references", "project_layout.md").read_text().split())
-    machine = " ".join(_scaffold_skill(tmp_path, "G2_adaptive_verification", "references",
-                                        "machine_evidence.md").read_text().split())
-
-    for text in (skill, layout, machine):
-        assert "Local VL-0/VL-1 alone" in text
-        assert "target name `local`" in text
-        assert "manifest" in text and "CodeAnvil version" in text
-    assert "without `code_sync`, SSH or MCP" in skill
-    assert "same expected manifest digest checks" in layout
-    assert "pre/post checks on that manifest without ssh, sync or mcp" in machine.lower()
+    guide = " ".join(_scaffold_skill(tmp_path, SKILL, "references", "machine_evidence.md").read_text().split())
+    assert "testing a local device" in skill
+    assert "On `stop`, write no iteration" in skill
+    assert "Based on: G1 iteration <N>" in skill
+    assert "Checkpoint:" in layout
+    assert "waits for explicit `continue`" in guide
+    assert "not a new gate or state" in guide
+    assert "deployment_manifest.json" not in skill
+    assert "check_deployment.py --expected" not in skill

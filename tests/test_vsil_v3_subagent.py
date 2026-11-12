@@ -83,7 +83,9 @@ def test_verifier_mcp_tools_allow_run_fetch_but_never_deploy_or_setup(tmp_path):
 
     body = BODY.read_text(encoding="utf-8")
     assert "Codex inherits its host permissions" in body
-    assert "never call `code_sync`, `init_codeanvil`" in body
+    assert "`code_sync`, `init_codeanvil`" in body
+    assert "Ask the human anything" in body
+    assert "real HW command/scripts yourself" in body
 
 
 def test_rescaffolding_writes_the_same_bytes(tmp_path):

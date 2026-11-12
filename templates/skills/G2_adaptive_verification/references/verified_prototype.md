@@ -27,15 +27,15 @@ One row per service, copied from the design Meta.
 |---------|---------|----------|-----------------|-------------|
 | SVC-xxx | <package> | <language> | <uv / pnpm> | <pytest / vitest> |
 
-**Execution targets and provenance:**
+**Execution equipment and preparation:**
 
-| Service / PATH-* | Local / PIL | Target name | Host / user / port / workspace | Observed OS / architecture | Device | Host / target CodeAnvil versions | Parity |
-|------------------|-------------|-------------|--------------------------------|----------------------------|--------|---------------------------------|--------|
-| <IDs> | <local / PIL> | <name or local> | <actual location> | <actual observed values> | <declared device or none> | <versions> | <match> |
+| Service / PATH-* | Local / PIL / real HW | Equipment MAC or local host | Endpoint / user / port / workspace | Observed OS / architecture / device | Tool versions |
+|------------------|-----------------------|-----------------------------|----------------------------------|-------------------------------------|---------------|
+| <IDs> | <actual run type> | <declared identity> | <actual location> | <observations> | <versions used> |
 
-For PIL, record the clean delivered git revision, deployment manifest SHA-256 and successful
-before/after provenance checks. Include the exact per-run evidence paths and SHA-256 hashes.
-Local records identify the host; remote-only fields are `not applicable`, never invented.
+Record the clean published code/kit branch+commit, completed pre-HW checkpoint, actual tool/app
+refs updated, dependencies and clock preparation. Name run IDs, files, commands and results;
+no deployment manifest, per-file digest, version equality or formal capture request is required.
 
 ## 4. Module evidence
 
@@ -53,21 +53,22 @@ Local records identify the host; remote-only fields are `not applicable`, never 
 
 Envelope from design §1.7, readings from the telemetry companion, and every result flagged outside
 the envelope with the human's decision on it. Name the execution target per evidence file. Report
-unavailable readings, lost coverage and any skipped torn trailing line; collector exit 0 alone
-does not establish valid evidence or an in-envelope result.
+unavailable readings, investigated causes, affected claims and the decision to repeat or continue
+with supported evidence. Name any skipped torn trailing line; collector exit 0 alone does not
+establish complete coverage. Missing telemetry does not invalidate unrelated tests by itself.
 
 ## 7. Honesty declaration
 
 - VERIFIED (VL-0, VL-1): <modules and paths; execution target and whether PIL>.
-- VALIDATED (VL-2, `mock+real` only, `PROTO-*` on the Real HW HAL): <modules and paths, or "none">.
+- VALIDATED (VL-2, `mock+real`, actual Real HW HAL tests): <supported modules/paths or "none">.
 - Not claimed: <what was not verified this cycle and why, including a Real HW HAL declared at VL-0>.
 - No ML evidence: no model is measured this round.
 
-For each VALIDATED claim, cite the fresh G2 capture request, `PROTO-*` and oracle/calibration
-source, raw/corrected measurement record and capture digests, GT correction and uncertainty/
-tolerance references, validator output and actual measurement outcomes. A valid scalar record
-alone is not a metrological verdict; missing oracle or unsupported decision predicates cannot
-support VALIDATED. Record the human's judgment and any gaps explicitly.
+For each real HW claim, cite actual G2 measurement v2/script outputs, the GT criterion and
+method/resolution justification. Add calibration, corrections and uncertainty only when the
+requirement or conclusion needs them; absent required inputs make that claim inconclusive.
+A valid JSON record alone is not a metrological verdict. Record human judgment, gaps and causal
+feedback; never invent readings or expand tolerances to obtain PASS.
 
 ## 8. Delivered tree and verification kit
 

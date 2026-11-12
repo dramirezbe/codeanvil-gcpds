@@ -31,7 +31,7 @@ def test_g1_reviews_the_hal_mode_and_only_checks_the_real_hw_hal_in_mock_plus_re
     assert "HAL mode" in hal_row
     assert "mock-only" in hal_row and "mock+real" in hal_row
     assert "PROTO-*" in hal_row
-    assert "Not applicable" in hal_row
+    assert "functional tests do not universally require an oracle" in hal_row
     assert "advisory" in hal_row  # Real HW HAL items in mock-only are never open
 
 
@@ -98,8 +98,8 @@ def test_scaffold_carries_target_design_and_review_contracts(tmp_path, db_path):
 
     assert "| Target(s)" in design
     assert "No targets: block means local execution" in design
-    assert "§1.6 maps every level and path to that execution target" in hal_row
-    assert "A target is undeclared or ambiguous" in hal_row
+    assert "§1.6 resolve every service, path and level" in hal_row
+    assert "A target is undeclared/ambiguous" in hal_row
     assert "PIL is presented as VL-2" in hal_row
     assert "operating envelope per execution target (with COTS basis)" in telemetry_row
     assert "Host readings cannot stand in for a remote target" in telemetry_row
@@ -124,34 +124,29 @@ def test_g1_spends_tokens_on_a_full_review():
     assert "Never trust the design's own summaries" in text
 
 
-def test_g1_observes_toolchains_on_each_target_without_installing_from_the_reviewer():
-    text = _skill_text("G1_design_review")
-    checklist = (TEMPLATES_DIR / "skills" / "G1_design_review" / "references"
-                 / "G1_CHECKLIST.md").read_text(encoding="utf-8")
+def test_g1_plans_automatic_target_preparation_without_a_version_equality_gate():
+    text = " ".join(_skill_text("G1_design_review").split())
+    row = next(line for line in _checklist_text().splitlines() if line.startswith("| G1.14"))
 
-    assert "--version" in text
-    assert "named execution target" in text
     assert "probe_target" in text and "ssh_exec_cmd" in text
-    assert "Do not install from the reviewer" in text
-    row = next(line for line in checklist.splitlines() if line.startswith("| G1.14"))
-    assert "host versions cannot substitute" in row.lower()
-    assert "required tool is missing" in row
+    assert "after the pre-HW review" in text
+    assert "Missing installable tools do not block G1" in text
+    assert "Version differences alone are not defects" in text
+    assert "host observations" in row and "pre-G1 installation deadlock" in row
 
 
 def test_g1_frontmatter_allows_read_only_remote_observation():
     text = _skill_text("G1_design_review")
-
     assert "No network access" not in text
     assert "No scripts." in text
-    assert "operator setup before the G1 verdict" in text
-    assert "Do not request an S2 stage run while G1 is open" in text
+    assert "S2/G2 prepare target tools after the pre-HW review" in text
 
 
-def test_mock_plus_real_requires_an_oracle_and_lab_budgets_before_vl2():
+def test_mock_plus_real_needs_metrology_only_when_the_requirement_needs_it():
     row = next(line for line in _checklist_text().splitlines() if "G1.11 HAL ladder" in line)
-    for required in ("declared oracle", "calibration provenance", "correction chains",
-                     "uncertainty/tolerance budgets", "capability guard", "block VL-2"):
-        assert required in row
+    assert "when the requirement or conclusion needs them" in row
+    assert "functional tests do not universally require an oracle" in row
+    assert "capability checks and safe stop" in row
 
 
 # --- bounded rework: change set, impact map, G1.16 (2026-11-06) --------------

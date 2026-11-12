@@ -394,3 +394,16 @@ Las comprobaciones y límites de rollback se añaden aquí al cerrar cada unidad
   bare locales, casos sucios/no publicados y enlaces que escapan. Sin manifiesto
   ni hashes HIL. Rollback: exportación/chequeo Git y destinos compatibles del
   transporte, fixtures de protocolo y tests de despliegue.
+- R2–R4 metodología: S1/G1 permiten preparación posterior y metrología según el
+  requisito; S2 conserva sus **1739 bytes** de Pause Schedule y añade la revisión
+  previa a HW; G2 pasa la iteración normal al verificador fresco, que ejecuta HW
+  dentro del alcance revisado y devuelve feedback causal. Schema/checker v2 retiran
+  atestaciones, manifiestos, hashes HIL y oráculo universal. **206 tests passed**
+  en `test_hil_measurements`, `test_vsil_v3_{s1,g1,g2,s2,subagent,agents_md}`,
+  `test_create`, `test_gate_questions` y `test_report_state`. Escenario: scaffold
+  temporal con assets autosuficientes, checker v2 ejecutado como subprocess y
+  rework/staleness existentes. Rollback: los 17 archivos de skills, verificador y
+  tests de esta unidad conjuntamente; no altera parser de reportes ni transporte.
+  Es una migración coherente de **1358 líneas añadidas+eliminadas**, principalmente
+  sustitución del contrato anterior; separar schema de sus callers dejaría flags
+  obsoletos activos. Se informa el tamaño, sin comprimir texto/tests ni crear PR.

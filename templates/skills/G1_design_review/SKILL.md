@@ -2,7 +2,7 @@
 name: g1-design-review
 description: "Trigger: G1, design review, review the S1 design, are design choices resolved. Prepare a design review of the S1 document for a human, with a filled checklist and a recommendation, and record the human's PASS, FEEDBACK or RFD answer."
 license: Apache-2.0
-compatibility: "No scripts. Read-only toolchain/version probes on the named execution targets, through vsil_hil_mcp when remote. Missing target tools require operator setup before the G1 verdict. Writes only .codeanvil/report/<cycle-name>/G1.md."
+compatibility: "No scripts. Read-only toolchain/version probes on the named execution targets, through vsil_hil_mcp when remote. S2/G2 prepare target tools after the pre-HW review. Writes only .codeanvil/report/<cycle-name>/G1.md."
 metadata:
   author: "gcpds"
   version: "1.0"
@@ -70,23 +70,21 @@ Otherwise check, in this order, writing **no iteration** when you stop:
   contract field by field. Never trust the design's own summaries (§2.2 order, §4 tables)
   without checking them against the source sections.
 - Tools are checked on the named execution targets (G1.14), locally only when the design says
-  local. G1 diagnoses missing tools; an authorized operator prepares them before G1 can pass.
-  S2 starts only after G1 passes and may then install the project's locked dependencies.
+  local. G1 identifies capabilities and needed preparation; S2/G2 automatically install
+  necessary tools and project dependencies after the pre-HW review. Missing installable
+  dependencies do not demand that S2 start before G1 passes.
 
 ## Steps
 
 1. Give the human both graph paths from `S1.md` (dark and light): their spiders support the topology and
    runtime-loop review (G1.9); the build order is reviewed in the design's §2 (G1.1).
 2. Fill the checklist, including G1.11–G1.16 and the kit row.
-3. **Validate the toolchain (G1.14).** For every `Toolchain` entry, run the `--version` of its
-   language runtime and package manager on its named execution target (for example `python3`,
-   `uv`, `node`, `pnpm` and `tsc` for TypeScript); the test runner comes with S2's lock. Use
-   `ssh_exec_cmd` for remote read-only probes and `probe_target` for observed CodeAnvil/OS/
-   architecture parity. Record the target and each observed version. A missing, refused,
-   unreachable or too-old tool is an `open` G1.14 finding. Do not install from the reviewer;
-   name the pre-G1 setup needed from an authorized operator, then review again after it is ready.
-   Do not request an S2 stage run while G1 is open; project dependency installation belongs to
-   S2 after the design passes.
+3. **Validate the toolchain (G1.14).** Observe the runtime/package manager versions and
+   capabilities needed on each execution target (`ssh_exec_cmd`/`probe_target` when remote).
+   Record tools present and the automatic preparation needed from S2/G2 after the pre-HW review.
+   Version differences alone are not defects; assess whether the required commands work. Keep
+   tool and delivered-project repositories/refs separate. Missing installable tools do not block
+   G1 when the design includes a viable setup; an impossible tool/capability is an open finding.
 4. Recompute the GT digests with the system's hash command (`sha256sum .codeanvil/GT/StRS.md
    .codeanvil/GT/SyRS.md`; `shasum -a 256` on macOS, `Get-FileHash` in PowerShell) and show the human
    whether they match the design's Meta row. Information only: it never blocks. Compute the

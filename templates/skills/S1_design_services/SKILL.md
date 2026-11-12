@@ -64,14 +64,14 @@ Working files live in `.codeanvil/design/`, outside the cycle report folder.
 - **HAL mode** (Meta) is `mock-only` unless the GT or the user requires real hardware this cycle.
   In `mock-only`, no module has `hw_dependency: true`, so the highest `required_vl` is VL-1, there
   is no Real HW HAL, and SyRS §4–§6 are not read.
-- In `mock+real`, the Real HW HAL (§1.6) cites the SyRS `PROTO-*` rows it executes, plus the §4
-  correction chains and §5 uncertainty/tolerance budgets and decision rule it applies. Declare
-  the oracle/reference and calibration provenance from GT; if any prerequisite is missing, VL-2
-  is blocked. Do not invent an oracle, correction or uncertainty. Design a non-transmitting
-  device probe with actual identity/driver/capabilities and a guard rejecting unsupported
-  configuration before touching the device, plus safe stop/disconnect behaviour. A SyRS §6 that says
-  `Not applicable: no lab inputs in the Build Package.` cannot support `mock+real`: record that
-  GT gap as a risk in design §6.
+- In `mock+real`, design Real HW HAL tests against the actual `SYS-*` criteria, with a method
+  and resolution justified for each tolerance. Cite SyRS `PROTO-*`, corrections, calibration and
+  uncertainty when the requirement or conclusion needs them; functional tests need no formal
+  oracle by default. Do not invent missing calibration or widen tolerances. A required lab input
+  absent from GT is a risk to resolve, not a reason to block unrelated functional measurements.
+  Design device identity/driver/capability observation, a guard rejecting unsupported settings
+  before configuration, and safe stop/disconnect. Record the agent's measurement scripts in the
+  kit contract; real hardware runs require the pre-HW review checkpoint in S2/G2.
 - The Mock HAL (§1.6) and the Telemetry companion (§1.7) are always designed. The Telemetry
   companion lives in `verification/telemetry/`: it is never a module and never under `src/`.
 - **Target(s)** (Meta) maps every service and verification path to `local` or a named entry in
@@ -80,6 +80,9 @@ Working files live in `.codeanvil/design/`, outside the cycle report folder.
   S1 does not register targets or change credentials. In §1.6 name where each level runs and in
   §1.7 give an operating envelope per target, sourced from its COTS constraints. Missing target
   declarations or limits are design risks to resolve, never guessed values.
+- Remote equipment is enrolled by discovered MAC, with legacy IDs readable for compatibility.
+  Use its declared endpoint and UUID-scoped project workspace; do not ask the user to invent a
+  target alias or put local private key paths in shared project metadata.
 - Execution location and HAL mode are separate axes: remote VL-0/VL-1 on the real compute unit
   are PIL and remain **VERIFIED**, using Mock HAL inputs. They do not require `mock+real` and do
   not establish VL-2 or real-RF validation. Remote execution uses `vsil_hil_mcp`; local execution
