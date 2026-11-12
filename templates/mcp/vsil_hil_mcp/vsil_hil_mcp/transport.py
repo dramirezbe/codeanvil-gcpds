@@ -13,6 +13,8 @@ from .config import Target, key_paths
 EXCLUDES = (
     ".git", "__pycache__", "*.pyc", "verification/telemetry/",
     ".env", "*.key", "*.pem", ".venv", ".codeanvil/hil/",
+    "*.db", "*.db-*", "*.db3", "*.db3-*", "*.sqlite", "*.sqlite-*",
+    "*.sqlite3", "*.sqlite3-*", "*.duckdb", "*.mdb", "*.rdb",
 )
 TELEMETRY_REL = "verification/telemetry/"
 TIMEOUT_S = 600
@@ -75,10 +77,13 @@ def _rsync_host(target: Target) -> str:
 
 
 def rsync_push_argv(target: Target, deploy_key: Path, local_workspace: Path) -> list[str]:
+    # Default rsync exclusions are symmetric: hide sender files AND protect
+    # existing receiver files from --delete. Never add --delete-excluded here.
+    excludes = (*EXCLUDES, *(f"/{path}" for path in getattr(target, "persistent_paths", ())))
     return [
         "rsync", "-az", "--delete",
         "-e", _rsync_e(target, deploy_key),
-        *[f"--exclude={e}" for e in EXCLUDES],
+        *[f"--exclude={e}" for e in excludes],
         f"{local_workspace}/",
         # The deploy key is forced to `rrsync -wo <workspace>`, which roots every
         # client path at the workspace. So the destination is that root (empty

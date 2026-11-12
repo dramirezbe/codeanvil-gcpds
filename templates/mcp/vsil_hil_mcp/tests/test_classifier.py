@@ -2,50 +2,37 @@ import pytest
 
 from vsil_hil_mcp.classifier import ALLOW, PRIVILEGED, classify
 
-WS = "/home/codeanvil-agent/workspace"
-
 
 @pytest.mark.parametrize("cmd", [
-    "uname -a", "cat /etc/sudoers", "dmesg | tail -n 20", "lsusb && free -m",
-    "find /proc -name status", "sha256sum -c verification/manifest.sha256",
-    "vcgencmd get_throttled", "SoapySDRUtil --find", "codeanvil --version",
-    "/home/codeanvil-agent/.local/bin/codeanvil --version",
-    f"cd {WS} && python3 verification/check_deployment.py --expected abc",
-    f"cd {WS} && uv sync --frozen", f"cd {WS} && pytest verification/",
-    f"cd {WS} && verification/run.sh vl0", f"cd {WS} && ./verification/run.sh vl1",
+    "uname -a", "cat /var/lib/database/live.sqlite", "stat data.db-wal", "ls /var/lib/mysql",
+    "sudo apt-get install -y rtl-sdr", "sudo -n pip install package", "uv sync --frozen",
+    "python3 verification/measure.py", "pytest verification/", "verification/run.sh vl2",
+    "cd /tmp && pnpm add package", "node -e 'process.exit()'", "codeanvil init",
+    "echo $(date -u)", "printf result > result.txt", "echo done >> logs/run.log",
+    "ls\nuname -a", "find /proc -name status", "cat '${HOME}'", "bash -c 'echo hello'",
+    "echo reboot", "printf systemctl", "rm temporary.txt", "rm -- -report.txt",
 ])
-def test_automatic_diagnostics_and_workspace_runners(cmd):
-    assert classify(cmd, WS) == ALLOW
-
-
-@pytest.mark.parametrize("cmd", [
-    "sudo reboot", "rm -rf /tmp/result", "touch marker", "chmod +x verification/run.sh",
-    "cat > output.txt", "cat /proc/cpuinfo >> output", "ls; rm file", "ls &",
-    "ls\nuname -a", "echo $(sudo id)", "ls `id`", "cat '${HOME}'", "bash -c ls",
-    "env python3 script.py", "find . -delete", "find . -exec rm {} +", "find . -fprintf out x",
-    "dmesg -c", "hostname newname", "find . -fls output", "python3 verification/check_deployment.py", f"cd /tmp && pytest",
-    f"cd {WS} | python3 test.py", f"cd {WS} && verification/run.sh vl2",
-    f"cd {WS} && verification/run.sh vl0 extra", "vcgencmd display_power 0",
-    "", "ls &&", "ls || uname -a", "cat 'unterminated", "( uname -a )",
-])
-def test_mutations_expansions_and_unrecognized_commands_need_trusted(cmd):
-    assert classify(cmd, WS) == PRIVILEGED
-
-
-@pytest.mark.parametrize("cmd", [
-    "python --version", "python -V", "python3 --version", "python3 -V",
-    "uv --version", "uv -V", "node --version", "pnpm --version", "tsc --version",
-])
-def test_exact_toolchain_version_queries_need_no_workspace(cmd):
+def test_ordinary_commands_scripts_and_sudo_are_automatic(cmd):
     assert classify(cmd) == ALLOW
 
 
 @pytest.mark.parametrize("cmd", [
-    "python3 --version script.py", "python3 --version -c 'print(1)'", "uv --version sync",
-    "node --version script.js", "node --version -e 'process.exit()'", "node -e 'process.exit()'",
-    "pnpm --version add package", "pnpm add package", "tsc --version --build",
-    "node -V", "pnpm -V", "tsc -V",
-    f"cd {WS} && node -e 'process.exit()'", f"cd {WS} && pnpm add package",
+    "systemctl status ntp", "sudo systemctl restart service", "sudo -n reboot", "shutdown -h now",
+    "poweroff", "/sbin/halt", "ls && sudo -u root /bin/rm -fr /tmp/run", "rm -r -f cache",
+    "rm --force --recursive cache", "rm -vR cache", "sudo env MODE=lab rm -rf /tmp/run",
+    "dd if=image of=/dev/sda", "mkfs.ext4 /dev/sda", "wipefs -a /dev/sda", "shred /dev/sda",
+    "blkdiscard /dev/sda", "parted /dev/sda print", "fdisk /dev/sda", "mkswap /dev/sda",
+    "sqlite3 data.db 'select 1'", "psql -c 'select 1'", "mysql --version", "redis-cli GET key",
+    "rm data.db", "mv data.sqlite data.old", "cp backup.sqlite live.sqlite", "truncate -s0 live.db",
+    "tee data.sqlite-wal", "printf value > data.db", "echo value >> data.sqlite3-shm",
+    "cat result.txt > /var/lib/database/live", "echo go; systemctl stop app", "uname\nreboot",
 ])
-def test_version_exception_does_not_grant_other_toolchain_commands(cmd):
-    assert classify(cmd, WS) == PRIVILEGED
+def test_explicit_destructive_operations_use_trusted(cmd):
+    assert classify(cmd) == PRIVILEGED
+
+
+def test_router_does_not_pretend_to_interpret_python_or_sql():
+    assert classify('python3 -c "run_destructive_script()"') == ALLOW
+    assert classify('bash -c "rm -rf cache"') == ALLOW
+    assert classify('sqlite3 data.sqlite "select 1"') == PRIVILEGED
+    assert classify("python3 measure.py", "/legacy/workspace") == ALLOW

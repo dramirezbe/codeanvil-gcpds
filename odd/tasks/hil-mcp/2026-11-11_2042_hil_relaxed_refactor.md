@@ -368,3 +368,9 @@ Las comprobaciones y límites de rollback se añaden aquí al cerrar cada unidad
   `test_identity.py`: **17 passed**. Escenario: registro/fusión y resolución de
   claves en directorios temporales, sin SSH. Rollback: `identity.py`, extensiones
   de `config.py` y sus tests; el bootstrap público se integra en la siguiente unidad.
+- R1: SSH permite comandos ordinarios, scripts y sudo; solo operaciones
+  destructivas visibles desvían a trusted. Excludes rsync protegen DB, sidecars y
+  estado declarado tanto de sobrescritura como de borrado. **59 tests passed**;
+  escenario rsync real local conserva estado, actualiza código y borra código
+  obsoleto. Rollback: router, excludes y tests de política/transporte, sin tocar
+  identidad MAC ni la preparación Git de la unidad siguiente.
