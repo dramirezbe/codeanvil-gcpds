@@ -8,6 +8,8 @@ vi.mock('./Workspace', () => ({ Workspace: ({ project, active }: { project: { na
   <h1>{project.name} · {active}</h1> }))
 vi.mock('./ActionsPanel', () => ({ ActionsPanel: ({ projectPath }: { projectPath?: string }) =>
   <h1>{projectPath ? 'Project CLI actions' : 'Global CLI actions'}</h1> }))
+vi.mock('./TerminalPanel', () => ({ TerminalPanel: ({ project, theme }: { project: { name: string }; theme: string }) =>
+  <h1>{project.name} terminal · {theme}</h1> }))
 
 const project = { id: 'sample', name: 'Sample project', path: '/home/alice/Documents/sample' }
 const localUser = { name: 'alice', home: '/home/alice' }
@@ -54,6 +56,19 @@ describe('Launcher navigation', () => {
     await user.click(screen.getByRole('button', { name: 'Project launcher' }))
     expect(await screen.findByRole('heading', { name: 'Projects in CodeAnvil' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Reports' })).not.toBeInTheDocument()
+  })
+
+  it('opens the terminal only in a project workspace and passes the current theme', async () => {
+    const user = userEvent.setup()
+    bootstrap()
+    render(<App />)
+    await user.click(await screen.findByRole('button', { name: 'Open project: Sample project' }))
+    await user.click(screen.getByRole('button', { name: 'Terminal' }))
+    expect(screen.getByRole('heading', { name: 'Sample project terminal · dark' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Toggle theme' }))
+    expect(screen.getByRole('heading', { name: 'Sample project terminal · light' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Project launcher' }))
+    expect(screen.queryByRole('button', { name: 'Terminal' })).not.toBeInTheDocument()
   })
 
   it('cancels card deletion without opening a workspace and restores button focus', async () => {

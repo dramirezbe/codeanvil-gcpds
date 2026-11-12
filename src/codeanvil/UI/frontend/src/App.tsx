@@ -8,6 +8,7 @@ import { ActionsPanel } from './ActionsPanel'
 import { BackupsView } from './BackupsView'
 import { DeleteProjectDialog } from './DeleteProjectDialog'
 import { ProjectWorkflows } from './ProjectWorkflows'
+import { TerminalPanel } from './TerminalPanel'
 import { Workspace } from './Workspace'
 import { type Project, request } from './api'
 import './styles/launcher-feedback.css'
@@ -46,7 +47,7 @@ function useBootstrap(projectPath: string | undefined, revision: number) {
 
 const navigation = [
   [LayoutDashboard, 'Overview'], [FileText, 'Reports'], [FolderOpen, 'Ground truth'],
-  [BookOpen, 'Design'], [ShieldCheck, 'Verification'], [Archive, 'Backups'], [Terminal, 'CLI actions'],
+  [BookOpen, 'Design'], [ShieldCheck, 'Verification'], [Archive, 'Backups'], [Terminal, 'Terminal'], [Terminal, 'CLI actions'],
 ] as const
 
 export default function App() {
@@ -137,6 +138,7 @@ export default function App() {
       <main className="main-area">
         {active === 'CLI actions' ? <ActionsPanel projectPath={project?.path} onComplete={() => setRevision(value => value + 1)} />
           : showWorkspace && project ? active === 'Backups' ? <BackupsView key={project.path} projectPath={project.path} />
+            : active === 'Terminal' ? <TerminalPanel key={project.path} project={project} theme={dark ? 'dark' : 'light'} />
             : <Workspace key={project.path} project={project} active={active} onSetActive={setActive} revision={revision} theme={dark ? 'dark' : 'light'} />
           : <Launcher projects={data.projects} user={data.user} loading={loading} error={error} onSelect={openProject} onDelete={openDelete} />}
       </main>
@@ -174,7 +176,7 @@ function Launcher({ projects, user, loading, error, onSelect, onDelete }: {
             onClick={event => onDelete(project, event.currentTarget)}><Trash2 size={15}/></button>
         </article>) : <div className="empty-projects"><div className="empty-icon"><HardDrive size={21} /></div><div><b>No registered projects</b><span>Create a project or add an existing folder to get started.</span></div></div>}
     </div>
-    <details className="upcoming-features"><summary>Coming next</summary><p>Live agent terminal, automatic file updates, hardware gallery, telemetry charts and native desktop packaging.</p></details>
+    <details className="upcoming-features"><summary>Coming next</summary><p>Automatic file updates, hardware gallery, telemetry charts and native desktop packaging.</p></details>
     <div className="launcher-footer"><span><Command size={13} /> CODEANVIL TOOLCHAIN</span><span>LOCAL WORKSPACE <ArrowDownRight size={12} /></span></div>
   </div>
 }
