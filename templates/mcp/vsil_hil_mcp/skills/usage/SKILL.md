@@ -29,7 +29,7 @@ custodian; each tool call is one capability.
 | Tool | What it does | You use it for |
 |------|--------------|----------------|
 | `code_sync(target="")` | rsync the project code → target workspace (deploy key, write-only). Excludes `.git`, `__pycache__`, telemetry, secrets. | Deploy before every run after a code change. |
-| `ssh_exec_cmd(cmd, target="")` | Run a **non-privileged** command on the target; returns raw `{stdout, stderr, exit_code}`. Read-only shell + `codeanvil`/`uv`/`python`/`pytest` in the workspace. | Run the kit, probe the device, read logs. **The main interface.** |
+| `ssh_exec_cmd(cmd, target="")` | Known diagnostics and full `codeanvil`; returns raw `{stdout, stderr, exit_code}`. Python/uv/pytest and `verification/run.sh vl0\|vl1` require an exact `cd <declared workspace> &&` prefix. Unknown commands and shell expansion redirect to trusted. | Run the kit, probe the device, read logs. **The main interface.** |
 | `ssh_exec_cmd_trusted(cmd, target="")` | The **only** privileged door: carries `sudo`/mutating commands, once, verbatim, audited. | OS packages, udev rules, service restarts — see the redirect flow. |
 | `fetch_evidence(target="")` | rsync **only** `verification/telemetry/` target → host. | Pull evidence back so G2 reads it on the host. |
 | `init_codeanvil(target, host, user, …)` | Generate the target's keys and emit a provisioning **script** for the human. No SSH happens. | First contact only — relay the script to the human. |
@@ -56,8 +56,8 @@ real value. Name physical faults (antenna, USB power, RF); you cannot fix them.
 
 ## Privileged commands — the `use_trusted` redirect
 
-`ssh_exec_cmd` **refuses** any command containing `sudo` (or another privileged
-marker). It runs nothing and returns:
+`ssh_exec_cmd` **refuses** unknown commands, mutations, privilege markers, redirection,
+substitution and unsupported shell syntax. It runs nothing and returns:
 
 ```json
 {"status": "use_trusted", "command": "<cmd>", "reason": "..."}
@@ -67,9 +67,9 @@ When you see this, **do not retry it on `ssh_exec_cmd`**. Instead:
 
 1. Tell the human plainly: *"the target needs `<command>` because `<reason>`"*.
 2. Re-issue the **exact same command** through `ssh_exec_cmd_trusted("<command>")`.
-3. Because that is a distinct tool, the runtime shows its native permission prompt
-   with that command. The human approving the prompt **is** the approval — you don't
-   decide it. On approval the server runs it once, verbatim, and returns stdout. On
+3. The host runtime's configured permissions decide whether that distinct tool needs
+   a human approval prompt. The server cannot verify approval, and full-access runtimes
+   may run it without a prompt. Do not claim approval happened unless observed. On
    decline, nothing runs — report that and stop.
 
 Use the trusted door for OS packages, udev rules (non-root SDR access needs the agent
@@ -78,8 +78,8 @@ exact command (you can build an install command from the OS family), present it,
 the human approve. Never try to smuggle `sudo` inside a `python`/`pytest` script to
 dodge the prompt — that defeats the audit and the whole point of the gate.
 
-In non-interactive / sandbox runs there is no human to approve, so the trusted door is
-denied by default. That is correct: no privilege escalation in automation.
+In automation, the runtime must explicitly deny or separately authorize the trusted
+tool. The server does not enforce interactive approval or deny it by default.
 
 ## If the target is not provisioned yet
 

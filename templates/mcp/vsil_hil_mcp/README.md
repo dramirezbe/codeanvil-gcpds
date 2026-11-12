@@ -136,19 +136,20 @@ The security model is deliberate: the server enforces, the skill only teaches.
 
 | Door | Tool | What goes through it |
 |------|------|----------------------|
-| **Auto (allow)** | `ssh_exec_cmd` | Read-only shell (`ls`, `cat`, `dmesg`, `lsusb`, `/proc/*`) + `codeanvil`/`uv`/`python`/`pytest` in the workspace. A command with `sudo` is **refused** and redirected. |
-| **Privileged** | `ssh_exec_cmd_trusted` | `sudo` / mutating commands. Your runtime shows its **native approval prompt with the exact command** — approving the prompt is your "yes". Runs once, verbatim, audited. |
+| **Auto (allow)** | `ssh_exec_cmd` | Known read-only diagnostics and full `codeanvil` control. `python`/`python3`/`uv`/`pytest` and `verification/run.sh vl0\|vl1` require `cd <declared workspace> &&`. Unknown commands, mutations and shell expansion are **refused** and redirected. |
+| **Privileged** | `ssh_exec_cmd_trusted` | `sudo` / mutating commands. Configure your runtime to require approval for this distinct tool. Runs once, verbatim, audited. |
 | **Deploy** | `code_sync` | rsync host → target workspace (write-only, confined by `rrsync`). |
 | **Fetch** | `fetch_evidence` | rsync **only** `verification/telemetry/` back to the host. |
 
 Every call — including refusals — is logged to `.codeanvil/hil/audit.log` (target,
 command, exit code): attributable and replayable.
 
-**Honest about the limits.** `trusted` (the default) gates privileged commands behind one
-approval each and gives you an audit trail — it stops the realistic failure mode
-(accidents and scope-creep), **not** a determined adversary: a `python` script the agent
-deploys could call `sudo` internally under passwordless sudo. The real jail is the
-**target OS isolation** (unprivileged user, workspace, `rrsync` forced-command). Use
+**Honest about the limits.** The classifier is a conservative routing aid, not a sandbox:
+an allowed Python script or the full CodeAnvil CLI can execute arbitrary user code,
+including indirect sudo under the default passwordless `trusted` policy. Permission
+prompts belong to the host runtime, not the MCP server; a full-access runtime may run
+the trusted tool without asking. Target-side `rrsync` confines only the deploy key;
+the exec user has ordinary OS access and is root-equivalent when NOPASSWD is enabled. Use
 `trusted` on a **lab box you own and can reflash**. The stricter `guarded` (password
 custody, closes the indirect hole) and `locked` (edited allowlist) policies are
 designed but not yet implemented.

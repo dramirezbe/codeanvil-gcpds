@@ -111,20 +111,21 @@ def init_codeanvil(
 def ssh_exec_cmd(cmd: str, target: str = "") -> str:
     """Run a non-privileged command on the remote target; returns raw {stdout, stderr, exit_code}.
 
-    A command containing `sudo` is refused: re-issue it via ssh_exec_cmd_trusted.
+    Unknown commands, mutations and shell expansions are refused. Python/uv/pytest
+    and verification/run.sh vl0|vl1 require `cd <declared workspace> &&`.
 
     Args:
         cmd: the shell command line to run on the target.
         target: target name (empty if exactly one is declared).
     """
-    if classify(cmd) == PRIVILEGED:
-        root, tgt, _ = _context(target)
+    root, tgt, _ = _context(target)
+    if classify(cmd, tgt.workspace) == PRIVILEGED:
         audit(root, tgt.name, "ssh_exec_cmd", cmd, None)
         return json.dumps({
             "status": "use_trusted",
             "command": cmd,
-            "reason": "command contains sudo; nothing was run. Re-issue the same command "
-                      "through ssh_exec_cmd_trusted so the human can approve it.",
+            "reason": "command is outside the automatic command policy; nothing was run. "
+                      "Use ssh_exec_cmd_trusted under the host runtime's permission policy.",
         })
     return json.dumps(_exec("ssh_exec_cmd", cmd, target))
 
@@ -133,7 +134,8 @@ def ssh_exec_cmd(cmd: str, target: str = "") -> str:
 def ssh_exec_cmd_trusted(cmd: str, target: str = "") -> str:
     """Run any command (including sudo) on the remote target, verbatim, once.
 
-    The runtime's permission prompt on this tool is the human's approval.
+    The host runtime must configure permissions for this distinct tool. The server
+    cannot verify human approval; a full-access runtime may execute it without a prompt.
 
     Args:
         cmd: the shell command line to run on the target.
