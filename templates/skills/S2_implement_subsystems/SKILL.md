@@ -66,7 +66,7 @@ there is no default list.
 | `.codeanvil/design/SDD.md` | Read-only: Meta `Target(s)`, `HAL mode` and `Toolchain`, §1.3.4 kit, §1.5, §1.6 HAL ladder, §1.7 telemetry per target, §2.2 order, §3 contracts and vectors, §4 traceability |
 | `.codeanvil/project.yaml` | Read-only: the active cycle. No `targets:` exist yet — the remote target and its credentials are created later, at G2, by `credential-setup` |
 | `.codeanvil/GT/SyRS.md` | Read-only: `SYS-*` thresholds for the VL-1 tests |
-| `.codeanvil/report/<cycle-name>/G2.md` | Rework only: latest iteration with `Verdict: module defect` |
+| `.codeanvil/report/<cycle-name>/G2.md` | Rework only: latest iteration with `Verdict: module defect`; its `### Description` change list is the exact instruction |
 | `.codeanvil/report/<cycle-name>/G1.md` | Rework only: the latest PASS iteration's impact map (files to edit vs paths to retest only) |
 | `templates/skills/S2_implement_subsystems/references/project_layout.md` | Locked trees: Python, TypeScript, root manifests, kit |
 | `templates/skills/S2_implement_subsystems/references/logger.py` | Locked Python logger, copied unchanged |
@@ -155,7 +155,8 @@ Recommend **Per layer** in one line: it pauses where a wrong contract is cheapes
 one stop per module. In the Steps below, the kit and its base end step 2, the modules end step 3, and
 the integration is the producer and consumer contract tests at the start of step 4. If the runtime
 has no question tool, ask the same question in chat and wait for the reply; never assume or default
-an answer. A rework asks again.
+an answer. A rework asks again, **except** the G2 module-defect rework route below, which applies
+the fixed change list from the G2 Description and asks no pause-schedule question.
 
 Every schedule adds one pause after cross-subsystem integration and before the `PATH-*` tests. At each
 pause the human answers `continue`, `rework` or `stop`, through the same question tool or in chat
@@ -226,9 +227,13 @@ Before step 1 of every iteration, ask the pause schedule as **Pause Schedule** s
    with the decision and last real run.
 8. Write the iteration and return `S2 complete. Run the G2 skill.`
 
-Rework, module defect: a G2 iteration with `Verdict: module defect` names the modules to fix,
-including a missing VL-1 test. Redo step 3 (unit, bottom-up and sandwich) or 5 for them, then
-steps 6 and 7.
+Rework, module defect: read the change list in the latest `G2.md` iteration's `### Description`
+(the enumerated items after its `Based on:` line) and apply exactly those changes — only the
+subsystems/modules/files it names — then re-run the affected tests. Do not ask the human and do not
+redesign; the G2 report Description is the instruction. The listed modules are the ones to fix,
+including a missing VL-1 test: redo step 3 (unit, bottom-up and sandwich) or 5 for them, then
+steps 6 and 7. This route does **not** ask the Pause Schedule — the change set is fixed by the G2
+Description, so there is nothing to interrogate.
 
 Rework, design defect: a G2 iteration with `Verdict: design defect` routes through S1 and G1; S2
 runs again only after G1 passes. Work from the latest G1 PASS iteration's impact map and go

@@ -256,6 +256,17 @@ def test_s2_skill_uses_the_g1_impact_map_for_design_defect_rework():
     assert "Preserve every module the impact map does not name" in text
 
 
+def test_s2_skill_module_defect_rework_applies_the_g2_description_change_list():
+    """HIL-1: a G2 module-defect FEEDBACK carries the exact change list in its
+    report Description; S2 applies it verbatim, with no AskUser and no redesign."""
+    text = " ".join(_skill_text("S2_implement_subsystems").split())
+
+    assert "read the change list in the latest `G2.md` iteration's `### Description`" in text
+    assert "apply exactly those changes" in text
+    assert "Do not ask the human and do not redesign; the G2 report Description is the instruction." in text
+    assert "does **not** ask the Pause Schedule" in text
+
+
 # --- pause schedule and module subagents (2026-11-06, WU-L4/L5) -------------
 
 

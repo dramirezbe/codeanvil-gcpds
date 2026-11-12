@@ -104,6 +104,30 @@ def test_g2_prerequisite_splits_the_rework_route_by_verdict():
             "or `S1 must rework first. Run the S1 skill.` for `Verdict: design defect`.") in text
 
 
+# --- HIL fixes: operational branch + feedback change list (2026-11-12) ------
+
+
+def test_g2_classifies_operational_problems_as_a_first_class_branch():
+    text = " ".join(_g2_text().split())
+
+    assert "operational-fix" in text
+    assert "udev" in text and "plugdev" in text
+    assert "must not route to S2 or S1 feedback" in text
+    assert "re-run G2" in text
+    # last-resort: hand the user the commands rather than mislabel it an S2 defect
+    assert "hand the user the exact commands to run by hand on the target" in text
+    assert "mislabeling it an S2 defect" in text
+
+
+def test_g2_module_feedback_carries_the_change_list_in_the_description():
+    text = " ".join(_g2_text().split())
+
+    assert "right after the `Based on:` line" in text
+    assert "an explicit, enumerated list of the concrete changes S2 must make" in text
+    assert "without re-asking the human" in text
+    assert "with no AskUser prompt and no redesign" in text
+
+
 # --- placeholder telemetry is not evidence (2026-11-06, WU-L6) -------------
 
 
