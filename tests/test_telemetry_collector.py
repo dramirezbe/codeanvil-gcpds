@@ -38,11 +38,11 @@ def _lines(output: Path) -> list[dict]:
     return [json.loads(line) for line in output.read_text(encoding="utf-8").splitlines()]
 
 
-def test_telemetry_subcommand_exists_with_the_five_flags():
+def test_telemetry_subcommand_exposes_sampling_and_durability_flags():
     from codeanvil.CLI.parser import argparser
 
     args = argparser(["telemetry", "--pid", "7", "--output", "o.jsonl", "--interval", "0.5",
-                      "--duration", "3", "--counters", "c.json"])
+                      "--duration", "3", "--counters", "c.json", "--fsync"])
 
     assert args.command == "telemetry"
     assert (args.pid, args.output, args.interval, args.duration, args.counters) == (
@@ -50,6 +50,7 @@ def test_telemetry_subcommand_exists_with_the_five_flags():
     defaults = argparser(["telemetry"])
     assert (defaults.pid, defaults.output, defaults.interval, defaults.duration,
             defaults.counters) == (None, None, 1.0, 0.0, None)
+    assert args.fsync is True and defaults.fsync is False
 
 
 def test_collector_writes_json_lines_with_the_schema(collector, tmp_path):
@@ -152,15 +153,95 @@ def test_collector_reports_missing_counters_as_unavailable(collector, tmp_path):
     assert "unavailable" in _lines(output)[0]["counters"]
 
 
-def test_collector_is_quiet_and_exits_nonzero_on_an_unwritable_output(collector, tmp_path):
+def test_collector_degrades_without_aborting_the_kit_on_unwritable_output(collector, tmp_path):
     target = tmp_path / "not-a-directory"
     target.write_text("", encoding="utf-8")
 
     result = _run(collector, target / "run.jsonl")
 
-    assert result.returncode != 0
+    assert result.returncode == 0
     assert result.stdout == ""
-    assert "telemetry collector" in result.stderr
+    assert "evidence unavailable" in result.stderr
+    assert not (target / "run.jsonl").exists()
+
+
+def test_collector_never_overwrites_existing_evidence(collector, tmp_path):
+    output = tmp_path / "run.jsonl"
+    previous = '{"original": true}\n'
+    output.write_text(previous, encoding="utf-8")
+
+    result = _run(collector, output)
+
+    assert result.returncode == 0
+    assert "evidence unavailable" in result.stderr
+    assert output.read_text(encoding="utf-8") == previous
+
+
+@pytest.mark.parametrize("fsync", [False, True])
+def test_collector_syncs_only_when_requested(tmp_path, monkeypatch, fsync):
+    from codeanvil.telemetry import collector as impl
+
+    synced = []
+    monkeypatch.setattr(impl.os, "fsync", lambda fd: synced.append(fd))
+    monkeypatch.setattr(impl.signal, "signal", lambda *args: None)
+    output = tmp_path / "run.jsonl"
+    args = ["--output", str(output), "--interval", "0.001", "--duration", "0.003"]
+
+    assert impl.main(args + (["--fsync"] if fsync else [])) == 0
+
+    records = _lines(output)
+    assert records
+    assert len(synced) == (len(records) if fsync else 0)
+
+
+def test_collector_reports_a_disk_failure_without_losing_prior_samples(tmp_path, monkeypatch, capsys):
+    from codeanvil.telemetry import collector as impl
+
+    output = tmp_path / "run.jsonl"
+    monkeypatch.setattr(impl.signal, "signal", lambda *args: None)
+    count = 0
+
+    def fail_later(fd):
+        nonlocal count
+        count += 1
+        if count == 2:
+            raise OSError("No space left on device")
+
+    monkeypatch.setattr(impl.os, "fsync", fail_later)
+
+    assert impl.main(["--output", str(output), "--interval", "0.001", "--duration", "1", "--fsync"]) == 0
+    assert len(_lines(output)) == 2
+    assert "evidence incomplete" in capsys.readouterr().err
+
+
+def test_evidence_reader_reports_only_a_torn_tail(tmp_path):
+    from codeanvil.telemetry.evidence import read_jsonl
+
+    output = tmp_path / "run.jsonl"
+    output.write_bytes(b'{"sample":1}\n{"sample":2}\n{"sample":"\xe2\x82')
+    evidence = read_jsonl(output)
+    assert evidence.records == [{"sample": 1}, {"sample": 2}]
+    assert evidence.truncated_tail is True
+    output.write_bytes(b'{"sample":1}')
+    assert read_jsonl(output).truncated_tail is False
+
+
+@pytest.mark.parametrize("payload", [b"", b'{"sample":', b'bad\n{"sample":1}\n',
+                                    b'{"sample":1}\nbad\n', b'[]\n', b'{}\n'])
+def test_evidence_reader_rejects_empty_or_corrupt_evidence(tmp_path, payload):
+    from codeanvil.telemetry.evidence import EvidenceError, read_jsonl
+
+    output = tmp_path / "run.jsonl"
+    output.write_bytes(payload)
+    with pytest.raises(EvidenceError):
+        read_jsonl(output)
+
+
+def test_evidence_reader_rejects_missing_evidence(tmp_path):
+    from codeanvil.telemetry.evidence import EvidenceError, read_jsonl
+
+    with pytest.raises(EvidenceError, match="unavailable"):
+        read_jsonl(tmp_path / "missing.jsonl")
 
 
 def test_collector_rejects_a_nonpositive_interval(collector, tmp_path):

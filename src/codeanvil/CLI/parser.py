@@ -274,6 +274,8 @@ def build_parser() -> argparse.ArgumentParser:
                            help="seconds to sample; 0 runs until SIGINT or SIGTERM (default: 0)")
     telemetry.add_argument("--counters", type=Path, default=None,
                            help="JSON object written by the HAL or the service instrumentation")
+    telemetry.add_argument("--fsync", action="store_true",
+                           help="sync every sample to disk (default: flush to the OS cache only)")
 
     sandbox = sub.add_parser(
         "sandbox",

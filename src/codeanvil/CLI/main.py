@@ -72,6 +72,7 @@ def choose_option(args: argparse.Namespace) -> None:
                 interval=args.interval,
                 duration=args.duration,
                 counters=args.counters,
+                fsync=args.fsync,
             )
         case "upgrade":
             cmd_upgrade()
