@@ -381,3 +381,10 @@ Las comprobaciones y límites de rollback se añaden aquí al cerrar cada unidad
   claves de otros PCs y repeticiones sin duplicación. Registro MAC: **17 passed**.
   Rollback: helper de alta, payload, tests y propiedad local de compatibilidad;
   el CLI se conecta a estas funciones en R0c.
+- Preparación MCP: `init_codeanvil` actualiza automáticamente una cuenta ya dada
+  de alta, con un ref publicado explícito de la herramienta; no crea claves ni
+  deduce tags desde SemVer. Probe conserva versiones como diagnóstico. El servidor
+  resuelve claves MAC/adoptadas y selecciona exec para sync legacy compatible.
+  **30 tests passed** de dispatch y actualización; Bash ejecuta las capacidades
+  con herramientas falsas y se detiene en fallo. Rollback: server/provision y sus
+  tests; la preparación de acceso permanece en credential-setup.
