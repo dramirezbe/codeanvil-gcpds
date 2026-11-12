@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://codeanvil.dev/schemas/measurement-1.json",
+  "title": "V-SIL captured VL-2 evidence, version 1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "level", "hal_mode", "started_at", "finished_at", "target", "deployment_sha256", "protocol_id", "oracle", "captures", "measurements", "telemetry_path"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "run_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,95}$"},
+    "level": {"const": "VL-2"},
+    "hal_mode": {"const": "mock+real"},
+    "started_at": {"type": "string", "format": "date-time"},
+    "finished_at": {"type": "string", "format": "date-time"},
+    "deployment_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "protocol_id": {"type": "string", "pattern": "^PROTO-[0-9]{3}$"},
+    "telemetry_path": {"type": "string", "minLength": 1},
+    "target": {
+      "type": "object", "additionalProperties": false,
+      "required": ["name", "os", "arch", "codeanvil_version", "device_id", "driver"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "os": {"type": "string", "minLength": 1},
+        "arch": {"type": "string", "minLength": 1},
+        "codeanvil_version": {"type": "string", "minLength": 1},
+        "device_id": {"type": "string", "minLength": 1},
+        "driver": {"type": "string", "minLength": 1}
+      }
+    },
+    "oracle": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "reference", "unit", "standard_uncertainty", "calibration_reference"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "reference": {"type": "number"},
+        "unit": {"type": "string", "minLength": 1},
+        "standard_uncertainty": {"type": "number", "minimum": 0},
+        "calibration_reference": {"type": "string", "minLength": 1}
+      }
+    },
+    "captures": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["path", "sha256"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1},
+          "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+        }
+      }
+    },
+    "measurements": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["requirement_id", "raw", "corrected", "unit", "standard_uncertainty", "correction_reference", "tolerance_reference", "lower", "upper", "result"],
+        "properties": {
+          "requirement_id": {"type": "string", "pattern": "^SYS-[A-Z]{2,4}-[0-9]{3}$"},
+          "raw": {"type": "number"},
+          "corrected": {"type": "number"},
+          "unit": {"type": "string", "minLength": 1},
+          "standard_uncertainty": {"type": "number", "minimum": 0},
+          "correction_reference": {"type": "string", "minLength": 1},
+          "tolerance_reference": {"type": "string", "minLength": 1},
+          "lower": {"type": "number"},
+          "upper": {"type": "number"},
+          "result": {"enum": ["pass", "fail"]}
+        }
+      }
+    }
+  }
+}
