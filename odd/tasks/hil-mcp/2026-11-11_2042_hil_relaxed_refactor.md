@@ -428,3 +428,9 @@ Las comprobaciones y límites de rollback se añaden aquí al cerrar cada unidad
   clave y pin correctos, destinos de deploy, snapshots, errores y auditoría.
   Rollback: guía de uso, limpieza de config y parametrización de `test_protocol`;
   no cambia enrolamiento ni el parser de reportes.
+- Guía MCP: README reescrito sobre el flujo efectivo, alta por cliente/MAC,
+  compatibilidad legacy, ref de herramienta publicado, Git limpio, protección DB,
+  pausa explícita, medidas v2 y diagnóstico. Validación: lectura contra firmas y
+  pruebas anteriores, `git diff --check` correcto. Runtime adicional: N/A, guía
+  sin código ejecutable; el escenario stdio de R5 la sustenta. Rollback: README
+  del servidor y esta entrada, sin cambiar comportamiento.
