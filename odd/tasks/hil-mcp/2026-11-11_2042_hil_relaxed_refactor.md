@@ -396,7 +396,7 @@ Las comprobaciones y límites de rollback se añaden aquí al cerrar cada unidad
   ni hashes HIL. Rollback: exportación/chequeo Git y destinos compatibles del
   transporte, fixtures de protocolo y tests de despliegue.
 - R2–R4 metodología: S1/G1 permiten preparación posterior y metrología según el
-  requisito; S2 conserva sus **1739 bytes** de Pause Schedule y añade la revisión
+  requisito; S2 conserva literalmente su Pause Schedule y añade la revisión
   previa a HW; G2 pasa la iteración normal al verificador fresco, que ejecuta HW
   dentro del alcance revisado y devuelve feedback causal. Schema/checker v2 retiran
   atestaciones, manifiestos, hashes HIL y oráculo universal. **206 tests passed**
@@ -459,7 +459,8 @@ Comprobaciones finales del padre:
   contrato CLI, copia de skill MCP y checkers v2 autosuficientes S2/G2 correctos.
   Secuencia sintética G2 FEEDBACK → S2 iteración 2 → G2 iteración 2: stale detectado
   y eliminado al redeliverar contra el nuevo predecessor, en el mismo ciclo.
-- Pause Schedule S2 idéntico al anterior (1739 bytes). `git diff --check` correcto.
+- Pause Schedule S2 idéntico byte por byte a `fc2933d`, comparando directamente
+  ambas secciones con `git show`. `git diff --check` correcto.
   Estos escenarios son de software: ningún fixture cuenta como medición física.
 
 Commits de implementación y sus límites revisables:
@@ -475,6 +476,7 @@ Commits de implementación y sus límites revisables:
 | `933ce1b` | CLI por MAC, reutilización y verificación de acceso |
 | `5e54967` | Integración MCP con las tres clases de cliente |
 | `e2c99ef` | Guía operativa actual del servidor |
+| `3316a6b` | Coherencia documental y cierre de validación local |
 
 Rollback del cierre documental: AGENTS fuente/generado, README principal y enlaces
 de estado de ambos registros; las unidades funcionales tienen sus límites arriba.
