@@ -1,5 +1,6 @@
 import json
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -99,8 +100,48 @@ def scaffold_project(
     _link_agent_configs(project_dir)
     _write_subagents(project_dir)
 
+    _git_init(project_dir)
+
     log.info("scaffolded project '%s' at %s", name, project_dir)
     return project_dir
+
+
+# Only clearly-local, regenerated files. verification/telemetry/ is intentionally
+# NOT ignored: it holds the per-run measurement.json and capture outputs that G2
+# verifies as evidence, so whether that evidence is committed is a methodology
+# decision, not a scaffold default.
+_GITIGNORE = """\
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+"""
+
+
+def _git_init(project_dir: Path) -> None:
+    """Initialise a git repository and a conservative .gitignore (non-fatal).
+
+    Idempotent: an existing repository is left untouched. No commit is made
+    and no identity is configured. A missing or failing git only logs a warning.
+    """
+    if (project_dir / ".git").exists():
+        return
+    try:
+        result = subprocess.run(
+            ["git", "init", str(project_dir)],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError as exc:
+        log.warning("git not available, skipping git init: %s", exc)
+        return
+    if result.returncode != 0:
+        log.warning("git init failed (exit %d): %s", result.returncode, result.stderr.strip())
+        return
+    gitignore = project_dir / ".gitignore"
+    if not gitignore.exists():
+        gitignore.write_text(_GITIGNORE, encoding="utf-8")
 
 
 def _copy_skills(project_dir: Path) -> None:
