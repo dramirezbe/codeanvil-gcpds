@@ -60,7 +60,7 @@ def test_scaffolded_gates_carry_the_question_rule(tmp_path, db_path):
 
 
 def test_s2_asks_the_pause_schedule_with_the_native_question_tool():
-    text = " ".join(_skill_text("S2_implement_services").split())
+    text = " ".join(_skill_text("S2_implement_subsystems").split())
 
     assert "`AskUserQuestion`" in text
     assert "Per layer (recommended)" in text

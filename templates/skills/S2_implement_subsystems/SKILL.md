@@ -1,6 +1,6 @@
 ---
-name: s2-implement-services
-description: "Trigger: S2, implement services, build the code, verification kit, VL-0. From a G1-passed design, build the services and the verification kit, prove the VL-0 floor and write the VL-1 tests."
+name: s2-implement-subsystems
+description: "Trigger: S2, implement subsystems, build the code, verification kit, VL-0. From a G1-passed design, build the subsystems and the verification kit, prove the VL-0 floor and write the VL-1 tests."
 license: Apache-2.0
 compatibility: "Telemetry is collected by the `codeanvil telemetry` subcommand, part of CodeAnvil itself (not a skill script). Reads the S1 design, .codeanvil/GT/SyRS.md and .codeanvil/project.yaml. Writes src/, verification/, root manifests, .codeanvil/report/<cycle-name>/S2.md and S2_artifacts/."
 metadata:
@@ -11,7 +11,7 @@ metadata:
   pipeline: "V-SIL"
 ---
 
-# S2 — Implement the Services and the Verification Kit
+# S2 — Implement the Subsystems and the Verification Kit
 
 Turn the G1-approved design into running code plus the verification kit, prove the VL-0 floor and
 leave the VL-1 tests ready for G2. The Mock HAL and the kit let the agent test without real device
@@ -66,11 +66,11 @@ there is no default list.
 | `.codeanvil/design/SDD.md` | Read-only: Meta `Target(s)`, `HAL mode` and `Toolchain`, §1.3.4 kit, §1.5, §1.6 HAL ladder, §1.7 telemetry per target, §2.2 order, §3 contracts and vectors, §4 traceability |
 | `.codeanvil/project.yaml` | Read-only: the active cycle. No `targets:` exist yet — the remote target and its credentials are created later, at G2, by `credential-setup` |
 | `.codeanvil/GT/SyRS.md` | Read-only: `SYS-*` thresholds for the VL-1 tests |
-| `.codeanvil/report/<cycle-name>/G2.md` | Rework only: latest iteration with `Verdict: module defect` |
+| `.codeanvil/report/<cycle-name>/G2.md` | Rework only: latest iteration with `Verdict: module defect`; its `### Description` change list is the exact instruction |
 | `.codeanvil/report/<cycle-name>/G1.md` | Rework only: the latest PASS iteration's impact map (files to edit vs paths to retest only) |
-| `templates/skills/S2_implement_services/references/project_layout.md` | Locked trees: Python, TypeScript, root manifests, kit |
-| `templates/skills/S2_implement_services/references/logger.py` | Locked Python logger, copied unchanged |
-| `templates/skills/S2_implement_services/references/logger.ts` | Locked TypeScript logger, copied unchanged |
+| `templates/skills/S2_implement_subsystems/references/project_layout.md` | Locked trees: Python, TypeScript, root manifests, kit |
+| `templates/skills/S2_implement_subsystems/references/logger.py` | Locked Python logger, copied unchanged |
+| `templates/skills/S2_implement_subsystems/references/logger.ts` | Locked TypeScript logger, copied unchanged |
 | `codeanvil telemetry` | Telemetry collector shipped with CodeAnvil, started by `verification/run.sh`; verification kit, never delivered |
 
 ## Hard Rules
@@ -81,26 +81,26 @@ there is no default list.
   `Verdict: design defect` and the S1 sections to rework, then stop. Never edit the design or GT.
 - Only Python with uv and pytest, and TypeScript with pnpm and vitest. No `requirements.txt`, no
   npm or yarn lockfile.
-- Each service is `src/<package>/`, exactly as `project_layout.md` shows.
-- Delivered code never depends on the scaffolding tool. Copy `logger.py` to every Python service's
-  `config/logger.py` and `logger.ts` to every TypeScript service's `config/logger.ts`, unchanged,
+- Each subsystem is `src/<package>/`, exactly as `project_layout.md` shows.
+- Delivered code never depends on the scaffolding tool. Copy `logger.py` to every Python subsystem's
+  `config/logger.py` and `logger.ts` to every TypeScript subsystem's `config/logger.ts`, unchanged,
   and never edit them. The telemetry collector is the exception because it is kit, not delivered
   code: `run.sh` starts it as `codeanvil telemetry`, and only its JSONL readings land in `verification/telemetry/`. Every
   Python module logs with `log = get_logger(__name__)`; every TypeScript module with
   `getLogger("<package>.<module>")`. No `print`, no bare `console.log`.
-- The kit is never shipped: no service imports or depends on anything under `verification/`. Kit
+- The kit is never shipped: no subsystem imports or depends on anything under `verification/`. Kit
   Python dependencies go only in the dev group, so `uv sync --frozen --no-dev` starts every
-  service without them; no service `package.json` lists a kit package. The telemetry collector is
+  subsystem without them; no subsystem `package.json` lists a kit package. The telemetry collector is
   mandatory in every test run and never lives under `src/`.
-- Implement design §0.5 as a real system entry point. Every service's package entry point starts
-  its runtime loop, and a multi-service launcher starts the complete system and stops its children.
+- Implement design §0.5 as a real system entry point. Every subsystem's package entry point starts
+  its runtime loop, and a multi-subsystem launcher starts the complete system and stops its children.
   In `mock-only`, ship a runtime Mock HAL or explicit demo bundle; the only working entry point
   must not import the non-shipped verification kit. A command that only logs instructions fails S2.
 - Expected values come from the design's §3 vectors and `verification/golden/manifest.md`, never
   computed by the agent. Changing a vector invalidates the evidence that used it.
 - In `mock+real`, the Real HW HAL's VL-0 tests use the fake device API; S2 never needs the hardware.
 - S2 runs locally. `Target(s)` is design intent (the device deduced from the `HWC-*` blocks, or
-  `local`); a missing or ambiguous target intent, missing target envelope or contradictory service
+  `local`); a missing or ambiguous target intent, missing target envelope or contradictory subsystem
   placement is a **design defect**; stop rather than guess. Diagnose tool/environment faults as
   operational problems within scope; if they prevent testing, explain and pause rather than
   inventing a product defect. Different versions alone do not block delivery.
@@ -135,7 +135,7 @@ result inconclusive — never widen tolerances or invent readings. Preserve desi
 manifest governance. The vl2 script uses run ID `<cycle>_<iteration>_<codeanvil now --machine>` and
 stores `<cycle>_<iteration>_<timestamp>.jsonl`, `measurement.json` v2 and script outputs under
 `verification/telemetry/<run_id>/`, following this skill's locked
-`templates/skills/S2_implement_services/references/machine_evidence.md` and basic checker. **G2 runs
+`templates/skills/S2_implement_subsystems/references/machine_evidence.md` and basic checker. **G2 runs
 these scripts on the enrolled target**; S2 only implements them, and a required missing test returns
 from G2 to S2 to implement it.
 
@@ -147,17 +147,18 @@ no option preselected.
 
 | Option | Pauses |
 |--------|--------|
-| Per layer and module | Per service: after the kit and its base, after each module and its tests, after integration |
-| Per layer (recommended) | Per service: after the kit and its base, once after all its modules, after integration |
-| Per service | Once after each completed service |
+| Per layer and module | Per subsystem: after the kit and its base, after each module and its tests, after integration |
+| Per layer (recommended) | Per subsystem: after the kit and its base, once after all its modules, after integration |
+| Per subsystem | Once after each completed subsystem |
 
 Recommend **Per layer** in one line: it pauses where a wrong contract is cheapest to catch, without
 one stop per module. In the Steps below, the kit and its base end step 2, the modules end step 3, and
 the integration is the producer and consumer contract tests at the start of step 4. If the runtime
 has no question tool, ask the same question in chat and wait for the reply; never assume or default
-an answer. A rework asks again.
+an answer. A rework asks again, **except** the G2 module-defect rework route below, which applies
+the fixed change list from the G2 Description and asks no pause-schedule question.
 
-Every schedule adds one pause after cross-service integration and before the `PATH-*` tests. At each
+Every schedule adds one pause after cross-subsystem integration and before the `PATH-*` tests. At each
 pause the human answers `continue`, `rework` or `stop`, through the same question tool or in chat
 when it is unavailable.
 
@@ -190,13 +191,13 @@ Before step 1 of every iteration, ask the pause schedule as **Pause Schedule** s
    `ML integration is future work. Remove design §1.5 for this round.` and write no iteration.
 2. **Initial layer: all placeholders before any module.** Create the trees and root manifests of
    `project_layout.md` for the design's `Toolchain`, lock dependencies (`uv lock`, `pnpm install`)
-   and copy the logger to every service's `config/`. Build `verification/run.sh` and every tool of
+   and copy the logger to every subsystem's `config/`. Build `verification/run.sh` and every tool of
    design §1.3.4 before any module: Mock HAL with its VL-0 vectors and VL-1 synthetic generator,
    golden vectors with `verification/golden/manifest.md`, the telemetry collector, one stub or fake
    peer per contract, drivers, and the Real HW HAL with a fake device API only in `mock+real`. Then
-   build the base layer of each service and run its unit tests and the **top-down** test (base + all
-   stubs) with the telemetry collector recording. Finally, run a **cross-service placeholder
-   integration**: start every service with its stubs connected through the real inter-service
+   build the base layer of each subsystem and run its unit tests and the **top-down** test (base + all
+   stubs) with the telemetry collector recording. Finally, run a **cross-subsystem placeholder
+   integration**: start every subsystem with its stubs connected through the real inter-subsystem
    interfaces and verify that the contract handshakes succeed end-to-end (types, formats, ports and
    protocols). No module code runs yet — this proves the interface scaffolding is sound before step 3
    invests in real implementations. A type or format mismatch at this point is a design defect.
@@ -204,11 +205,11 @@ Before step 1 of every iteration, ask the pause schedule as **Pause Schedule** s
    **bottom-up** test with a driver through the base, then the **sandwich** test (base → module →
    base: the real base calls the real module and the module calls back through the real base,
    verifying that types, formats and contracts match in both directions), then replace its stub.
-4. **Services and paths.** Producer and consumer contract tests with fake peers, then the pause
-   after cross-service integration, then each `PATH-*` with the real service processes and Mock HAL
+4. **Subsystems and paths.** Producer and consumer contract tests with fake peers, then the pause
+   after cross-subsystem integration, then each `PATH-*` with the real subsystem processes and Mock HAL
    input.
    Implement §0.5 and write a VL-0 smoke test that starts the actual entry point, connects the
-   real service processes, observes a valid update, and shuts down cleanly. Run the documented
+   real subsystem processes, observes a valid update, and shuts down cleanly. Run the documented
    command locally with the Mock HAL and runtime dependencies only (`uv sync --frozen --no-dev`
    for Python). Keep the command, URL and observed result for `test_run.md`; do not touch
    `test_run.md` before step 6 has backed up the previous one.
@@ -226,9 +227,13 @@ Before step 1 of every iteration, ask the pause schedule as **Pause Schedule** s
    with the decision and last real run.
 8. Write the iteration and return `S2 complete. Run the G2 skill.`
 
-Rework, module defect: a G2 iteration with `Verdict: module defect` names the modules to fix,
-including a missing VL-1 test. Redo step 3 (unit, bottom-up and sandwich) or 5 for them, then
-steps 6 and 7.
+Rework, module defect: read the change list in the latest `G2.md` iteration's `### Description`
+(the enumerated items after its `Based on:` line) and apply exactly those changes — only the
+subsystems/modules/files it names — then re-run the affected tests. Do not ask the human and do not
+redesign; the G2 report Description is the instruction. The listed modules are the ones to fix,
+including a missing VL-1 test: redo step 3 (unit, bottom-up and sandwich) or 5 for them, then
+steps 6 and 7. This route does **not** ask the Pause Schedule — the change set is fixed by the G2
+Description, so there is nothing to interrogate.
 
 Rework, design defect: a G2 iteration with `Verdict: design defect` routes through S1 and G1; S2
 runs again only after G1 passes. Work from the latest G1 PASS iteration's impact map and go
@@ -246,7 +251,7 @@ Write `.codeanvil/report/<cycle-name>/S2_artifacts/test_run.md`, overwritten on 
   `verification/run.sh vl2` command/scripts and structural-record checker that G2 will run;
 - the local host OS, architecture and tool versions; the intended device (from the `HWC-*` blocks)
   and the capabilities the G2 real-hardware run will need;
-- last VL-0 command, exit code and passed/failed/skipped counts per service;
+- last VL-0 command, exit code and passed/failed/skipped counts per subsystem;
 - §0.5 entry point, smoke command/result, URL and visible behaviour;
 - actual run IDs, times and telemetry/script output paths;
 - telemetry summary, any missing signals, investigated cause, affected claims and repeat/continue
@@ -266,7 +271,7 @@ Write exactly one file: `.codeanvil/report/<cycle-name>/S2.md`, append-only.
   `| HITL | PASS |` or `| HITL | FEEDBACK |` (never both in one row, which `codeanvil status`
   reads as `UNKNOWN`). Then `### Description`.
 - The Description starts with the exact line `Based on: G1 iteration <N>`, where `N` is the latest
-  G1 iteration when the work starts, followed by the services built, the `test_run.md` path and,
+  G1 iteration when the work starts, followed by the subsystems built, the `test_run.md` path and,
   on rework, the G2 iteration it answers. A design defect adds the line `Verdict: design defect`
   and the S1 sections to rework.
 - S2 is a **stage**: `PASS` means "delivered with VL-0 evidence" and needs a last
@@ -274,6 +279,6 @@ Write exactly one file: `.codeanvil/report/<cycle-name>/S2.md`, append-only.
 
 ## Output Contract
 
-Return the services built, the last VL-0 run counts, any `Possible infeasibility`, the report path
+Return the subsystems built, the last VL-0 run counts, any `Possible infeasibility`, the report path
 with the iteration number, and the next step (`S2 complete. Run the G2 skill.`), or the design
 defect and `Run the S1 skill.`

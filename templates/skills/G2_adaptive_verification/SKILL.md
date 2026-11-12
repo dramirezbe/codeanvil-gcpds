@@ -146,6 +146,26 @@ returns a new host snapshot `local_path`; select this run's files inside it rath
 old logs. S2's development runs never stand in for G2's fresh evidence. Missing telemetry is
 investigated and the repeat/continue decision names exactly which claims remain supported.
 
+## Operational vs defect (verdict branch)
+
+Before recommending any verdict, classify the failure. The G2 verdict logic has four
+first-class outcomes: **operational-fix** (fix the DUT and re-run G2), **module defect**
+(→ S2), **design defect** (→ S1) and **RFD**. Only a genuine behavioral failure of the
+delivered code is a module or design defect.
+
+A permission, driver, group, udev, device-visibility or USB-access problem on the target
+DUT — for example, the `codeanvil-agent` user cannot open the HackRF — is **operational**,
+never a module or design defect, and must not route to S2 or S1 feedback. The correct
+response is to recommend the fix on the DUT (add `codeanvil-agent` to the device group,
+add a udev rule or a `plugdev` entry), verify with `probe_target` / `lsusb`, then **re-run
+G2**. A transient SSH/clock/setup fault is operational in the same way: diagnose and repair
+during preparation, pause if it prevents measurement, never a product-defect label.
+
+**Last resort.** If the runtime or tool blocks the remediation command (the permission
+classifier refuses `ssh_exec_cmd_trusted`, or the sandbox blocks the fix), hand the user
+the exact commands to run by hand on the target — the concrete group/udev/plugdev
+commands — then re-run G2, rather than giving up or mislabeling it an S2 defect.
+
 ## Steps
 
 1. **Declare levels.** Show each module and `PATH-*` with its `required_vl`. The human declares
@@ -184,7 +204,7 @@ investigated and the repeat/continue decision names exactly which claims remain 
 | Human answer | Row written | Route |
 |--------------|-------------|-------|
 | PASS | `HITL: PASS` plus `G2_artifacts/verified_prototype.md` | Done: return "G2 passed. Verified Prototype written." |
-| FEEDBACK, module defect | `HITL: FEEDBACK` plus `Verdict: module defect` and the modules, including missing VL-1 tests | S2 |
+| FEEDBACK, module defect | `HITL: FEEDBACK` plus `Verdict: module defect`, the modules (including missing VL-1 tests) and the Description's enumerated change list | S2 |
 | FEEDBACK, design defect | `HITL: FEEDBACK` plus `Verdict: design defect` and the S1 sections to rework | S1 |
 | RFD | `HITL: FEEDBACK` plus the line `Verdict: RFD` | RFD skill, with the G2 report as evidence |
 
@@ -205,13 +225,18 @@ Diagnostic artifacts may be kept under `G2_artifacts/`; they do not become repor
   Then `### Description`.
 - The Description starts with the exact line `Based on: S2 iteration <N>`, where `N` is the latest
   S2 iteration when verification starts, followed by the declared levels and the results table.
+- On a module-defect FEEDBACK, write in the `### Description` (right after the `Based on:` line) an
+  explicit, enumerated list of the concrete changes S2 must make — which `SUB-nnn`/module and file,
+  and what to change — so S2 applies exactly that list without re-asking the human. The gate report
+  is already the only gate-to-stage channel, so this adds no new channel, data structure or
+  communication software: S2 edits only what the list names, with no AskUser prompt and no redesign.
 - Honesty declaration: VERIFIED for VL-0 and VL-1 claims; VALIDATED only for VL-2 claims.
 - For FEEDBACK, explain command/target, actual result, expected criterion, relevant logs/measures,
   technical cause (or unconfirmed hypothesis), affected requirement/module/kit/PATH, concrete next
   action and route. Module/kit defect goes to S2; design defect goes through S1 → G1 → S2;
-  infeasibility goes to RFD, all in the existing cycle/rework rules. A transient SSH/clock/setup
-  fault is operational: diagnose/repair during preparation, and pause if it prevents measurement;
-  never invent a product defect label to fit that failure. New S2 delivery is required before
+  infeasibility goes to RFD, all in the existing cycle/rework rules. An operational HW/environment
+  problem is not a defect: classify it by the operational-vs-defect branch above and re-run G2,
+  never with a product-defect label. New S2 delivery is required before
   rerunning G2 after module feedback on the same Based-on iteration.
 - G2 is a **gate**: its `PASS` is the human's verdict.
 

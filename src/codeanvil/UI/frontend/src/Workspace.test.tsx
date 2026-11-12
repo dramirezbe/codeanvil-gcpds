@@ -28,14 +28,14 @@ function response(body: unknown, status = 200) {
 describe('Workspace', () => {
   const darkGraph: Artifact = { path: '.codeanvil/design/dependency_graph.html', label: 'Dependency graph', kind: 'design', exists: true, graph_theme: 'dark' }
   const lightGraph: Artifact = { path: '.codeanvil/design/dependency_graph_light.html', label: 'Dependency graph · light', kind: 'design', exists: true, graph_theme: 'light' }
-  const design: Artifact = { path: '.codeanvil/design/SDD.md', label: 'Service design', kind: 'design', exists: true }
+  const design: Artifact = { path: '.codeanvil/design/SDD.md', label: 'System design', kind: 'design', exists: true }
 
   function mockDesign(lightExists = true) {
     const fetcher = vi.fn(async (url: string) => {
       if (url.includes('/overview?')) return response({ ...overview, artifacts: [design, darkGraph, { ...lightGraph, exists: lightExists }] })
       const path = new URL(url, 'http://localhost').searchParams.get('path')!
       return response({ path, name: path.split('/').at(-1), iterations: [],
-        format: path.endsWith('.html') ? 'html' : 'markdown', content: path.endsWith('.html') ? `<p>${path}</p>` : '# Service design document' })
+        format: path.endsWith('.html') ? 'html' : 'markdown', content: path.endsWith('.html') ? `<p>${path}</p>` : '# System design document' })
     })
     vi.stubGlobal('fetch', fetcher)
     return fetcher
@@ -59,9 +59,9 @@ describe('Workspace', () => {
   it('keeps a selected design document when the page theme changes', async () => {
     mockDesign()
     const view = render(<Workspace project={project} active="Design" theme="dark" onSetActive={vi.fn()} />)
-    expect(await screen.findByRole('heading', { name: 'Service design document' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'System design document' })).toBeInTheDocument()
     view.rerender(<Workspace project={project} active="Design" theme="light" onSetActive={vi.fn()} />)
-    expect(screen.getByRole('heading', { name: 'Service design document' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'System design document' })).toBeInTheDocument()
     expect(screen.queryByTitle(lightGraph.label)).toBeNull()
   })
 

@@ -1,7 +1,8 @@
 # Refactor plan — rename "service" → "subsystem" (full) + HIL methodology fixes
 
 **Date:** 2026-11-12
-**Status:** DRAFT — OPEN. Do NOT execute. Still collecting scope; not approved.
+**Status:** EXECUTED (2026-11-12) on branch `refactor/service-to-subsystem` — the full rename
+(steps 1–8) and the **HIL methodology fixes (HIL-1, HIL-2)** below are both done, suites green.
 **Decided word:** `Subsystem` / `SUB-` for the software architectural unit (replaces
 `service` / `SVC-`). `component` is reserved for hardware; `block` is left to GNU Radio.
 **Option:** A (full) — rename the concept, the skill folders, config keys, frontmatter,

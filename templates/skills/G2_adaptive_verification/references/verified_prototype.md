@@ -21,15 +21,15 @@ or VL-2 validation.
 
 ## 3. Toolchain
 
-One row per service, copied from the design Meta.
+One row per subsystem, copied from the design Meta.
 
-| Service | Package | Language | Package manager | Test runner |
+| Subsystem | Package | Language | Package manager | Test runner |
 |---------|---------|----------|-----------------|-------------|
-| SVC-xxx | <package> | <language> | <uv / pnpm> | <pytest / vitest> |
+| SUB-xxx | <package> | <language> | <uv / pnpm> | <pytest / vitest> |
 
 **Execution equipment and preparation:**
 
-| Service / PATH-* | Local / PIL / real HW | Equipment MAC or local host | Endpoint / user / port / workspace | Observed OS / architecture / device | Tool versions |
+| Subsystem / PATH-* | Local / PIL / real HW | Equipment MAC or local host | Endpoint / user / port / workspace | Observed OS / architecture / device | Tool versions |
 |------------------|-----------------------|-----------------------------|----------------------------------|-------------------------------------|---------------|
 | <IDs> | <actual run type> | <declared identity> | <actual location> | <observations> | <versions used> |
 
@@ -76,7 +76,7 @@ feedback; never invent readings or expand tolerances to obtain PASS.
 
 | Part | Location | Shipped |
 |------|----------|---------|
-| Services | `src/<service>/` | Yes |
+| Subsystems | `src/<subsystem>/` | Yes |
 | Verification kit (Mock HAL, golden vectors, telemetry companion, stubs, fakes, drivers, tests) | `verification/` | Never |
 
 ## 9. Verifier

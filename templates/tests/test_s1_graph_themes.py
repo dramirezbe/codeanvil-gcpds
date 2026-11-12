@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-TEMPLATE = Path(__file__).resolve().parents[1] / "skills/S1_design_services/references/dependency_graph_template.html"
+TEMPLATE = Path(__file__).resolve().parents[1] / "skills/S1_design_system/references/dependency_graph_template.html"
 NODE = shutil.which("node")
 
 
@@ -20,16 +20,16 @@ def rendered():
     data = {
         "manifest": {"id": "fixture", "name": "Theme example", "cycle": "01_demo",
                      "gt": {"strs": ".codeanvil/GT/StRS.md", "syrs": ".codeanvil/GT/SyRS.md"}},
-        "services": [
-            {"id": "SVC-A", "label": "Acquisition", "modules": [
+        "subsystems": [
+            {"id": "SUB-A", "label": "Acquisition", "modules": [
                 {"id": "source", "label": "Source", "color": "#72c7ca"},
                 {"id": "dsp", "label": "DSP", "color": "#83c99b"}]},
-            {"id": "SVC-B", "label": "Display", "modules": [
+            {"id": "SUB-B", "label": "Display", "modules": [
                 {"id": "source", "label": "View", "color": "#a5b4c1"}]},
-            {"id": "SVC-C", "label": "Storage", "modules": []},
+            {"id": "SUB-C", "label": "Storage", "modules": []},
         ],
-        "hardware": [{"id": "HWC-001", "label": "Device", "to": ["SVC-A/source", "SVC-B/source"]}],
-        "serviceContracts": [{"id": "samples.v1", "from": ["SVC-A"], "to": ["SVC-B", "SVC-C"]}],
+        "hardware": [{"id": "HWC-001", "label": "Device", "to": ["SUB-A/source", "SUB-B/source"]}],
+        "subsystemContracts": [{"id": "samples.v1", "from": ["SUB-A"], "to": ["SUB-B", "SUB-C"]}],
     }
     replacement = "const theme = 'dark';\n" + "\n".join(
         f"const {key} = {json.dumps(value)};" for key, value in data.items()
@@ -63,7 +63,7 @@ process.stdout.write(JSON.stringify(results));
 def test_both_themes_keep_the_same_spiders_hardware_and_multi_consumer_contract(rendered):
     dark, light = (rendered[theme]["network"] for theme in ("dark", "light"))
     assert [node["id"] for node in dark["data"]["nodes"]] == [
-        "SVC-A", "SVC-B", "SVC-C", "SVC-A/source", "SVC-A/dsp", "SVC-B/source", "HWC-001", "c:samples.v1",
+        "SUB-A", "SUB-B", "SUB-C", "SUB-A/source", "SUB-A/dsp", "SUB-B/source", "HWC-001", "c:samples.v1",
     ]
     topology = lambda graph: (
         [(node["id"], node["label"], node["shape"]) for node in graph["data"]["nodes"]],
@@ -72,7 +72,7 @@ def test_both_themes_keep_the_same_spiders_hardware_and_multi_consumer_contract(
     assert topology(dark) == topology(light)
     assert len(dark["data"]["edges"]) == 8
     assert [(edge["from"], edge["to"]) for edge in dark["data"]["edges"][-3:]] == [
-        ("SVC-A", "c:samples.v1"), ("c:samples.v1", "SVC-B"), ("c:samples.v1", "SVC-C"),
+        ("SUB-A", "c:samples.v1"), ("c:samples.v1", "SUB-B"), ("c:samples.v1", "SUB-C"),
     ]
     assert dark["options"]["layout"] == light["options"]["layout"] == {"randomSeed": 1}
     assert rendered["dark"]["meta"] == rendered["light"]["meta"]
@@ -98,6 +98,6 @@ def test_both_themes_use_forge_surfaces_with_readable_nodes_and_distinct_layers(
             assert node["color"]["background"] == surface
             assert contrast(node["font"]["color"], surface) >= 4.5
             assert contrast(node["color"]["border"], background) >= 3
-        module_borders = [node["color"]["border"] for node in nodes if node["id"].startswith("SVC-") and "/" in node["id"]]
+        module_borders = [node["color"]["border"] for node in nodes if node["id"].startswith("SUB-") and "/" in node["id"]]
         assert len(set(module_borders)) == 3
     assert rendered["dark"]["network"]["data"]["nodes"][3]["color"] != rendered["light"]["network"]["data"]["nodes"][3]["color"]

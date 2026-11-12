@@ -8,7 +8,7 @@
 
 ## Resumen
 
-V-SIL v3 es una metodología de desarrollo de software que recibe un Build Package finalizado (PRD con restricciones medibles, envolvente de hardware COTS, criterios de aceptación y, de forma opcional, procedimientos de laboratorio, calibración de hardware al grado de tamizaje del equipo de desarrollo y tolerancias en dBi) y entrega un Prototipo Verificado con evidencia por módulo y de extremo a extremo — o, cuando los requisitos son inviables sobre la plataforma COTS declarada, una Solicitud de Desviación (Request for Deviation, RFD) formal con análisis de compromisos. S1 puede diseñar un servicio o un sistema de servicios: cada servicio tiene su propia capa base y sus módulos, y los servicios se conectan mediante contratos versionados. S1 declara un modo HAL, `mock-only` o `mock+real`. Siempre diseña un **Mock HAL** que genera datos deterministas y sintéticos para VL-0 y VL-1, y un **telemetry companion** obligatorio que monitorea silenciosamente la unidad de cómputo durante todas las ejecuciones de prueba y nunca se entrega. Solo en `mock+real` añade un **Real HW HAL** que interactúa con el hardware físico para la generación de datasets de laboratorio y las pruebas de campo en VL-2. Un modelo de ML es una entrada opcional de S1 cuando el diseño lo utiliza; se entrena con datos del Mock HAL más etiquetado o, en su defecto, con datos del Real HW HAL más etiquetado. La implementación avanza módulo por módulo dentro de cada servicio y después cruza sus fronteras. La profundidad de verificación es adaptativa por módulo, con un piso obligatorio de pruebas unitarias, integración sándwich, contratos entre servicios y rutas de sistema. Cada afirmación nombra el nivel y el entorno de verificación en que se produjo; el telemetry companion adjunta el estado de la unidad de cómputo (CPU, memoria, temperatura, salud de buffers, latencia de planificación) a cada registro de evidencia. La salida terminal puede registrar trabajo futuro acotado para próximas versiones del software, sin aplazar criterios de aceptación vigentes. La terminología está alineada con IEEE/ISO/IEC 29119, ISO 26262, SDAD [6], el patrón Coordinator-Implementor-Verifier [10], la escalera de sustitución HAL mock→SIL→HIL para sistemas embebidos [11] y el proceso de Request for Deviation de ECSS/MIL-HDBK-61A [16][17].
+V-SIL v3 es una metodología de desarrollo de software que recibe un Build Package finalizado (PRD con restricciones medibles, envolvente de hardware COTS, criterios de aceptación y, de forma opcional, procedimientos de laboratorio, calibración de hardware al grado de tamizaje del equipo de desarrollo y tolerancias en dBi) y entrega un Prototipo Verificado con evidencia por módulo y de extremo a extremo — o, cuando los requisitos son inviables sobre la plataforma COTS declarada, una Solicitud de Desviación (Request for Deviation, RFD) formal con análisis de compromisos. S1 puede diseñar un subsistema o un sistema de subsistemas: cada subsistema tiene su propia capa base y sus módulos, y los subsistemas se conectan mediante contratos versionados. S1 declara un modo HAL, `mock-only` o `mock+real`. Siempre diseña un **Mock HAL** que genera datos deterministas y sintéticos para VL-0 y VL-1, y un **telemetry companion** obligatorio que monitorea silenciosamente la unidad de cómputo durante todas las ejecuciones de prueba y nunca se entrega. Solo en `mock+real` añade un **Real HW HAL** que interactúa con el hardware físico para la generación de datasets de laboratorio y las pruebas de campo en VL-2. Un modelo de ML es una entrada opcional de S1 cuando el diseño lo utiliza; se entrena con datos del Mock HAL más etiquetado o, en su defecto, con datos del Real HW HAL más etiquetado. La implementación avanza módulo por módulo dentro de cada subsistema y después cruza sus fronteras. La profundidad de verificación es adaptativa por módulo, con un piso obligatorio de pruebas unitarias, integración sándwich, contratos entre subsistemas y rutas de sistema. Cada afirmación nombra el nivel y el entorno de verificación en que se produjo; el telemetry companion adjunta el estado de la unidad de cómputo (CPU, memoria, temperatura, salud de buffers, latencia de planificación) a cada registro de evidencia. La salida terminal puede registrar trabajo futuro acotado para próximas versiones del software, sin aplazar criterios de aceptación vigentes. La terminología está alineada con IEEE/ISO/IEC 29119, ISO 26262, SDAD [6], el patrón Coordinator-Implementor-Verifier [10], la escalera de sustitución HAL mock→SIL→HIL para sistemas embebidos [11] y el proceso de Request for Deviation de ECSS/MIL-HDBK-61A [16][17].
 
 ```mermaid
 flowchart LR
@@ -59,9 +59,9 @@ flowchart TD
     BP["Build Package"]:::input
     S0["S0 — Normalización + GT"]:::stage
     G0{"G0 — Validación estructural"}:::gate
-    S1["S1 — Topología de servicios + diseño en capas"]:::stage
+    S1["S1 — Topología de subsistemas + diseño en capas"]:::stage
     G1{"G1 — Revisión de diseño (HITL)"}:::gate
-    S2["S2 — Implementación por servicio + integración"]:::stage
+    S2["S2 — Implementación por subsistema + integración"]:::stage
     G2{"G2 — Verificación adaptativa"}:::gate
     T["Prototipo Verificado<br/>evidencia VL por módulo y ruta"]:::terminal
     RFD["RFD<br/>Solicitud de Desviación"]:::rfd
@@ -155,9 +155,9 @@ Determinista. Sin IA. Veredicto binario. Tras aprobar G0, la Compuerta humana H 
 
 ---
 
-## 5 S1 — Sistema de Servicios en Capas
+## 5 S1 — Sistema de Subsistemas en Capas
 
-S1 primero divide el producto en servicios desplegables por separado cuando los requisitos lo justifican. Un solo servicio sigue siendo un caso válido. Cada **servicio** posee un proceso de ejecución, destino de despliegue, capa base, módulos y puertos externos. Sus módulos se comunican mediante su propia capa base; los intercambios entre servicios pasan por contratos de servicio declarados y versionados. Separar la interfaz de usuario del proceso de borde se justifica cuando se despliegan o reinician independientemente, usan una red o tienen dominios de fallo distintos.
+S1 primero divide el producto en subsistemas desplegables por separado cuando los requisitos lo justifican. Un solo subsistema sigue siendo un caso válido. Cada **subsistema** posee un proceso de ejecución, destino de despliegue, capa base, módulos y puertos externos. Sus módulos se comunican mediante su propia capa base; los intercambios entre subsistemas pasan por contratos de subsistema declarados y versionados. Separar la interfaz de usuario del proceso de borde se justifica cuando se despliegan o reinician independientemente, usan una red o tienen dominios de fallo distintos.
 
 ### 5.1 Topología del sistema y asignación de requisitos
 
@@ -165,16 +165,16 @@ Las flechas siguientes son **mensajes en ejecución**, no dependencias de implem
 
 ```mermaid
 flowchart LR
-    GT["Un par StRS + SyRS"] --> MAP["SYS-* asignados a servicios y rutas"]
-    MAP --> EDGE["Servicio de borde<br/>SDR COTS + base local + módulos"]
-    MAP --> UI["Servicio UI<br/>base cliente + módulos"]
+    GT["Un par StRS + SyRS"] --> MAP["SYS-* asignados a subsistemas y rutas"]
+    MAP --> EDGE["Subsistema de borde<br/>SDR COTS + base local + módulos"]
+    MAP --> UI["Subsistema UI<br/>base cliente + módulos"]
     EDGE -->|"occupancy.v1: mediciones"| UI
     UI -->|"configure.v1: comandos"| EDGE
 ```
 
-La vista del sistema registra la responsabilidad, el destino de despliegue, los recursos COTS, el enlace de red y el ciclo de vida de cada servicio. Un requisito puede asignarse a un servicio o a una **ruta de extremo a extremo** que abarque varios. Una sola tabla de trazabilidad de sistema controla la asignación; los diseños de servicio no duplican el Ground Truth. Los contratos entre servicios especifican productor y consumidor, esquema y versión, unidades, marcas de tiempo, orden, tasa, latencia, autenticación, reintentos, duplicados y comportamiento ante desconexión o reinicio cuando corresponda.
+La vista del sistema registra la responsabilidad, el destino de despliegue, los recursos COTS, el enlace de red y el ciclo de vida de cada subsistema. Un requisito puede asignarse a un subsistema o a una **ruta de extremo a extremo** que abarque varios. Una sola tabla de trazabilidad de sistema controla la asignación; los diseños de subsistema no duplican el Ground Truth. Los contratos entre subsistemas especifican productor y consumidor, esquema y versión, unidades, marcas de tiempo, orden, tasa, latencia, autenticación, reintentos, duplicados y comportamiento ante desconexión o reinicio cuando corresponda.
 
-### 5.2 Arquitectura en capas dentro de cada servicio
+### 5.2 Arquitectura en capas dentro de cada subsistema
 
 ```mermaid
 flowchart TD
@@ -182,7 +182,7 @@ flowchart TD
     classDef mod fill:#e0e7ff,stroke:#4f46e5,color:#312e81
     classDef integ fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
 
-    subgraph ARCH["S1 produce para cada servicio"]
+    subgraph ARCH["S1 produce para cada subsistema"]
         direction TD
         BASE["Capa Base<br/>Orquestación · HAL · enrutamiento de datos<br/>contratos de interfaz"]:::base
         subgraph MODS["Módulos"]
@@ -198,7 +198,7 @@ flowchart TD
     BASE --> MODS --> INT
 ```
 
-Los módulos son unidades enchufables (plug-in) que se comunican únicamente a través de la capa base y las interfaces declaradas de su servicio. No hay llamadas directas entre módulos ni llamadas entre servicios que eludan un contrato de servicio. Un servicio sin hardware físico puede tener una HAL vacía; su base sigue encargándose de la orquestación y el enrutamiento.
+Los módulos son unidades enchufables (plug-in) que se comunican únicamente a través de la capa base y las interfaces declaradas de su subsistema. No hay llamadas directas entre módulos ni llamadas entre subsistemas que eludan un contrato de subsistema. Un subsistema sin hardware físico puede tener una HAL vacía; su base sigue encargándose de la orquestación y el enrutamiento.
 
 ### 5.3 Grafo de dependencias de componentes (ejemplo SDR FM en borde)
 
@@ -225,7 +225,7 @@ flowchart LR
     CL -->|occupancy_decision| DS
 ```
 
-Cada arista transporta un **contrato de interfaz** (tipo de dato, versión de esquema, unidades, latencia). El grafo de dependencias de implementación de cada servicio debe ser acíclico. Cada nodo lleva un **perfil de verificación**: `module_id`, `service_id`, `layer`, `depends_on`, `provides`, `hw_dependency`, `required_vl`. `hw_dependency` significa que la corrección depende de un dispositivo o comportamiento físico específico, no simplemente que el código se ejecuta en una computadora.
+Cada arista transporta un **contrato de interfaz** (tipo de dato, versión de esquema, unidades, latencia). El grafo de dependencias de implementación de cada subsistema debe ser acíclico. Cada nodo lleva un **perfil de verificación**: `module_id`, `subsystem_id`, `layer`, `depends_on`, `provides`, `hw_dependency`, `required_vl`. `hw_dependency` significa que la corrección depende de un dispositivo o comportamiento físico específico, no simplemente que el código se ejecuta en una computadora.
 
 El **grafo de dependencias de implementación** ordena la definición de contratos, las bases, los módulos y la integración del sistema. Debe ser acíclico para permitir la construcción con stubs en S2. El **grafo de interacción en ejecución** describe los mensajes reales y puede contener bucles intencionales, como telemetría del borde → UI → control del borde, siempre que los contratos definan propiedad del estado, confirmación, tiempos de espera y comportamiento seguro. Un bucle de mensajes no crea un ciclo de dependencias de implementación.
 
@@ -242,7 +242,7 @@ El **grafo de dependencias de implementación** ordena la definición de contrat
 
 **Estado: incierto.** Esta versión define el modelo de ML solo como entrada opcional de S1 y una comprobación de preparación en G1. Su conexión con S2 y G2 (generación de datos de entrenamiento, adaptador de inferencia, medición en G2) no está implementada y es trabajo futuro, junto con MLOps (FW-005).
 
-El diseño S1 incluye esta caja **solo si elige un módulo basado en ML o el Ground Truth lo exige explícitamente**. En los demás casos no aparecen ni la caja ni su comprobación G1. El modelo suministrado es una entrada controlada de un módulo de servicio, no un servicio por sí mismo. Se entrena con datos del Mock HAL más etiquetado o, en su defecto, con datos del Real HW HAL más etiquetado. S1 no entrena ni selecciona un modelo por cuenta del autor del Build Package.
+El diseño S1 incluye esta caja **solo si elige un módulo basado en ML o el Ground Truth lo exige explícitamente**. En los demás casos no aparecen ni la caja ni su comprobación G1. El modelo suministrado es una entrada controlada de un módulo de subsistema, no un subsistema por sí mismo. Se entrena con datos del Mock HAL más etiquetado o, en su defecto, con datos del Real HW HAL más etiquetado. S1 no entrena ni selecciona un modelo por cuenta del autor del Build Package.
 
 Cuando se utiliza, S1 identifica el archivo y los pesos por versión y digest; nombra al proveedor y la procedencia; registra la fuente de los datos de entrenamiento y el procedimiento de etiquetado; especifica runtime de inferencia, esquema de entradas y salidas, unidades, preprocesamiento, etiquetas o umbrales y posprocesamiento; y registra las métricas suministradas con su conjunto de evaluación y condiciones. Presupuesta latencia de inferencia, memoria y cualquier dependencia de dispositivos en la COTS declarada. Una respuesta simulada determinista permite integrar en VL-0; los niveles posteriores ejercitan el modelo suministrado real.
 
@@ -262,11 +262,11 @@ S1 también especifica un **telemetry companion**, obligatorio en todo diseño y
 
 El Mock HAL, los vectores dorados con su manifiesto, el telemetry companion, los stubs, los pares simulados y los drivers forman el **kit de verificación**. S2 construye el kit en su capa inicial, antes de cualquier módulo, junto con el Real HW HAL y su API de dispositivo simulada en `mock+real` (§7).
 
-La Meta del diseño de S1 declara además una entrada **`Toolchain`** por servicio: `SVC-xxx: <package> · <language> · <package manager> · <test runner>`, por ejemplo `SVC-001: fm_edge · Python 3.12 · uv · pytest; SVC-002: dashboard · TypeScript · pnpm · vitest`. `<package>` es un identificador válido y nombra `src/<package>/`. Esta versión admite Python con uv y pytest, y TypeScript con pnpm y vitest. S2 construye con el toolchain declarado y nunca elige otro; un `Toolchain` vacío o incompleto es un defecto de diseño.
+La Meta del diseño de S1 declara además una entrada **`Toolchain`** por subsistema: `SUB-xxx: <package> · <language> · <package manager> · <test runner>`, por ejemplo `SUB-001: fm_edge · Python 3.12 · uv · pytest; SUB-002: dashboard · TypeScript · pnpm · vitest`. `<package>` es un identificador válido y nombra `src/<package>/`. Esta versión admite Python con uv y pytest, y TypeScript con pnpm y vitest. S2 construye con el toolchain declarado y nunca elige otro; un `Toolchain` vacío o incompleto es un defecto de diseño.
 
 ---
 
-## 6 G1 — Validación de Servicios, Dependencias y Contratos
+## 6 G1 — Validación de Subsistemas, Dependencias y Contratos
 
 G1 responde: *¿Están resueltas todas las decisiones de diseño críticas para la implementación?*
 
@@ -274,11 +274,11 @@ G1 es una revisión de diseño humana (HITL), no una compuerta determinista. Un 
 
 G1 no ejecuta scripts. El agente que la prepara valida por sí mismo: lee el diseño completo y el GT, rederiva cada comprobación desde las secciones fuente en lugar de confiar en los resúmenes del propio diseño, y ejecuta el toolchain declarado en la máquina de desarrollo. Una revisión exhaustiva justifica su costo en tokens. Los hallazgos del agente informan al humano; nunca se convierten en un veredicto automático.
 
-1. **Topología de servicios.** Cada servicio tiene responsabilidad, destino de despliegue, dueño del estado y puertos externos; la red y la envolvente COTS sustentan la topología.
-2. **Aciclicidad del DAG de implementación.** Sin ciclos dentro de los servicios ni entre unidades de construcción. Los bucles de mensajes en ejecución se revisan aparte.
-3. **Completitud de interfaces.** Cada arista interna tiene contrato tipado; cada intercambio entre servicios tiene contrato versionado y comportamiento ante fallos.
-4. **Cobertura.** Cada `SYS-*` traza a módulos o a una ruta entre servicios, con responsable y evidencia de aceptación medible.
-5. **Viabilidad de stubs.** Cada contrato interno o entre servicios permite escribir un stub o par simulado determinista.
+1. **Topología de subsistemas.** Cada subsistema tiene responsabilidad, destino de despliegue, dueño del estado y puertos externos; la red y la envolvente COTS sustentan la topología.
+2. **Aciclicidad del DAG de implementación.** Sin ciclos dentro de los subsistemas ni entre unidades de construcción. Los bucles de mensajes en ejecución se revisan aparte.
+3. **Completitud de interfaces.** Cada arista interna tiene contrato tipado; cada intercambio entre subsistemas tiene contrato versionado y comportamiento ante fallos.
+4. **Cobertura.** Cada `SYS-*` traza a módulos o a una ruta entre subsistemas, con responsable y evidencia de aceptación medible.
+5. **Viabilidad de stubs.** Cada contrato interno o entre subsistemas permite escribir un stub o par simulado determinista.
 6. **Consistencia del perfil de verificación.** `hw_dependency: true` → `required_vl: VL-2`; las rutas de sistema declaran nivel y entorno de verificación.
 7. **Escalera de sustitución HAL.** El Mock HAL expone la interfaz de la capa base; los vectores dorados llevan digest, parámetros y salidas esperadas. En `mock+real`, el Real HW HAL expone la misma interfaz y referencia los `PROTO-*`, las cadenas de corrección y las tolerancias de la SyRS.
 8. **Telemetry companion.** La especificación del companion declara qué monitorea, su intervalo de muestreo, su presupuesto de recursos y que su huella está acotada por debajo de un umbral declarado.
@@ -292,7 +292,7 @@ La [plantilla de diseño S1/G1](S1_G1_template.md) desarrolla estas familias en 
 
 ---
 
-## 7 S2 — Implementación por Servicio e Integración del Sistema
+## 7 S2 — Implementación por Subsistema e Integración del Sistema
 
 ```mermaid
 flowchart TD
@@ -309,7 +309,7 @@ flowchart TD
         B --> KIT --> STUBS --> TD
     end
 
-    subgraph STEP2["Paso 2 — Módulos de cada servicio (orden del DAG)"]
+    subgraph STEP2["Paso 2 — Módulos de cada subsistema (orden del DAG)"]
         IMPL["Implementar módulo<br/>contra el contrato"]:::mod
         UT["Prueba unitaria<br/>en aislamiento"]:::test
         BU["Integración ascendente<br/>módulo + driver vs base"]:::test
@@ -317,19 +317,19 @@ flowchart TD
     end
 
     TD --> STEP2
-    STEP2 --> CONTRACT["Paso 3 — Pruebas de contratos entre servicios<br/>servicios reales + pares simulados"]:::test
-    CONTRACT --> SYSTEM["Paso 4 — Rutas de sistema<br/>servicios conectados"]:::test
+    STEP2 --> CONTRACT["Paso 3 — Pruebas de contratos entre subsistemas<br/>subsistemas reales + pares simulados"]:::test
+    CONTRACT --> SYSTEM["Paso 4 — Rutas de sistema<br/>subsistemas conectados"]:::test
 ```
 
 Descendente (base → stubs) + ascendente (módulo → driver → base) = **prueba de integración sándwich** [1][2][13].
 
-El Paso 1 es la **capa inicial**: antes de cualquier módulo, S2 construye la base de cada servicio y deja listas todas las herramientas — el kit de verificación de §5.5 y, en `mock+real`, el Real HW HAL con su API de dispositivo simulada. S2 escribe todas las pruebas, incluidas las pruebas VL-1 de los módulos y rutas con `required_vl` VL-1 o superior, sin afirmarlas; G2 solo las ejecuta (§8.3).
+El Paso 1 es la **capa inicial**: antes de cualquier módulo, S2 construye la base de cada subsistema y deja listas todas las herramientas — el kit de verificación de §5.5 y, en `mock+real`, el Real HW HAL con su API de dispositivo simulada. S2 escribe todas las pruebas, incluidas las pruebas VL-1 de los módulos y rutas con `required_vl` VL-1 o superior, sin afirmarlas; G2 solo las ejecuta (§8.3).
 
-Cada servicio vive en `src/<service>/` y se construye con su toolchain declarado; el kit de verificación, pruebas incluidas, vive en `verification/` y nunca se entrega; un comando ejecuta cada nivel de verificación (`verification/run.sh vl0`, `verification/run.sh vl1`); y el código entregado no depende de CodeAnvil.
+Cada subsistema vive en `src/<subsystem>/` y se construye con su toolchain declarado; el kit de verificación, pruebas incluidas, vive en `verification/` y nunca se entrega; un comando ejecuta cada nivel de verificación (`verification/run.sh vl0`, `verification/run.sh vl1`); y el código entregado no depende de CodeAnvil.
 
-Se definen primero los contratos entre servicios para construir cada servicio independientemente contra un par simulado determinista. Los servicios reales se conectan después de superar su piso local VL-0. Para cada `SYS-*` asignado a varios servicios se ejecuta una prueba determinista de la ruta entre los procesos reales, con entradas externas simuladas. Así se comprueban serialización, enrutamiento, transferencia de estado y recuperación en la frontera declarada; VL-1 y VL-2 añaden entornos y mediciones más exigentes.
+Se definen primero los contratos entre subsistemas para construir cada subsistema independientemente contra un par simulado determinista. Los subsistemas reales se conectan después de superar su piso local VL-0. Para cada `SYS-*` asignado a varios subsistemas se ejecuta una prueba determinista de la ruta entre los procesos reales, con entradas externas simuladas. Así se comprueban serialización, enrutamiento, transferencia de estado y recuperación en la frontera declarada; VL-1 y VL-2 añaden entornos y mediciones más exigentes.
 
-*Trabajo futuro (FW-005, §5.4).* Si un servicio utiliza un modelo de ML suministrado, S2 implementa su adaptador de inferencia y prueba el preprocesamiento, la interpretación de salidas y el comportamiento ante fallos declarados. La respuesta simulada ejercita el contrato del módulo circundante en VL-0; las pruebas que afirman comportamiento del modelo utilizan los pesos identificados.
+*Trabajo futuro (FW-005, §5.4).* Si un subsistema utiliza un modelo de ML suministrado, S2 implementa su adaptador de inferencia y prueba el preprocesamiento, la interpretación de salidas y el comportamiento ante fallos declarados. La respuesta simulada ejercita el contrato del módulo circundante en VL-0; las pruebas que afirman comportamiento del modelo utilizan los pesos identificados.
 
 ### Fuentes de datos por nivel de verificación
 
@@ -351,8 +351,8 @@ Cada vector dorado o captura sintética utilizado por el Mock HAL es un artefact
 |---|---|
 | **Capa base** | Prueba unitaria + integración descendente con stubs |
 | **Cada módulo** | Prueba unitaria + integración ascendente con driver |
-| **Cada contrato entre servicios** | Pruebas del productor y consumidor con un par simulado, incluidos casos de versión y fallo |
-| **Cada ruta SYS-* entre servicios** | Prueba determinista entre procesos conectados con entradas externas simuladas |
+| **Cada contrato entre subsistemas** | Pruebas del productor y consumidor con un par simulado, incluidos casos de versión y fallo |
+| **Cada ruta SYS-* entre subsistemas** | Prueba determinista entre procesos conectados con entradas externas simuladas |
 | **Telemetry companion** | Ejecutándose y registrando durante todas las pruebas anteriores; estado de UC adjunto a cada registro de evidencia |
 
 ---
@@ -367,8 +367,8 @@ flowchart LR
     classDef optional fill:#fef3c7,stroke:#d97706,color:#78350f,stroke-dasharray:5 3
     classDef hil fill:#fee2e2,stroke:#dc2626,color:#7f1d1d,stroke-dasharray:5 3
 
-    VL0["VL-0 — Lógica<br/>Unidad + sándwich + contratos de servicio<br/>Rutas deterministas · OBLIGATORIO"]:::mandatory
-    VL1["VL-1 — Mock / SIL<br/>+ prueba medida de varios servicios<br/>I/Q sintético · GnuRadio · OPCIONAL"]:::optional
+    VL0["VL-0 — Lógica<br/>Unidad + sándwich + contratos de subsistema<br/>Rutas deterministas · OBLIGATORIO"]:::mandatory
+    VL1["VL-1 — Mock / SIL<br/>+ prueba medida de varios subsistemas<br/>I/Q sintético · GnuRadio · OPCIONAL"]:::optional
     VL2["VL-2 — HIL<br/>+ aceptación extremo a extremo donde se declare<br/>HW real · enlace representativo · OPCIONAL<br/>solo en mock+real"]:::hil
 
     VL0 -->|"el usuario decide ▸"| VL1 -->|"el usuario decide ▸"| VL2
@@ -380,16 +380,16 @@ Cada nivel incluye todas las pruebas de los niveles inferiores. La escalera de s
 
 El usuario elige el nivel de verificación por módulo y por ruta de sistema, por ciclo. Cuatro restricciones:
 
-1. **Piso.** Cada módulo, contrato entre servicios y ruta de sistema declarada alcanza VL-0 en cada ciclo.
-2. **Honestidad.** Ninguna afirmación por módulo o de extremo a extremo supera el entorno realmente probado. Aprobar servicios por separado no demuestra un requisito entre servicios.
+1. **Piso.** Cada módulo, contrato entre subsistemas y ruta de sistema declarada alcanza VL-0 en cada ciclo.
+2. **Honestidad.** Ninguna afirmación por módulo o de extremo a extremo supera el entorno realmente probado. Aprobar subsistemas por separado no demuestra un requisito entre subsistemas.
 3. **Contexto de telemetría.** Todo registro de evidencia incluye las lecturas del telemetry companion para la unidad de cómputo durante esa prueba. La evidencia producida mientras la UC estaba fuera de su envolvente de operación declarada (temperatura, saturación de CPU, buffers perdidos) se marca y puede ser invalidada por el revisor.
 4. **Techo por modo HAL.** `mock-only` limita toda afirmación a VL-1. `mock+real` admite VL-2, pero cada módulo y ruta sigue declarando su nivel por ciclo: el Real HW HAL puede declararse en VL-0 (API de dispositivo simulada) durante un ciclo, en cuyo caso G2.2 no se activa y la declaración de honestidad lo indica.
 
 | Escenario | El usuario declara | G2 verifica |
 |---|---|---|
-| Iteración rápida | VL-0 en todos | Unidad + sándwich por módulo; contratos y rutas deterministas entre servicios |
+| Iteración rápida | VL-0 en todos | Unidad + sándwich por módulo; contratos y rutas deterministas entre subsistemas |
 | Validación de DSP | VL-1 para DSP; VL-0 el resto | Mock/SIL para DSP; piso VL-0 para cada ruta de sistema |
-| Pre-lanzamiento (`mock+real`) | VL-1 para la ruta borde → UI; VL-2 para `iq_acquisition` | Ruta multiservicio medida y adquisición HIL |
+| Pre-lanzamiento (`mock+real`) | VL-1 para la ruta borde → UI; VL-2 para `iq_acquisition` | Ruta multisubsistema medida y adquisición HIL |
 | Lanzamiento completo | Módulos y rutas en su `required_vl` | Cada afirmación en el nivel declarado en S1 |
 
 ### 8.3 Sub-compuertas
@@ -398,9 +398,9 @@ G2 ejecuta las pruebas que escribió S2 y no escribe ninguna; un nivel declarado
 
 | Sub-compuerta | Se activa cuando | Verifica |
 |---|---|---|
-| **G2.0** | Siempre | Pasan unidad, sándwich, contratos entre servicios y rutas deterministas; vectores dorados del Mock HAL; telemetry companion confirma UC nominal |
-| **G2.1** | VL-1+ declarado para módulo o ruta | I/Q sintético del Mock HAL; pasan pruebas Mock/SIL entre servicios afectados; métricas dentro de umbrales; telemetry companion confirma UC nominal |
-| **G2.2** | VL-2 declarado para módulo o ruta | Real HW HAL sobre SDR COTS (solo en `mock+real`); datasets de los procedimientos de lab de la SyRS (`PROTO-*`) con calibración y tolerancias declaradas; para rutas entre servicios, enlace representativo; mediciones dentro de los criterios; telemetry companion confirma UC nominal |
+| **G2.0** | Siempre | Pasan unidad, sándwich, contratos entre subsistemas y rutas deterministas; vectores dorados del Mock HAL; telemetry companion confirma UC nominal |
+| **G2.1** | VL-1+ declarado para módulo o ruta | I/Q sintético del Mock HAL; pasan pruebas Mock/SIL entre subsistemas afectados; métricas dentro de umbrales; telemetry companion confirma UC nominal |
+| **G2.2** | VL-2 declarado para módulo o ruta | Real HW HAL sobre SDR COTS (solo en `mock+real`); datasets de los procedimientos de lab de la SyRS (`PROTO-*`) con calibración y tolerancias declaradas; para rutas entre subsistemas, enlace representativo; mediciones dentro de los criterios; telemetry companion confirma UC nominal |
 
 *Trabajo futuro (FW-005, §5.4).* Para un módulo o una ruta basados en ML, G2 mide el modelo suministrado *dentro del sistema implementado* en el nivel declarado y comprueba los criterios `SYS-*` correspondientes. La metadata de rendimiento recibida en S1 orienta el diseño de pruebas, pero no sustituye estas mediciones.
 
@@ -444,7 +444,7 @@ Un **defecto** significa que V-SIL puede corregirlo internamente. La implementac
 
 | Clase de defecto | Se enruta a | Ejemplo |
 |---|---|---|
-| Defecto de diseño | S1 | El DAG tiene una dependencia no declarada; falta propiedad del estado o un contrato entre servicios |
+| Defecto de diseño | S1 | El DAG tiene una dependencia no declarada; falta propiedad del estado o un contrato entre subsistemas |
 | Defecto de módulo o integración | S2 | La FFT produce un valor incorrecto; la UI interpreta mal un mensaje válido del borde |
 
 **Autodiagnóstico:** si un módulo que *no* fue modificado falla durante la re-prueba → dependencia no declarada → defecto de diseño → S1.
@@ -510,7 +510,7 @@ flowchart LR
 
 ## 10 Salida Terminal
 
-El Prototipo Verificado presenta el árbol entregado (`src/<service>/`) separado del kit de verificación (`verification/`) y nombra el contexto verificador en el que G2 ejecutó las pruebas.
+El Prototipo Verificado presenta el árbol entregado (`src/<subsystem>/`) separado del kit de verificación (`verification/`) y nombra el contexto verificador en el que G2 ejecutó las pruebas.
 
 ```
 Prototipo Verificado — V-SIL v3
@@ -536,7 +536,7 @@ Prototipo Verificado — V-SIL v3
     alerts:            VL-0 (lógica)— unidad + integración sándwich
     history:           VL-0 (lógica)— unidad + integración sándwich
 
-  Evidencia por servicio y ruta de sistema:
+  Evidencia por subsistema y ruta de sistema:
     borde -> UI occupancy.v1: VL-1 — esquema + latencia en enlace simulado
     UI -> borde configure.v1: VL-0 — comandos, reintentos y duplicados
     PATH-001 / SYS-002 pantalla de ocupación: VL-1 — borde + UI, Mock HAL RF sintética
@@ -552,7 +552,7 @@ Prototipo Verificado — V-SIL v3
                   calibración: grado de tamizaje según SyRS §4;
                   tolerancias: ±2.1 dBi declaradas por el equipo de desarrollo (SyRS §5).
     Módulos VL-0: VERIFICADOS solo a nivel de lógica.
-    SYS-002: VERIFICADO entre servicios conectados con entrada sintética;
+    SYS-002: VERIFICADO entre subsistemas conectados con entrada sintética;
              sin afirmación de latencia en enlace real o HIL.
     Telemetry companion: UC nominal durante todas las ejecuciones de prueba.
 

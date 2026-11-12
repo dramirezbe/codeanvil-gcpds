@@ -15,14 +15,14 @@ skills:
   G0_valid_req_and_GT:
     project_dir: ".agents/skills/G0_valid_req_and_GT"
     prerequisite: "S0"
-  S1_design_services:
-    project_dir: ".agents/skills/S1_design_services"
+  S1_design_system:
+    project_dir: ".agents/skills/S1_design_system"
     prerequisite: "G0"
   G1_design_review:
     project_dir: ".agents/skills/G1_design_review"
     prerequisite: "S1"
-  S2_implement_services:
-    project_dir: ".agents/skills/S2_implement_services"
+  S2_implement_subsystems:
+    project_dir: ".agents/skills/S2_implement_subsystems"
     prerequisite: "G1"
   G2_adaptive_verification:
     project_dir: ".agents/skills/G2_adaptive_verification"
@@ -151,7 +151,7 @@ gt_reference_templates:
 # to its consumer before the normal repo-root -> project-root rewrite.
 shared_skill_assets:
   G2_adaptive_verification:
-    S2_implement_services:
+    S2_implement_subsystems:
       - "references/measurement.schema.json"
       - "scripts/validate_measurement.py"
       - "references/machine_evidence.md"

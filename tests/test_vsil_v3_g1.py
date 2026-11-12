@@ -91,14 +91,14 @@ def test_scaffolded_g1_checklist_carries_the_new_rows(tmp_path, db_path):  # noq
 def test_scaffold_carries_target_design_and_review_contracts(tmp_path, db_path):  # noqa: F811
     """A generated project must keep location, HAL and evidence requirements aligned."""
     cmd_create(None, tmp_path, project_name="Proj")
-    design = _scaffold_skill(tmp_path, "S1_design_services", "references", "SDD.md").read_text()
+    design = _scaffold_skill(tmp_path, "S1_design_system", "references", "SDD.md").read_text()
     checklist = _scaffold_skill(tmp_path, *CHECKLIST).read_text()
     hal_row = next(line for line in checklist.splitlines() if "G1.11 HAL ladder" in line)
     telemetry_row = next(line for line in checklist.splitlines() if "G1.12 Telemetry" in line)
 
     assert "| Target(s)" in design
     assert "intended device deduced from the HWC-* blocks" in design
-    assert "§0.4 and §1.6 resolve every service, path and level" in hal_row
+    assert "§0.4 and §1.6 resolve every subsystem, path and level" in hal_row
     assert "A target intent is undeclared/ambiguous" in hal_row
     assert "Mock HAL results are presented as VL-2" in hal_row
     assert "operating envelope per execution target (with COTS basis)" in telemetry_row

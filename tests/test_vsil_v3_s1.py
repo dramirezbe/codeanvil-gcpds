@@ -4,12 +4,12 @@ from test_create import TEMPLATES_DIR, _skill_text
 
 
 def _design_template() -> str:
-    path = TEMPLATES_DIR / "skills" / "S1_design_services" / "references" / "SDD.md"
+    path = TEMPLATES_DIR / "skills" / "S1_design_system" / "references" / "SDD.md"
     return path.read_text(encoding="utf-8")
 
 
 def test_s1_skill_declares_the_hal_mode():
-    text = _skill_text("S1_design_services")
+    text = _skill_text("S1_design_system")
 
     assert "HAL mode" in text
     assert "mock-only" in text
@@ -18,7 +18,7 @@ def test_s1_skill_declares_the_hal_mode():
 
 
 def test_s1_skill_declares_the_toolchain_per_service():
-    text = _skill_text("S1_design_services")
+    text = _skill_text("S1_design_system")
 
     assert "Toolchain" in text
     assert "uv · pytest" in text
@@ -27,7 +27,7 @@ def test_s1_skill_declares_the_toolchain_per_service():
 
 
 def test_s1_skill_designs_the_telemetry_companion_in_the_kit():
-    text = _skill_text("S1_design_services")
+    text = _skill_text("S1_design_system")
 
     assert "Telemetry companion" in text
     assert "verification/" in text
@@ -35,7 +35,7 @@ def test_s1_skill_designs_the_telemetry_companion_in_the_kit():
 
 def test_s1_separates_execution_targets_from_hal_and_levels():
     """Local VL-0/VL-1 (Mock HAL) must not be presented as VL-2; targets are design intent."""
-    text = " ".join(_skill_text("S1_design_services").split())
+    text = " ".join(_skill_text("S1_design_system").split())
     design = _design_template()
 
     assert "design intent" in text
@@ -51,14 +51,14 @@ def test_s1_separates_execution_targets_from_hal_and_levels():
 
 
 def test_s1_skill_accepts_design_defect_rework():
-    text = _skill_text("S1_design_services")
+    text = _skill_text("S1_design_system")
 
     assert "Verdict: design defect" in text
 
 
 def test_s1_skill_keeps_the_ml_training_source_rule():
     """FW-ML-1 — the ML rule stays exactly as written."""
-    text = _skill_text("S1_design_services")
+    text = _skill_text("S1_design_system")
 
     assert ("training source: Mock HAL (a software signal generator behind the HAL port) data plus labelling or,\n"
             "  failing that, real-hardware HAL data plus labelling.") in text
@@ -77,7 +77,7 @@ def test_s1_design_template_has_toolchain_hal_ladder_and_telemetry():
 
 
 def test_s1_skill_backs_up_before_overwriting_the_design():
-    text = " ".join(_skill_text("S1_design_services").split())
+    text = " ".join(_skill_text("S1_design_system").split())
 
     assert "codeanvil backup S1" in text
     assert "If it exits nonzero, stop and show its message; write no iteration." in text
@@ -86,7 +86,7 @@ def test_s1_skill_backs_up_before_overwriting_the_design():
 # --- bounded rework: design change set and SDD digest (2026-11-06) ----------
 
 def test_s1_skill_writes_a_bounded_design_change_set_on_rework():
-    text = " ".join(_skill_text("S1_design_services").split())
+    text = " ".join(_skill_text("S1_design_system").split())
 
     assert "design change set" in text
     assert "old decision, the new decision, the reason" in text
