@@ -146,7 +146,8 @@ Only when the GT supplies the oracle, `PROTO-*`, correction chains and uncertain
 budgets, implement `verification/run.sh vl2 --run-id <id>` and record its exact arguments in
 `test_run.md`. It writes exclusive per-run `verification/telemetry/<run-id>/measurement.json`,
 telemetry and checksummed capture/probe files according to G2's machine-evidence contract:
-`templates/skills/G2_adaptive_verification/references/machine_evidence.md`. Refuse an existing
+`templates/skills/S2_implement_services/references/machine_evidence.md` (locked shared assets
+copied into this skill by the scaffold). Refuse an existing
 run ID; a failed capture cannot be overwritten into passing evidence. If lab prerequisites are
 missing, VL-2 remains blocked; do not fill placeholders or invent a reference.
 

@@ -152,7 +152,7 @@ rejects unsupported device configuration, captures telemetry and raw device data
 declared correction chain and writes `measurement.json` with capture SHA-256 hashes. Always stop
 the device and telemetry on error; preserve partial failed evidence without overwriting it.
 Test the orchestration and failure paths with a fake device API; fake results never count as
-real VL-2 evidence. G2's `references/machine_evidence.md` and `measurement.schema.json` define
+real VL-2 evidence. This skill's locked `references/machine_evidence.md` and `measurement.schema.json` define
 the capture contract and scalar interval limitation. No declared oracle means no VL-2 run.
 
 On the target, captures are under `verification/telemetry/<run-id>/`. Each `fetch_evidence` call

@@ -1,9 +1,17 @@
 """T7: G2 runs the S2 evidence through the verifier subagent and writes the Verified Prototype."""
 
+import json
+import shutil
+import subprocess
+import sys
+
+import pytest
+
 from codeanvil.CLI.commands.create import cmd_create
-from codeanvil.config.paths import TEMPLATES_DIR
+from codeanvil.config.paths import CONFIG, TEMPLATES_DIR
 from codeanvil.init.create import _parse_skill_frontmatter
 from test_create import _scaffold_skill, _skill_text, db_path  # noqa: F401  (db_path is a fixture)
+from test_hil_measurements import REQUESTED_AT, SHA, captured  # noqa: F401 (fixture)
 
 SKILL = "G2_adaptive_verification"
 PROTOTYPE = TEMPLATES_DIR / "skills" / SKILL / "references" / "verified_prototype.md"
@@ -156,5 +164,34 @@ def test_scaffold_rewrites_the_machine_validation_command_and_ships_references(t
 
     assert "templates/skills/" not in machine
     assert ".agents/skills/G2_adaptive_verification/scripts/validate_measurement.py" in machine
-    assert ".agents/skills/G2_adaptive_verification/references/machine_evidence.md" in s2
+    assert ".agents/skills/S2_implement_services/references/machine_evidence.md" in s2
     assert _scaffold_skill(tmp_path, SKILL, "references", "measurement.schema.json").is_file()
+
+
+def test_s2_owns_an_executable_copy_of_canonical_measurement_assets(tmp_path, db_path, captured):
+    record, _ = captured
+    cmd_create(None, tmp_path, project_name="Proj")
+    producer = _scaffold_skill(tmp_path, SKILL)
+    consumer = _scaffold_skill(tmp_path, "S2_implement_services")
+    for relative in ("scripts/validate_measurement.py", "references/measurement.schema.json"):
+        assert (consumer / relative).read_bytes() == (producer / relative).read_bytes()
+    guide = (consumer / "references/machine_evidence.md").read_text()
+    assert ".agents/skills/S2_implement_services/scripts/validate_measurement.py" in guide
+    assert ".agents/skills/G2_adaptive_verification/" not in guide
+
+    # Removing the producer from this temporary scaffold proves the consumer is standalone.
+    shutil.rmtree(producer)
+    script = consumer / "scripts/validate_measurement.py"
+    args = [sys.executable, str(script), str(record), "--target", "pi", "--run-id", "synthetic-001",
+            "--deployment-sha256", SHA, "--codeanvil-version", "0.7.5", "--not-before", REQUESTED_AT]
+    result = subprocess.run(args, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout)["verdict"] == "human review required"
+
+
+@pytest.mark.parametrize("asset,error", [("references/missing.json", FileNotFoundError),
+                                         ("../outside.json", ValueError)])
+def test_broken_shared_asset_configuration_fails_explicitly(tmp_path, db_path, monkeypatch, asset, error):
+    monkeypatch.setitem(CONFIG, "shared_skill_assets", {SKILL: {"S2_implement_services": [asset]}})
+    with pytest.raises(error, match="shared skill asset"):
+        cmd_create(None, tmp_path, project_name="Proj")

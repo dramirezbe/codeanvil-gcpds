@@ -146,6 +146,16 @@ gt_reference_templates:
   - "StRS.md"
   - "SyRS.md"
 
+# Canonical assets maintained by one skill and copied into self-contained consumers.
+# Paths are relative to the producer/consumer skill; copied Markdown is rebound
+# to its consumer before the normal repo-root -> project-root rewrite.
+shared_skill_assets:
+  G2_adaptive_verification:
+    S2_implement_services:
+      - "references/measurement.schema.json"
+      - "scripts/validate_measurement.py"
+      - "references/machine_evidence.md"
+
 # Repo-root paths inside SKILL.md / RULES.md become project-relative after
 # copy. Order matters: applied in insertion order.
 path_replacements:
