@@ -1,6 +1,7 @@
 # Refactor HIL — autonomía de laboratorio y revisión antes del hardware
 
-**Estado: implementación autorizada y en curso con subagentes.** Base revisada:
+**Estado: refactor implementado con subagentes y validación local completa;
+validación física final pendiente.** Base revisada:
 `a155f01` en `feat/hil-pil`. Este documento recoge las seis correcciones del
 usuario a la [implementación anterior](2026-11-10_1057_hil_mcp.md).
 
@@ -78,7 +79,7 @@ workspace; proyectos distintos no se pisan. Compartir usuario/acceso no implemen
 ejecuciones simultáneas aisladas: el laboratorio coordina el uso, sin añadir un
 servicio de locks o un gestor de sesiones.
 
-## 2. Flujo operativo propuesto
+## 2. Flujo operativo
 
 1. Abrir/resumir el ciclo y comprobar el predecesor con las skills actuales.
 2. En S2, elegir el calendario de pausas existente y construir/probar como ahora.
@@ -325,11 +326,11 @@ los hashes GT/golden del resto de V-SIL: este recorte afecta a la reproducibilid
 HIL añadida en la pasada anterior. Archivos antiguos del usuario no se borran al
 dejar de ser obligatorios; no se añade un comando de migración o limpieza.
 
-La ejecución futura mantiene commits separados con pruebas/docs de cada unidad,
+La ejecución mantiene commits separados con pruebas/docs de cada unidad,
 revisión del padre y push cuando pase su validación, sin PR. El recorrido físico
 final requiere el destino disponible; no se presenta una simulación como HIL real.
 
-## 9. Revisión de este documento
+## 9. Revisión original del plan (histórico)
 
 Se contrastó con S2 Pause Schedule, su rework y formato de entrega; G2 y el
 verificador; `TEMPLATE_AGENT.md`; `reports.py`; transporte rsync; schema actual y
@@ -434,3 +435,49 @@ Las comprobaciones y límites de rollback se añaden aquí al cerrar cada unidad
   pruebas anteriores, `git diff --check` correcto. Runtime adicional: N/A, guía
   sin código ejecutable; el escenario stdio de R5 la sustenta. Rollback: README
   del servidor y esta entrada, sin cambiar comportamiento.
+
+## 11. Cierre y validación local
+
+R0–R5 implementados. `AGENTS.md`, README principal y plantilla pasiva generada
+describen el mismo flujo que las skills. Los reportes históricos no se reescriben;
+el registro anterior se marca como histórico. Las claves legacy y el estado de
+los equipos no se migran destructivamente. No hay PR, release, instalación global
+ni ejecución contra hardware durante esta implementación.
+
+Comprobaciones finales del padre:
+
+- `.venv/bin/python -m pytest tests/ templates/tests/ -q -rs` con Python 3.12.13:
+  **683 passed, 1 skipped**. La misma suite con Python 3.10.20 en un venv temporal:
+  **683 passed, 1 skipped**. El omitido es la sesión real opcional de Marconi,
+  que requiere `CODEANVIL_MCP_E2E=1`; no es una prueba HIL fallida.
+- `/tmp/codeanvil-hil-review-venv/bin/python -m pytest
+  templates/mcp/vsil_hil_mcp/tests/ -q`: **127 passed**, incluidos nueve escenarios
+  stdio para clientes legacy, MAC canónica y MAC adoptada.
+- `uv build --wheel --out-dir /tmp/codeanvil-hil-refactor-wheel`: wheel construido.
+  Smoke desde el wheel extraído, con HOME aislado, en
+  `/tmp/codeanvil-hil-refactor-wheel-smoke-dpbd9scl/project`: import del helper MAC,
+  contrato CLI, copia de skill MCP y checkers v2 autosuficientes S2/G2 correctos.
+  Secuencia sintética G2 FEEDBACK → S2 iteración 2 → G2 iteración 2: stale detectado
+  y eliminado al redeliverar contra el nuevo predecessor, en el mismo ciclo.
+- Pause Schedule S2 idéntico al anterior (1739 bytes). `git diff --check` correcto.
+  Estos escenarios son de software: ningún fixture cuenta como medición física.
+
+Commits de implementación y sus límites revisables:
+
+| Commit | Unidad |
+|--------|--------|
+| `19256d1` | Identidad MAC y claves locales |
+| `0588d19` | Comandos normales y protección de DB/estado |
+| `c8ed036` | Enrollment aditivo y compatibilidad legacy |
+| `ee7364d` | Actualización de herramienta y probes diagnósticos |
+| `d279c91` | Despliegue exclusivo del Git limpio y publicado |
+| `fe72cb6` | Metodología, revisión pre-HW y measurement v2 |
+| `933ce1b` | CLI por MAC, reutilización y verificación de acceso |
+| `5e54967` | Integración MCP con las tres clases de cliente |
+| `e2c99ef` | Guía operativa actual del servidor |
+
+Rollback del cierre documental: AGENTS fuente/generado, README principal y enlaces
+de estado de ambos registros; las unidades funcionales tienen sus límites arriba.
+La implementación se publica en `feat/hil-pil`. La validación física integral
+sigue pendiente y debe comenzar mostrando candidato/equipo/alcance y esperando
+el `continue` explícito del usuario; no queda código del plan por implementar.

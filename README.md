@@ -9,12 +9,12 @@ Works with any AI coding agent: Claude, Codex, OpenCode, Pi, or others. Runs on 
 **Current release:** [v0.7.5](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.7.5). Simple red-button deletion confirmation: Replaces typed-name UI confirmation with a direct question, Cancel and a red Delete button. Keeps explicit file-removal selection and existing identity/path safeguards.
 
 **On `feat/hil-pil` (unreleased):** the stages support remote PIL through the bundled
-[`vsil_hil_mcp`](templates/mcp/vsil_hil_mcp/README.md) server: named execution targets,
-per-target telemetry envelopes, pinned CodeAnvil versions and deployment provenance
-checked by a fresh verifier. Linux SSH access was smoke-tested on an RPi before this
-branch; final integrated hardware validation is still pending. Remote VL-0/VL-1
-remain VERIFIED with Mock HAL inputs. The captured VL-2 interface requires a
-project-declared oracle, protocol and corrections before any VALIDATED claim.
+[`vsil_hil_mcp`](templates/mcp/vsil_hil_mcp/README.md) server. Equipment is recognized
+by MAC and each PC reuses its own access keys across projects. The agent prepares
+and tests hardware after an explicit code-review pause; normal commands run directly
+and destructive actions use trusted. A fresh verifier checks GT criteria with a
+small measurement record. Remote Mock HAL tests remain VERIFIED (PIL). Final
+integrated hardware validation of this branch is still pending.
 
 The first complete mock run, including a G2 → S1 rework loop, is archived under
 [`methodology/test/T0_FM-RPI-RTL-mock/`](methodology/test/T0_FM-RPI-RTL-mock/).
@@ -220,7 +220,7 @@ cd ~/projects/sdr-lab && claude mcp list
 
 **Marconi v1.0 limitations**: simulation and file-based analysis only. No live hardware source blocks or real-time GUI sinks in the vocabulary — use the escape-hatch skill to write raw GRC flowgraphs or Python scripts for those. Hardware support (RTL-SDR, HackRF, USRP via gr-soapy/gr-uhd) is planned for Marconi v1.2.
 
-### Remote PIL and captured HIL evidence
+### Agent-operated PIL/HIL
 
 Use this only when the compute unit is a separate Linux machine reached over SSH.
 An SDR attached to the developer host uses the local workflow.
@@ -231,18 +231,23 @@ codeanvil mcp enable vsil_hil_mcp
 codeanvil credential-setup -u <admin-user> -i <target-host> --port 22
 ```
 
-The bootstrap sets up access for `codeanvil-agent`. Install the same CodeAnvil
-release on the target before running the kit; the MCP's printed provisioning
-script pins that release. S1 records target placement and telemetry limits, S2
-deploys and records input hashes, and G2 checks them while executing fresh tests.
-The collector runs there with `codeanvil telemetry`; optional `--fsync` syncs each
-sample. Missing or incomplete telemetry is an evidence gap even if the companion
-exits successfully.
+The bootstrap discovers MACs and adds this PC's public keys to `codeanvil-agent`.
+Repeating it in another project reuses access; another PC authorizes its own keys
+without replacing yours. Local private keys never enter the project's metadata.
+
+S2 retains its configurable pauses and also stops for explicit `continue` before
+HW update/deployment/testing. The agent then updates tool and dependencies from
+their published refs, synchronizes clocks and deploys the clean, pushed Git
+candidate. Sync preserves databases and declared persistent paths. Normal sudo,
+scripts and package commands run directly; destructive actions use trusted.
+The G2 parent prepares the target and its fresh verifier runs the actual tests.
 
 The [server guide](templates/mcp/vsil_hil_mcp/README.md) covers setup and observed
-target probes. [Captured VL-2 evidence](templates/skills/G2_adaptive_verification/references/machine_evidence.md)
-requires a declared reference signal and protocol; it cannot be obtained merely
-by running Mock HAL tests on a remote processor.
+target probes. [Measurement v2](templates/skills/G2_adaptive_verification/references/machine_evidence.md)
+records functional or metrological criteria without deployment hashes. Calibration
+is needed when GT/the conclusion requires it. Missing telemetry is investigated
+to decide which measures need repeating; it is never replaced with zeros. Real
+hardware conclusions require real tests, beyond running Mock HAL on a remote CPU.
 
 ## How it works
 
