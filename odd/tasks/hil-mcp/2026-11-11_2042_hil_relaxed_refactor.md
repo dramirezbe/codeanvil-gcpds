@@ -1,6 +1,6 @@
 # Refactor HIL — autonomía de laboratorio y revisión antes del hardware
 
-**Estado: plan de refactor, todavía no aplicado al runtime.** Base revisada:
+**Estado: implementación autorizada y en curso con subagentes.** Base revisada:
 `a155f01` en `feat/hil-pil`. Este documento recoge las seis correcciones del
 usuario a la [implementación anterior](2026-11-10_1057_hil_mcp.md).
 
@@ -351,3 +351,14 @@ de varios PCs al mismo usuario remoto. Se contrastó con el almacenamiento local
 de claves, el append de `authorized_keys` y el confinamiento rsync actuales;
 `git diff --check` correcto. Runtime: N/A, propuesta documental. Rollback de esta
 ampliación: sus dos decisiones, subsección de alta y unidad R0 únicamente.
+
+## 10. Ejecución autorizada
+
+El usuario autorizó implementar todo el refactor y pushear en `feat/hil-pil`.
+`remote_access` implementa R0; `telemetry_ci`, R1/transporte de R2;
+`pil_methodology`, evidencia y contratos R2–R4. El padre revisa, integra, prueba,
+commitea y pushea cada unidad. Sin PR ni release. Ningún test simulado se registra
+como una medición física. El checkpoint previo a HW se aplica también a cualquier
+validación física que se proponga durante esta entrega.
+
+Las comprobaciones y límites de rollback se añaden aquí al cerrar cada unidad.
