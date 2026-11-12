@@ -34,6 +34,16 @@ install_pkg() {
   else echo "install $* manually (no known package manager)" >&2; exit 1; fi
 }
 
+# The pinned git URL and optional uv bootstrap need these even on a minimal UC.
+# Check before creating the agent user or changing credentials, so a missing
+# package manager or failed prerequisite installation stops provisioning early.
+for install_tool in git curl; do
+  command -v "$install_tool" >/dev/null 2>&1 || install_pkg "$install_tool"
+  command -v "$install_tool" >/dev/null 2>&1 || {
+    echo "$install_tool is still unavailable after installation" >&2; exit 1;
+  }
+done
+
 # 1. unprivileged user + dedicated workspace
 id -u "$HIL_USER" >/dev/null 2>&1 || useradd --create-home --shell /bin/bash "$HIL_USER"
 HIL_HOME=$(getent passwd "$HIL_USER" | cut -d: -f6)
