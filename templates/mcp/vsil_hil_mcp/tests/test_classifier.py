@@ -30,3 +30,22 @@ def test_automatic_diagnostics_and_workspace_runners(cmd):
 ])
 def test_mutations_expansions_and_unrecognized_commands_need_trusted(cmd):
     assert classify(cmd, WS) == PRIVILEGED
+
+
+@pytest.mark.parametrize("cmd", [
+    "python --version", "python -V", "python3 --version", "python3 -V",
+    "uv --version", "uv -V", "node --version", "pnpm --version", "tsc --version",
+])
+def test_exact_toolchain_version_queries_need_no_workspace(cmd):
+    assert classify(cmd) == ALLOW
+
+
+@pytest.mark.parametrize("cmd", [
+    "python3 --version script.py", "python3 --version -c 'print(1)'", "uv --version sync",
+    "node --version script.js", "node --version -e 'process.exit()'", "node -e 'process.exit()'",
+    "pnpm --version add package", "pnpm add package", "tsc --version --build",
+    "node -V", "pnpm -V", "tsc -V",
+    f"cd {WS} && node -e 'process.exit()'", f"cd {WS} && pnpm add package",
+])
+def test_version_exception_does_not_grant_other_toolchain_commands(cmd):
+    assert classify(cmd, WS) == PRIVILEGED

@@ -17,6 +17,14 @@ _READ_ONLY = frozenset({
     "readlink", "realpath", "grep", "sha256sum",
 })
 _WORKSPACE_RUNNERS = frozenset({"python", "python3", "pytest", "uv"})
+_VERSION_FLAGS = {
+    "python": {"--version", "-V"},
+    "python3": {"--version", "-V"},
+    "uv": {"--version", "-V"},
+    "node": {"--version"},
+    "pnpm": {"--version"},
+    "tsc": {"--version"},
+}
 # Shell expansion is intentionally refused even inside quotes. This coarse gate
 # may ask for a harmless command, but must not silently evaluate substitutions.
 _SHELL_EXPANSION = re.compile(r"[$`\n\r\x00]")
@@ -24,6 +32,10 @@ _SHELL_EXPANSION = re.compile(r"[$`\n\r\x00]")
 
 def _command_allowed(words: list[str], in_workspace: bool) -> bool:
     executable, *args = words
+    # G1 observes installed toolchains without deploying a project. Exact queries
+    # need no workspace; additional arguments retain the existing runner policy.
+    if len(args) == 1 and args[0] in _VERSION_FLAGS.get(executable, set()):
+        return True
     if executable in _READ_ONLY:
         return True
     if executable == "hostname":
