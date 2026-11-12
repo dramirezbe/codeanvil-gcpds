@@ -120,7 +120,7 @@ def test_g2_parent_prepares_but_fresh_verifier_executes_reviewed_hw():
     assert "No declared `targets:` means local execution" in text
     assert "never silently substitute the developer host" in text
     assert "Stop and wait for explicit `continue`" in text
-    assert "clean Git tree and all candidate commits pushed" in text
+    assert "clean Git tree and the candidate committed" in text
     assert "parent completes preparation before launching it" in text
     assert "fresh verifier runs the recorded real HW command" in text
     assert "not an exact-SemVer gate" in text
@@ -131,6 +131,16 @@ def test_g2_parent_prepares_but_fresh_verifier_executes_reviewed_hw():
     assert "Execution equipment and preparation" in prototype
     assert "deployment_manifest.json" not in text
     assert "capture_request.json" not in text
+
+
+def test_g2_enrolls_hardware_only_when_vl2_is_declared():
+    """Credentials/IP/MAC are written at G2, only for a mock+real VL-2 design, and block the HW stage."""
+    text = " ".join(_g2_text().split())
+    assert "Hardware credentials, IP and MAC appear only here" in text
+    assert "codeanvil credential-setup" in text
+    assert "blocks the real-HW stage" in text
+    assert "`mock-only` designs and designs limited to VL-0/VL-1 never trigger this step" in text
+    assert "This version supports exactly one target" in text
 
 
 def test_scaffolded_g2_and_verifier_keep_parent_pauses_and_causal_feedback(tmp_path, db_path):

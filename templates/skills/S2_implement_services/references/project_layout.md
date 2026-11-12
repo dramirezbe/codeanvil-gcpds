@@ -152,7 +152,7 @@ those fake results as real hardware evidence. This skill's locked `references/ma
 and `measurement.schema.json` describe the small record. Functional tests need no universal
 oracle, file hashes or calibration budget; satisfy lab inputs when the GT/conclusion needs them.
 
-Before remote updates/deployment or local HW tests, the parent shows the clean, pushed candidate
+Before remote updates/deployment or local HW tests, the parent shows the clean, committed candidate (pushed when the branch tracks a remote)
 and planned operations and waits for explicit `continue`. After review the agent updates tool,
 app and dependencies from their own published refs, synchronizes clocks before measurement and
 uses monotonic durations while acquiring. No deployment manifest or per-file checker is built.

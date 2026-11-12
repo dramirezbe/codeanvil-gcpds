@@ -297,3 +297,19 @@ def test_cli_has_no_target_or_workspace_alias_picker():
     assert not hasattr(args, "target") and not hasattr(args, "workspace")
     with pytest.raises(SystemExit):
         parser.parse_args(["credential-setup", "-u", "pi", "-i", "pi", "--target", "alias"])
+
+
+def test_second_distinct_device_is_rejected_and_same_device_updates_in_place(project_dir, remote, caplog):
+    mod.cmd_credential_setup("pi", "first-host", password="secret")
+    before = _data(project_dir)["targets"]
+    mod.cmd_credential_setup("pi", "moved-host", password="secret", port=2222)  # same MACs: update in place
+    row = _data(project_dir)["targets"]
+    assert len(row) == 1 and row[0]["device_id"] == DEVICE and row[0]["host"] == "moved-host"
+    assert before[0]["name"] == row[0]["name"]
+    remote["macs"] = ["00:11:22:33:44:55"]  # a different device, first contact
+    remote["authorized"] = False
+    bootstraps = len(remote["bootstraps"])
+    with pytest.raises(SystemExit):
+        mod.cmd_credential_setup("pi", "other-host", password="secret")
+    assert "multi-device enrollment is out of scope" in caplog.text
+    assert _data(project_dir)["targets"] == row and len(remote["bootstraps"]) == bootstraps

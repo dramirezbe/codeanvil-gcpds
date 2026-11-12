@@ -152,6 +152,14 @@ def test_cmd_create_name_flag_scaffolds_derived_folder(tmp_path, db_path):
     assert row["path"] == str(project.resolve())
 
 
+def test_cmd_create_initialises_git_repo_and_gitignore(tmp_path, db_path):
+    cmd_create(None, tmp_path, project_name="Proj")
+
+    project = tmp_path / "proj"
+    assert (project / ".git").is_dir()
+    assert (project / ".gitignore").is_file()
+
+
 def test_cmd_create_name_flag_with_explicit_folder(tmp_path, db_path):
     cmd_create(None, tmp_path, project_name="My SDR Lab", folder="my_custom_folder")
 

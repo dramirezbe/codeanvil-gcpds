@@ -326,24 +326,25 @@ def test_layout_starts_the_collector_through_the_runtime():
     assert "never lists `psutil`" in text
 
 
-def test_s2_requires_published_candidate_and_a_real_pre_hw_stop():
+def test_s2_is_local_only_and_defers_hardware_to_g2():
     text = " ".join(_skill_text(SKILL).split())
-    assert "No `targets:` means **local**" in text
-    assert "discovered MAC" in text and "project UUID workspace" in text
-    assert "git status --porcelain" in text
-    assert "HEAD is committed, clean and fully pushed" in text
-    assert "Stop and wait for explicit `continue`" in text
-    assert "Silence, timeouts and full host access are not consent" in text
-    assert "Do not create a partial iteration" in text
-    assert "Checkpoint: pre-HW review" in text
-    assert "systemctl" in text and "ordinary door" in text
-    assert "same reviewed acquisition within scope" in text
+    assert "S2 runs **locally**" in text
+    assert "no remote deployment, enrollment or real-hardware test at S2" in text
+    assert "the remote target and its credentials are created at G2" in text
+    assert "the actual device, deployment and the pre-HW review belong to G2" in text
+    assert "`stop`: write no iteration" in text
+    # the remote / real-HW machinery moved to G2 and must not remain in S2
+    assert "code_sync" not in text
+    assert "fetch_evidence" not in text
+    assert "init_codeanvil" not in text
 
 
-def test_s2_agent_runs_hw_with_small_records_and_conditional_metrology():
+def test_s2_writes_hw_scripts_for_g2_with_small_records_and_conditional_metrology():
     skill = " ".join(_skill_text(SKILL).split())
     layout = " ".join(_layout_text().split())
-    assert "the agent runs actual hardware tests" in skill
+    assert "**Write** `verification/run.sh vl2`" in skill
+    assert "G2 runs these scripts on the enrolled target" in skill
+    assert "S2 builds the code, never the measurement" in skill
     assert "Functional HW tests need no universal oracle or calibration" in skill
     assert "inconclusive" in skill
     assert "<cycle>_<iteration>_<codeanvil now --machine>" in skill
@@ -361,8 +362,8 @@ def test_scaffolded_local_hw_uses_checkpoint_and_keeps_existing_report_state(tmp
     skill = " ".join(_scaffold_skill(tmp_path, SKILL, "SKILL.md").read_text().split())
     layout = " ".join(_scaffold_skill(tmp_path, SKILL, "references", "project_layout.md").read_text().split())
     guide = " ".join(_scaffold_skill(tmp_path, SKILL, "references", "machine_evidence.md").read_text().split())
-    assert "testing a local device" in skill
-    assert "On `stop`, write no iteration" in skill
+    assert "no remote deployment, enrollment or real-hardware test at S2" in skill
+    assert "`stop`: write no iteration" in skill
     assert "Based on: G1 iteration <N>" in skill
     assert "Checkpoint:" in layout
     assert "waits for explicit `continue`" in guide

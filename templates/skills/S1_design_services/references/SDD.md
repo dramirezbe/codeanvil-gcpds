@@ -17,7 +17,7 @@
 | G0 approved    | {{SHA-256 of StRS.md and SyRS.md; information only}}  |
 | Gate H         | {{date + who authorised, copied from G0.md}}                |
 | Services       | {{service IDs; a single service is valid}}                  |
-| Target(s)      | {{local, or the names selected from project.yaml targets:; one target per service}} |
+| Target(s)      | {{local, or the intended device deduced from the HWC-* blocks; one target per service}} |
 | HAL mode       | {{mock-only / mock+real}}                                   |
 | Toolchain      | {{one entry per service: SVC-xxx: <package> · <language> · <package manager> · <test runner>}} |
 | ML model       | {{omit if not used; otherwise reference to the supplied package}} |
@@ -30,11 +30,15 @@
      <package> is a valid identifier and names src/<package>/. S2 builds with it and never
      chooses another. -->
 
-<!-- Target(s) is the execution location, independent of HAL mode and verification level.
-     No targets: block means local execution. Otherwise use declared target names, never infer
-     an IP or copy a personal SSH identity. Resolve multiple possible targets before delivery;
-     S1 reads project.yaml but never enrolls a target. Remote VL-0/VL-1 use the Mock HAL on the
-     real compute unit (PIL) and remain VERIFIED: no real RF or VL-2 claim follows from SSH. -->
+<!-- Target(s) is design intent, independent of HAL mode and verification level: `local`, or the
+     intended device deduced from the HWC-* blocks (e.g. "Raspberry Pi 4"). It is not a
+     project.yaml targets: entry; never write an IP, MAC, credential or personal SSH identity.
+     Resolve multiple possible devices before delivery. S1 never enrolls a target: the concrete
+     project.yaml entry is created at G2 by credential-setup, only if the design requires VL-2.
+     VL-0/VL-1 run locally with the Mock HAL (no hardware) and remain VERIFIED; VL-2 is real
+     SIL/HIL on the actual hardware at G2. -->
+
+
 
 ---
 

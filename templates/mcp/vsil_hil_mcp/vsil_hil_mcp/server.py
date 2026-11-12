@@ -106,16 +106,26 @@ def ssh_exec_cmd_trusted(cmd: str, target: str = "") -> str:
 
 @mcp.tool()
 def code_sync(target: str = "") -> str:
-    """Deploy the clean, published Git candidate after the stage's pre-hardware checkpoint."""
+    """Deploy the clean, committed Git candidate after the stage's pre-hardware checkpoint.
+
+    A local-only commit (no remote upstream) is allowed and deployed, with a warning
+    that the evidence is reproducible on this machine only; a tracked remote still
+    requires the commit to be pushed."""
     root, tgt, keys = _context(target)
     role = "exec" if getattr(tgt, "sync_via_exec", False) else "deploy"
     try:
         res = transport.rsync_push(tgt, _need_key(keys[role]), root)
     except config.ConfigError:
-        audit(root, tgt.name, "code_sync", "unpublished or uncommitted deployment refused", None)
+        audit(root, tgt.name, "code_sync", "uncommitted or dirty deployment refused", None)
         raise
-    audit(root, tgt.name, "code_sync", f"deploy published Git candidate {res.get('revision', '')}", res["exit_code"])
-    return json.dumps({"summary": f"code_sync -> {tgt.name}:{tgt.workspace}", **res})
+    published = bool(res.get("published"))
+    kind = "published" if published else "local-only"
+    audit(root, tgt.name, "code_sync", f"deploy {kind} Git candidate {res.get('revision', '')}", res["exit_code"])
+    payload = {"summary": f"code_sync -> {tgt.name}:{tgt.workspace}", **res}
+    if not published:
+        payload["warning"] = ("Deployed from a LOCAL commit not pushed to any remote. The HIL evidence is "
+                              "reproducible only from this machine's repository, not by third parties.")
+    return json.dumps(payload)
 
 
 @mcp.tool()
