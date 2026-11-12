@@ -483,3 +483,21 @@ de estado de ambos registros; las unidades funcionales tienen sus límites arrib
 La implementación se publica en `feat/hil-pil`. La validación física integral
 sigue pendiente y debe comenzar mostrando candidato/equipo/alcance y esperando
 el `continue` explícito del usuario; no queda código del plan por implementar.
+
+## 12. Guía de acceso para la persona
+
+Solicitud posterior: incluir en la skill una guía para configurar el acceso al HW
+antes de empezar. `vsil-hil-usage` enlaza `references/hardware_access.md` al inicio
+y pide resolver primero el acceso: SSH/admin, alta por MAC, instalación/habilitación
+del MCP y comprobación de solo lectura como `codeanvil-agent`, sudo, rsync y
+workspace. La guía distingue reutilización de claves, otro PC, equipo local y
+fallos habituales. Ausencia de CodeAnvil remoto se prepara después de la pausa;
+acceso confirmado no autoriza despliegue ni sustituye el checkpoint pre-HW.
+
+Validación: `pytest tests/test_mcp_manager.py -q`, **35 passed**;
+`git diff --check` correcto. Escenario temporal con `copy_mcp_skills`: guía y enlace
+relativo presentes e idénticos al origen. Ejemplos shell comprobados con `bash -n`
+y argumentos CodeAnvil con su parser real. Sin ejecución remota. Metadata y rutas
+de skills existentes no cambian, por lo que no hace falta refrescar el registro.
+Rollback: sección inicial de `usage/SKILL.md`, nueva referencia y esta entrada;
+sin cambios en credenciales, gates ni reportes.

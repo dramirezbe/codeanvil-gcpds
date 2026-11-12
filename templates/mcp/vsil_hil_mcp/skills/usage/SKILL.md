@@ -11,6 +11,24 @@ Follow the current S2/G2 skill: it owns the pre-HW pause, tests and report contr
 The MCP is a command proxy, with credentials kept in local storage, not an orchestrator.
 Never read private keys or start a separate direct SSH/rsync session.
 
+## First: help the person configure access
+
+Before starting a remote workflow, share [the hardware access guide](references/hardware_access.md)
+with the person and resolve access first. It covers their SSH/admin prerequisites,
+`credential-setup`, MCP installation/connection and a read-only access check.
+The guide's manual SSH commands are for the person; the agent uses MCP tools.
+
+If remote equipment is intended but not enrolled, help the person complete that
+setup instead of silently running on the local host. If already enrolled, reuse
+access and check it without repeating password prompts or generating keys.
+Through `ssh_exec_cmd`, confirm the remote identity is `codeanvil-agent`, observe
+the OS/architecture, check `sudo -n true`, `command -v rsync` and that the declared
+project workspace exists and is writable. Return the equipment/endpoint/workspace
+and access result; diagnose failures before continuing remote work. Missing target
+CodeAnvil is preparation for after the pre-HW review, not an enrollment failure.
+Access readiness does not authorize deployment, tool updates or device tests;
+the S2/G2 pre-HW checkpoint still applies.
+
 ## Access and equipment
 
 A human enrolls equipment from a project with:
