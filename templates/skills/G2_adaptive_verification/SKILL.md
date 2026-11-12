@@ -82,6 +82,21 @@ say so and ask the user to run G2 in a fresh session; run nothing in the session
 In a fresh session that did not run S2, G2 runs steps 2–5 itself and records
 `Verifier` = `fresh session`.
 
+## Hardware enrollment (pre-G2, parent only)
+
+Hardware credentials, IP and MAC appear only here, never earlier in the flow. The step applies when
+the SDD declares `HAL mode` `mock+real` **and** a VL-2 claim **and** `.codeanvil/project.yaml` has
+no enrolled `targets:` entry. Then **stop** and ask the human to run, from the project root:
+
+`codeanvil credential-setup -u <admin-user> -i <host> --port 22`
+
+This **blocks the real-HW stage** (G2.2 and the pre-HW review below) until enrollment is done and
+`targets:` holds the target; re-check `project.yaml` after the human reports it. Silence/timeouts
+are not consent. G2.0 and G2.1 need no hardware and may proceed locally while it is pending.
+`mock-only` designs and designs limited to VL-0/VL-1 never trigger this step: do not mention it.
+This version supports exactly one target; `credential-setup` rejects a different second device.
+The pre-HW review checkpoint below then follows enrollment; it is not a second checkpoint.
+
 ## Pre-HW review and preparation (parent only)
 
 Before remote update/deployment or any local device test, the G2 parent shows the code/kit,

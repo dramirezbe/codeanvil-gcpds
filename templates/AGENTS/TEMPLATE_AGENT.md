@@ -133,6 +133,19 @@ inputs remain VERIFIED (PIL). The G2 skill defines measurement v2, methods suite
 to GT tolerances and diagnosis of missing telemetry. Calibration applies when
 the requirement/conclusion needs it. Only the human sets the gate verdict.
 
+### Hardware and MCP flow
+
+Hardware-related work is split by time, so nothing hardware-related is written before it is needed:
+
+1. **Hardware description** (device, limits) belongs in the Ground Truth: the `HWC-*` blocks
+   of `.codeanvil/GT/StRS.md`, at the methodology entry.
+2. **MCP provisioning** happens once, at a pre-S2 analysis inside the S2 skill. The agent reads
+   the approved design and proposes `codeanvil mcp add <name>` for each MCP it needs (`marconi`
+   for RF/DSP, `vsil_hil_mcp` for VL-2). You authorize each add, then **restart the agent
+   manually** so its tools load. Re-running S2 after the restart finds the MCP present and continues.
+3. **Hardware enrollment** (credentials, IP, MAC) via `codeanvil credential-setup` happens
+   **only at G2**, and only if the design requires VL-2. Nothing hardware-related is written before G2.
+
 ## Ground Truth (GT)
 
 The `.codeanvil/GT/` directory holds human-authored `.md` files:

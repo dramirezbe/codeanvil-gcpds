@@ -97,10 +97,10 @@ def test_scaffold_carries_target_design_and_review_contracts(tmp_path, db_path):
     telemetry_row = next(line for line in checklist.splitlines() if "G1.12 Telemetry" in line)
 
     assert "| Target(s)" in design
-    assert "No targets: block means local execution" in design
-    assert "§1.6 resolve every service, path and level" in hal_row
-    assert "A target is undeclared/ambiguous" in hal_row
-    assert "PIL is presented as VL-2" in hal_row
+    assert "intended device deduced from the HWC-* blocks" in design
+    assert "§0.4 and §1.6 resolve every service, path and level" in hal_row
+    assert "A target intent is undeclared/ambiguous" in hal_row
+    assert "Mock HAL results are presented as VL-2" in hal_row
     assert "operating envelope per execution target (with COTS basis)" in telemetry_row
     assert "Host readings cannot stand in for a remote target" in telemetry_row
 

@@ -74,19 +74,21 @@ Working files live in `.codeanvil/design/`, outside the cycle report folder.
   kit contract; real hardware runs require the pre-HW review checkpoint in S2/G2.
 - The Mock HAL (§1.6) and the Telemetry companion (§1.7) are always designed. The Telemetry
   companion lives in `verification/telemetry/`: it is never a module and never under `src/`.
-- **Target(s)** (Meta) maps every service and verification path to `local` or a named entry in
-  `.codeanvil/project.yaml` `targets:`. No targets means local execution. When several targets
-  could apply, resolve the selection from GT or ask the user; never pick the first silently.
-  S1 does not register targets or change credentials. In §1.6 name where each level runs and in
-  §1.7 give an operating envelope per target, sourced from its COTS constraints. Missing target
-  declarations or limits are design risks to resolve, never guessed values.
-- Remote equipment is enrolled by discovered MAC, with legacy IDs readable for compatibility.
-  Use its declared endpoint and UUID-scoped project workspace; do not ask the user to invent a
-  target alias or put local private key paths in shared project metadata.
-- Execution location and HAL mode are separate axes: remote VL-0/VL-1 on the real compute unit
-  are PIL and remain **VERIFIED**, using Mock HAL inputs. They do not require `mock+real` and do
-  not establish VL-2 or real-RF validation. Remote execution uses `vsil_hil_mcp`; local execution
-  uses the runtime's normal tools.
+- **Target(s)** (Meta) is **design intent**: it maps every service and verification path to
+  `local` or to the intended device, **deduced from the `HWC-*` blocks** of the StRS. It is not a
+  `.codeanvil/project.yaml` `targets:` entry. When several devices could apply, resolve the
+  selection from GT or ask the user; never pick the first silently. S1 never enrolls a target and
+  never writes or asks for credentials, IP or MAC: the concrete `project.yaml` target entry is
+  created later, at G2, by `credential-setup`, and only if the design requires VL-2. In §1.6 name
+  where each level runs and in §1.7 give an operating envelope per target, sourced from its COTS
+  constraints. Missing target intent or limits are design risks to resolve, never guessed values.
+- Verification ladder: VL-0 and VL-1 run **locally with no hardware** (Mock HAL, and in `mock+real`
+  the Real HW HAL against a fake device API). VL-2 is real SIL/HIL on the actual hardware at G2.
+  Remote PIL at S2 is out of scope: do not design a remote deployment for VL-0/VL-1. Do not ask
+  the user to invent a target alias or put local private key paths in shared project metadata.
+- Execution location and HAL mode are separate axes. VL-0/VL-1 with Mock HAL inputs run locally
+  and remain **VERIFIED**; they do not establish VL-2 or real-RF validation. Real-hardware
+  execution happens at G2 through `vsil_hil_mcp`; local execution uses the runtime's normal tools.
 - **Toolchain** (Meta) names, per service, `SVC-xxx: <package> · <language> · <package manager> ·
   <test runner>`, using only `Python · uv · pytest` or `TypeScript · pnpm · vitest`. `<package>`
   is a valid identifier and names `src/<package>/`. Derive it from §1.3.1 and the deployment

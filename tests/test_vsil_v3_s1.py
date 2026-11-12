@@ -34,14 +34,16 @@ def test_s1_skill_designs_the_telemetry_companion_in_the_kit():
 
 
 def test_s1_separates_execution_targets_from_hal_and_levels():
-    """PIL must not accidentally raise a Mock HAL claim to VL-2."""
+    """Local VL-0/VL-1 (Mock HAL) must not be presented as VL-2; targets are design intent."""
     text = " ".join(_skill_text("S1_design_services").split())
     design = _design_template()
 
-    assert "No targets means local execution" in text
+    assert "design intent" in text
+    assert "deduced from the `HWC-*` blocks" in text
     assert "never pick the first silently" in text
-    assert "do not require `mock+real`" in text
-    assert "PIL and remain **VERIFIED**" in text
+    assert "VL-0 and VL-1 run **locally with no hardware**" in text
+    assert "Remote PIL at S2 is out of scope" in text
+    assert "run locally and remain **VERIFIED**" in text
     assert "| Target(s)" in design
     assert "**Where each level runs:**" in design
     assert "operating envelope (repeat per execution target)" in design

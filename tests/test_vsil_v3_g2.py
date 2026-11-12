@@ -133,6 +133,16 @@ def test_g2_parent_prepares_but_fresh_verifier_executes_reviewed_hw():
     assert "capture_request.json" not in text
 
 
+def test_g2_enrolls_hardware_only_when_vl2_is_declared():
+    """Credentials/IP/MAC are written at G2, only for a mock+real VL-2 design, and block the HW stage."""
+    text = " ".join(_g2_text().split())
+    assert "Hardware credentials, IP and MAC appear only here" in text
+    assert "codeanvil credential-setup" in text
+    assert "blocks the real-HW stage" in text
+    assert "`mock-only` designs and designs limited to VL-0/VL-1 never trigger this step" in text
+    assert "This version supports exactly one target" in text
+
+
 def test_scaffolded_g2_and_verifier_keep_parent_pauses_and_causal_feedback(tmp_path, db_path):
     cmd_create(None, tmp_path, project_name="Proj")
     g2 = " ".join(_scaffold_skill(tmp_path, SKILL, "SKILL.md").read_text().split())

@@ -133,6 +133,13 @@ def _identity_for(access, rows: list[dict], host: str, port: int):
     return device_id, key_id, macs
 
 
+def _reject_second_target(rows: list[dict], device_id: str, key_id: str, host: str, port: int):
+    """This version supports exactly one remote target; same-device updates are unaffected."""
+    if rows and not _matching_project_rows(rows, device_id, key_id, host, port):
+        raise ValueError("a different target is already enrolled; multi-device enrollment is "
+                         "out of scope in this version")
+
+
 def _link_project(manifest: Path, data: dict, rows: list[dict], device_id: str, key_id: str,
                   row: dict, host: str, port: int, admin: str, workspace: str):
     matches = _matching_project_rows(rows, device_id, key_id, host, port)
@@ -183,6 +190,7 @@ def cmd_credential_setup(user: str, ip: str, password: str | None = None,
                 access = enrollment.discover_with_admin(ip, port, user, password,
                                                        endpoint_pin or Path(temporary) / "known_hosts")
             device_id, key_id, macs = _identity_for(access, rows, ip, port)
+            _reject_second_target(rows, device_id, key_id, ip, port)  # before keys or remote changes
             keys = enrollment.ensure_keys(key_id)
             _copy_known_hosts(access.known_hosts, keys["known_hosts"])
             try:
