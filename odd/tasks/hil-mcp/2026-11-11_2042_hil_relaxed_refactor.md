@@ -16,6 +16,8 @@ utilizan la puerta `trusted`.
 |------|----------|
 | SSH normal | Permitir comandos generales, scripts, paquetes, métricas y `sudo`; retirar la lista de comandos permitidos |
 | Acciones destructivas | Conservar `ssh_exec_cmd_trusted` para una lista pequeña y explícita |
+| Alta del equipo | Retirar `--target` de la interfaz normal; descubrir MAC por SSH y registrar el administrador de bootstrap |
+| Varios PCs/proyectos | Reutilizar claves locales por equipo; cada PC añade sus propias claves al mismo `codeanvil-agent` |
 | S2 | Conservar construcción, pruebas por capas/módulos/servicios, pausa configurable y contrato de entrega; cambiar únicamente la operación HIL |
 | Antes del hardware | Parar, mostrar el candidato y esperar `continue` antes de desplegar, actualizar o iniciar pruebas físicas |
 | Git | Código y kit sin cambios pendientes, rama con upstream y commits publicados antes del hardware; sin manifiestos HIL |
@@ -25,6 +27,56 @@ utilizan la puerta `trusted`.
 | Métricas | Scripts elegidos o escritos por el agente según el requisito y las tolerancias; calibración solo cuando haga falta para sostener la conclusión |
 | Evidencia | `measurement.json` pequeño, sin hashes por archivo, digest de despliegue ni solicitud formal de captura |
 | Estado | Mismos reports, cycles, iterations, `Based on`, HITL y rutas de rework |
+
+### Alta y reutilización del mismo hardware
+
+El usuario indica únicamente dirección/puerto y el administrador de bootstrap:
+
+```sh
+codeanvil credential-setup -u pi -i raspberry.local
+```
+
+El comando descubre la MAC en la Raspberry mediante SSH, sin pedir un alias
+`--target` ni inferir identidad de su IP. Registra el usuario administrador y la
+MAC, con papeles distintos: el primero autoriza el alta y la segunda reconoce
+el equipo. Las claves locales se asocian al equipo, no al nombre del administrador:
+cambiar de administrador no debe regenerarlas para el mismo hardware.
+
+Puede haber MAC distintas para Ethernet y WiFi. Se conserva una MAC estable como
+identidad y las otras observadas como referencias del mismo equipo; cambiar de
+IP o entre interfaces conocidas no da de alta otra Raspberry. La identidad MAC
+no reemplaza la autenticación SSH del equipo. Si no se puede reconocer, se informa;
+no se regeneran claves silenciosamente por un cambio de endpoint.
+
+Comportamiento requerido:
+
+| Situación | Resultado |
+|-----------|-----------|
+| Mismo PC/usuario local, misma Raspberry, otro proyecto | Reutilizar claves y comprobar acceso; registrar/enlazar metadata del proyecto, sin repetir el bootstrap administrativo |
+| Otro PC/usuario local, misma Raspberry | Crear claves de ese cliente si no existen y autorizar sus públicas en el mismo usuario remoto `codeanvil-agent` |
+| Repetir el alta desde ese segundo PC | Reutilizar sus claves, sin duplicar entradas ni reemplazar las de otros PCs |
+| Cambiar IP o administrador de una Raspberry reconocida | Actualizar datos de conexión/alta y conservar las claves locales existentes |
+
+Las claves privadas viven solo en el almacenamiento local de cada cliente; nunca
+en Git ni en la metadata compartida del proyecto. Un PC nuevo necesita una primera
+autorización administrativa para añadir sus públicas: clonar el proyecto no concede
+por sí solo acceso SSH. El alta añade únicamente las claves de ese cliente y no
+trunca `authorized_keys`, recrea el usuario ni invalida el acceso de otros PCs.
+
+El almacén local pasa de depender de un alias a depender de la MAC normalizada,
+con un pequeño registro de endpoint/administrador y sus claves. Antes de crear
+claves, se comprueban las existentes del esquema anterior para reutilizarlas al
+reconocer el equipo. Los identificadores/aliases internos antiguos pueden seguir
+leyéndose por compatibilidad; no son un argumento que el usuario deba escoger.
+
+La metadata compartida contiene identidad del equipo, endpoint, puerto, usuario
+remoto `codeanvil-agent` y workspace; no rutas locales a claves ni contraseñas.
+Los proyectos usan subdirectorios del UUID de proyecto ya existente, bajo una raíz
+estable de trabajo del equipo. La clave de despliegue se confina a esa raíz estable
+para poder reutilizarla entre proyectos. Un mismo proyecto clonado conserva su
+workspace; proyectos distintos no se pisan. Compartir usuario/acceso no implementa
+ejecuciones simultáneas aisladas: el laboratorio coordina el uso, sin añadir un
+servicio de locks o un gestor de sesiones.
 
 ## 2. Flujo operativo propuesto
 
@@ -259,6 +311,7 @@ escriben v2; los archivos anteriores permanecen como evidencia del flujo anterio
 
 | Unidad | Cambio coherente y archivos principales | Comprobación enfocada |
 |--------|----------------------------------------|-----------------------|
+| R0 Alta reutilizable | `credential_setup.py`, script de bootstrap, config/registro de dispositivos y resolución MCP: MAC descubierta, administrador registrado, sin `--target` normal, claves locales por equipo y públicas acumuladas por PC | Otro proyecto no regenera claves; otro PC accede al mismo usuario sin borrar claves previas; cambio de IP/interfaz conocida reutiliza identidad; proyectos no pisan workspace ni pierden accesos antiguos |
 | R1 SSH sencillo | `classifier.py`, `server.py`, transporte y guía MCP: permitir por defecto, trusted destructivo, proteger DB/estado en sync | Comandos ordinarios/sudo/scripts pasan; variantes destructivas se desvían antes de SSH; rsync no borra ni sustituye DB |
 | R2 Preparación y revisión HW | S2 SKILL/layout, transporte de candidato Git, aprovisionamiento/probe: limpio+pusheado, checkpoint antes de update/deploy/test, actualización automática y relojes manejados por agente | Candidato sucio/no publicado no llega a HW; exportación no envía ignorados; stop/continue respetan contrato |
 | R3 Evidencia pequeña | Schema/validador/guía canónicos de G2 y copias compartidas de S2: formato v2 y nombres por ciclo/iteración; retirar manifiestos y preflights SHA HIL de contratos/tests | JSON funcional sin calibración ni hashes; errores e inconclusos; scripts/copias del scaffold autosuficientes |
@@ -292,3 +345,9 @@ revisión final del plan por el subagente no encontró requisitos omitidos.
 Runtime del refactor: N/A, no se implementa código en esta entrega. Rollback:
 eliminar este plan y su enlace desde el registro anterior; los 16 commits previos
 permanecen intactos. La identidad del commit se informa al entregar el documento.
+
+Ampliación posterior al plan `0e73414`: alta sin `--target`, identidad MAC y acceso
+de varios PCs al mismo usuario remoto. Se contrastó con el almacenamiento local
+de claves, el append de `authorized_keys` y el confinamiento rsync actuales;
+`git diff --check` correcto. Runtime: N/A, propuesta documental. Rollback de esta
+ampliación: sus dos decisiones, subsección de alta y unidad R0 únicamente.
