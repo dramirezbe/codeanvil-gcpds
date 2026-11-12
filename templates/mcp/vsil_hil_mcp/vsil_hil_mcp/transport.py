@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import shlex
 import subprocess
+import tempfile
 from pathlib import Path
 
 from .config import Target, key_paths
@@ -91,18 +92,26 @@ def rsync_push(target: Target, deploy_key: Path, local_workspace: Path) -> dict:
     return _run(rsync_push_argv(target, deploy_key, local_workspace))
 
 
-def rsync_pull_argv(target: Target, key: Path, local_workspace: Path) -> list[str]:
+def rsync_pull_argv(
+    target: Target, key: Path, local_workspace: Path, destination: Path | None = None,
+) -> list[str]:
+    destination = destination or local_workspace / TELEMETRY_REL / target.name
     return [
         "rsync", "-az",
         "-e", _rsync_e(target, key),
         f"{_rsync_host(target)}:{target.workspace}/{TELEMETRY_REL}",
-        f"{local_workspace}/{TELEMETRY_REL}",
+        f"{destination}/",
     ]
 
 
 def rsync_pull(target: Target, key: Path, local_workspace: Path) -> dict:
-    (local_workspace / TELEMETRY_REL).mkdir(parents=True, exist_ok=True)
-    return _run(rsync_pull_argv(target, key, local_workspace))
+    target_dir = local_workspace / TELEMETRY_REL / target.name
+    target_dir.mkdir(parents=True, exist_ok=True)
+    # Each transfer owns a new directory. Another target or a later fetch can
+    # never replace evidence whose path and digest were already recorded by G2.
+    destination = Path(tempfile.mkdtemp(prefix="fetch-", dir=target_dir))
+    result = _run(rsync_pull_argv(target, key, local_workspace, destination))
+    return {"local_path": str(destination), **result}
 
 
 def keygen(path: Path, comment: str) -> dict:

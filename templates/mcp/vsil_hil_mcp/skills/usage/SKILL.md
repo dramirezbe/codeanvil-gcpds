@@ -31,7 +31,7 @@ custodian; each tool call is one capability.
 | `code_sync(target="")` | rsync the project code → target workspace (deploy key, write-only). Excludes `.git`, `__pycache__`, telemetry, secrets. | Deploy before every run after a code change. |
 | `ssh_exec_cmd(cmd, target="")` | Known diagnostics and full `codeanvil`; returns raw `{stdout, stderr, exit_code}`. Python/uv/pytest and `verification/run.sh vl0\|vl1` require an exact `cd <declared workspace> &&` prefix. Unknown commands and shell expansion redirect to trusted. | Run the kit, probe the device, read logs. **The main interface.** |
 | `ssh_exec_cmd_trusted(cmd, target="")` | The **only** privileged door: carries `sudo`/mutating commands, once, verbatim, audited. | OS packages, udev rules, service restarts — see the redirect flow. |
-| `fetch_evidence(target="")` | rsync **only** `verification/telemetry/` target → host. | Pull evidence back so G2 reads it on the host. |
+| `fetch_evidence(target="")` | rsync **only** remote `verification/telemetry/` into a fresh `verification/telemetry/<target>/fetch-<unique>/` host snapshot; returns `local_path`. | Read and hash this run's evidence at `local_path`, preserving earlier fetches. |
 | `probe_target(target="")` | Read OS/architecture/CodeAnvil version and optional USB enumeration; return `metadata.version_match` against the host release plus raw stdout/stderr/exit code. | Preflight parity. `declared_device` is configuration, never a detected device claim. |
 | `init_codeanvil(target, host, user, …)` | Generate the target's keys and emit a provisioning **script** for the human. No SSH happens. | First contact only — relay the script to the human. |
 
@@ -52,8 +52,11 @@ the verification kit checks its deployed input manifest separately.
 2. **Run.** `ssh_exec_cmd("cd <workspace> && verification/run.sh vl0")`. `run.sh`
    starts `codeanvil telemetry` on the target itself, so the collector samples the
    **real UC** while the kit runs. Read the raw stdout/exit_code to judge pass/fail.
-3. **Fetch.** `fetch_evidence()` — pull the per-run `telemetry-*.jsonl` back into the
-   host's `verification/telemetry/`. G2 and the verifier read the evidence locally.
+3. **Fetch.** `fetch_evidence()` — pull the telemetry into a fresh host snapshot under
+   `verification/telemetry/<target>/fetch-<unique>/`. Read evidence at the returned `local_path`;
+   record the current run's exact files and hashes. A snapshot also contains any old logs still
+   present remotely, so freshness must be checked. Earlier snapshots and other targets' files
+   are preserved. A nonzero transfer exit marks a partial snapshot, never complete evidence.
 
 Diagnose before fixing (all read-only, auto-allowed through `ssh_exec_cmd`):
 `uname -a`, `cat /proc/cpuinfo`, `lsusb` (is the SDR enumerated?), `dmesg | tail`,

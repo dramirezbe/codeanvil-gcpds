@@ -47,6 +47,16 @@ import sys
 with open({str(calls)!r}, 'a', encoding='utf-8') as stream:
     stream.write(json.dumps(sys.argv) + '\\n')
 if Path(sys.argv[0]).name == 'ssh':
+    if 'VSIL_CODEANVIL' in sys.argv[-1]:
+        mode_file = Path({str(calls.with_name('probe-mode'))!r})
+        mode = mode_file.read_text() if mode_file.exists() else 'match'
+        if mode == 'missing':
+            sys.stdout.write('VSIL_OS=\\nVSIL_ARCH=\\nVSIL_CODEANVIL=\\nVSIL_USB_AVAILABLE=no\\nVSIL_USB_BEGIN\\n')
+        else:
+            version = '0.7.4' if mode == 'mismatch' else '0.7.5'
+            sys.stdout.write('VSIL_OS=Linux\\nVSIL_ARCH=aarch64\\nVSIL_CODEANVIL=codeanvil ' + version +
+                             '\\nVSIL_USB_AVAILABLE=yes\\nVSIL_USB_BEGIN\\nBus 001 Device 002: fixture SDR\\n')
+        sys.exit(0)
     if sys.argv[-1] == 'fixture-timeout':
         import time
         time.sleep(5)
@@ -79,6 +89,7 @@ def _payload(result):
 
 def test_stdio_deploy_run_fetch_and_policy(protocol_target):
     project, calls, env = protocol_target
+    fetched_paths = []
 
     async def scenario():
         params = StdioServerParameters(command=sys.executable,
@@ -89,7 +100,7 @@ def test_stdio_deploy_run_fetch_and_policy(protocol_target):
                 assert initialized.serverInfo.name == "vsil_hil_mcp"
                 tools = await session.list_tools()
                 assert {"init_codeanvil", "ssh_exec_cmd", "ssh_exec_cmd_trusted",
-                        "code_sync", "fetch_evidence"} <= {tool.name for tool in tools.tools}
+                        "code_sync", "fetch_evidence", "probe_target"} <= {tool.name for tool in tools.tools}
 
                 refused = _payload(await session.call_tool("ssh_exec_cmd", {"cmd": "sudo reboot"}))
                 assert refused["status"] == "use_trusted"
@@ -105,7 +116,11 @@ def test_stdio_deploy_run_fetch_and_policy(protocol_target):
                 assert failure == {"stdout": "partial\n", "stderr": "failed π\n", "exit_code": 23}
                 fetched = _payload(await session.call_tool("fetch_evidence", {}))
                 assert fetched["exit_code"] == 0
-                assert json.loads((project / "verification/telemetry/telemetry-remote.jsonl").read_text()) == {"sample": 1}
+                snapshot = Path(fetched["local_path"])
+                assert snapshot.parent == project / "verification/telemetry/pi"
+                assert snapshot.name.startswith("fetch-")
+                fetched_paths.append(snapshot)
+                assert json.loads((snapshot / "telemetry-remote.jsonl").read_text()) == {"sample": 1}
 
                 missing = await session.call_tool("ssh_exec_cmd", {"cmd": "uname -a", "target": "missing"})
                 assert missing.isError
@@ -123,7 +138,7 @@ def test_stdio_deploy_run_fetch_and_policy(protocol_target):
     assert "IdentityAgent=none" in ordinary
     assert trusted[-1] == "fixture-failure"
     assert pull[-2] == "codeanvil-agent@fixture.invalid:/home/codeanvil-agent/workspace/verification/telemetry/"
-    assert pull[-1] == f"{project}/verification/telemetry/"
+    assert pull[-1] == f"{fetched_paths[0]}/"
     audit = [json.loads(line) for line in (project / ".codeanvil/hil/audit.log").read_text().splitlines()]
     assert [(entry["tool"], entry["exit"]) for entry in audit] == [
         ("ssh_exec_cmd", None), ("code_sync", 0), ("ssh_exec_cmd", 0),
@@ -157,3 +172,36 @@ def test_stdio_reports_timeout_and_missing_transport(protocol_target):
     assert len(calls.read_text().splitlines()) == 1
     audit = [json.loads(line) for line in (project / ".codeanvil/hil/audit.log").read_text().splitlines()]
     assert [entry["exit"] for entry in audit] == [124, 127]
+
+
+def test_stdio_probe_observes_parity_and_missing_data(protocol_target):
+    project, calls, env = protocol_target
+
+    async def scenario():
+        params = StdioServerParameters(command=sys.executable,
+                                       args=["-m", "vsil_hil_mcp.server"], env=env)
+        async with stdio_client(params) as (reader, writer):
+            async with ClientSession(reader, writer, read_timeout_seconds=timedelta(seconds=5)) as session:
+                await session.initialize()
+                tools = await session.list_tools()
+                probe = next(tool for tool in tools.tools if tool.name == "probe_target")
+                assert probe.annotations.readOnlyHint is True
+                assert probe.annotations.destructiveHint is False
+                for mode, expected_version in (("match", "0.7.5"), ("mismatch", "0.7.4"), ("missing", None)):
+                    calls.with_name("probe-mode").write_text(mode, encoding="utf-8")
+                    observed = _payload(await session.call_tool("probe_target", {"target": "pi"}))
+                    metadata = observed["metadata"]
+                    assert observed["exit_code"] == 0 and observed["stderr"] == ""
+                    assert observed["target"] == "pi"
+                    assert metadata["expected_version"] == "0.7.5"
+                    assert metadata["codeanvil_version"] == expected_version
+                    assert metadata["version_match"] is (mode == "match")
+                    assert metadata["os"] == (None if mode == "missing" else "Linux")
+                    assert metadata["arch"] == (None if mode == "missing" else "aarch64")
+                    assert metadata["usb_probe_available"] is (mode != "missing")
+                    assert metadata["usb_devices"] == ("" if mode == "missing" else "Bus 001 Device 002: fixture SDR")
+                    assert f"VSIL_CODEANVIL={'codeanvil ' + expected_version if expected_version else ''}\n" in observed["stdout"]
+
+    asyncio.run(asyncio.wait_for(scenario(), timeout=20))
+    audit = [json.loads(line) for line in (project / ".codeanvil/hil/audit.log").read_text().splitlines()]
+    assert [(entry["tool"], entry["exit"]) for entry in audit] == [("probe_target", 0)] * 3

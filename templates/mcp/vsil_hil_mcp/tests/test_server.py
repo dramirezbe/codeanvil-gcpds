@@ -3,6 +3,7 @@ import os
 import shlex
 import stat
 import subprocess
+from pathlib import Path
 
 import pytest
 import yaml
@@ -102,11 +103,35 @@ def test_fetch_pulls_only_telemetry(env):
     root, _, calls = env
     server.init_codeanvil("pi")
     calls.clear()
-    server.fetch_evidence()
+    fetched = json.loads(server.fetch_evidence())
     argv = calls[0]
     assert argv[-2] == "hil@10.0.0.5:/home/hil/ws/verification/telemetry/"
-    assert argv[-1] == f"{root}/verification/telemetry/"
+    destination = Path(fetched["local_path"])
+    assert destination.parent == root / "verification/telemetry/pi"
+    assert destination.name.startswith("fetch-")
+    assert argv[-1] == f"{destination}/"
     assert not any(a.startswith("--exclude") for a in argv)
+
+
+def test_fetch_preserves_homonymous_evidence_across_targets_and_runs(env, monkeypatch):
+    root, _, _ = env
+    server.init_codeanvil("pi")
+    server.init_codeanvil("other", host="10.0.0.6")
+    sequence = 0
+
+    def fake_rsync(argv, **kwargs):
+        nonlocal sequence
+        sequence += 1
+        (Path(argv[-1]) / "measurement.json").write_text(str(sequence), encoding="utf-8")
+        return subprocess.CompletedProcess(argv, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_rsync)
+    snapshots = [json.loads(server.fetch_evidence(name)) for name in ("pi", "other", "pi")]
+    paths = [Path(result["local_path"]) for result in snapshots]
+    assert len(set(paths)) == 3
+    assert [path.parent.name for path in paths] == ["pi", "other", "pi"]
+    assert [(path / "measurement.json").read_text() for path in paths] == ["1", "2", "3"]
+    assert all(path.is_relative_to(root / "verification/telemetry") for path in paths)
 
 
 def test_init_script_keys_and_perms(env):

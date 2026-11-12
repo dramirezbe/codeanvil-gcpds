@@ -147,7 +147,7 @@ The security model is deliberate: the server enforces, the skill only teaches.
 | **Auto (allow)** | `ssh_exec_cmd` | Known read-only diagnostics and full `codeanvil` control. `python`/`python3`/`uv`/`pytest` and `verification/run.sh vl0\|vl1` require `cd <declared workspace> &&`. Unknown commands, mutations and shell expansion are **refused** and redirected. |
 | **Privileged** | `ssh_exec_cmd_trusted` | `sudo` / mutating commands. Configure your runtime to require approval for this distinct tool. Runs once, verbatim, audited. |
 | **Deploy** | `code_sync` | rsync host → target workspace (write-only, confined by `rrsync`). |
-| **Fetch** | `fetch_evidence` | rsync **only** `verification/telemetry/` back to the host. |
+| **Fetch** | `fetch_evidence` | rsync **only** remote `verification/telemetry/` into a fresh host snapshot; returns `local_path`. |
 | **Probe** | `probe_target` | Read OS, architecture, CodeAnvil version and optional `lsusb` output; compare observed and host release versions. No installs or RF transmission. |
 
 Every call — including refusals — is logged to `.codeanvil/hil/audit.log` (target,
@@ -179,7 +179,11 @@ Once set up, the agent drives the loop through MCP tool calls:
 2. `code_sync()` — deploy the current code (S2 only; the independent G2 verifier never deploys).
 3. `ssh_exec_cmd("cd <workspace> && verification/run.sh vl0")` — run the level; `run.sh`
    starts `codeanvil telemetry` on the target so the collector samples the real UC.
-4. `fetch_evidence()` — pull the telemetry back; G2 reads it on the host.
+4. `fetch_evidence()` — pull the telemetry into a fresh host directory
+   `verification/telemetry/<target>/fetch-<unique>/`. Use the returned `local_path` to read and
+   hash evidence. This preserves files fetched from other targets and earlier runs. Each
+   snapshot may contain older remote logs too: select only the files produced by this run.
+   A nonzero transfer exit means partial evidence; do not accept that snapshot as complete.
 
 You only step in to approve a `ssh_exec_cmd_trusted` prompt when the target genuinely
 needs a privileged command (OS packages, udev rules for non-root SDR access). The agent

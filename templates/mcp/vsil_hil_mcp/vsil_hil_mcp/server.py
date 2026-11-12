@@ -161,12 +161,17 @@ def code_sync(target: str = "") -> str:
 
 @mcp.tool()
 def fetch_evidence(target: str = "") -> str:
-    """Pull ONLY verification/telemetry/ from the target into the project."""
+    """Pull ONLY remote telemetry into a fresh host snapshot; return its local_path.
+
+    The host destination is verification/telemetry/<target>/fetch-<unique>/.
+    A nonzero exit marks a partial transfer; it cannot support an evidence claim.
+    """
     root, tgt, keys = _context(target)
-    argv = transport.rsync_pull_argv(tgt, _need_key(keys["exec"]), root)
-    res = transport.rsync_pull(tgt, keys["exec"], root)
+    res = transport.rsync_pull(tgt, _need_key(keys["exec"]), root)
+    argv = transport.rsync_pull_argv(tgt, keys["exec"], root, Path(res["local_path"]))
     audit(root, tgt.name, "fetch_evidence", " ".join(argv), res["exit_code"])
-    return json.dumps({"summary": f"fetch_evidence <- {tgt.name}:{tgt.workspace}/verification/telemetry/", **res})
+    return json.dumps({"summary": f"fetch_evidence <- {tgt.name}:{tgt.workspace}/verification/telemetry/ "
+                                 f"into {res['local_path']}", **res})
 
 
 @mcp.tool(annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False))
