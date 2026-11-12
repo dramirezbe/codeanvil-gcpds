@@ -70,6 +70,16 @@ Working files live in `.codeanvil/design/`, outside the cycle report folder.
   GT gap as a risk in design §6.
 - The Mock HAL (§1.6) and the Telemetry companion (§1.7) are always designed. The Telemetry
   companion lives in `verification/telemetry/`: it is never a module and never under `src/`.
+- **Target(s)** (Meta) maps every service and verification path to `local` or a named entry in
+  `.codeanvil/project.yaml` `targets:`. No targets means local execution. When several targets
+  could apply, resolve the selection from GT or ask the user; never pick the first silently.
+  S1 does not register targets or change credentials. In §1.6 name where each level runs and in
+  §1.7 give an operating envelope per target, sourced from its COTS constraints. Missing target
+  declarations or limits are design risks to resolve, never guessed values.
+- Execution location and HAL mode are separate axes: remote VL-0/VL-1 on the real compute unit
+  are PIL and remain **VERIFIED**, using Mock HAL inputs. They do not require `mock+real` and do
+  not establish VL-2 or real-RF validation. Remote execution uses `vsil_hil_mcp`; local execution
+  uses the runtime's normal tools.
 - **Toolchain** (Meta) names, per service, `SVC-xxx: <package> · <language> · <package manager> ·
   <test runner>`, using only `Python · uv · pytest` or `TypeScript · pnpm · vitest`. `<package>`
   is a valid identifier and names `src/<package>/`. Derive it from §1.3.1 and the deployment
@@ -96,7 +106,7 @@ Working files live in `.codeanvil/design/`, outside the cycle report folder.
    one project-root command that starts the complete runnable system, its HAL
    mode, processes, URL, visible result and clean shutdown.
 5. For each service: its base (§1.3) and module cards (§1.4), each with the full verification profile.
-   Set `HAL mode` and `Toolchain` in the Meta, then fill the verification kit (§1.3.4), the HAL
+   Set `Target(s)`, `HAL mode` and `Toolchain` in the Meta, then fill the verification kit (§1.3.4), the HAL
    substitution ladder (§1.6) and the Telemetry companion (§1.7).
 6. Draw the implementation DAG and topological order (§2.1–2.2) and the runtime graph (§2.3).
 7. Write the contracts with stub or fake-peer recipes and vectors (§3).
@@ -104,7 +114,8 @@ Working files live in `.codeanvil/design/`, outside the cycle report folder.
 9. Record decisions with real alternatives (§5; DEC-001 is the partitioning decision) and risks (§6).
 10. Reread the design against this short list and fix what you find: no `{{` left, every `SYS-*`
     traced, every contract with a recipe, `hw_dependency: true` at `VL-2`, no cycle in the build
-    order, `HAL mode` set, `Toolchain` set for every service, kit table complete, §1.7 present.
+    order, `HAL mode` set, `Toolchain` and `Target(s)` set for every service, kit table complete,
+    §1.6 execution targets resolved and §1.7 present for every target.
     This is a courtesy to the reviewer, not a gate.
 11. Build both dependency graph versions (next section).
 12. Write the iteration with the row `| HITL | PASS |` and both graph paths in the Description.

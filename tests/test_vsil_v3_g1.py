@@ -88,6 +88,23 @@ def test_scaffolded_g1_checklist_carries_the_new_rows(tmp_path, db_path):  # noq
     assert "Toolchain" in text
 
 
+def test_scaffold_carries_target_design_and_review_contracts(tmp_path, db_path):  # noqa: F811
+    """A generated project must keep location, HAL and evidence requirements aligned."""
+    cmd_create(None, tmp_path, project_name="Proj")
+    design = _scaffold_skill(tmp_path, "S1_design_services", "references", "SDD.md").read_text()
+    checklist = _scaffold_skill(tmp_path, *CHECKLIST).read_text()
+    hal_row = next(line for line in checklist.splitlines() if "G1.11 HAL ladder" in line)
+    telemetry_row = next(line for line in checklist.splitlines() if "G1.12 Telemetry" in line)
+
+    assert "| Target(s)" in design
+    assert "No targets: block means local execution" in design
+    assert "§1.6 maps every level and path to that execution target" in hal_row
+    assert "A target is undeclared or ambiguous" in hal_row
+    assert "PIL is presented as VL-2" in hal_row
+    assert "operating envelope per execution target (with COTS basis)" in telemetry_row
+    assert "Host readings cannot stand in for a remote target" in telemetry_row
+
+
 # --- G1 validates by itself, with no script (2026-11-05) --------------------
 
 def test_g1_runs_no_script_at_all():
