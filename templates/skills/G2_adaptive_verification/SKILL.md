@@ -38,11 +38,12 @@ Check, in this order, writing **no iteration** when you stop:
 
 | Path | Role |
 |------|------|
-| `.codeanvil/report/<cycle-name>/S2_artifacts/test_run.md` | The only commands G2 runs: `verification/run.sh vl0`, `verification/run.sh vl1` and recorded read-only target/deployment preflights; target block and `Possible infeasibility` entries |
+| `.codeanvil/report/<cycle-name>/S2_artifacts/test_run.md` | The only commands the verifier runs: `verification/run.sh vl0`, `verification/run.sh vl1`, recorded read-only target/deployment preflights and the host VL-2 record validator; target block and `Possible infeasibility` entries |
 | `.codeanvil/project.yaml` | Target declarations, compared with SDD and the S2 target block before any remote execution |
 | `.codeanvil/design/SDD.md` | Meta `Target(s)`, `HAL mode` and `Toolchain`, `required_vl` per module and `PATH-*`, §1.6 HAL ladder, §1.7 telemetry envelope per target |
 | `.codeanvil/GT/SyRS.md` | Read-only: `SYS-*` thresholds; §6 `PROTO-*`, §4 correction chains, §5 tolerances for VL-2 |
 | `templates/skills/G2_adaptive_verification/references/verified_prototype.md` | The Verified Prototype template |
+| `templates/skills/G2_adaptive_verification/references/machine_evidence.md` | Conditional VL-2 capture prerequisites, fresh request, operator authorization, record schema and validation command |
 
 ## Hard Rules
 
@@ -85,11 +86,12 @@ The target block names host, user, port, workspace, observed OS/architecture, de
 target CodeAnvil versions. Missing or conflicting values stop that target's run as an evidence gap;
 never silently substitute the developer host.
 
-S2 has already deployed the delivered code and kit. The fresh verifier uses only
+S2 has already deployed the delivered code and kit. The fresh verifier uses only `probe_target`,
 `ssh_exec_cmd(cmd="<exact recorded payload>", target="<name>")` and `fetch_evidence` remotely:
 
-1. Execute the recorded read-only version/OS/architecture probes and compare the observed
-   CodeAnvil version to the host and S2 record. Then run the recorded
+1. Call `probe_target(target="<name>")` and compare observed CodeAnvil/OS/architecture with the
+   host and S2 record. Require exit 0 and `metadata.version_match: true`; missing observations
+   or a different expected version are gaps. Then run the recorded
    `python3 verification/check_deployment.py --expected <manifest-SHA256>` preflight from the
    target workspace. The expected digest and clean delivered git revision come from the host's
    S2 record; `.git` is not deployed. A missing preflight or nonzero exit stops the run.
@@ -97,8 +99,10 @@ S2 has already deployed the delivered code and kit. The fresh verifier uses only
    recorded, with the workspace `cd` prefix and explicit target. The kit collects telemetry on
    that compute unit. Recheck deployment identity after the runs; a changed baseline invalidates
    the affected evidence even if the tests exited 0.
-3. `fetch_evidence(target="<name>")` retrieves telemetry. Match the exact new files to this run,
-   record their SHA-256 hashes and apply that target's §1.7 envelope. Old telemetry is not a fresh
+3. `fetch_evidence(target="<name>")` returns `local_path`, a fresh host snapshot under
+   `verification/telemetry/<target>/fetch-<unique>/`. Use that returned path and match only the
+   exact new files for this run; the snapshot can also contain older remote logs. Record
+   their SHA-256 hashes and apply that target's §1.7 envelope. Old telemetry is not a fresh
    result. The report and Verified Prototype name the real compute unit and identify PIL.
 
 Never call `code_sync`, `init_codeanvil` or `ssh_exec_cmd_trusted` from the verifier. A setup
@@ -117,10 +121,16 @@ use a fresh session with them or report the gap instead of invoking direct SSH.
    Check its §0.5 entry-point smoke result and the exact command recorded in `test_run.md`.
 3. **G2.1, when VL-1 is declared.** Run `verification/run.sh vl1`: Mock HAL synthetic inputs per
    §1.6, metrics against the `SYS-*` thresholds.
-4. **G2.2, when VL-2 is declared in `mock+real`.** The SyRS §6 `PROTO-*` procedures cited by design
-   §1.6, on the Real HW HAL, with the §4 correction chains and §5 tolerances. The subagent prepares
-   the procedure; if no hardware is reachable from the session, the human runs it and pastes the
-   measurements.
+4. **G2.2, when VL-2 is declared in `mock+real`.** Follow `references/machine_evidence.md`.
+   Check the declared oracle, SyRS §6 `PROTO-*`, §4 corrections and §5 uncertainty/tolerances
+   before requesting any capture. Missing prerequisites block VL-2, never trigger invented
+   numbers. G2 writes a fresh `G2_artifacts/capture_request.json` with host expectations and
+   explicit human/operator authorization. The human or authorized operator runs the S2 capture
+   command; the fresh verifier prepares the procedure, fetches the new record and runs the
+   recorded host `scripts/validate_measurement.py` command with `--not-before` from the request.
+   It never executes VL-2 itself or calls the trusted door. A valid record can contain failed
+   measurements and never sets `HITL`; review actual outcomes, capture digests, device metadata,
+   GT references and telemetry. S2's development capture is not fresh G2 evidence.
 5. **Telemetry check.** Fetch remote evidence and complete the post-run identity check above.
    Flag every result produced outside that target's §1.7 envelope. Reject a constant or
    placeholder reading as measured evidence: it is a module defect. Report unavailable evidence
@@ -150,7 +160,8 @@ use a fresh session with them or report the gap instead of invoking direct SSH.
 
 ## Report Contract
 
-Write only `.codeanvil/report/<cycle-name>/G2.md`, append-only, and on PASS
+Write only `.codeanvil/report/<cycle-name>/G2.md`, append-only, the conditional
+`G2_artifacts/capture_request.json`, and on PASS
 `.codeanvil/report/<cycle-name>/G2_artifacts/verified_prototype.md` filled from the template.
 
 - First run: header plus `## Iteration 1`; later runs append `## Iteration <N>`.

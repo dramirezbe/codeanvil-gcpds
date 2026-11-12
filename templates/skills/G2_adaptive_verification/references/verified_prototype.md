@@ -63,6 +63,12 @@ does not establish valid evidence or an in-envelope result.
 - Not claimed: <what was not verified this cycle and why, including a Real HW HAL declared at VL-0>.
 - No ML evidence: no model is measured this round.
 
+For each VALIDATED claim, cite the fresh G2 capture request, `PROTO-*` and oracle/calibration
+source, raw/corrected measurement record and capture digests, GT correction and uncertainty/
+tolerance references, validator output and actual measurement outcomes. A valid scalar record
+alone is not a metrological verdict; missing oracle or unsupported decision predicates cannot
+support VALIDATED. Record the human's judgment and any gaps explicitly.
+
 ## 8. Delivered tree and verification kit
 
 | Part | Location | Shipped |

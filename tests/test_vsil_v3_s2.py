@@ -342,3 +342,39 @@ def test_s2_prepares_a_named_remote_baseline_before_g2():
     assert "missing, changed or additional files" in layout
     assert "symlinks escaping the workspace" in layout
     assert "S2 tests this checker with an altered input" in layout
+
+
+def test_s2_capture_contract_keeps_rf_authorized_and_evidence_exclusive():
+    skill = " ".join(_skill_text(SKILL).split())
+    layout = " ".join(_layout_text().split())
+
+    assert "metadata.version_match: true" in skill
+    assert "generating and testing `verification/check_deployment.py`" in skill
+    assert "Do not create or edit the checker after taking this baseline" in skill
+    assert "VL-2 remains blocked" in skill
+    assert "G2 requests a separate fresh run" in skill
+    assert "Refuse an existing run ID" in skill
+    assert 'export PATH="$HOME/.local/bin:$PATH"' in layout
+    assert "creates a new output directory exclusively" in layout
+    assert "capability" in skill and "fake device API" in skill
+    assert "verification/telemetry/<target>/fetch-<unique>/" in layout
+    assert "returns `local_path`" in layout
+
+
+def test_scaffolded_local_hil_requires_provenance_without_remote_access(tmp_path, db_path):
+    """A local SDR capture needs the same identity fields as the VL-2 record schema."""
+    cmd_create(None, tmp_path, project_name="Proj")
+    project = tmp_path / "proj"
+    assert "targets:" not in (project / ".codeanvil/project.yaml").read_text()
+    skill = " ".join(_scaffold_skill(tmp_path, SKILL, "SKILL.md").read_text().split())
+    layout = " ".join(_scaffold_skill(tmp_path, SKILL, "references", "project_layout.md").read_text().split())
+    machine = " ".join(_scaffold_skill(tmp_path, "G2_adaptive_verification", "references",
+                                        "machine_evidence.md").read_text().split())
+
+    for text in (skill, layout, machine):
+        assert "Local VL-0/VL-1 alone" in text
+        assert "target name `local`" in text
+        assert "manifest" in text and "CodeAnvil version" in text
+    assert "without `code_sync`, SSH or MCP" in skill
+    assert "same expected manifest digest checks" in layout
+    assert "pre/post checks on that manifest without ssh, sync or mcp" in machine.lower()

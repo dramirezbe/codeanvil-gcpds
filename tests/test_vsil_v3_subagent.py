@@ -74,7 +74,7 @@ def test_verifier_mcp_tools_allow_run_fetch_but_never_deploy_or_setup(tmp_path):
     opencode, _ = _split_markdown(project / OPENCODE)
     permissions = opencode["permission"]
 
-    for tool in ("ssh_exec_cmd", "fetch_evidence"):
+    for tool in ("probe_target", "ssh_exec_cmd", "fetch_evidence"):
         assert f"mcp__vsil_hil_mcp__{tool}" in claude_tools
         assert permissions[f"vsil_hil_mcp_{tool}"] == "allow"
     for tool in ("code_sync", "init_codeanvil", "ssh_exec_cmd_trusted"):

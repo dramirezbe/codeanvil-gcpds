@@ -124,24 +124,34 @@ def test_g1_spends_tokens_on_a_full_review():
     assert "Never trust the design's own summaries" in text
 
 
-def test_g1_validates_the_toolchain_on_the_machine_and_installs_with_consent():
+def test_g1_observes_toolchains_on_each_target_without_installing_from_the_reviewer():
     text = _skill_text("G1_design_review")
     checklist = (TEMPLATES_DIR / "skills" / "G1_design_review" / "references"
                  / "G1_CHECKLIST.md").read_text(encoding="utf-8")
 
     assert "--version" in text
-    assert "ask the user briefly" in text
-    assert "Install it only after a yes" in text
-    assert "never with `sudo` unless the user says so" in text
+    assert "named execution target" in text
+    assert "probe_target" in text and "ssh_exec_cmd" in text
+    assert "Do not install from the reviewer" in text
     row = next(line for line in checklist.splitlines() if line.startswith("| G1.14"))
-    assert "installed" in row and "refused" in row
+    assert "host versions cannot substitute" in row.lower()
+    assert "required tool is missing" in row
 
 
-def test_g1_frontmatter_allows_network_only_for_consented_installs():
+def test_g1_frontmatter_allows_read_only_remote_observation():
     text = _skill_text("G1_design_review")
 
     assert "No network access" not in text
     assert "No scripts." in text
+    assert "operator setup before the G1 verdict" in text
+    assert "Do not request an S2 stage run while G1 is open" in text
+
+
+def test_mock_plus_real_requires_an_oracle_and_lab_budgets_before_vl2():
+    row = next(line for line in _checklist_text().splitlines() if "G1.11 HAL ladder" in line)
+    for required in ("declared oracle", "calibration provenance", "correction chains",
+                     "uncertainty/tolerance budgets", "capability guard", "block VL-2"):
+        assert required in row
 
 
 # --- bounded rework: change set, impact map, G1.16 (2026-11-06) --------------

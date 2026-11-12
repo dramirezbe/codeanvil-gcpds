@@ -105,13 +105,14 @@ dependencies, and only as a recorded design decision.
 ```
 verification/
 ├── run.sh                 # verification/run.sh vl0 | verification/run.sh vl1
-├── deployment_manifest.json # remote only: input hashes for the final S2 deployment
-├── check_deployment.py     # remote only: stdlib, read-only manifest preflight for G2
+├── deployment_manifest.json # remote PIL or any VL-2: final input hashes
+├── check_deployment.py     # remote PIL or any VL-2: stdlib, read-only G2 preflight
 ├── golden/
 │   ├── manifest.md        # one row per vector: id, SHA-256, generation parameters,
 │   │                      #   simulated condition, expected output
 │   └── <vector files>
 ├── telemetry/             # one JSONL file per run, written by `codeanvil telemetry`
+│   └── <run-id>/          # conditional VL-2: immutable measurement.json, telemetry and captures
 └── <package>/             # one folder per service, in that service's language
     ├── mock_hal/          # VL-0 vectors and the VL-1 synthetic generator
     ├── stubs/             # one stub per contract of a module not built yet
@@ -125,6 +126,10 @@ A TS kit `verification/<package>/` is a private pnpm package with vitest and the
 HAL's VL-0 tests use.
 
 `verification/run.sh <vl0|vl1>`:
+
+Set `export PATH="$HOME/.local/bin:$PATH"` inside `run.sh` before starting the collector or any
+package-manager command. Non-login SSH does not load shell startup files; do not rely on the
+host's PATH or send an environment-expanding shell command through the auto MCP door.
 
 1. starts the telemetry collector in the background:
    `codeanvil telemetry --pid $$ --output verification/telemetry/<level>-<timestamp>.jsonl &`,
@@ -140,10 +145,29 @@ run. Attach only this run's JSONL file and report missing, empty or corrupt evid
 `unavailable`, never as a zero or an in-envelope measurement. A reader may skip a torn final
 line with an explicit warning, never corruption before the tail.
 
-## Remote deployment identity (PIL)
+In `mock+real` with all lab prerequisites supplied, add `verification/run.sh vl2 --run-id <id>`.
+The operator command checks the approved protocol/oracle and explicit authorization, creates a
+new output directory exclusively, checks deployment identity, records the actual HAL probe,
+rejects unsupported device configuration, captures telemetry and raw device data, applies the
+declared correction chain and writes `measurement.json` with capture SHA-256 hashes. Always stop
+the device and telemetry on error; preserve partial failed evidence without overwriting it.
+Test the orchestration and failure paths with a fake device API; fake results never count as
+real VL-2 evidence. G2's `references/machine_evidence.md` and `measurement.schema.json` define
+the capture contract and scalar interval limitation. No declared oracle means no VL-2 run.
 
-S2 creates the manifest and checker only when a remote target is selected. They are verification
-infrastructure, not delivered service dependencies. The manifest records the clean delivered git
+On the target, captures are under `verification/telemetry/<run-id>/`. Each `fetch_evidence` call
+returns `local_path`, a new host snapshot under `verification/telemetry/<target>/fetch-<unique>/`.
+Read the selected `<run-id>/measurement.json` inside that returned directory; older remote runs
+may also be present in the snapshot and are not fresh evidence. Local captures stay under
+`verification/telemetry/<run-id>/`. Preserve per-run relative paths inside each record.
+
+## Deployment identity (remote PIL or any VL-2)
+
+S2 creates the manifest and checker for remote PIL or any planned VL-2 capture, including local
+PC-to-device HIL with no remote target. Local VL-0/VL-1 alone do not need them. Local VL-2 uses
+target name `local`, the host CodeAnvil version and the same expected manifest digest checks;
+it needs no MCP or deployment sync. They are verification infrastructure, not delivered service
+dependencies. The manifest records the clean delivered git
 revision, its selected input roots, and sorted project-relative paths with SHA-256 hashes and
 executable bits. Include all service code, kit tests and vectors, the checker itself, lockfiles,
 root manifests and runnable entry-point/configuration files. Exclude only declared outputs and

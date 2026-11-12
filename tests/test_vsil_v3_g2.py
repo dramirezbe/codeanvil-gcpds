@@ -132,3 +132,29 @@ def test_scaffolded_g2_and_verifier_keep_the_same_remote_contract(tmp_path, db_p
         assert "evidence gap" in text
         assert "torn final JSONL line" in text
     assert "templates/skills/" not in g2
+
+
+def test_g2_demands_a_fresh_operator_capture_and_never_promotes_validator_success():
+    text = " ".join(_g2_text().split())
+    machine = (PROTOTYPE.parent / "machine_evidence.md").read_text(encoding="utf-8")
+
+    for required in ("capture_request.json", "--not-before", "never sets `HITL`",
+                     "S2's development capture is not fresh G2 evidence"):
+        assert required in text
+    assert "scalar measurement" in machine
+    assert "Other predicates require an explicitly reviewed schema" in machine
+    assert "never calls the trusted tool" in machine
+    assert "including records with measured" in machine
+    assert "<fetch-local-path>/<run-id>/measurement.json" in machine
+    assert "Every fetch returns `local_path`" in machine
+
+
+def test_scaffold_rewrites_the_machine_validation_command_and_ships_references(tmp_path, db_path):
+    cmd_create(None, tmp_path, project_name="Proj")
+    machine = _scaffold_skill(tmp_path, SKILL, "references", "machine_evidence.md").read_text()
+    s2 = _scaffold_skill(tmp_path, "S2_implement_services", "SKILL.md").read_text()
+
+    assert "templates/skills/" not in machine
+    assert ".agents/skills/G2_adaptive_verification/scripts/validate_measurement.py" in machine
+    assert ".agents/skills/G2_adaptive_verification/references/machine_evidence.md" in s2
+    assert _scaffold_skill(tmp_path, SKILL, "references", "measurement.schema.json").is_file()

@@ -113,7 +113,7 @@ subagents:
         # https://code.claude.com/docs/en/sub-agents#restrict-which-tools-a-subagent-can-use
         frontmatter:
           name: "vsil-verifier"
-          tools: "Read, Grep, Glob, Bash, mcp__vsil_hil_mcp__ssh_exec_cmd, mcp__vsil_hil_mcp__fetch_evidence"
+          tools: "Read, Grep, Glob, Bash, mcp__vsil_hil_mcp__probe_target, mcp__vsil_hil_mcp__ssh_exec_cmd, mcp__vsil_hil_mcp__fetch_evidence"
       opencode:
         path: ".opencode/agents/vsil-verifier.md"
         format: "markdown"
@@ -125,6 +125,7 @@ subagents:
             edit: "deny"
             webfetch: "deny"
             bash: "allow"
+            vsil_hil_mcp_probe_target: "allow"
             vsil_hil_mcp_ssh_exec_cmd: "allow"
             vsil_hil_mcp_fetch_evidence: "allow"
             vsil_hil_mcp_code_sync: "deny"

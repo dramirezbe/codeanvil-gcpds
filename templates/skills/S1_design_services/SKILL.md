@@ -65,7 +65,11 @@ Working files live in `.codeanvil/design/`, outside the cycle report folder.
   In `mock-only`, no module has `hw_dependency: true`, so the highest `required_vl` is VL-1, there
   is no Real HW HAL, and SyRS §4–§6 are not read.
 - In `mock+real`, the Real HW HAL (§1.6) cites the SyRS `PROTO-*` rows it executes, plus the §4
-  correction chains and §5 tolerances it applies. A SyRS §6 that says
+  correction chains and §5 uncertainty/tolerance budgets and decision rule it applies. Declare
+  the oracle/reference and calibration provenance from GT; if any prerequisite is missing, VL-2
+  is blocked. Do not invent an oracle, correction or uncertainty. Design a non-transmitting
+  device probe with actual identity/driver/capabilities and a guard rejecting unsupported
+  configuration before touching the device, plus safe stop/disconnect behaviour. A SyRS §6 that says
   `Not applicable: no lab inputs in the Build Package.` cannot support `mock+real`: record that
   GT gap as a risk in design §6.
 - The Mock HAL (§1.6) and the Telemetry companion (§1.7) are always designed. The Telemetry
