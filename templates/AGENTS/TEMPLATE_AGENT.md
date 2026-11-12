@@ -115,6 +115,22 @@ MCP servers provide tool-calling capabilities to agents. Each server is started
 automatically by your runtime when configured. Use the skills above to drive
 MCP-powered workflows — skills encode the methodology, MCP tools are the primitives.
 
+### Execution targets and evidence
+
+The optional `targets:` block in `.codeanvil/project.yaml` declares remote Linux
+compute units. S1's `Target(s)` selects their names and operating envelopes; no
+declared target means local execution. The opt-in `vsil_hil_mcp` server carries
+remote deploy/run/fetch and read-only target probes. Credentials stay in its
+custody; host runtime permissions govern its trusted command tool.
+
+S2 prepares the deployment and records input identity and observed version parity.
+The fresh G2 verifier checks that identity before and after execution and retrieves
+new evidence; it never deploys or repairs the target. VL-0/VL-1 on the real processor
+with Mock HAL inputs remain VERIFIED (PIL). A remote computer alone is not VL-2.
+The G2 skill's machine-evidence reference defines the optional captured VL-2 format;
+an oracle, protocol, corrections, uncertainty and explicit hardware authorization
+are required. A schema-valid file alone does not set a human gate verdict.
+
 ## Ground Truth (GT)
 
 The `.codeanvil/GT/` directory holds human-authored `.md` files:
