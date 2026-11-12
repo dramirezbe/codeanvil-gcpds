@@ -407,3 +407,16 @@ Las comprobaciones y límites de rollback se añaden aquí al cerrar cada unidad
   Es una migración coherente de **1358 líneas añadidas+eliminadas**, principalmente
   sustitución del contrato anterior; separar schema de sus callers dejaría flags
   obsoletos activos. Se informa el tamaño, sin comprimir texto/tests ni crear PR.
+- R0c: CLI sin `--target`/`--workspace`, discovery autenticado, reutilización de
+  claves locales y workspace por UUID. Otro PC añade sus claves al mismo usuario;
+  el clon legacy migra una sola fila sin duplicar equipo ni cambiar claves de
+  otros clientes. Se retira el motor shell antiguo a favor del CLI. **46 tests
+  passed** (`test_credential_setup`, `test_hil_enrollment`, `test_cli`), incluidos
+  generación/recuperación real de un par SSH temporal y Bash aditivo. La revisión
+  cruzada corrigió pérdida del pin en fallback, acceso final no comprobado y
+  pares público/privado incompatibles; claves perdidas se restauran, no regeneran.
+  Escenario: primer PC, otro proyecto/IP/admin/interfaz, segundo PC, adopción y
+  clon legacy, fallos sin publicar metadata. Rollback: CLI/parser/dispatch,
+  helper, wrapper shell, ancla estable del registro y tests de esta unidad.
+  Migración coherente de **992 líneas añadidas+eliminadas**, con tests y retirada
+  del motor anterior; se informa sobrepaso sin comprimir ni separar el contrato.

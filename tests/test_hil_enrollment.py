@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import pwd
 import shlex
+import shutil
 import subprocess
 
 import pytest
@@ -88,10 +89,49 @@ def test_missing_mac_creates_no_keys(home, monkeypatch):
 
 def test_missing_private_key_is_never_regenerated(home, monkeypatch):
     paths = _existing("legacy")
-    paths["exec"].unlink()
+    paths["deploy"].unlink()
     monkeypatch.setattr(mod.subprocess, "run", lambda *a, **k: pytest.fail("regenerated a missing private key"))
     with pytest.raises(ValueError, match="refusing regeneration"):
         mod.ensure_keys("legacy")
+
+
+def test_existing_public_private_mismatch_is_not_replaced(home, monkeypatch):
+    paths = _existing("legacy")
+    before = paths["deploy"].with_name(paths["deploy"].name + ".pub").read_bytes()
+    monkeypatch.setattr(mod.subprocess, "run", lambda *args, **kwargs: argparse.Namespace(returncode=0, stdout="ssh-ed25519 AAAAdifferent", stderr=""))
+    with pytest.raises(ValueError, match="key mismatch"):
+        mod.ensure_keys("legacy")
+    assert paths["deploy"].with_name(paths["deploy"].name + ".pub").read_bytes() == before
+
+
+def test_post_bootstrap_verification_uses_selected_key_pin_and_mac(home, monkeypatch):
+    paths = _existing("selected")
+    calls = []
+    def run(argv, **kwargs):
+        calls.append(argv)
+        return argparse.Namespace(returncode=0, stdout=MAC, stderr="")
+    monkeypatch.setattr(mod.subprocess, "run", run)
+    mod.verify_access("new-ip", 2222, "selected", [MAC])
+    argv, = calls
+    assert "BatchMode=yes" in argv
+    assert f"UserKnownHostsFile={paths['known_hosts']}" in argv
+    assert argv[argv.index("-i") + 1] == str(paths["exec"])
+    assert argv[-2] == "codeanvil-agent@new-ip"
+    with pytest.raises(ValueError, match="verification failed"):
+        mod.verify_access("new-ip", 2222, "selected", ["dc:a6:32:00:00:01"])
+
+
+def test_real_local_key_pair_survives_repeat_and_public_key_recovery(home):
+    if shutil.which("ssh-keygen") is None:
+        pytest.skip("local ssh-keygen unavailable")
+    paths = mod.ensure_keys("local_test")
+    private_before = {role: paths[role].read_bytes() for role in ("exec", "deploy")}
+    public = paths["exec"].with_name(paths["exec"].name + ".pub")
+    expected_public = public.read_text().split()[:2]
+    public.unlink()
+    mod.ensure_keys("local_test")
+    assert public.read_text().split()[:2] == expected_public
+    assert all(paths[role].read_bytes() == private_before[role] for role in ("exec", "deploy"))
 
 
 def _authorized_block(home, deploy_pub, exec_pub, install_deploy):

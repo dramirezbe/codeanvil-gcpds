@@ -58,9 +58,7 @@ def choose_option(args: argparse.Namespace) -> None:
                 password=args.password,
                 sudo_password=args.sudo_password,
                 ip=args.ip,
-                workspace=args.workspace,
                 port=args.port,
-                target=args.target,
                 os_=args.os,
             )
         case "sandbox":

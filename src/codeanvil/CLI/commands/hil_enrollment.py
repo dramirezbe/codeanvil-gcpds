@@ -93,7 +93,10 @@ def discover_with_keys(host: str, port: int, targets: list[dict]) -> Access | No
             continue
         argv = ["ssh", *_ssh_options(host, port, keys["known_hosts"]), "-i", str(keys["exec"]),
                 "-o", "BatchMode=yes", f"{user}@{host}", DISCOVER_MACS]
-        result = subprocess.run(argv, capture_output=True, text=True, timeout=15)
+        try:
+            result = subprocess.run(argv, capture_output=True, text=True, timeout=15)
+        except subprocess.TimeoutExpired:
+            continue
         if result.returncode != 0:
             if "HOST IDENTIFICATION HAS CHANGED" in result.stderr or "Host key verification failed" in result.stderr:
                 raise ValueError("SSH host authentication changed; inspect known_hosts before enrollment")
@@ -114,27 +117,42 @@ def discover_with_admin(host: str, port: int, user: str, password: str, known_ho
     return Access(_macs(result.stdout), None, user, known_hosts, password)
 
 
+def verify_access(host: str, port: int, key_id: str, expected_macs: list[str]) -> None:
+    """Check the selected agent key and existing host pin before publishing mappings."""
+    keys = identity.key_paths(key_id)
+    argv = ["ssh", *_ssh_options(host, port, keys["known_hosts"]), "-i", str(keys["exec"]),
+            "-o", "BatchMode=yes", f"{AGENT_USER}@{host}", DISCOVER_MACS]
+    result = subprocess.run(argv, capture_output=True, text=True, timeout=15)
+    if result.returncode or not set(_macs(result.stdout)).intersection(expected_macs):
+        raise ValueError("dedicated SSH verification failed after bootstrap; registry and project unchanged")
+
+
 def ensure_keys(key_id: str) -> dict[str, Path]:
     paths = identity.key_paths(key_id)
     paths["dir"].mkdir(parents=True, exist_ok=True)
     paths["dir"].chmod(0o700)
     paths["known_hosts"].touch(mode=0o600, exist_ok=True)
+    paths["known_hosts"].chmod(0o600)
     for role in ("deploy", "exec"):
         private = paths[role]
         public = private.with_name(private.name + ".pub")
-        if private.exists():
-            if not public.exists():
-                result = subprocess.run(["ssh-keygen", "-y", "-f", str(private)], capture_output=True, text=True)
-                if result.returncode:
-                    raise ValueError("existing private key could not be read; refusing regeneration")
-                public.write_text(result.stdout.strip() + "\n")
-        else:
+        if not private.exists():
             if public.exists():
                 raise ValueError("public key exists without its private key; refusing regeneration")
             result = subprocess.run(["ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-C", f"vsil-{role}-{key_id}", "-f", str(private)],
                                     capture_output=True, text=True)
             if result.returncode:
                 raise ValueError("ssh-keygen failed")
+        result = subprocess.run(["ssh-keygen", "-y", "-f", str(private)], stdin=subprocess.DEVNULL,
+                                capture_output=True, text=True, timeout=10)
+        if result.returncode or len(result.stdout.split()) < 2:
+            raise ValueError("existing private key could not be read; refusing regeneration")
+        derived = result.stdout.split()[:2]
+        if public.exists():
+            if public.read_text().split()[:2] != derived:
+                raise ValueError("public/private key mismatch; restore the matching public key explicitly")
+        else:
+            public.write_text(" ".join(derived) + "\n")
         private.chmod(0o600)
     return paths
 

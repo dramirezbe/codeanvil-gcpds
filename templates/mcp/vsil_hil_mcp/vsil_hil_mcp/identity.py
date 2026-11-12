@@ -79,14 +79,19 @@ def find_device(macs: list[str], devices: dict[str, dict] | None = None) -> tupl
 
 
 def remember_device(macs: list[str], host: str, port: int, bootstrap_user: str,
-                    key_identity: str | None = None) -> tuple[str, dict]:
+                    key_identity: str | None = None, device_id: str | None = None) -> tuple[str, dict]:
     """Merge authenticated interface observations without changing established keys."""
     observed = sorted({normalize_mac(mac) for mac in macs})
     if not observed:
         raise ValueError("no physical interface MAC was observed; no keys created")
     devices = read_devices()
     known = find_device(observed, devices)
-    device_id, previous = known if known else (mac_device_id(observed[0]), {})
+    if device_id and (mac_device_id(device_id.removeprefix("mac_")) != device_id
+                      or normalize_mac(device_id.removeprefix("mac_")) not in observed):
+        raise ValueError("declared stable equipment identity must be among its authenticated aliases")
+    if known and device_id and known[0] != device_id:
+        raise ValueError("declared identity conflicts with the local equipment registry")
+    device_id, previous = known if known else (device_id or mac_device_id(observed[0]), {})
     existing_key = previous.get("key_identity")
     if existing_key and key_identity and existing_key != key_identity:
         raise ValueError("equipment already has a different local key identity; refusing to replace it")
