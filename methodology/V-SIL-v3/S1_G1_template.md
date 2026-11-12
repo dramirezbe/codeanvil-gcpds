@@ -1,4 +1,4 @@
-# S1 — Diseño de un Sistema de Servicios en Capas
+# S1 — Diseño de un Sistema de Subsistemas en Capas
 
 <!-- ================================================================
      V-SIL v3 · Etapa S1 + Compuerta G1
@@ -12,15 +12,15 @@
      
      Extensiones V-SIL v3:
        - Envolvente COTS con topología física e interfaces HW↔HW
-       - Topología y despliegue de servicios; una capa base por servicio
+       - Topología y despliegue de subsistemas; una capa base por subsistema
        - Perfil de verificación por módulo y ruta de sistema (VL-0/1/2)
        - Stub recipe por contrato
-       - Clasificación de contratos: HW→SW, SW→SW, SW→HW, servicio→servicio
+       - Clasificación de contratos: HW→SW, SW→SW, SW→HW, subsistema→subsistema
        - Paquete de modelo ML suministrado: apartado opcional, solo si se usa
        - Modo HAL (`mock-only` | `mock+real`): Mock HAL siempre;
          Real HW HAL solo en `mock+real` (§1.6)
        - Telemetry companion obligatorio, nunca se entrega (§1.7)
-       - Toolchain por servicio, con el que S2 construye (Meta)
+       - Toolchain por subsistema, con el que S2 construye (Meta)
        - Sección de riesgos e inviabilidades conocidas (pre-RFD)
      
      Entrada: G0_StRS.md + G0_SyRS.md (aprobados por G0 + Gate H)
@@ -44,10 +44,10 @@
 | Autor              | {{nombre / rol}}                                 |
 | G0 aprobado        | {{ref al commit o hash de G0_StRS + G0_SyRS}}    |
 | Gate H aprobado    | {{fecha + quién autorizó}}                       |
-| Servicios          | {{IDs de servicios; un solo servicio es válido}} |
+| Subsistemas          | {{IDs de subsistemas; un solo subsistema es válido}} |
 | Modelo ML          | {{omitir si no aplica; si se usa, ref. al paquete}} |
 | HAL mode           | {{mock-only / mock+real}}                        |
-| Toolchain          | {{una entrada por servicio: `SVC-xxx: <package> · <language> · <package manager> · <test runner>`; e.g. `SVC-001: fm_edge · Python 3.12 · uv · pytest; SVC-002: dashboard · TypeScript · pnpm · vitest`}} |
+| Toolchain          | {{una entrada por subsistema: `SUB-xxx: <package> · <language> · <package manager> · <test runner>`; e.g. `SUB-001: fm_edge · Python 3.12 · uv · pytest; SUB-002: dashboard · TypeScript · pnpm · vitest`}} |
 | Estado             | borrador / en revisión G1 / aprobado G1          |
 
 ---
@@ -58,7 +58,7 @@
      IEEE 29148 HWC-* blocks.
      
      Cada dispositivo COTS es un nodo en la arquitectura física.
-     Asignar también los dispositivos y enlaces a servicios.
+     Asignar también los dispositivos y enlaces a subsistemas.
      Cada conexión física es una interfaz con restricciones medibles.
      Estas restricciones fluyen hacia los contratos de software:
      un budget de ruido, una precisión de frecuencia, un throughput
@@ -132,16 +132,16 @@ flowchart LR
        nombrar cuál en la sección 3.
 -->
 
-### 0.4 Despliegue y enlaces entre servicios
+### 0.4 Despliegue y enlaces entre subsistemas
 
-| Servicio ID | Proceso / destino de despliegue | HWC-* que utiliza | Enlace(s) con otros servicios | Reinicio / operación desconectada |
+| Subsistema ID | Proceso / destino de despliegue | HWC-* que utiliza | Enlace(s) con otros subsistemas | Reinicio / operación desconectada |
 |-------------|----------------------------------|-------------------|--------------------------------|-----------------------------------|
-| SVC-EDGE    |                                  |                   |                                |                                   |
-| SVC-UI      |                                  |                   |                                |                                   |
+| SUB-EDGE    |                                  |                   |                                |                                   |
+| SUB-UI      |                                  |                   |                                |                                   |
 
-<!-- Una máquina puede alojar varios servicios; un servicio también puede
+<!-- Una máquina puede alojar varios subsistemas; un subsistema también puede
      carecer de HWC-* propio. Indicar los límites reales de proceso, red y
-     fallo. No tratar un módulo en el mismo proceso como otro servicio. -->
+     fallo. No tratar un módulo en el mismo proceso como otro subsistema. -->
 
 ### 0.5 Punto de entrada ejecutable del sistema
 
@@ -149,7 +149,7 @@ flowchart LR
 |-------|-------|
 | Comando desde la raíz del proyecto | {{un comando que arranca el sistema completo}} |
 | Modo HAL de demostración | {{Mock HAL o Real HW HAL}} |
-| Servicios que arranca | {{procesos y servicios}} |
+| Subsistemas que arranca | {{procesos y subsistemas}} |
 | URL o endpoint local | {{dirección y puerto}} |
 | Resultado visible | {{qué debe actualizarse al funcionar}} |
 | Apagado | {{cómo se detienen todos los procesos}} |
@@ -166,38 +166,38 @@ flowchart LR
 <!-- ================================================================
      arc42 §5: Building Block View.
      
-     S1 primero define los servicios del sistema. Cada servicio produce:
+     S1 primero define los subsistemas del sistema. Cada subsistema produce:
        1. Capa base: orquestación + HAL + enrutamiento + contratos
        2. Módulos: unidades plug-in, una por responsabilidad
        3. Integración: módulos conectados a través de su capa base
      
      Restricción fundamental:
        Los módulos se comunican EXCLUSIVAMENTE a través de las
-       interfaces declaradas de la capa base de su servicio.
+       interfaces declaradas de la capa base de su subsistema.
        No hay llamadas directas módulo → módulo.
-       Los servicios se comunican mediante contratos versionados.
+       Los subsistemas se comunican mediante contratos versionados.
      ================================================================ -->
 
-### 1.1 Vista de servicios del sistema (Nivel 0)
+### 1.1 Vista de subsistemas del sistema (Nivel 0)
 
-| Servicio ID | Responsabilidad única | Estado que posee | Entradas / salidas externas | Destino de despliegue |
+| Subsistema ID | Responsabilidad única | Estado que posee | Entradas / salidas externas | Destino de despliegue |
 |-------------|------------------------|-----------------|-----------------------------|-----------------------|
-| SVC-EDGE    |                        |                 |                             |                       |
-| SVC-UI      |                        |                 |                             |                       |
+| SUB-EDGE    |                        |                 |                             |                       |
+| SUB-UI      |                        |                 |                             |                       |
 
 ```mermaid
 flowchart LR
-    EDGE["SVC-EDGE<br/>base + módulos"] -->|"occupancy.v1"| UI["SVC-UI<br/>base + módulos"]
+    EDGE["SUB-EDGE<br/>base + módulos"] -->|"occupancy.v1"| UI["SUB-UI<br/>base + módulos"]
     UI -->|"configure.v1"| EDGE
 ```
 
-**Motivación de las fronteras de servicio:**
+**Motivación de las fronteras de subsistema:**
 
 <!-- ¿Por qué procesos o despliegues distintos? ¿Qué se reinicia por separado?
      ¿Quién posee el estado compartido y qué ocurre si el enlace se interrumpe?
-     Con un solo servicio, declarar aquí ese servicio y omitir las aristas. -->
+     Con un solo subsistema, declarar aquí ese subsistema y omitir las aristas. -->
 
-### 1.2 White Box: cada servicio (Nivel 1)
+### 1.2 White Box: cada subsistema (Nivel 1)
 
 <!-- arc42: "the white box description of the overall system 
      together with black box descriptions of all contained 
@@ -205,7 +205,7 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    subgraph BASE["Capa Base de SVC-xxx"]
+    subgraph BASE["Capa Base de SUB-xxx"]
         direction LR
         ORCH["Orquestación"]
         HAL_["HAL"]
@@ -222,14 +222,14 @@ flowchart TD
 
     subgraph INTEG["Integración"]
         direction LR
-        SYS["Servicio integrado:<br/>módulos conectados por su capa base"]
+        SYS["Subsistema integrado:<br/>módulos conectados por su capa base"]
     end
 
     BASE --> MODS --> INTEG
 ```
 
-<!-- Repetir 1.2–1.4 para cada servicio. La integración del producto completo
-     se describe mediante los contratos y rutas entre servicios de §3–4. -->
+<!-- Repetir 1.2–1.4 para cada subsistema. La integración del producto completo
+     se describe mediante los contratos y rutas entre subsistemas de §3–4. -->
 
 **Motivación de la descomposición:**
 
@@ -254,11 +254,11 @@ flowchart TD
 
 ### 1.3 Capa Base
 
-<!-- White box de la capa base DE CADA SERVICIO: sus responsabilidades
+<!-- White box de la capa base DE CADA SUBSISTEMA: sus responsabilidades
      y cómo se implementarán. La HAL puede estar vacía si no toca HW.
 -->
 
-**Servicio ID:** {{SVC-xxx}}
+**Subsistema ID:** {{SUB-xxx}}
 
 #### 1.3.1 Orquestación
 
@@ -306,11 +306,11 @@ flowchart TD
      El "cómo funciona internamente" es tema de S2.
 -->
 
-#### {{SVC-xxx/módulo_id}}
+#### {{SUB-xxx/módulo_id}}
 
 | Campo            | Valor |
 |------------------|-------|
-| service_id       | <!-- SVC-xxx dueño del módulo; usar SVC-xxx/módulo_id en trazas --> |
+| subsystem_id       | <!-- SUB-xxx dueño del módulo; usar SUB-xxx/módulo_id en trazas --> |
 | Capa funcional   | <!-- HAL / DSP / Decisión / Salida / Control / otra --> |
 | Responsabilidad  | <!-- UNA oración: qué hace este módulo --> |
 | depends_on       | <!-- [lista de contratos que consume] --> |
@@ -356,7 +356,7 @@ flowchart TD
 
 | Campo | Valor |
 |-------|-------|
-| Módulo consumidor | <!-- SVC-xxx/módulo_id --> |
+| Módulo consumidor | <!-- SUB-xxx/módulo_id --> |
 | SYS-* que satisface | <!-- requisitos de resultado, no solo elección técnica --> |
 | Proveedor y procedencia | <!-- quién entrega modelo y datos de procedencia --> |
 | Artefacto y pesos | <!-- ruta/URI controlada, formato, versión, SHA-256 --> |
@@ -495,7 +495,7 @@ flowchart TD
      El DAG de implementación incluye contratos, bases, módulos, hardware
      como fuente/sumidero y la integración final. DEBE ser acíclico para
      que S2 construya con stubs. La interacción en ejecución puede tener
-     mensajes bidireccionales entre servicios; se revisa como protocolo,
+     mensajes bidireccionales entre subsistemas; se revisa como protocolo,
      no se usa para ordenar la implementación.
      ================================================================ -->
 
@@ -509,13 +509,13 @@ flowchart LR
         CTRL["HWC-yyy<br/>dispositivo controlado"]
     end
 
-    C["Contratos de servicio<br/>versionados"]
-    subgraph EDGE["SVC-EDGE"]
+    C["Contratos de subsistema<br/>versionados"]
+    subgraph EDGE["SUB-EDGE"]
         EB["base borde"]
         M1["adquisición<br/>HAL · VL-2"]
         M2["detector<br/>DSP · VL-1"]
     end
-    subgraph UI["SVC-UI"]
+    subgraph UI["SUB-UI"]
         UB["base UI"]
         M3["pantalla<br/>Salida · VL-1"]
     end
@@ -531,8 +531,8 @@ flowchart LR
 <!-- Guía para el diagrama:
      - Los nodos HW van en un subgraph separado.
      - Las aristas de dependencia nombran contratos u orden de construcción.
-     - Cada nodo SW muestra: servicio, id, capa funcional, VL requerido.
-     - Un contrato entre servicios se define antes de ambos servicios;
+     - Cada nodo SW muestra: subsistema, id, capa funcional, VL requerido.
+     - Un contrato entre subsistemas se define antes de ambos subsistemas;
        NO se representa como una dependencia mutua entre ellos.
      - Los datos y comandos en ejecución se muestran en §2.3.
 -->
@@ -543,11 +543,11 @@ flowchart LR
      Este es el orden en que S2 implementará los módulos
      después de la capa base.
      
-     El primer módulo de cada servicio solo depende de contratos, base
-     y, si aplica, HW. El último paso integra los servicios reales.
+     El primer módulo de cada subsistema solo depende de contratos, base
+     y, si aplica, HW. El último paso integra los subsistemas reales.
 -->
 
-| Paso | Servicio | Módulo / integración | Depende de (contratos) | Justificación del orden |
+| Paso | Subsistema | Módulo / integración | Depende de (contratos) | Justificación del orden |
 |------|----------|----------------------|------------------------|-------------------------|
 | 1    |          |                      |                        |                         |
 | 2    |          |                      |                        |                         |
@@ -557,14 +557,14 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    EDGE["SVC-EDGE"] -->|"occupancy.v1: telemetría"| UI["SVC-UI"]
+    EDGE["SUB-EDGE"] -->|"occupancy.v1: telemetría"| UI["SUB-UI"]
     UI -->|"configure.v1: comando"| EDGE
 ```
 
 <!-- Un bucle de mensajes es válido si cada arista tiene contrato §3.4.
      Para cada bucle: ¿quién posee el estado?, ¿qué confirma un comando?,
      ¿cuándo vence?, ¿cómo se evita un reintento duplicado?, ¿qué ocurre
-     si un servicio cae o se reconecta? -->
+     si un subsistema cae o se reconecta? -->
 
 ---
 
@@ -585,7 +585,7 @@ flowchart LR
        SW → HW:  lo que el software envía al hardware
                   (comandos de control, configuración)
 
-       Servicio → servicio: mensajes que cruzan procesos o red
+       Subsistema → subsistema: mensajes que cruzan procesos o red
                   con esquema, versión y semántica de fallos
      
      CADA contrato debe ser suficiente para derivar un stub
@@ -645,8 +645,8 @@ flowchart LR
 
 | Campo               | Valor |
 |----------------------|-------|
-| Productor            | <!-- SVC-xxx/módulo que genera; mismo servicio --> |
-| Consumidor(es)       | <!-- [SVC-xxx/módulos que consumen]; mismo servicio --> |
+| Productor            | <!-- SUB-xxx/módulo que genera; mismo subsistema --> |
+| Consumidor(es)       | <!-- [SUB-xxx/módulos que consumen]; mismo subsistema --> |
 | Tipo de dato         |       |
 | Shape / estructura   |       |
 | Unidades             |       |
@@ -680,14 +680,14 @@ flowchart LR
 <!-- Ejemplo: "Mock GPIO que registra llamadas y reporta
      posición actual. No controla hardware real." -->
 
-### 3.4 Contratos servicio → servicio
+### 3.4 Contratos subsistema → subsistema
 
-#### {{contrato_id}}: {{SVC-origen}} → {{SVC-destino}}
+#### {{contrato_id}}: {{SUB-origen}} → {{SUB-destino}}
 
 | Campo | Valor |
 |-------|-------|
-| Productor / consumidor | <!-- SVC-xxx + puerto de cada extremo --> |
-| Propietario del estado | <!-- un servicio; la réplica del otro se identifica --> |
+| Productor / consumidor | <!-- SUB-xxx + puerto de cada extremo --> |
+| Propietario del estado | <!-- un subsistema; la réplica del otro se identifica --> |
 | Operación / mensaje | <!-- e.g., occupancy.v1 o configure.v1 --> |
 | Transporte / dirección | <!-- HTTP, evento, WebSocket, etc. --> |
 | Esquema y versión | <!-- campos, tipos, compatibilidad vN/vN+1 --> |
@@ -715,15 +715,15 @@ flowchart LR
 
 <!-- ================================================================
      IEEE 29148: cada requisito SYS-* de G0_SyRS.md debe trazar
-     a un módulo o a una ruta entre servicios con módulos responsables.
+     a un módulo o a una ruta entre subsistemas con módulos responsables.
      
      Un SYS-* sin módulo = requisito no cubierto.
      Un módulo sin SYS-* = código huérfano (cuestionar).
      ================================================================ -->
 
-### 4.1 Requisitos → Servicios, Módulos y Rutas
+### 4.1 Requisitos → Subsistemas, Módulos y Rutas
 
-| Requisito | Texto (resumen) | Servicio(s) | Módulo(s) | Ruta / contrato(s) | Responsable de aceptación |
+| Requisito | Texto (resumen) | Subsistema(s) | Módulo(s) | Ruta / contrato(s) | Responsable de aceptación |
 |-----------|-----------------|-------------|-----------|---------------------|---------------------------|
 | SYS-001   |                 |             |           |                     |                           |
 | SYS-002   |                 |             |           |                     |                           |
@@ -732,7 +732,7 @@ flowchart LR
 
 <!-- Útil para detectar módulos huérfanos. -->
 
-| Servicio | Módulo (SVC-xxx/módulo_id) | Requisito(s) que satisface |
+| Subsistema | Módulo (SUB-xxx/módulo_id) | Requisito(s) que satisface |
 |----------|----------------------------|----------------------------|
 |          |                            |                            |
 
@@ -748,14 +748,14 @@ flowchart LR
 
 ### 4.4 Rutas de Sistema y Evidencia de Extremo a Extremo
 
-| Ruta ID | SYS-* | Servicios y contratos en orden | Entrada → resultado observable | Presupuesto extremo a extremo | required_vl | Entorno / criterio de aceptación |
+| Ruta ID | SYS-* | Subsistemas y contratos en orden | Entrada → resultado observable | Presupuesto extremo a extremo | required_vl | Entorno / criterio de aceptación |
 |---------|-------|--------------------------------|--------------------------------|-------------------------------|-------------|----------------------------------|
 | PATH-001 |       |                                |                                |                               | VL-0/1/2    |                                  |
 
-<!-- Cada SYS-* que cruza servicios necesita una PATH-* y un presupuesto
-     medible. S2 prueba la ruta con servicios conectados y entradas externas
+<!-- Cada SYS-* que cruza subsistemas necesita una PATH-* y un presupuesto
+     medible. S2 prueba la ruta con subsistemas conectados y entradas externas
      simuladas en VL-0. VL-1 y VL-2 añaden el entorno declarado. Una prueba
-     aislada por servicio no demuestra el requisito de extremo a extremo. -->
+     aislada por subsistema no demuestra el requisito de extremo a extremo. -->
 
 ---
 
@@ -770,7 +770,7 @@ flowchart LR
      - ¿Por qué separar feature_extractor de fft_engine?
      - ¿Por qué audio_demod no pasa por el clasificador?
      - ¿Por qué este mecanismo de orquestación?
-     - ¿Por qué separar estos servicios y quién posee el estado compartido?
+     - ¿Por qué separar estos subsistemas y quién posee el estado compartido?
      - ¿Qué enlace y protocolo sostienen las rutas PATH-*?
      
      Cada decisión sigue el formato MADR.
@@ -869,7 +869,7 @@ flowchart LR
 ## G1.2 — Completitud de interfaces
 
 <!-- REVISIÓN: cada arista interna tiene contrato §3.1–3.3;
-     cada intercambio entre servicios tiene contrato §3.4. La suficiencia
+     cada intercambio entre subsistemas tiene contrato §3.4. La suficiencia
      del contenido y la semántica de fallo son juicio de diseño.
 -->
 
@@ -890,7 +890,7 @@ SIN preguntarle nada al diseñador?
 | SYS-* sin módulo o ruta (sección 4.1)    | (listar)    |
 | Módulos sin SYS-* (sección 4.2)          | (listar)    |
 | NRM-* sin contrato afectado (sección 4.3)| (listar)    |
-| SYS-* entre servicios sin PATH-* (§4.4) | (listar)    |
+| SYS-* entre subsistemas sin PATH-* (§4.4) | (listar)    |
 
 ## G1.4 — Viabilidad de stubs
 
@@ -920,7 +920,7 @@ SIN preguntarle nada al diseñador?
 |                 | true/false    | VL-n        | sí / FAIL: ... |
 
 **Regla:** `hw_dependency: true` → `required_vl: VL-2` (obligatorio).
-El perfil incluye `service_id`. En §4.4, cada PATH-* declara `required_vl`,
+El perfil incluye `subsystem_id`. En §4.4, cada PATH-* declara `required_vl`,
 entorno y criterio medible. Ejecutarse en un equipo físico no implica por sí
 solo `hw_dependency: true`; la corrección debe depender de ese hardware.
 
@@ -996,13 +996,13 @@ solo `hw_dependency: true`; la corrección debe depender de ese hardware.
 |---------|---------------------|----------------------|------------------|
 |         |                     |                      |                  |
 
-## G1.9 — Topología, estado y bucles entre servicios
+## G1.9 — Topología, estado y bucles entre subsistemas
 
-<!-- JUICIO DE DISEÑO. Un solo servicio pasa si no hay aristas externas. -->
+<!-- JUICIO DE DISEÑO. Un solo subsistema pasa si no hay aristas externas. -->
 
 | Verificación | Resultado |
 |--------------|-----------|
-| ¿Cada servicio de §1.1 tiene responsabilidad, despliegue y puertos definidos? | |
+| ¿Cada subsistema de §1.1 tiene responsabilidad, despliegue y puertos definidos? | |
 | ¿Cada mensaje de §2.3 tiene contrato versionado en §3.4? | |
 | ¿La propiedad del estado y la compatibilidad de versiones están claras? | |
 | ¿Los bucles de comandos/telemetría tienen timeout, confirmación e idempotencia? | |
@@ -1012,12 +1012,12 @@ solo `hw_dependency: true`; la corrección debe depender de ese hardware.
 
 | Verificación | Resultado |
 |--------------|-----------|
-| ¿Cada SYS-* entre servicios tiene PATH-* en §4.4 y responsable? | |
+| ¿Cada SYS-* entre subsistemas tiene PATH-* en §4.4 y responsable? | |
 | ¿El presupuesto de cada PATH-* se reparte entre módulos y enlace? | |
 | ¿Existe prueba VL-0 con procesos conectados y entradas simuladas? | |
 | ¿required_vl y entorno permiten comprobar el criterio de aceptación? | |
 
-<!-- La suma de pruebas aisladas por servicio no sustituye una prueba
+<!-- La suma de pruebas aisladas por subsistema no sustituye una prueba
      de la ruta completa. G2 debe citar evidencia por módulo y PATH-*. -->
 
 ## G1.11 — Escalera de sustitución HAL
@@ -1084,8 +1084,8 @@ solo `hw_dependency: true`; la corrección debe depender de ese hardware.
 
 | Verificación | Resultado |
 |--------------|-----------|
-| ¿Responde el runtime de cada servicio (versión registrada)? | |
-| ¿Responde el gestor de paquetes de cada servicio (versión registrada)? | |
+| ¿Responde el runtime de cada subsistema (versión registrada)? | |
+| ¿Responde el gestor de paquetes de cada subsistema (versión registrada)? | |
 | ¿Las versiones cumplen lo que exige el diseño? | |
 | Herramientas instaladas tras el sí del usuario, o rechazadas | |
 
@@ -1093,7 +1093,7 @@ solo `hw_dependency: true`; la corrección debe depender de ese hardware.
 
 | Verificación | Resultado |
 |--------------|-----------|
-| ¿§0.5 define un comando desde la raíz que arranca todos los servicios? | |
+| ¿§0.5 define un comando desde la raíz que arranca todos los subsistemas? | |
 | ¿Se identifica el HAL, la URL, el resultado visible y el apagado? | |
 | ¿Puede ejecutarse sin importar el kit `verification/` no entregado? | |
 

@@ -17,7 +17,7 @@ _DEVIATION = re.compile(r"RFD-\d{3}\.md\Z")
 _REPORTS = tuple(CONFIG["report_order"])
 _GT = {"build_package.md": "Build Package", "StRS.md": "Stakeholder requirements", "SyRS.md": "System requirements"}
 _GRAPH_THEMES = {"dependency_graph.html": "dark", "dependency_graph_light.html": "light"}
-_DESIGN = {"SDD.md": "Service design", "dependency_graph.html": "Dependency graph",
+_DESIGN = {"SDD.md": "System design", "dependency_graph.html": "Dependency graph",
            "dependency_graph_light.html": "Dependency graph · light"}
 
 
@@ -242,7 +242,7 @@ def read_artifact(root: Path, project_path: str | None, path: str, iteration: in
         content = header + chosen.content + "\n"
     format_ = "html" if path.endswith(".html") else "markdown" if path.endswith(".md") else "text"
     if path in {f".codeanvil/design/{name}" for name in _GRAPH_THEMES}:
-        library_path = ".agents/skills/S1_design_services/assets/vis-network.min.js"
+        library_path = ".agents/skills/S1_design_system/assets/vis-network.min.js"
         library = _contained(project, library_path)
         if library != project / library_path:
             raise HTTPException(status_code=400, detail="Graph library must use the copied project asset")

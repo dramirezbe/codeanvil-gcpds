@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>S1 dependency graph</title>
-<script src="../../.agents/skills/S1_design_services/assets/vis-network.min.js"></script>
+<script src="../../.agents/skills/S1_design_system/assets/vis-network.min.js"></script>
 <style>
   :root{color-scheme:dark;--bg:#111417;--surface:#171b1f;--line:#2b3238;--text:#e5e8e9;--muted:#89949b}
   body{margin:0;height:100vh;display:flex;flex-direction:column;font-family:system-ui;background:var(--bg);color:var(--text)}
@@ -23,19 +23,19 @@ const manifest = {
   gt: { strs: '<gt.strs>', syrs: '<gt.syrs>' },
   cycle: '<cycle>',
 };
-// services: one spider each. Module colors: one per functional layer, in this
+// subsystems: one spider each. Module colors: one per functional layer, in this
 // order: '#72c7ca', '#83c99b', '#a5b4c1', '#d9b36f'. These identifiers stay
 // identical in both files; the renderer adapts their contrast for each theme.
-//   { id: 'SVC-X', label: 'SVC-X\nX base\nresponsibility', modules: [
+//   { id: 'SUB-X', label: 'SUB-X\nX base\nresponsibility', modules: [
 //     { id: 'module_id', label: 'module_id\nVL-0', color: '#72c7ca' },
 //   ] },
-const services = [];
+const subsystems = [];
 // hardware: one entry per COTS device, attached to the modules that touch it.
-//   { id: 'HWC-001', label: 'HWC-001\nDevice', to: ['SVC-X/module_id'] },
+//   { id: 'HWC-001', label: 'HWC-001\nDevice', to: ['SUB-X/module_id'] },
 const hardware = [];
-// serviceContracts: one entry per versioned contract.
-//   { id: 'name.v1', from: ['SVC-X'], to: ['SVC-Y', 'SVC-Z'] },
-const serviceContracts = [];
+// subsystemContracts: one entry per versioned contract.
+//   { id: 'name.v1', from: ['SUB-X'], to: ['SUB-Y', 'SUB-Z'] },
+const subsystemContracts = [];
 // ===================================================
 
 const palettes = {
@@ -69,24 +69,24 @@ document.title = `S1 dependency graph - ${manifest.name}`;
 document.getElementById('meta').textContent =
   `id:    ${manifest.id}\nname:  ${manifest.name}\ncycle: ${manifest.cycle}\ngt:    ${manifest.gt.strs}, ${manifest.gt.syrs}`;
 document.getElementById('legend').textContent =
-  `${selectedTheme === 'dark' ? 'Dark' : 'Light'} · Circle: service base · Box: functional module / hardware · Diamond: service contract`;
+  `${selectedTheme === 'dark' ? 'Dark' : 'Light'} · Circle: subsystem base · Box: functional module / hardware · Diamond: subsystem contract`;
 
 const graph = document.getElementById('graph');
 if (typeof vis === 'undefined') {
   graph.textContent = 'vis-network could not load: keep this page inside its project, next to the .agents folder.';
 } else {
-  // Each service is a spider: base at the center, modules on the spokes.
-  // Module ids are prefixed by service, so two services may reuse a module name.
+  // Each subsystem is a spider: base at the center, modules on the spokes.
+  // Module ids are prefixed by subsystem, so two subsystems may reuse a module name.
   const nodes = [
-    ...services.map((s) => ({ id: s.id, label: s.label, color: nodeColor(palette.base), shape: 'circle', font: { color: palette.text, size: 13 } })),
-    ...services.flatMap((s) => s.modules.map((m) => box({ ...m, id: `${s.id}/${m.id}`, color: nodeColor(layerColor(m.color)) }))),
+    ...subsystems.map((s) => ({ id: s.id, label: s.label, color: nodeColor(palette.base), shape: 'circle', font: { color: palette.text, size: 13 } })),
+    ...subsystems.flatMap((s) => s.modules.map((m) => box({ ...m, id: `${s.id}/${m.id}`, color: nodeColor(layerColor(m.color)) }))),
     ...hardware.map((h) => box({ id: h.id, label: h.label, color: nodeColor(palette.hardware) })),
-    ...serviceContracts.map((c) => ({ ...box({ id: `c:${c.id}`, label: c.id, color: nodeColor(palette.contract) }), shape: 'diamond' })),
+    ...subsystemContracts.map((c) => ({ ...box({ id: `c:${c.id}`, label: c.id, color: nodeColor(palette.contract) }), shape: 'diamond' })),
   ];
   const edges = [
-    ...services.flatMap((s) => s.modules.map((m) => ({ from: s.id, to: `${s.id}/${m.id}`, color: { color: palette.edge } }))),
+    ...subsystems.flatMap((s) => s.modules.map((m) => ({ from: s.id, to: `${s.id}/${m.id}`, color: { color: palette.edge } }))),
     ...hardware.flatMap((h) => h.to.map((to) => ({ from: h.id, to, arrows: 'to', dashes: true, color: { color: palette.hardware } }))),
-    ...serviceContracts.flatMap((c) => [
+    ...subsystemContracts.flatMap((c) => [
       ...c.from.map((from) => ({ from, to: `c:${c.id}`, arrows: 'to', color: { color: palette.contract } })),
       ...c.to.map((to) => ({ from: `c:${c.id}`, to, arrows: 'to', color: { color: palette.contract } })),
     ]),

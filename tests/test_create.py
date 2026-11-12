@@ -338,14 +338,14 @@ def test_config_declares_skill_prerequisite_chain():
     skills = CONFIG["skills"]
     assert list(skills) == [
         "S0_normalise_build_package", "G0_valid_req_and_GT",
-        "S1_design_services", "G1_design_review",
-        "S2_implement_services", "G2_adaptive_verification",
+        "S1_design_system", "G1_design_review",
+        "S2_implement_subsystems", "G2_adaptive_verification",
     ]
     assert skills["S0_normalise_build_package"]["prerequisite"] is None
     assert skills["G0_valid_req_and_GT"]["prerequisite"] == "S0"
-    assert skills["S1_design_services"]["prerequisite"] == "G0"
+    assert skills["S1_design_system"]["prerequisite"] == "G0"
     assert skills["G1_design_review"]["prerequisite"] == "S1"
-    assert skills["S2_implement_services"]["prerequisite"] == "G1"
+    assert skills["S2_implement_subsystems"]["prerequisite"] == "G1"
     assert skills["G2_adaptive_verification"]["prerequisite"] == "S2"
 
 
@@ -426,15 +426,15 @@ def test_agents_md_skill_table_shows_the_prerequisite_chain(tmp_path, db_path):
     rows = {
         name: next(line for line in lines if f".agents/skills/{name}/" in line)
         for name in ("S0_normalise_build_package", "G0_valid_req_and_GT",
-                     "S1_design_services", "G1_design_review", "S2_implement_services",
+                     "S1_design_system", "G1_design_review", "S2_implement_subsystems",
                      "G2_adaptive_verification", "RFD_request_for_deviation")
     }
 
     assert "None (entry point)" in rows["S0_normalise_build_package"]
     assert "`S0.md` latest iteration `HITL: PASS`" in rows["G0_valid_req_and_GT"]
-    assert "`G0.md` latest iteration `HITL: PASS`" in rows["S1_design_services"]
+    assert "`G0.md` latest iteration `HITL: PASS`" in rows["S1_design_system"]
     assert "`S1.md` latest iteration `HITL: PASS`" in rows["G1_design_review"]
-    assert "`G1.md` latest iteration `HITL: PASS`" in rows["S2_implement_services"]
+    assert "`G1.md` latest iteration `HITL: PASS`" in rows["S2_implement_subsystems"]
     assert "`S2.md` latest iteration `HITL: PASS`" in rows["G2_adaptive_verification"]
     assert rows["RFD_request_for_deviation"].rstrip().endswith("| - |")
     order = [lines.index(rows[name]) for name in rows]
@@ -467,8 +467,8 @@ def test_scaffold_ships_the_v3_chain_and_not_the_retired_skills(tmp_path, db_pat
     cmd_create(None, tmp_path, project_name="Proj")
     skills = tmp_path / "proj" / ".agents" / "skills"
 
-    for name in ("S0_normalise_build_package", "G0_valid_req_and_GT", "S1_design_services",
-                 "G1_design_review", "S2_implement_services", "G2_adaptive_verification",
+    for name in ("S0_normalise_build_package", "G0_valid_req_and_GT", "S1_design_system",
+                 "G1_design_review", "S2_implement_subsystems", "G2_adaptive_verification",
                  "RFD_request_for_deviation"):
         assert (skills / name / "SKILL.md").is_file()
     assert not (skills / "custody-chain").exists()
@@ -490,13 +490,13 @@ def test_s0_blueprints_match_the_g0_copies(tmp_path, db_path):
 def test_scaffolded_s1_ships_its_graph_template_and_library(tmp_path, db_path):
     cmd_create(None, tmp_path, project_name="Proj")
 
-    template = _scaffold_skill(tmp_path, "S1_design_services", "references", "dependency_graph_template.html")
-    library = _scaffold_skill(tmp_path, "S1_design_services", "assets", "vis-network.min.js")
+    template = _scaffold_skill(tmp_path, "S1_design_system", "references", "dependency_graph_template.html")
+    library = _scaffold_skill(tmp_path, "S1_design_system", "assets", "vis-network.min.js")
     assert template.is_file() and library.is_file()
     html = template.read_text(encoding="utf-8")
     assert "// === DATA" in html
     assert "https://" not in html.split("<style>")[0]
-    assert _scaffold_skill(tmp_path, "S1_design_services", "references", "SDD.md").is_file()
+    assert _scaffold_skill(tmp_path, "S1_design_system", "references", "SDD.md").is_file()
     assert _scaffold_skill(tmp_path, "G1_design_review", "references", "G1_CHECKLIST.md").is_file()
 
 
@@ -535,7 +535,7 @@ def test_s0_skill_is_the_entry_point_and_normalises_the_build_package():
 
 
 def test_s1_skill_writes_the_design_and_graph_to_the_design_dir():
-    text = _skill_text("S1_design_services")
+    text = _skill_text("S1_design_system")
 
     assert ".codeanvil/report/<cycle-name>/S1.md" in text
     assert ".codeanvil/design/SDD.md" in text
@@ -547,7 +547,7 @@ def test_s1_skill_writes_the_design_and_graph_to_the_design_dir():
 
 
 def test_s1_skill_builds_the_spider_graph_from_its_own_template():
-    text = _skill_text("S1_design_services")
+    text = _skill_text("S1_design_system")
 
     assert ".codeanvil/design/dependency_graph.html" in text
     assert ".codeanvil/design/dependency_graph_light.html" in text
@@ -558,8 +558,8 @@ def test_s1_skill_builds_the_spider_graph_from_its_own_template():
 
 
 def test_s1_graph_template_is_offline_and_ships_the_vendored_library():
-    template = _skill_file("S1_design_services", "references", "dependency_graph_template.html")
-    library = _skill_file("S1_design_services", "assets", "vis-network.min.js")
+    template = _skill_file("S1_design_system", "references", "dependency_graph_template.html")
+    library = _skill_file("S1_design_system", "assets", "vis-network.min.js")
 
     html = template.read_text(encoding="utf-8")
     assert "// === DATA" in html and "// ===" in html
@@ -569,10 +569,10 @@ def test_s1_graph_template_is_offline_and_ships_the_vendored_library():
 
 
 def test_s1_design_template_keeps_the_numbered_sections():
-    text = _skill_file("S1_design_services", "references", "SDD.md").read_text(encoding="utf-8")
+    text = _skill_file("S1_design_system", "references", "SDD.md").read_text(encoding="utf-8")
 
     for heading in ("## 0. COTS envelope", "## 1. Building block view", "### 2.2 Topological",
-                    "### 3.4 Service → service contracts", "## 4. Traceability",
+                    "### 3.4 Subsystem → subsystem contracts", "## 4. Traceability",
                     "## 5. Design decisions", "## 6. Risks"):
         assert heading in text
 
@@ -606,7 +606,7 @@ def test_rfd_skill_separates_defects_from_infeasible_requirements():
 
 def test_chain_skills_refuse_a_cycle_closed_by_an_rfd():
     for skill in ("S0_normalise_build_package", "G0_valid_req_and_GT",
-                  "S1_design_services", "G1_design_review"):
+                  "S1_design_system", "G1_design_review"):
         text = _skill_text(skill)
         assert "Cycle closed by RFD. Continue in cycle <name>." in text, skill
         assert "Superseded by cycle:" in text, skill

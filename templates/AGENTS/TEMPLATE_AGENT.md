@@ -20,6 +20,9 @@ All instructions below are binding.
 - Only S2 writes code under `src/` and `verification/`, reworks included; G2 and the
   `vsil-verifier` subagent **MUST NOT** edit code.
 - Delivered code under `src/` **MUST NOT** import or call `codeanvil` or depend on `verification/`.
+- **Legacy terminology:** in pre-rename artifacts (archived runs, the `v0.7.0-example-artifacts`,
+  older reports or designs), `service` / `SVC-nnn` is the legacy name of `subsystem` / `SUB-nnn`.
+  Treat them as equivalent, and **do not** rewrite old snapshots to the new term.
 
 ## On Project Open
 

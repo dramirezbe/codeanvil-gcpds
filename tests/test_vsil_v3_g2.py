@@ -71,7 +71,7 @@ def test_verified_prototype_template_has_the_paper_sections():
                     "Verifier", "RFDs issued", "Future work"):
         assert section in text, section
     assert "VERIFIED" in text and "VALIDATED" in text
-    assert "verification/" in text and "src/<service>/" in text
+    assert "verification/" in text and "src/<subsystem>/" in text
 
 
 def test_scaffold_ships_the_g2_reference(tmp_path, db_path):
@@ -176,11 +176,11 @@ def test_machine_record_accepts_general_metrics_without_hil_attestation():
 def test_scaffold_rewrites_the_machine_validation_command_and_ships_references(tmp_path, db_path):
     cmd_create(None, tmp_path, project_name="Proj")
     machine = _scaffold_skill(tmp_path, SKILL, "references", "machine_evidence.md").read_text()
-    s2 = _scaffold_skill(tmp_path, "S2_implement_services", "SKILL.md").read_text()
+    s2 = _scaffold_skill(tmp_path, "S2_implement_subsystems", "SKILL.md").read_text()
 
     assert "templates/skills/" not in machine
     assert ".agents/skills/G2_adaptive_verification/scripts/validate_measurement.py" in machine
-    assert ".agents/skills/S2_implement_services/references/machine_evidence.md" in s2
+    assert ".agents/skills/S2_implement_subsystems/references/machine_evidence.md" in s2
     assert _scaffold_skill(tmp_path, SKILL, "references", "measurement.schema.json").is_file()
 
 
@@ -188,11 +188,11 @@ def test_s2_owns_an_executable_copy_of_canonical_measurement_assets(tmp_path, db
     record, _ = captured
     cmd_create(None, tmp_path, project_name="Proj")
     producer = _scaffold_skill(tmp_path, SKILL)
-    consumer = _scaffold_skill(tmp_path, "S2_implement_services")
+    consumer = _scaffold_skill(tmp_path, "S2_implement_subsystems")
     for relative in ("scripts/validate_measurement.py", "references/measurement.schema.json"):
         assert (consumer / relative).read_bytes() == (producer / relative).read_bytes()
     guide = (consumer / "references/machine_evidence.md").read_text()
-    assert ".agents/skills/S2_implement_services/scripts/validate_measurement.py" in guide
+    assert ".agents/skills/S2_implement_subsystems/scripts/validate_measurement.py" in guide
     assert ".agents/skills/G2_adaptive_verification/" not in guide
 
     # Removing the producer from this temporary scaffold proves the consumer is standalone.
@@ -207,6 +207,6 @@ def test_s2_owns_an_executable_copy_of_canonical_measurement_assets(tmp_path, db
 @pytest.mark.parametrize("asset,error", [("references/missing.json", FileNotFoundError),
                                          ("../outside.json", ValueError)])
 def test_broken_shared_asset_configuration_fails_explicitly(tmp_path, db_path, monkeypatch, asset, error):
-    monkeypatch.setitem(CONFIG, "shared_skill_assets", {SKILL: {"S2_implement_services": [asset]}})
+    monkeypatch.setitem(CONFIG, "shared_skill_assets", {SKILL: {"S2_implement_subsystems": [asset]}})
     with pytest.raises(error, match="shared skill asset"):
         cmd_create(None, tmp_path, project_name="Proj")

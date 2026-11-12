@@ -44,7 +44,7 @@ def build_parser() -> argparse.ArgumentParser:
             "  S0 -> G0 -> S1 -> G1 -> S2 -> G2\n"
             "  S0  Normalise the Build Package into the GT pair\n"
             "  G0  Deterministic structural validation of the GT pair + human Gate H\n"
-            "  S1  Design of layered services    G1  Human design review\n"
+            "  S1  Design of layered subsystems    G1  Human design review\n"
             "  S2, G2  Implementation and verification (not available yet)\n"
             "\n"
             "Config and DB stored at ~/.codeanvil-config/ — projects live anywhere."
@@ -273,7 +273,7 @@ def build_parser() -> argparse.ArgumentParser:
     telemetry.add_argument("--duration", type=float, default=0.0,
                            help="seconds to sample; 0 runs until SIGINT or SIGTERM (default: 0)")
     telemetry.add_argument("--counters", type=Path, default=None,
-                           help="JSON object written by the HAL or the service instrumentation")
+                           help="JSON object written by the HAL or the subsystem instrumentation")
     telemetry.add_argument("--fsync", action="store_true",
                            help="sync every sample to disk (default: flush to the OS cache only)")
 

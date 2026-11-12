@@ -1,6 +1,6 @@
 ---
-name: s1-design-services
-description: "Trigger: S1, design services, architecture, service topology, contracts, stubs, dependency graph. From a passed G0 pair, write the S1 design document (layered services, contracts with stubs, traceability, decisions, risks) and its dependency graph."
+name: s1-design-system
+description: "Trigger: S1, design subsystems, architecture, subsystem topology, contracts, stubs, dependency graph. From a passed G0 pair, write the S1 design document (layered subsystems, contracts with stubs, traceability, decisions, risks) and its dependency graph."
 license: Apache-2.0
 compatibility: "No network access, no scripts. Reads .codeanvil/GT/StRS.md, .codeanvil/GT/SyRS.md and .codeanvil/project.yaml. Writes .codeanvil/design/SDD.md, .codeanvil/design/dependency_graph.html (dark), .codeanvil/design/dependency_graph_light.html and .codeanvil/report/<cycle-name>/S1.md."
 metadata:
@@ -10,11 +10,11 @@ metadata:
   pipeline: "V-SIL"
 ---
 
-# S1 — Design of a System of Layered Services
+# S1 — Design of a System of Layered Subsystems
 
-Produce one design document that resolves every implementation-critical decision: service
-topology, a layered base and modules per service, contracts with stubs, traceability and system
-paths. One service is a valid special case. A human reviews the result at G1.
+Produce one design document that resolves every implementation-critical decision: subsystem
+topology, a layered base and modules per subsystem, contracts with stubs, traceability and system
+paths. One subsystem is a valid special case. A human reviews the result at G1.
 
 ## Prerequisite and Cycle
 
@@ -45,7 +45,7 @@ rework, or by the user.
 | Input | `.codeanvil/project.yaml` | Read-only; its keys are copied as text into the graph |
 | Input (optional) | Supplied ML package | Only if the design uses ML or the GT requires it |
 | Input (rework) | Latest `G1.md` FEEDBACK, or `S2.md` / `G2.md` FEEDBACK with `Verdict: design defect` | Named sections to rework |
-| Template | `templates/skills/S1_design_services/references/SDD.md` | This skill's locked template |
+| Template | `templates/skills/S1_design_system/references/SDD.md` | This skill's locked template |
 | Output | `.codeanvil/design/SDD.md` | Overwritten on rework |
 | Output | `.codeanvil/design/dependency_graph.html` | Dark dependency graph; overwritten on rework |
 | Output | `.codeanvil/design/dependency_graph_light.html` | Light dependency graph; same design data; overwritten on rework |
@@ -56,8 +56,8 @@ Working files live in `.codeanvil/design/`, outside the cycle report folder.
 ## Hard Rules
 
 - **Never edit GT.** A GT gap goes to design §6 as a risk, or follows the RFD route.
-- Modules talk only through their service's base. No cross-service call bypasses a versioned contract.
-- Split services only when they deploy or restart independently, communicate over a network, or
+- Modules talk only through their subsystem's base. No cross-subsystem call bypasses a versioned contract.
+- Split subsystems only when they deploy or restart independently, communicate over a network, or
   have distinct failure domains.
 - `hw_dependency: true` means `required_vl: VL-2`. Running on a computer does not count as a
   hardware dependency.
@@ -74,7 +74,7 @@ Working files live in `.codeanvil/design/`, outside the cycle report folder.
   kit contract; real hardware runs require the pre-HW review checkpoint in S2/G2.
 - The Mock HAL (§1.6) and the Telemetry companion (§1.7) are always designed. The Telemetry
   companion lives in `verification/telemetry/`: it is never a module and never under `src/`.
-- **Target(s)** (Meta) is **design intent**: it maps every service and verification path to
+- **Target(s)** (Meta) is **design intent**: it maps every subsystem and verification path to
   `local` or to the intended device, **deduced from the `HWC-*` blocks** of the StRS. It is not a
   `.codeanvil/project.yaml` `targets:` entry. When several devices could apply, resolve the
   selection from GT or ask the user; never pick the first silently. S1 never enrolls a target and
@@ -89,12 +89,12 @@ Working files live in `.codeanvil/design/`, outside the cycle report folder.
 - Execution location and HAL mode are separate axes. VL-0/VL-1 with Mock HAL inputs run locally
   and remain **VERIFIED**; they do not establish VL-2 or real-RF validation. Real-hardware
   execution happens at G2 through `vsil_hil_mcp`; local execution uses the runtime's normal tools.
-- **Toolchain** (Meta) names, per service, `SVC-xxx: <package> · <language> · <package manager> ·
+- **Toolchain** (Meta) names, per subsystem, `SUB-xxx: <package> · <language> · <package manager> ·
   <test runner>`, using only `Python · uv · pytest` or `TypeScript · pnpm · vitest`. `<package>`
   is a valid identifier and names `src/<package>/`. Derive it from §1.3.1 and the deployment
   target; ask the user only when the GT and the orchestration mechanism leave it open.
-- Keep the implementation DAG and the runtime interaction graph separate. A cross-service
-  contract is defined before both services and is never drawn as a mutual dependency.
+- Keep the implementation DAG and the runtime interaction graph separate. A cross-subsystem
+  contract is defined before both subsystems and is never drawn as a mutual dependency.
 - Every contract is complete enough to write a deterministic stub without asking the designer.
 - Omit design §1.5 entirely when no ML is used. Never train or select a model. When used, record its
   training source: Mock HAL (a software signal generator behind the HAL port) data plus labelling or,
@@ -110,11 +110,11 @@ Working files live in `.codeanvil/design/`, outside the cycle report folder.
 2. Copy the template to `.codeanvil/design/SDD.md`. Record the GT digests in the Meta
    "G0 approved" row (information only, never a block), computed with:
    `python -c "import hashlib,sys;[print(hashlib.sha256(open(p,'rb').read()).hexdigest(),p) for p in sys.argv[1:]]" .codeanvil/GT/StRS.md .codeanvil/GT/SyRS.md`
-3. Allocate `SYS-*` to services and paths: §0.4, §1.1, §4.1.
+3. Allocate `SYS-*` to subsystems and paths: §0.4, §1.1, §4.1.
 4. Fill the COTS envelope from the `HWC-*` blocks: §0.1–0.3. In §0.5, define
    one project-root command that starts the complete runnable system, its HAL
    mode, processes, URL, visible result and clean shutdown.
-5. For each service: its base (§1.3) and module cards (§1.4), each with the full verification profile.
+5. For each subsystem: its base (§1.3) and module cards (§1.4), each with the full verification profile.
    Set `Target(s)`, `HAL mode` and `Toolchain` in the Meta, then fill the verification kit (§1.3.4), the HAL
    substitution ladder (§1.6) and the Telemetry companion (§1.7).
 6. Draw the implementation DAG and topological order (§2.1–2.2) and the runtime graph (§2.3).
@@ -123,7 +123,7 @@ Working files live in `.codeanvil/design/`, outside the cycle report folder.
 9. Record decisions with real alternatives (§5; DEC-001 is the partitioning decision) and risks (§6).
 10. Reread the design against this short list and fix what you find: no `{{` left, every `SYS-*`
     traced, every contract with a recipe, `hw_dependency: true` at `VL-2`, no cycle in the build
-    order, `HAL mode` set, `Toolchain` and `Target(s)` set for every service, kit table complete,
+    order, `HAL mode` set, `Toolchain` and `Target(s)` set for every subsystem, kit table complete,
     §1.6 execution targets resolved and §1.7 present for every target.
     This is a courtesy to the reviewer, not a gate.
 11. Build both dependency graph versions (next section).
@@ -137,7 +137,7 @@ iteration's Description. Change only what the feedback names, and record the cha
 review its impact instead of re-reading the whole design:
 
 1. Write a **design change set** in the iteration's Description: one row per changed `SYS-*`,
-   contract, service, module or `PATH-*` ID, with the old decision, the new decision, the reason
+   contract, subsystem, module or `PATH-*` ID, with the old decision, the new decision, the reason
    and whether the interface changed. A graph-only change is marked `no code impact`.
 2. Keep the IDs of unchanged elements stable. Renumbering hides the impact from G1.
 3. Record the SHA-256 of the final `SDD.md`:
@@ -153,16 +153,16 @@ passed makes `codeanvil status` mark G1 stale, so the design is reviewed again b
 
 ## Dependency Graph
 
-The graph is a reading aid: **a full dependency graph, each service drawn as a spider** (its
+The graph is a reading aid: **a full dependency graph, each subsystem drawn as a spider** (its
 base at the center, its modules on the spokes), delivered as dark and light HTML files using
 vis-network, with the manifest as text to tell designs apart. Their palette follows CodeAnvil's
 forge UI: ember accents, steel surfaces, cyan and green functional layers.
 
-Copy `templates/skills/S1_design_services/references/dependency_graph_template.html` to
+Copy `templates/skills/S1_design_system/references/dependency_graph_template.html` to
 `.codeanvil/design/dependency_graph.html` with `const theme = 'dark'` and to
 `.codeanvil/design/dependency_graph_light.html` with `const theme = 'light'`.
 Change **only the `DATA` block at the top**. Both copies must have identical manifest,
-services, hardware and serviceContracts data; only `theme` differs. Never edit below it and
+subsystems, hardware and subsystemContracts data; only `theme` differs. Never edit below it and
 never write the pages by hand: the fixed rendering code makes
 every agent runtime draw the same graph. It loads `assets/vis-network.min.js` from this skill's
 own folder by relative path, so it needs no network, but it must stay inside the project.
@@ -171,13 +171,13 @@ own folder by relative path, so it needs no network, but it must stay inside the
 |--------------|--------|
 | `theme` | `'dark'` for `dependency_graph.html`, `'light'` for `dependency_graph_light.html`; do not change other data between versions |
 | `manifest` | `.codeanvil/project.yaml`: `id`, `name`, `gt`, `cycle`, copied as they are |
-| `services` | §1.1 per service, §1.3 for its base, §1.4 cards for its modules; module label is `module_id` and `required_vl` |
-| `hardware` | §0.1 devices; `to` lists the `SVC-xxx/module_id` of the `hw_dependency: true` modules that use the device |
-| `serviceContracts` | §3.4, producers in `from` and consumers in `to` |
+| `subsystems` | §1.1 per subsystem, §1.3 for its base, §1.4 cards for its modules; module label is `module_id` and `required_vl` |
+| `hardware` | §0.1 devices; `to` lists the `SUB-xxx/module_id` of the `hw_dependency: true` modules that use the device |
+| `subsystemContracts` | §3.4, producers in `from` and consumers in `to` |
 
 Rules:
 
-- Every service, module, hardware device and service contract of the design appears, and nothing
+- Every subsystem, module, hardware device and subsystem contract of the design appears, and nothing
   appears that the design lacks.
 - Spiders have no module-to-module edge. Build order, internal contracts and `PATH-*` stay in the
   design document.
@@ -185,7 +185,7 @@ Rules:
   in both copies. The renderer adapts those colors for contrast in each theme. Bases, hardware
   and contracts use the renderer's reserved accents and shapes, not functional-layer colors.
 - A contract with several producers or consumers is one entry with arrays in `from` and `to`.
-- Keep `layout.randomSeed` fixed. One service means one spider and no service contracts.
+- Keep `layout.randomSeed` fixed. One subsystem means one spider and no subsystem contracts.
 - `S1.md` is the only state: G1 and `codeanvil status` never read the HTML. A graph problem
   blocks nothing; if it exposes a design error, fix the design and rewrite both graph versions.
 

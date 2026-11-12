@@ -308,7 +308,7 @@ def test_python_forwards_the_exit_code(tmp_path, project, monkeypatch):
 def test_scaffolded_skills_declare_their_runtime_packages():
     from codeanvil.skills import parse_skill_frontmatter
 
-    s2 = parse_skill_frontmatter(TEMPLATES_DIR / "skills" / "S2_implement_services" / "SKILL.md")
+    s2 = parse_skill_frontmatter(TEMPLATES_DIR / "skills" / "S2_implement_subsystems" / "SKILL.md")
     g0 = parse_skill_frontmatter(TEMPLATES_DIR / "skills" / "G0_valid_req_and_GT" / "SKILL.md")
     assert s2["runtime"] == []  # the collector is `codeanvil telemetry`, in-process
     assert g0["runtime"] == []

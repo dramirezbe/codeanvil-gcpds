@@ -1,4 +1,4 @@
-"""T6 — S2 implements the services, builds the verification kit and ships the loggers (D2, D8, D10)."""
+"""T6 — S2 implements the subsystems, builds the verification kit and ships the loggers (D2, D8, D10)."""
 
 import logging
 import os
@@ -16,7 +16,7 @@ from codeanvil.config.logger import ColoredFormatter
 from codeanvil.config.time import format_timestamp
 from test_create import TEMPLATES_DIR, _scaffold_skill, _skill_text, db_path  # noqa: F401  (fixture)
 
-SKILL = "S2_implement_services"
+SKILL = "S2_implement_subsystems"
 _TIMESTAMP = re.compile(r"^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}\] ")
 _FIXED_CREATED = datetime(2026, 11, 5, 19, 30, 15, 123000, tzinfo=timezone.utc).timestamp()
 
@@ -90,7 +90,7 @@ def _scaffolded_reference(tmp_path, name: str) -> Path:
 
 
 def _service_config(tmp_path, logger_src: Path, suffix: str, runtime: str) -> Path:
-    """A scratch service holding the logger as config/logger.<suffix>."""
+    """A scratch subsystem holding the logger as config/logger.<suffix>."""
     root = tmp_path / "svc"
     config = root / "config"
     config.mkdir(parents=True)
@@ -219,7 +219,7 @@ def test_reference_logger_ts_matches_the_python_line(tmp_path, db_path):
 
 def _layout_text() -> str:
     from codeanvil.config.paths import TEMPLATES_DIR
-    path = TEMPLATES_DIR / "skills" / "S2_implement_services" / "references" / "project_layout.md"
+    path = TEMPLATES_DIR / "skills" / "S2_implement_subsystems" / "references" / "project_layout.md"
     return path.read_text(encoding="utf-8")
 
 
@@ -239,7 +239,7 @@ def test_layout_tsconfig_declares_the_console_types():
 
 
 def test_s2_skill_backs_up_before_overwriting_the_test_run():
-    text = " ".join(_skill_text("S2_implement_services").split())
+    text = " ".join(_skill_text("S2_implement_subsystems").split())
 
     assert "codeanvil backup S2" in text
     assert "If it exits nonzero, stop and show its message; write no iteration." in text
@@ -248,7 +248,7 @@ def test_s2_skill_backs_up_before_overwriting_the_test_run():
 # --- design-defect rework from the G1 impact map (2026-11-06) --------------
 
 def test_s2_skill_uses_the_g1_impact_map_for_design_defect_rework():
-    text = " ".join(_skill_text("S2_implement_services").split())
+    text = " ".join(_skill_text("S2_implement_subsystems").split())
 
     assert "latest PASS iteration's impact map" in text
     assert "Rework, design defect" in text
@@ -270,8 +270,8 @@ def test_s2_pause_schedule_offers_the_three_options_and_the_extra_pause():
 
     assert "Per layer and module" in section
     assert "Per layer (recommended)" in section
-    assert "Per service" in section
-    assert "one pause after cross-service integration and before the `PATH-*` tests" in section
+    assert "Per subsystem" in section
+    assert "one pause after cross-subsystem integration and before the `PATH-*` tests" in section
 
 
 def test_s2_pause_schedule_asks_every_iteration_with_the_native_question_tool():

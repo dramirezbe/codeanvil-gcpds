@@ -5,13 +5,13 @@ with ``codeanvil telemetry --pid $$ --output verification/telemetry/<level>-<ts>
 It samples the host and the verification process tree once per interval and appends
 one JSON object per line to a file, one file per VL run. The tree is ``--pid`` (default:
 the collector's parent, e.g. ``run.sh``) plus every descendant except the collector
-itself, so the services and test processes that ``run.sh`` starts are measured. A
+itself, so the subsystems and test processes that ``run.sh`` starts are measured. A
 reading that cannot be taken is written as ``{"unavailable": "<reason>"}``; it is
 never invented and never reported as zero.
 
 Application counters (dropped buffers, queue depth, scheduling latency) are not
 measured here: the collector copies them from the JSON object the HAL or the
-service instrumentation writes to ``--counters``.
+subsystem instrumentation writes to ``--counters``.
 
 Output files are created exclusively: a retry cannot overwrite an earlier run.
 Every sample is flushed; ``--fsync`` additionally syncs it to disk. A write failure
@@ -234,7 +234,7 @@ def _parse_args(argv):
     parser.add_argument("--duration", type=float, default=0.0,
                         help="seconds to sample; 0 runs until SIGINT or SIGTERM (default: 0)")
     parser.add_argument("--counters", type=Path, default=None,
-                        help="JSON object written by the HAL or the service instrumentation")
+                        help="JSON object written by the HAL or the subsystem instrumentation")
     parser.add_argument("--pid", type=int, default=None,
                         help="root of the process tree to measure (default: the collector's parent)")
     parser.add_argument("--fsync", action="store_true",

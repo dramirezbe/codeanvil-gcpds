@@ -1,12 +1,12 @@
 # Project layout — locked reference for S2
 
 Build exactly these trees in the project root, outside `.codeanvil/`. One rule for every language:
-**each service is `src/<package>/`**, where `<package>` is the package name of its design
-`Toolchain` entry (`SVC-xxx: <package> · <language> · <package manager> · <test runner>`). Root
+**each subsystem is `src/<package>/`**, where `<package>` is the package name of its design
+`Toolchain` entry (`SUB-xxx: <package> · <language> · <package manager> · <test runner>`). Root
 manifests exist only for the toolchains in use. Layer folders (`dsp/`, `decision/`, `output/`, …)
 are the design's functional layers, one per layer.
 
-## Python service (uv · pytest)
+## Python subsystem (uv · pytest)
 
 ```
 src/<package>/
@@ -23,10 +23,10 @@ src/<package>/
 │   ├── port.py            # the HAL port the base and modules depend on
 │   └── real.py            # Real HW HAL, mock+real only
 ├── <layer>/               # one subpackage per functional layer, each with __init__.py
-└── lib/                   # shared helpers of this service
+└── lib/                   # shared helpers of this subsystem
 ```
 
-## TypeScript service (pnpm · vitest)
+## TypeScript subsystem (pnpm · vitest)
 
 A pnpm package with **no nested `src/`**.
 
@@ -47,27 +47,27 @@ src/<package>/
 ## Root manifests
 
 ```
-pyproject.toml             # Python services exist
+pyproject.toml             # Python subsystems exist
 uv.lock
-package.json               # TypeScript services exist: "private": true, "packageManager": "pnpm@<version>"
-pnpm-workspace.yaml        # packages: ["src/*", "verification/*"] (TS services and TS kits only)
+package.json               # TypeScript subsystems exist: "private": true, "packageManager": "pnpm@<version>"
+pnpm-workspace.yaml        # packages: ["src/*", "verification/*"] (TS subsystems and TS kits only)
 pnpm-lock.yaml
 .env.example               # committed; .env is git-ignored
 cmd/                       # install and deploy scripts, only when the design deploys to a host
 daemon/                    # systemd units, only when the design deploys to a host
-run-demo                   # multi-service preview launcher when design §0.5 names one
+run-demo                   # multi-subsystem preview launcher when design §0.5 names one
 ```
 
-`pyproject.toml`, one for all Python services:
+`pyproject.toml`, one for all Python subsystems:
 
 ```toml
 [project]
 name = "<project>"
 requires-python = ">=3.12"
-dependencies = []                 # runtime dependencies of the services only
+dependencies = []                 # runtime dependencies of the subsystems only
 
 [project.scripts]
-<package> = "<package>.main:main" # one entry per Python service
+<package> = "<package>.main:main" # one entry per Python subsystem
 
 [dependency-groups]
 dev = ["pytest"]                  # plus every kit dependency; never in [project] dependencies
@@ -77,7 +77,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/<package>"]      # listed explicitly, one per Python service; never verification/
+packages = ["src/<package>"]      # listed explicitly, one per Python subsystem; never verification/
 
 [tool.pytest.ini_options]
 testpaths = ["verification"]
@@ -93,11 +93,11 @@ No `sys.path` bootstrap. Deploy with `uv sync --frozen --no-dev`, start with `uv
 The telemetry collector ships with CodeAnvil itself and is invoked as `codeanvil telemetry`; it is
 not copied into the project, and the kit's dev group never lists `psutil`. `run.sh` starts it in the
 background with `--pid $$`, so it measures `run.sh` and every process `run.sh` starts, never the collector itself.
-The `<package>.main:main` function must instantiate a runtime HAL and run the service; logging
+The `<package>.main:main` function must instantiate a runtime HAL and run the subsystem; logging
 startup instructions without starting the loop is not a working entry point. In `mock-only`, the
 runtime Mock HAL required for a preview lives in the package or a shipped demo bundle, while the
 independent vectors and test drivers stay under `verification/`.
-A uv workspace is allowed only when two Python services deploy to different hosts with conflicting
+A uv workspace is allowed only when two Python subsystems deploy to different hosts with conflicting
 dependencies, and only as a recorded design decision.
 
 ## Verification kit (never shipped)
@@ -111,10 +111,10 @@ verification/
 │   └── <vector files>
 ├── telemetry/             # one JSONL file per run, written by `codeanvil telemetry`
 │   └── <cycle>_<iteration>_<timestamp>/ # measurement.json v2, named telemetry and script outputs
-└── <package>/             # one folder per service, in that service's language
+└── <package>/             # one folder per subsystem, in that subsystem's language
     ├── mock_hal/          # VL-0 vectors and the VL-1 synthetic generator
     ├── stubs/             # one stub per contract of a module not built yet
-    ├── fakes/             # one fake peer per service-to-service contract
+    ├── fakes/             # one fake peer per subsystem-to-subsystem contract
     ├── drivers/           # bottom-up drivers through the base
     └── test/              # pytest (Python) or vitest (TS); markers or scripts vl0 and vl1
 ```
@@ -131,10 +131,10 @@ PATH explicitly rather than relying on the host's environment.
 
 1. starts the telemetry collector in the background:
    `codeanvil telemetry --pid $$ --output verification/telemetry/<run_id>/<run_id>.jsonl &`,
-   with the design §1.7 `--interval`, and `--counters` when the HAL or services expose counters;
+   with the design §1.7 `--interval`, and `--counters` when the HAL or subsystems expose counters;
    add `--fsync` only when the design requests durable per-sample writes (default off);
-2. runs `uv run pytest -m <level>` when a Python service exists;
-3. runs `pnpm -r --filter "./verification/*" test:<level>` when a TS service exists;
+2. runs `uv run pytest -m <level>` when a Python subsystem exists;
+3. runs `pnpm -r --filter "./verification/*" test:<level>` when a TS subsystem exists;
 4. stops the companion and attaches its readings to the run output;
 5. exits non-zero if any run failed.
 
@@ -164,22 +164,22 @@ run's files within it; older remote runs may also be present. Local runs read th
 The existing S2 pause schedule, `Checkpoint:` narrative and append-only report format remain;
 no partial iteration or extra HITL state represents an operational stop.
 
-Never shipped: no service imports or depends on anything under `verification/`. Python kit
-dependencies live only in the dev group and the wheel holds no `verification/` file; no service
+Never shipped: no subsystem imports or depends on anything under `verification/`. Python kit
+dependencies live only in the dev group and the wheel holds no `verification/` file; no subsystem
 `package.json` lists a kit package.
 
-## Conventions inside each service
+## Conventions inside each subsystem
 
 - Type hints everywhere; Google-style docstrings in Python, TSDoc in TypeScript.
 - `.env.example` committed, `.env` ignored; paths resolved in `config/paths.py` (Python) or one
   `config/` module (TS).
-- Every module logs through its service logger: `log = get_logger(__name__)` in Python,
+- Every module logs through its subsystem logger: `log = get_logger(__name__)` in Python,
   `const log = getLogger("<package>.<module>")` in TypeScript. No `print`, no bare `console.log`.
 - No file, import, dependency or string refers to the tool that scaffolded the project.
 
 ## Mixed example (`fm_edge` Python + `dashboard` TypeScript)
 
-Toolchain: `SVC-001: fm_edge · Python 3.12 · uv · pytest; SVC-002: dashboard · TypeScript · pnpm · vitest`.
+Toolchain: `SUB-001: fm_edge · Python 3.12 · uv · pytest; SUB-002: dashboard · TypeScript · pnpm · vitest`.
 
 ```
 pyproject.toml   uv.lock   package.json   pnpm-workspace.yaml   pnpm-lock.yaml   .env.example

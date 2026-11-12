@@ -185,7 +185,12 @@ def test_nested_artifacts_and_graph_are_readable_without_writes():
     before = hashlib.sha256(source.read_bytes()).hexdigest()
     result = read_artifact(root, None, ".codeanvil/design/dependency_graph.html")
     assert result["format"] == "html"
-    assert '<script src="../../.agents/' not in result["content"]
+    # panel_prototipo is a frozen v0.7.0 snapshot whose graph still references the
+    # pre-rename skill folder (S1_design_services). The reader inlines only the
+    # current copied asset path (S1_design_system), so a legacy graph is returned
+    # intact rather than inlined. Inlining of the current asset is covered by
+    # test_both_graph_variants_use_the_local_library_and_report_actual_presence.
+    assert '<script src="../../.agents/skills/S1_design_services/' in result["content"]
     assert hashlib.sha256(source.read_bytes()).hexdigest() == before
     for path in ("S2_artifacts/test_run.md", "G2_artifacts/verified_prototype.md"):
         result = read_artifact(root, None, f".codeanvil/report/01_ui_demo/{path}")
@@ -199,11 +204,11 @@ def test_both_graph_variants_use_the_local_library_and_report_actual_presence(tm
     root = project(tmp_path)
     design = root / ".codeanvil/design"
     design.mkdir()
-    library = root / ".agents/skills/S1_design_services/assets/vis-network.min.js"
+    library = root / ".agents/skills/S1_design_system/assets/vis-network.min.js"
     library.parent.mkdir(parents=True)
     library.write_text("window.graphLibrary = true;")
     graphs = ("dependency_graph.html", "dependency_graph_light.html")
-    (design / graphs[0]).write_text('<script src="../../.agents/skills/S1_design_services/assets/vis-network.min.js"></script>')
+    (design / graphs[0]).write_text('<script src="../../.agents/skills/S1_design_system/assets/vis-network.min.js"></script>')
     inventory = {item["graph_theme"]: item for item in read_overview(root)["artifacts"] if "graph_theme" in item}
     assert inventory["dark"]["exists"]
     assert not inventory["light"]["exists"]
