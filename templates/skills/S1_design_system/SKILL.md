@@ -172,7 +172,7 @@ own folder by relative path, so it needs no network, but it must stay inside the
 | `theme` | `'dark'` for `dependency_graph.html`, `'light'` for `dependency_graph_light.html`; do not change other data between versions |
 | `manifest` | `.codeanvil/project.yaml`: `id`, `name`, `gt`, `cycle`, copied as they are |
 | `subsystems` | §1.1 per subsystem, §1.3 for its base, §1.4 cards for its modules; module label is `module_id` and `required_vl` |
-| `hardware` | §0.1 devices; `to` lists the `SUB-xxx/module_id` of the `hw_dependency: true` modules that use the device |
+| `hardware` | §0.1 devices; `to` lists the `SUB-xxx/module_id` of the `hw_dependency: true` modules that use the device; `phys` lists other hardware items it connects to physically (signal chain, power, cooling) — leave `[]` for spatial items with no physical connection (e.g. enclosure) |
 | `subsystemContracts` | §3.4, producers in `from` and consumers in `to` |
 
 Rules:

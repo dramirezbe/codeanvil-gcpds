@@ -31,7 +31,9 @@ const manifest = {
 //   ] },
 const subsystems = [];
 // hardware: one entry per COTS device, attached to the modules that touch it.
-//   { id: 'HWC-001', label: 'HWC-001\nDevice', to: ['SUB-X/module_id'] },
+//   to:   software modules (hw_dependency: true) that use the device
+//   phys: other hardware items this device connects to physically (signal chain, power, cooling)
+//   { id: 'HWC-001', label: 'HWC-001\nDevice', to: ['SUB-X/module_id'], phys: ['HWC-002'] },
 const hardware = [];
 // subsystemContracts: one entry per versioned contract.
 //   { id: 'name.v1', from: ['SUB-X'], to: ['SUB-Y', 'SUB-Z'] },
@@ -86,6 +88,7 @@ if (typeof vis === 'undefined') {
   const edges = [
     ...subsystems.flatMap((s) => s.modules.map((m) => ({ from: s.id, to: `${s.id}/${m.id}`, color: { color: palette.edge } }))),
     ...hardware.flatMap((h) => h.to.map((to) => ({ from: h.id, to, arrows: 'to', dashes: true, color: { color: palette.hardware } }))),
+    ...hardware.flatMap((h) => (h.phys || []).map((to) => ({ from: h.id, to, dashes: [3, 5], width: 1, color: { color: palette.hardware, opacity: 0.45 } }))),
     ...subsystemContracts.flatMap((c) => [
       ...c.from.map((from) => ({ from, to: `c:${c.id}`, arrows: 'to', color: { color: palette.contract } })),
       ...c.to.map((to) => ({ from: `c:${c.id}`, to, arrows: 'to', color: { color: palette.contract } })),
@@ -93,9 +96,9 @@ if (typeof vis === 'undefined') {
   ];
   new vis.Network(graph, { nodes, edges }, {
     layout: { randomSeed: 1 },
-    physics: { solver: 'repulsion', repulsion: { nodeDistance: 180 } },
+    physics: { solver: 'repulsion', repulsion: { nodeDistance: 470 } },
     nodes: { borderWidth: 1.5, borderWidthSelected: 3, shadow: { enabled: true, size: 6, color: 'rgba(0,0,0,0.1)' } },
-    edges: { width: 1.5, smooth: { type: 'continuous' } },
+    edges: { width: 1.5, smooth: { type: 'continuous', roundness: 0.7 } },
     interaction: { hover: true, tooltipDelay: 100 },
   });
 }
