@@ -383,7 +383,7 @@ The user chooses the verification level per module and per system path, per cycl
 1. **Floor.** Every module and every declared cross-subsystem contract and system path reaches VL-0 in every cycle.
 2. **Honesty.** No module or end-to-end claim is higher than the environment actually tested. Passing subsystems individually does not prove a cross-subsystem requirement.
 3. **Telemetry context.** Every evidence record includes the telemetry companion's readings for the compute unit during that test. Evidence produced while the UC was outside its declared operating envelope (temperature, CPU saturation, dropped buffers) is flagged and may be invalidated by the reviewer.
-4. **HAL mode ceiling.** `mock-only` caps every claim at VL-1. `mock+real` allows VL-2, but each module and path still declares its level per cycle: the Real HW HAL may be declared at VL-0 (fake device API) for a cycle, in which case G2.2 does not fire and the honesty declaration states it.
+4. **HAL mode ceiling.** `mock-only` caps every claim at VL-1. `mock+real` allows VL-2, but each module and path still declares its level per cycle: the Real HW HAL may be declared at VL-0 (fake device API) for a cycle, in which case G2.2 does not fire and the honesty declaration states it. PIL (Processor-in-the-Loop) uses the actual target processor with Mock HAL inputs; every PIL claim stays VERIFIED, not VALIDATED.
 
 | Scenario | User declares | G2 checks |
 |---|---|---|
@@ -396,11 +396,15 @@ The user chooses the verification level per module and per system path, per cycl
 
 G2 runs the tests S2 wrote and writes none; a declared level with no test is a module defect routed to S2. The runs happen in a separate read-only verifier context — a subagent where the runtime supports it, otherwise a fresh session — which implements P2: the oracle is not the generator.
 
+**Hardware enrollment.** Before G2.2 can fire, the target must be enrolled in `.codeanvil/project.yaml` via `codeanvil credential-setup -u <admin-user> -i <host> --port 22`. G2.0 and G2.1 may proceed locally while enrollment is pending; G2.2 blocks until a valid `targets:` entry exists.
+
 | Sub-gate | Fires when | Checks |
 |---|---|---|
 | **G2.0** | Always | Unit + sandwich, cross-subsystem contract, and deterministic system-path tests pass; Mock HAL golden vectors; telemetry companion confirms UC nominal |
 | **G2.1** | VL-1+ declared for a module or path | Mock HAL synthetic I/Q; Mock/SIL system tests across affected subsystems pass; metrics within thresholds; telemetry companion confirms UC nominal |
-| **G2.2** | VL-2 declared for a module or path | Real HW HAL on COTS SDR (only in `mock+real`); datasets from the SyRS lab procedures (`PROTO-*`) with declared calibration and tolerances; for cross-subsystem paths, a representative link; measurements within criteria; telemetry companion confirms UC nominal |
+| **G2.2** | VL-2 declared for a module or path | Real HW HAL on COTS SDR (only in `mock+real`); enrollment required (see above); datasets from the SyRS lab procedures (`PROTO-*`) with declared calibration and tolerances; for cross-subsystem paths, a representative link; measurements within criteria; telemetry companion confirms UC nominal |
+
+**Operational vs defect.** Before routing a G2 failure, classify it. A permission, driver, group, udev, or USB-access problem on the target DUT is **operational** — it must be fixed on the DUT and G2 re-run; it is never a module or design defect and must not route to S2 or S1. A transient SSH, clock, or setup fault is operational in the same way. Only a genuine behavioral failure of the delivered code under correct operating conditions is a **module defect** (→ S2) or **design defect** (→ S1). The four first-class G2 outcomes are: **operational-fix**, **module defect**, **design defect**, and **RFD**.
 
 *Future work (FW-005, §5.4).* For an ML-based module or path, G2 measures the supplied model *inside the implemented system* at the declared level and checks the relevant `SYS-*` criteria. The performance metadata received at S1 is context for test design, not a substitute for those measurements.
 
@@ -440,10 +444,11 @@ flowchart TD
 
 ### 9.1 Internal defect routing
 
-A **defect** means V-SIL can fix it internally. The implementation or the design is wrong, but the requirements are achievable.
+A **defect** means V-SIL can fix it internally. The implementation or the design is wrong, but the requirements are achievable. An **operational problem** is not a defect: it is a DUT/environment issue that blocks measurement; fix it and re-run G2 without touching S1 or S2.
 
-| Defect class | Routes to | Example |
+| Class | Routes to | Example |
 |---|---|---|
+| Operational problem | Fix DUT → re-run G2 | `codeanvil-agent` cannot open the HackRF; SSH auth failure; missing udev rule |
 | Design defect | S1 | DAG has undeclared dependency; cross-subsystem contract or state ownership is incomplete |
 | Module or integration defect | S2 | FFT output is wrong; UI deserializes a valid edge message incorrectly |
 
@@ -499,11 +504,13 @@ Request for Deviation — RFD-001
 flowchart LR
     classDef defect fill:#fef3c7,stroke:#d97706,color:#78350f
     classDef rfd fill:#fee2e2,stroke:#dc2626,color:#7f1d1d
+    classDef ops fill:#f3f4f6,stroke:#6b7280,color:#374151
 
+    O["Operational fix<br/>DUT/environment problem<br/>Fix target → re-run G2<br/>No S1 or S2 change"]:::ops
     D["Defect<br/>Requirements achievable<br/>Implementation wrong<br/>Fix inside V-SIL"]:::defect
     R["RFD<br/>Requirements infeasible<br/>COTS cannot deliver both<br/>Build Package must change"]:::rfd
 
-    D ---|"different from"| R
+    O ---|"different from"| D ---|"different from"| R
 ```
 
 ### 9.5 Failure triage and draft mode (S0 · G0 · G1)
@@ -604,15 +611,19 @@ FW-001 — Automate V-SIL verification evidence in CI/CD
   Proposed acceptance: a pipeline reproduces the declared G2 checks
                        and links its reports to the cycle and source revision
 
-FW-002 — Processor-in-the-Loop (PIL) as intermediate level
+FW-002 — Processor-in-the-Loop (PIL) as a full sub-gate
   Category: verification depth
+  Status: partially implemented — G2 currently allows PIL as a declared
+          mode (actual target processor, Mock HAL inputs, claim stays
+          VERIFIED); a dedicated G2.PIL sub-gate with structured timing
+          and scheduling checks is not yet defined
   Origin: SOTA review; when UC ≠ development host, compiled code on the
           target processor may behave differently under timing constraints
   Candidate version: later software release
   Decision owner: Build Package author
   Dependency: target UC identified and accessible for cross-compilation
-  Proposed acceptance: PIL level defined between VL-1 and VL-2 with
-                       timing and scheduling checks on the target processor
+  Proposed acceptance: G2.PIL sub-gate defined with explicit timing,
+                       scheduling and resource checks on the target processor
 
 FW-003 — Formal fault injection at VL-2
   Category: verification depth

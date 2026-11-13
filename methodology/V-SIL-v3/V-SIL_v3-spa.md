@@ -383,7 +383,7 @@ El usuario elige el nivel de verificación por módulo y por ruta de sistema, po
 1. **Piso.** Cada módulo, contrato entre subsistemas y ruta de sistema declarada alcanza VL-0 en cada ciclo.
 2. **Honestidad.** Ninguna afirmación por módulo o de extremo a extremo supera el entorno realmente probado. Aprobar subsistemas por separado no demuestra un requisito entre subsistemas.
 3. **Contexto de telemetría.** Todo registro de evidencia incluye las lecturas del telemetry companion para la unidad de cómputo durante esa prueba. La evidencia producida mientras la UC estaba fuera de su envolvente de operación declarada (temperatura, saturación de CPU, buffers perdidos) se marca y puede ser invalidada por el revisor.
-4. **Techo por modo HAL.** `mock-only` limita toda afirmación a VL-1. `mock+real` admite VL-2, pero cada módulo y ruta sigue declarando su nivel por ciclo: el Real HW HAL puede declararse en VL-0 (API de dispositivo simulada) durante un ciclo, en cuyo caso G2.2 no se activa y la declaración de honestidad lo indica.
+4. **Techo por modo HAL.** `mock-only` limita toda afirmación a VL-1. `mock+real` admite VL-2, pero cada módulo y ruta sigue declarando su nivel por ciclo: el Real HW HAL puede declararse en VL-0 (API de dispositivo simulada) durante un ciclo, en cuyo caso G2.2 no se activa y la declaración de honestidad lo indica. PIL (Processor-in-the-Loop) usa el procesador objetivo real con entradas del Mock HAL; toda afirmación PIL permanece VERIFICADA, nunca VALIDADA.
 
 | Escenario | El usuario declara | G2 verifica |
 |---|---|---|
@@ -396,11 +396,15 @@ El usuario elige el nivel de verificación por módulo y por ruta de sistema, po
 
 G2 ejecuta las pruebas que escribió S2 y no escribe ninguna; un nivel declarado sin prueba es un defecto de módulo que se enruta a S2. Las ejecuciones ocurren en un contexto verificador separado y de solo lectura — un subagente cuando el runtime lo admite; en otro caso, una sesión nueva —, que implementa P2: el oráculo no es el generador.
 
+**Enrolamiento de hardware.** Antes de que G2.2 pueda activarse, el objetivo debe estar enrolado en `.codeanvil/project.yaml` mediante `codeanvil credential-setup -u <admin-user> -i <host> --port 22`. G2.0 y G2.1 pueden ejecutarse localmente mientras el enrolamiento está pendiente; G2.2 bloquea hasta que exista una entrada `targets:` válida.
+
 | Sub-compuerta | Se activa cuando | Verifica |
 |---|---|---|
 | **G2.0** | Siempre | Pasan unidad, sándwich, contratos entre subsistemas y rutas deterministas; vectores dorados del Mock HAL; telemetry companion confirma UC nominal |
 | **G2.1** | VL-1+ declarado para módulo o ruta | I/Q sintético del Mock HAL; pasan pruebas Mock/SIL entre subsistemas afectados; métricas dentro de umbrales; telemetry companion confirma UC nominal |
-| **G2.2** | VL-2 declarado para módulo o ruta | Real HW HAL sobre SDR COTS (solo en `mock+real`); datasets de los procedimientos de lab de la SyRS (`PROTO-*`) con calibración y tolerancias declaradas; para rutas entre subsistemas, enlace representativo; mediciones dentro de los criterios; telemetry companion confirma UC nominal |
+| **G2.2** | VL-2 declarado para módulo o ruta | Real HW HAL sobre SDR COTS (solo en `mock+real`); enrolamiento requerido (ver arriba); datasets de los procedimientos de lab de la SyRS (`PROTO-*`) con calibración y tolerancias declaradas; para rutas entre subsistemas, enlace representativo; mediciones dentro de los criterios; telemetry companion confirma UC nominal |
+
+**Operacional vs defecto.** Antes de enrutar un fallo de G2, clasifícalo. Un problema de permisos, driver, grupo, udev o acceso USB en el DUT objetivo es **operacional** — se corrige en el DUT y se re-ejecuta G2; nunca es un defecto de módulo o diseño y no debe enrutarse a S2 ni a S1. Un fallo transitorio de SSH, reloj o configuración es operacional de la misma manera. Solo un fallo conductual genuino del código entregado bajo condiciones de operación correctas es un **defecto de módulo** (→ S2) o **defecto de diseño** (→ S1). Los cuatro outcomes de primera clase de G2 son: **corrección operacional**, **defecto de módulo**, **defecto de diseño** y **RFD**.
 
 *Trabajo futuro (FW-005, §5.4).* Para un módulo o una ruta basados en ML, G2 mide el modelo suministrado *dentro del sistema implementado* en el nivel declarado y comprueba los criterios `SYS-*` correspondientes. La metadata de rendimiento recibida en S1 orienta el diseño de pruebas, pero no sustituye estas mediciones.
 
@@ -440,10 +444,11 @@ flowchart TD
 
 ### 9.1 Enrutamiento de defectos internos
 
-Un **defecto** significa que V-SIL puede corregirlo internamente. La implementación o el diseño está mal, pero los requisitos son alcanzables.
+Un **defecto** significa que V-SIL puede corregirlo internamente. La implementación o el diseño está mal, pero los requisitos son alcanzables. Un **problema operacional** no es un defecto: es un fallo de DUT/entorno que bloquea la medición; se corrige y se re-ejecuta G2 sin tocar S1 ni S2.
 
-| Clase de defecto | Se enruta a | Ejemplo |
+| Clase | Se enruta a | Ejemplo |
 |---|---|---|
+| Problema operacional | Corregir DUT → re-ejecutar G2 | `codeanvil-agent` no puede abrir el HackRF; fallo de autenticación SSH; falta regla udev |
 | Defecto de diseño | S1 | El DAG tiene una dependencia no declarada; falta propiedad del estado o un contrato entre subsistemas |
 | Defecto de módulo o integración | S2 | La FFT produce un valor incorrecto; la UI interpreta mal un mensaje válido del borde |
 
@@ -499,11 +504,13 @@ Solicitud de Desviación — RFD-001
 flowchart LR
     classDef defect fill:#fef3c7,stroke:#d97706,color:#78350f
     classDef rfd fill:#fee2e2,stroke:#dc2626,color:#7f1d1d
+    classDef ops fill:#f3f4f6,stroke:#6b7280,color:#374151
 
+    O["Corrección operacional<br/>Problema de DUT/entorno<br/>Corregir objetivo → re-ejecutar G2<br/>Sin cambio en S1 ni S2"]:::ops
     D["Defecto<br/>Requisitos alcanzables<br/>Implementación incorrecta<br/>Corregir dentro de V-SIL"]:::defect
     R["RFD<br/>Requisitos inviables<br/>COTS no puede cumplir ambos<br/>El Build Package debe cambiar"]:::rfd
 
-    D ---|"distinto de"| R
+    O ---|"distinto de"| D ---|"distinto de"| R
 ```
 
 ---
@@ -575,16 +582,21 @@ FW-001 — Automatizar la evidencia de verificación V-SIL en CI/CD
   Aceptación propuesta: un pipeline reproduce las comprobaciones G2
                        declaradas y vincula los informes al ciclo y revisión fuente
 
-FW-002 — Processor-in-the-Loop (PIL) como nivel intermedio
+FW-002 — Processor-in-the-Loop (PIL) como sub-compuerta completa
   Categoría: profundidad de verificación
+  Estado: parcialmente implementado — G2 ya permite PIL como modo declarado
+          (procesador objetivo real, entradas del Mock HAL, afirmación permanece
+          VERIFICADA); una sub-compuerta G2.PIL con verificaciones estructuradas
+          de temporización y planificación aún no está definida
   Origen: revisión SOTA; cuando la UC ≠ host de desarrollo, el código
           compilado en el procesador objetivo puede comportarse diferente
           bajo restricciones de temporización
   Versión candidata: versión posterior del software
   Responsable de decidir: autor del Build Package
   Dependencia: UC objetivo identificada y accesible para compilación cruzada
-  Aceptación propuesta: nivel PIL definido entre VL-1 y VL-2 con
-                       verificaciones de temporización y planificación en el procesador objetivo
+  Aceptación propuesta: sub-compuerta G2.PIL definida con verificaciones
+                       explícitas de temporización, planificación y recursos
+                       en el procesador objetivo
 
 FW-003 — Inyección formal de fallos en VL-2
   Categoría: profundidad de verificación
