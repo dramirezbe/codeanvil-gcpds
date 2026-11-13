@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>S1 dependency graph</title>
+<script src="../../.agents/skills/S1_design_system/assets/vis-network.min.js"></script>
+<style>
+  :root{color-scheme:dark;--bg:#111417;--surface:#171b1f;--line:#2b3238;--text:#e5e8e9;--muted:#89949b}
+  body{margin:0;height:100vh;display:flex;flex-direction:column;font-family:system-ui;background:var(--bg);color:var(--text)}
+  #graph{width:100%;flex:1;min-height:0}
+  #meta{flex:none;width:fit-content;max-width:calc(100% - 48px);max-height:30vh;overflow:auto;margin:12px;background:var(--surface);border:1px solid var(--line);padding:10px 12px;border-radius:6px;font:12px/1.6 monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+  #legend{flex:none;margin:0 12px 8px;font-size:11px;line-height:1.5;color:var(--muted)}
+</style>
+</head><body>
+<pre id="meta"></pre>
+<div id="legend"></div>
+<div id="graph"></div>
+<script>
+// === DATA: this is all the agent needs to change ===
+// Write identical design data to both copies; change only this theme value.
+const theme = 'dark'; // dependency_graph.html: 'dark'; dependency_graph_light.html: 'light'
+// manifest: the keys of .codeanvil/project.yaml, copied as they are.
+const manifest = {
+  id: '<id>',
+  name: '<name>',
+  gt: { strs: '<gt.strs>', syrs: '<gt.syrs>' },
+  cycle: '<cycle>',
+};
+// subsystems: one spider each. Module colors: one per functional layer, in this
+// order: '#72c7ca', '#83c99b', '#a5b4c1', '#d9b36f'. These identifiers stay
+// identical in both files; the renderer adapts their contrast for each theme.
+//   { id: 'SUB-X', label: 'SUB-X\nX base\nresponsibility', modules: [
+//     { id: 'module_id', label: 'module_id\nVL-0', color: '#72c7ca' },
+//   ] },
+const subsystems = [];
+// hardware: one entry per COTS device, attached to the modules that touch it.
+//   { id: 'HWC-001', label: 'HWC-001\nDevice', to: ['SUB-X/module_id'] },
+const hardware = [];
+// subsystemContracts: one entry per versioned contract.
+//   { id: 'name.v1', from: ['SUB-X'], to: ['SUB-Y', 'SUB-Z'] },
+const subsystemContracts = [];
+// ===================================================
+
+const palettes = {
+  dark: {
+    bg: '#111417', surface: '#171b1f', line: '#2b3238', text: '#e5e8e9', muted: '#89949b',
+    base: '#f0783c', edge: '#89949b', hardware: '#ef9b7a', contract: '#b4a3db',
+    layers: ['#72c7ca', '#83c99b', '#a5b4c1', '#d9b36f'],
+  },
+  light: {
+    bg: '#e9eceb', surface: '#f7f8f7', line: '#cdd3d2', text: '#1d2528', muted: '#626e72',
+    base: '#92421c', edge: '#707c82', hardware: '#99482e', contract: '#71548f',
+    layers: ['#286c70', '#28623b', '#516271', '#8b621e'],
+  },
+};
+const selectedTheme = theme === 'light' ? 'light' : 'dark';
+const palette = palettes[selectedTheme];
+document.documentElement.dataset.theme = selectedTheme;
+document.documentElement.style.colorScheme = selectedTheme;
+for (const key of ['bg', 'surface', 'line', 'text', 'muted']) {
+  document.documentElement.style.setProperty(`--${key}`, palette[key]);
+}
+const layerColor = (color) => palette.layers[palettes.dark.layers.indexOf(color)] || palette.layers[0];
+const nodeColor = (border) => ({
+  background: palette.surface, border,
+  highlight: { background: palette.surface, border },
+  hover: { background: palette.bg, border },
+});
+const box = (n) => ({ ...n, shape: 'box', font: { color: palette.text, size: 12 } });
+
+document.title = `S1 dependency graph - ${manifest.name}`;
+document.getElementById('meta').textContent =
+  `id:    ${manifest.id}\nname:  ${manifest.name}\ncycle: ${manifest.cycle}\ngt:    ${manifest.gt.strs}, ${manifest.gt.syrs}`;
+document.getElementById('legend').textContent =
+  `${selectedTheme === 'dark' ? 'Dark' : 'Light'} · Circle: subsystem base · Box: functional module / hardware · Diamond: subsystem contract`;
+
+const graph = document.getElementById('graph');
+if (typeof vis === 'undefined') {
+  graph.textContent = 'vis-network could not load: keep this page inside its project, next to the .agents folder.';
+} else {
+  // Each subsystem is a spider: base at the center, modules on the spokes.
+  // Module ids are prefixed by subsystem, so two subsystems may reuse a module name.
+  const nodes = [
+    ...subsystems.map((s) => ({ id: s.id, label: s.label, color: nodeColor(palette.base), shape: 'circle', font: { color: palette.text, size: 13 } })),
+    ...subsystems.flatMap((s) => s.modules.map((m) => box({ ...m, id: `${s.id}/${m.id}`, color: nodeColor(layerColor(m.color)) }))),
+    ...hardware.map((h) => box({ id: h.id, label: h.label, color: nodeColor(palette.hardware) })),
+    ...subsystemContracts.map((c) => ({ ...box({ id: `c:${c.id}`, label: c.id, color: nodeColor(palette.contract) }), shape: 'diamond' })),
+  ];
+  const edges = [
+    ...subsystems.flatMap((s) => s.modules.map((m) => ({ from: s.id, to: `${s.id}/${m.id}`, color: { color: palette.edge } }))),
+    ...hardware.flatMap((h) => h.to.map((to) => ({ from: h.id, to, arrows: 'to', dashes: true, color: { color: palette.hardware } }))),
+    ...subsystemContracts.flatMap((c) => [
+      ...c.from.map((from) => ({ from, to: `c:${c.id}`, arrows: 'to', color: { color: palette.contract } })),
+      ...c.to.map((to) => ({ from: `c:${c.id}`, to, arrows: 'to', color: { color: palette.contract } })),
+    ]),
+  ];
+  new vis.Network(graph, { nodes, edges }, {
+    layout: { randomSeed: 1 },
+    physics: { solver: 'repulsion', repulsion: { nodeDistance: 180 } },
+    nodes: { borderWidth: 1.5, borderWidthSelected: 3, shadow: { enabled: true, size: 6, color: 'rgba(0,0,0,0.1)' } },
+    edges: { width: 1.5, smooth: { type: 'continuous' } },
+    interaction: { hover: true, tooltipDelay: 100 },
+  });
+}
+</script>
+</body></html>

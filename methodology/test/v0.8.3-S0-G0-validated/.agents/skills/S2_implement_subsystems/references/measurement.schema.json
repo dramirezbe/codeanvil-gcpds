@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "V-SIL laboratory measurement record, version 2",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["schema_version", "cycle", "stage", "iteration", "run_id", "target", "command", "started_at", "finished_at", "exit_code", "measurements"],
+  "properties": {
+    "schema_version": {"const": 2},
+    "cycle": {"type": "string", "minLength": 1},
+    "stage": {"enum": ["S2", "G2"]},
+    "iteration": {"type": "integer", "minimum": 1},
+    "run_id": {"type": "string", "minLength": 1},
+    "target": {"type": "string", "minLength": 1},
+    "command": {"type": "string", "minLength": 1},
+    "started_at": {"type": "string", "format": "date-time"},
+    "finished_at": {"type": "string", "format": "date-time"},
+    "exit_code": {"type": "integer"},
+    "error": {"type": "string", "minLength": 1},
+    "measurements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["requirement_id", "metric", "value", "criterion", "result"],
+        "properties": {
+          "requirement_id": {"type": "string", "minLength": 1},
+          "metric": {"type": "string", "minLength": 1},
+          "value": {"type": ["number", "string", "boolean"]},
+          "unit": {"type": "string"},
+          "criterion": {"type": "string", "minLength": 1},
+          "result": {"enum": ["pass", "fail", "inconclusive"]}
+        }
+      }
+    }
+  },
+  "if": {"properties": {"measurements": {"maxItems": 0}}},
+  "then": {"required": ["error"], "properties": {"exit_code": {"not": {"const": 0}}}}
+}

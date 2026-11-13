@@ -1,0 +1,586 @@
+# S1 — Design of a System of Layered Subsystems
+
+<!-- V-SIL v3 · stage S1. Input: .codeanvil/GT/StRS.md + .codeanvil/GT/SyRS.md (passed G0 + Gate H).
+     Output: this document, reviewed by a human at G1.
+     Structure: arc42 §5 Building Block View, IEEE 1016 viewpoints, IEEE 29148 traceability,
+     MADR decisions, plus COTS envelope, per-module verification profile and stub recipes.
+     Replace every {{...}} and every comment. Section numbers are referenced elsewhere: keep them. -->
+
+## Meta
+
+| Field          | Value                                                       |
+|----------------|-------------------------------------------------------------|
+| Project        | {{project name}}                                            |
+| Cycle          | {{cycle name}}                                              |
+| Date           | {{YYYY-MM-DD}}                                              |
+| Author         | {{name / role}}                                             |
+| G0 approved    | {{SHA-256 of StRS.md and SyRS.md; information only}}  |
+| Gate H         | {{date + who authorised, copied from G0.md}}                |
+| Subsystems       | {{subsystem IDs; a single subsystem is valid}}                  |
+| Target(s)      | {{local, or the intended device deduced from the HWC-* blocks; one target per subsystem}} |
+| HAL mode       | {{mock-only / mock+real}}                                   |
+| Toolchain      | {{one entry per subsystem: SUB-xxx: <package> · <language> · <package manager> · <test runner>}} |
+| ML model       | {{omit if not used; otherwise reference to the supplied package}} |
+| Status         | draft / in G1 review / approved at G1                       |
+
+<!-- HAL mode: mock-only (Mock HAL only; no Real HW HAL, no lab procedures, no
+     hw_dependency: true, every claim capped at VL-1) or mock+real (adds the Real HW HAL, §1.6).
+     Toolchain example: "SUB-001: fm_edge · Python 3.12 · uv · pytest; SUB-002: dashboard ·
+     TypeScript · pnpm · vitest". Allowed: Python · uv · pytest and TypeScript · pnpm · vitest.
+     <package> is a valid identifier and names src/<package>/. S2 builds with it and never
+     chooses another. -->
+
+<!-- Target(s) is design intent, independent of HAL mode and verification level: `local`, or the
+     intended device deduced from the HWC-* blocks (e.g. "Raspberry Pi 4"). It is not a
+     project.yaml targets: entry; never write an IP, MAC, credential or personal SSH identity.
+     Resolve multiple possible devices before delivery. S1 never enrolls a target: the concrete
+     project.yaml entry is created at G2 by credential-setup, only if the design requires VL-2.
+     VL-0/VL-1 run locally with the Mock HAL (no hardware) and remain VERIFIED; VL-2 is real
+     SIL/HIL on the actual hardware at G2. -->
+
+
+
+---
+
+## 0. COTS envelope
+
+<!-- Each COTS device is a node of the physical architecture. Every physical connection is an
+     interface whose measurable limits flow into the software contracts of §3
+     (noise budget, clock accuracy, bus throughput, settling time). -->
+
+### 0.1 Device inventory
+
+| ID      | Device | Role | Key constraints |
+|---------|--------|------|-----------------|
+| HWC-001 |        |      |                 |
+
+<!-- A COTS device is bought, not designed. "Key constraints" = what limits the software:
+     frequency range, sample rate, ADC resolution, insertion loss, clock accuracy, bus
+     throughput, RAM, available interfaces. Every ID traces to an HWC-* block of StRS.md. -->
+
+### 0.2 Physical topology
+
+```mermaid
+flowchart LR
+    A["HWC-001<br/>device"] -->|connector · signal type| B["HWC-002<br/>device"]
+```
+
+<!-- If a cable is unplugged, what breaks? Every edge names connector, signal type, direction. -->
+
+### 0.3 Physical interfaces (HW ↔ HW contracts)
+
+#### PHY-001: {{origin}} → {{destination}}
+
+| Field            | Value |
+|------------------|-------|
+| Connector        |       |
+| Impedance        |       |
+| Band / range     |       |
+| Expected loss    |       |
+| Key constraint   |       |
+
+<!-- Repeat PHY-NNN for every physical connection. "Key constraint" is what the software
+     inherits, e.g. "IL ≤ 2.3 dB → the NF budget assumes it". Name the §3 contract it affects. -->
+
+### 0.4 Deployment and links between subsystems
+
+| Subsystem ID | Process / deployment target | Execution target (`local` or declared name) | HWC-* used | Links to other subsystems | Restart / disconnected operation |
+|------------|-----------------------------|---------------------------------------------|------------|-------------------------|-----------------------------------|
+| SUB-001    |                             |                                             |            |                         |                                   |
+
+<!-- One machine may host several subsystems; a subsystem may have no HWC-* of its own. State the
+     real process, network and failure boundaries. A module in the same process is not a subsystem. -->
+
+### 0.5 Runnable system entry point
+
+| Field | Value |
+|-------|-------|
+| Project-root command | {{one command that starts the complete system; for multiple subsystems, a launcher}} |
+| HAL mode for preview | {{mock-only or mock+real; name the selected runtime HAL}} |
+| Subsystems started | {{subsystem IDs and processes}} |
+| Local URL / endpoint | {{address and port a user can open}} |
+| Visible result | {{what appears or updates when the system is working}} |
+| Shutdown | {{how all child processes stop cleanly}} |
+
+<!-- This is an implementation contract for S2. A package entry point must actually start its
+     pipeline; a function that merely logs instructions does not count. If the preview uses a
+     Mock HAL, its runtime implementation belongs in the runnable package or an explicit demo
+     bundle, never solely in the non-shipped verification kit. -->
+
+---
+
+## 1. Building block view
+
+> **Terminology.** **Subsystem** (`SUB-nnn`): a top-level unit of the software
+> architecture, with a contract from this design stage, built as a package under
+> `src/` and containing one or more **modules** (traced as `SUB-nnn/module_id`).
+> **System**: the complete software — the set of subsystems behind the one runnable
+> entry point (§0.5). **Component**: a COTS hardware piece (HackRF, RPi, …), described
+> by the StRS `HWC-` blocks; never software. **Prototype**: the G2-verified realization
+> of the system on its COTS hardware (HW + SW).
+
+<!-- Each subsystem has: a base layer (orchestration + HAL + routing + interface contracts) and
+     plug-in modules, one per responsibility. Modules talk ONLY through their subsystem's base:
+     no direct module → module call. Subsystems talk through versioned contracts. -->
+
+### 1.1 System subsystem view (level 0)
+
+| Subsystem ID | Single responsibility | State it owns | External inputs / outputs | Deployment target |
+|------------|-----------------------|---------------|---------------------------|-------------------|
+| SUB-001    |                       |               |                           |                   |
+
+```mermaid
+flowchart LR
+    A["SUB-001<br/>base + modules"] -->|"name.v1"| B["SUB-002<br/>base + modules"]
+```
+
+**Motivation for the subsystem boundaries:**
+
+<!-- Why separate processes or deployments? What restarts independently? Who owns shared
+     state, and what happens if the link drops? With one subsystem, name it and omit the edges. -->
+
+### 1.2 White box: each subsystem (level 1)
+
+<!-- Repeat 1.2–1.4 for every subsystem. Whole-product integration is described by the
+     cross-subsystem contracts and paths of §3–4. -->
+
+**Motivation for the decomposition:**
+
+<!-- THE key design decision of S1. Why these modules and not others? Which partitioning
+     criterion? Why do the boundaries sit where they do? This is what G1 evaluates. -->
+
+### 1.3 Base layer
+
+<!-- White box of the base layer OF EACH SUBSYSTEM. The HAL may be empty if no hardware is touched. -->
+
+**Subsystem ID:** {{SUB-xxx}}
+
+#### 1.3.1 Orchestration
+
+| Field            | Value |
+|------------------|-------|
+| Mechanism        | <!-- e.g. GNU Radio top block, asyncio event loop, ROS 2 executor --> |
+| Execution model  | <!-- dataflow push/pull, event-driven, periodic --> |
+| Timing           | <!-- hard real-time, soft real-time, best-effort --> |
+
+<!-- Justify the mechanism: which project constraint imposes it? -->
+
+#### 1.3.2 HAL (Hardware Abstraction Layer)
+
+| Field               | Value |
+|---------------------|-------|
+| Devices it wraps    | <!-- HWC-* list --> |
+| Exposed interface   | <!-- what the rest of the software sees: port, API, topic --> |
+| Isolation           | <!-- if a COTS device is swapped, what changes and what does not --> |
+
+<!-- The HAL is the ONLY point that touches hardware. If swapping a device changes more than the
+     HAL, explain why. Its implementations (Mock HAL, Real HW HAL) are designed in §1.6. -->
+
+#### 1.3.3 Data routing
+
+| Input signal | Consumers | Mechanism |
+|--------------|-----------|-----------|
+|              |           |           |
+
+<!-- Document every place where a signal forks or is routed conditionally. -->
+
+#### 1.3.4 Verification kit
+
+<!-- The tools S2 builds in its initial layer, before any module. The kit is verification
+     infrastructure: it is never shipped and no subsystem imports it. In-process tools live in
+     verification/<package>/ in the subsystem's language; shared tools (run.sh, golden/,
+     telemetry/) live in verification/; the HAL port and the Real HW HAL live in
+     src/<package>/hal/. Omit the Real HW HAL row in mock-only. -->
+
+| Tool | Path | Language | Consumed by | Source section |
+|------|------|----------|-------------|----------------|
+| Mock HAL | `verification/<package>/mock_hal/` | | | §1.6 |
+| Golden vectors + manifest | `verification/golden/` + `manifest.md` | | | §1.6, §3 |
+| Telemetry companion | `verification/telemetry/` | Python | every test run | §1.7 |
+| Stubs | `verification/<package>/stubs/` | | | §3.1–3.3 |
+| Fake peers | `verification/<package>/fakes/` | | | §3.4 |
+| Drivers | `verification/<package>/drivers/` | | | §4.4 |
+| Level runner | `verification/run.sh` (`vl0`, `vl1`) | shell | S2, G2 | §4.4 |
+| Real HW HAL + fake device API (mock+real only) | `src/<package>/hal/` | | | §1.6 |
+
+### 1.4 Black boxes: modules
+
+<!-- Each module is a black box: what it consumes, produces, its responsibility and how it will
+     be verified. How it works inside is S2's business. -->
+
+#### {{SUB-xxx/module_id}}
+
+| Field            | Value |
+|------------------|-------|
+| subsystem_id       | <!-- owning SUB-xxx; use SUB-xxx/module_id in traces --> |
+| Functional layer | <!-- HAL / DSP / Decision / Output / Control / other --> |
+| Responsibility   | <!-- ONE sentence --> |
+| depends_on       | <!-- contracts it consumes --> |
+| provides         | <!-- contracts it produces --> |
+| hw_dependency    | <!-- true / false --> |
+| required_vl      | <!-- VL-0 / VL-1 / VL-2 --> |
+
+**Rationale for the required VL:**
+
+<!-- hw_dependency = true → required_vl MUST be VL-2. Running on a computer does not count:
+     the correctness must depend on that hardware. In mock-only, hw_dependency is always false.
+     VL-1: which risk justifies going beyond VL-0 (e.g. behaviour only visible with realistic data)?
+     VL-0: why is pure logic enough (e.g. a fixed threshold, checkable with deterministic vectors)? -->
+
+<!-- REPEAT for EVERY module. -->
+
+### 1.5 Supplied ML model (optional)
+
+<!-- OMIT this whole section if no module uses ML. An outcome requirement does not oblige ML.
+     If ML is chosen, the model is supplied as a controlled input, trained with Mock HAL data plus
+     labelling or, failing that, real-hardware HAL data plus labelling. S1 designs its integration.
+     Never train or select a model here. -->
+
+| Field                    | Value |
+|--------------------------|-------|
+| Consuming module         | <!-- SUB-xxx/module_id --> |
+| SYS-* it satisfies       | <!-- outcome requirements, not only a technical choice --> |
+| Provider and provenance  |  |
+| Artifact and weights     | <!-- controlled path/URI, format, version, SHA-256 --> |
+| Training data and labels | <!-- Mock HAL or, failing that, real-hardware HAL; labelling procedure; dataset version, SHA-256 --> |
+| Inference runtime        | <!-- version, dependencies, COTS compatibility --> |
+| Inputs                   | <!-- shape, type, units, rate, exact preprocessing --> |
+| Outputs                  | <!-- shape, labels, thresholds, confidence, postprocessing --> |
+| Supplied performance     | <!-- metrics, dataset, size, conditions, limits --> |
+| COTS budget              | <!-- p95/p99 latency, RAM, CPU/GPU, power if applicable --> |
+| Verification profile     | <!-- required_vl and the environment where G2 will measure --> |
+| Failure / wrong version  | <!-- safe response to absence, error or change --> |
+
+**Inference contract and fake response:**
+
+<!-- Concrete input → expected output, and a deterministic fake response for VL-0. The fake proves
+     the module's integration, not the model's quality: G2 measures with the identified weights. -->
+
+**Design decision:** {{DEC-NNN justifying this model and its location}}
+
+### 1.6 HAL substitution ladder
+
+<!-- Two HAL implementations behind the same base-layer port. HAL substitution is what moves a
+     module between verification levels. The Mock HAL is always designed. The Real HW HAL exists
+     only in mock+real: omit its subsection in mock-only. -->
+
+**Where each level runs:**
+
+| Level | Subsystem / PATH-* | Execution target | HAL | Required target capabilities |
+|-------|------------------|------------------|-----|------------------------------|
+| VL-0 | | <!-- local or declared target name --> | Mock HAL / fake device API | |
+| VL-1 | | <!-- same declared target, or justify another --> | Mock HAL synthetic inputs | |
+| VL-2 (mock+real only) | | | Real HW HAL | <!-- device and PROTO-* prerequisites --> |
+
+<!-- Omit the VL-2 row in mock-only. The execution location does not raise the level: PIL is
+     VL-0/VL-1 on the actual compute unit. Every target must have a matching §1.7 envelope.
+     For remote targets, S2 deploys and runs through vsil_hil_mcp; local runs use the host tools. -->
+
+#### Mock HAL
+
+| Field | Value |
+|-------|-------|
+| Base-layer port | <!-- the same interface contract as the Real HW HAL --> |
+| VL-0: deterministic vectors | <!-- length, type, edge-case coverage --> |
+| VL-1: synthetic generator | <!-- SNR, modulation, channel conditions, generation tool --> |
+| Generation tool | <!-- e.g. software FM synthesiser, recorded capture --> |
+
+**Golden vectors (governance):**
+
+| Vector ID | Simulated condition | SHA-256 digest | Generation parameters | Expected output at consumer |
+|-----------|---------------------|----------------|-----------------------|-----------------------------|
+| GV-001    |                     |                |                       |                             |
+
+<!-- Each golden vector is a controlled artifact, listed in verification/golden/manifest.md.
+     Changing a vector invalidates every evidence record that used it. -->
+
+#### Real HW HAL (mock+real only)
+
+| Field | Value |
+|-------|-------|
+| Base-layer port | <!-- same contract as the Mock HAL --> |
+| COTS device | <!-- HWC-NNN --> |
+| Measurement method | <!-- functional/metric test scripts, SYS-* criteria, sufficient resolution and tolerances --> |
+| Lab procedures | <!-- PROTO-* from SyRS §6 when needed; otherwise describe the functional procedure --> |
+| Reference / calibration | <!-- source and provenance when required by GT or the conclusion; otherwise justify not required --> |
+| Correction chains | <!-- SyRS §4 terms when required; do not invent them --> |
+| Declared tolerances | <!-- GT criterion and applicable uncertainty/decision rule, if needed --> |
+| Calibration grade | <!-- if needed: development-team screening grade, not normative --> |
+| Device probe | <!-- non-transmitting command, observed identity/driver/capabilities and failure output --> |
+| Capability guard | <!-- ranges/modes rejected before configure/acquire; never bypass via raw device API --> |
+| Safe stop | <!-- close device, stop TX, release resources on timeout/disconnect --> |
+| Fake device API | <!-- how the Real HW HAL runs at VL-0 without the device --> |
+
+<!-- Functional HW tests need no universal oracle/calibration budget. Justify the method against
+     the actual requirement. When GT or the conclusion requires calibration/corrections, missing
+     inputs make that claim inconclusive, not passing. The agent prepares and runs real tests
+     after the parent's explicit pre-HW checkpoint. measurement.json v2 records actual outcomes;
+     no deployment manifest, capture hash or human capture operator is required. -->
+
+**Substitution check:**
+
+<!-- Which test confirms that the Mock HAL and the Real HW HAL produce outputs compatible with
+     the base-layer port contract? -->
+
+### 1.7 Telemetry companion
+
+<!-- Mandatory in every design. A lightweight, non-intrusive process that monitors the compute
+     unit during every test run. It is verification infrastructure in verification/telemetry/,
+     NOT a module: it has no SYS-*, is not in the DAG, never ships under src/ and is never listed
+     as module evidence. -->
+
+| Field | Value |
+|-------|-------|
+| Monitored signals | <!-- CPU, memory, temperature, dropped buffers, scheduling latency --> |
+| Sampling interval | <!-- e.g. 1 s, 100 ms --> |
+| Resource budget | <!-- max CPU %, max memory: the companion's own footprint --> |
+| Output format | <!-- e.g. CSV with timestamp, JSON lines --> |
+| Evidence attachment | <!-- how readings attach to each evidence record --> |
+
+**Compute-unit operating envelope (repeat per execution target):**
+
+| Field | Value |
+|-------|-------|
+| Execution target | <!-- local or the project.yaml target name --> |
+| Subsystems / PATH-* | <!-- evidence governed by this target's envelope --> |
+| COTS basis | <!-- HWC-* and the source of each threshold; never invent a limit --> |
+
+| Signal | Nominal threshold | Action if exceeded |
+|--------|-------------------|--------------------|
+| Temperature | <!-- e.g. ≤ 80 °C --> | <!-- flag evidence --> |
+| CPU | <!-- e.g. ≤ 90 % sustained --> | <!-- flag evidence --> |
+| Dropped buffers | <!-- e.g. 0 --> | <!-- flag evidence --> |
+| Scheduling latency | <!-- e.g. ≤ X ms --> | <!-- flag evidence --> |
+
+<!-- Evidence recorded outside the envelope is flagged as potentially invalid. If the companion's
+     own footprint exceeds its budget, that is an infrastructure defect, not a system defect.
+     Readings must be captured on the named compute unit. Host readings cannot stand in for a
+     remote target. Missing readings prompt notice, diagnosis and a decision whether to repeat
+     or continue with unaffected evidence; never replace a missing reading with zero. -->
+
+---
+
+## 2. Dependency view
+
+<!-- Separate implementation dependencies from runtime interaction. The implementation DAG
+     (contracts, bases, modules, hardware as source/sink, final integration) MUST be acyclic so
+     S2 can build with stubs. Runtime interaction may be bidirectional between subsystems; it is
+     reviewed as a protocol and never orders the implementation. -->
+
+### 2.1 Implementation dependency graph (DAG)
+
+```mermaid
+flowchart LR
+    C["Versioned subsystem contracts"] --> B1["SUB-001 base"]
+    B1 --> M1["module_a<br/>HAL · VL-2"] --> M2["module_b<br/>DSP · VL-1"]
+    M2 --> SYS["System integration"]
+```
+
+<!-- Hardware nodes go in a separate subgraph. Edges name contracts or build order. Each software
+     node shows subsystem, id, functional layer, required VL. A cross-subsystem contract is defined
+     before both subsystems: never draw it as a mutual dependency. -->
+
+### 2.2 Topological implementation order
+
+<!-- Derived from the DAG; the order in which S2 implements modules after the bases. The first
+     module of each subsystem depends only on contracts, base and, if applicable, hardware. The
+     last step integrates the real subsystems. -->
+
+| Step | Subsystem | Module / integration | Depends on (contracts) | Rationale for the order |
+|------|---------|----------------------|------------------------|-------------------------|
+| 1    |         |                      |                        |                         |
+
+### 2.3 Runtime interaction graph
+
+```mermaid
+flowchart LR
+    A["SUB-001"] -->|"name.v1: telemetry"| B["SUB-002"]
+    B -->|"configure.v1: command"| A
+```
+
+<!-- A message loop is valid if every edge has a §3.4 contract. For each loop: who owns the state,
+     what acknowledges a command, when does it time out, how are duplicate retries avoided, what
+     happens when a subsystem drops or reconnects? -->
+
+---
+
+## 3. Interface view
+
+<!-- Four contract types: HW → SW (constrained by PHY-*), SW → SW (inside a subsystem), SW → HW
+     (commands), subsystem → subsystem (across processes or network). EVERY contract must be enough
+     to write a deterministic stub without asking the designer. If you cannot write the stub
+     recipe, the contract is incomplete. -->
+
+### 3.1 HW → SW contracts
+
+#### {{contract_id}}
+
+| Field              | Value |
+|--------------------|-------|
+| Physical origin    | <!-- PHY-NNN (§0.3) --> |
+| COTS device        | <!-- HWC-NNN --> |
+| Consuming module   | <!-- module receiving this signal --> |
+| Data type          | <!-- complex64, float32[N], record, enum --> |
+| Shape / structure  | <!-- [4096], stream, {f_c, power, snr} --> |
+| Units              | <!-- full-scale ±1, dBFS, MHz, bool --> |
+| Rate / frequency   | <!-- 20 MS/s, 1 Hz, per event --> |
+| Maximum latency    | <!-- ≤ 5 ms --> |
+| Schema version     | <!-- v1 --> |
+| Inherited budget   | <!-- limits coming from PHY-*, e.g. NF ≤ 4 dB --> |
+
+**Stub recipe:**
+
+<!-- CONCRETE description of a deterministic stub that replaces the hardware in VL-0 and VL-1:
+     source type, exact data (values or how to generate them), simulated conditions (nominal,
+     degraded, edge case). E.g. "8192 complex64 samples, tone at +1 MHz, 0.5 FS, AWGN, SNR ≈ 20 dB". -->
+
+**Reference test vectors:**
+
+| Input | Expected output |
+|-------|-----------------|
+|       |                 |
+
+### 3.2 SW → SW contracts
+
+#### {{contract_id}}
+
+| Field              | Value |
+|--------------------|-------|
+| Producer           | <!-- SUB-xxx/module; same subsystem --> |
+| Consumer(s)        | <!-- SUB-xxx/modules; same subsystem --> |
+| Data type          |       |
+| Shape / structure  |       |
+| Units              |       |
+| Rate / frequency   |       |
+| Maximum latency    |       |
+| Schema version     |       |
+
+**Stub recipe:**
+
+<!-- Same criterion: concrete, deterministic, reproducible. -->
+
+**Reference test vectors:**
+
+| Input | Expected output |
+|-------|-----------------|
+|       |                 |
+
+### 3.3 SW → HW contracts
+
+#### {{contract_id}}
+
+| Field             | Value |
+|-------------------|-------|
+| Sending module    |       |
+| Physical target   | <!-- PHY-NNN / HWC-NNN --> |
+| Data type         | <!-- uint8, enum, struct --> |
+| Meaning           | <!-- 0=FM, 1=ADS-B, 2=reserved --> |
+| Latency           |       |
+| Side effects      | <!-- e.g. "changing position invalidates the iq_acquisition buffer" --> |
+
+**Stub recipe:**
+
+<!-- E.g. "Mock GPIO that records calls and reports the current position; controls no real hardware." -->
+
+### 3.4 Subsystem → subsystem contracts
+
+#### {{contract_id}}: {{origin SVC}} → {{destination SVC}}
+
+| Field                     | Value |
+|---------------------------|-------|
+| Producer / consumer       | <!-- SUB-xxx + port at each end --> |
+| State owner               | <!-- one subsystem; the other's replica is identified --> |
+| Operation / message       | <!-- e.g. occupancy.v1, configure.v1 --> |
+| Transport / direction     | <!-- HTTP, event, WebSocket... --> |
+| Schema and version        | <!-- fields, types, vN/vN+1 compatibility --> |
+| Units and time            | <!-- units, clock, timestamp, expiry --> |
+| Order / rate / size       | <!-- guarantees, limits, backpressure --> |
+| Latency / availability    | <!-- measurable budget and conditions --> |
+| Authorisation             | <!-- who may read or issue commands --> |
+| Acknowledgement / retries | <!-- timeout, idempotency, duplicates --> |
+| Disconnect / restart      | <!-- safe state, queue, resynchronisation --> |
+| SYS-* / NRM-* affected    | <!-- requirements crossing this boundary --> |
+
+**Fake-peer recipe:**
+
+<!-- Deterministic nominal and error responses, incompatible version, duplicate message, delay,
+     disconnect and reconnect, as applicable. -->
+
+**Contract and test vectors:**
+
+<!-- Concrete message → expected response/state on producer and consumer. S2 uses the same vector
+     for both ends of the contract in VL-0. -->
+
+---
+
+## 4. Traceability
+
+<!-- Every SYS-* of SyRS.md traces to a module or to a cross-subsystem path with responsible
+     modules. A SYS-* without a module is an uncovered requirement; a module without a SYS-* is
+     orphan code (question it). -->
+
+### 4.1 Requirements → subsystems, modules and paths
+
+| Requirement | Text (summary) | Subsystem(s) | Module(s) | Path / contract(s) | Acceptance owner |
+|-------------|----------------|------------|-----------|--------------------|------------------|
+| SYS-001     |                |            |           |                    |                  |
+
+### 4.2 Modules → requirements (inverse view)
+
+| Subsystem | Module (SUB-xxx/module_id) | Requirement(s) satisfied |
+|---------|----------------------------|--------------------------|
+|         |                            |                          |
+
+### 4.3 Normative constraints → contracts
+
+| Norm    | Constraint | Affected contract | Imposed value |
+|---------|------------|-------------------|---------------|
+| NRM-001 |            |                   |               |
+
+### 4.4 System paths and end-to-end evidence
+
+| Path ID  | SYS-* | Subsystems and contracts, in order | Input → observable result | End-to-end budget | required_vl | Environment / acceptance criterion |
+|----------|-------|----------------------------------|---------------------------|-------------------|-------------|------------------------------------|
+| PATH-001 |       |                                  |                           |                   | VL-0/1/2    |                                    |
+
+<!-- Every SYS-* that crosses subsystems needs a PATH-* and a measurable budget. S2 tests the path
+     with connected subsystems and simulated external inputs in VL-0; VL-1 and VL-2 add the declared
+     environment. Isolated per-subsystem tests do not prove an end-to-end requirement. -->
+
+---
+
+## 5. Design decisions
+
+<!-- Decisions a reviewer needs to question, in MADR format: module partitioning (DEC-001 is the
+     partitioning decision), sizes and parameters, orchestration mechanism, subsystem separation and
+     shared-state ownership, the link and protocol behind the PATH-* paths. -->
+
+### DEC-001: {{decision title}}
+
+- **Status:** proposed / accepted / deprecated / superseded by DEC-NNN
+- **Context:** <!-- what design problem is faced -->
+- **Alternatives considered:**
+  1. <!-- alternative A -->
+  2. <!-- alternative B -->
+- **Decision:** <!-- which one was chosen -->
+- **Rationale:** <!-- why this and not the others -->
+- **Consequences:** <!-- positive and negative -->
+- **Requirements affected:** <!-- SYS-*, NRM-*, STK-* -->
+
+<!-- REPEAT for every significant decision. -->
+
+---
+
+## 6. Risks and known infeasibilities
+
+<!-- Anything that smells like a potential RFD is documented here BEFORE G2. An RFD from S1 means:
+     "under any possible partitioning on this COTS envelope, this requirement cannot be met". That
+     is a physical constraint of the hardware, not a design defect. A manageable risk is documented
+     with its mitigation; an infeasible one is escalated as a formal RFD. -->
+
+| ID      | Risk | Requirements / PATH-* affected | Evidence / estimate (`ANALYSIS (no VL)`) | Proposed mitigation | Potential RFD? |
+|---------|------|--------------------------------|------------------------------------------|---------------------|----------------|
+| RSK-001 |      |                                |                                          |                     | yes / no       |
+
+<!-- An improvement for another version may be noted as future work only if it is outside the
+     approved scope of the cycle. A current SYS-* that fails follows the defect or RFD route. -->
