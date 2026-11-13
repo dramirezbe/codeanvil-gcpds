@@ -174,7 +174,7 @@ def _alive(pid):
     path = Path(f"/proc/{pid}/stat")
     try:
         return path.read_text().split(") ", 1)[1].split()[0] != "Z"
-    except FileNotFoundError:
+    except OSError:  # FileNotFoundError (ENOENT) or ProcessLookupError (ESRCH)
         return False
 
 
