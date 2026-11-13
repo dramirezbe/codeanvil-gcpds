@@ -1,0 +1,32 @@
+[project]
+name = "fm-hackrf-rpi5-mvp"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=1.26",
+]
+
+[project.scripts]
+fm_measure = "fm_measure.main:main"
+fm_store_alert = "fm_store_alert.main:main"
+fm_report = "fm_report.main:main"
+fm_time = "fm_time.main:main"
+fm_supervisor = "fm_supervisor.main:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "numpy>=1.26",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/fm_measure", "src/fm_store_alert", "src/fm_report", "src/fm_time", "src/fm_supervisor"]
+
+[tool.pytest.ini_options]
+testpaths = ["verification"]
+pythonpath = ["src", "."]
+markers = ["vl0: VL-0 floor test", "vl1: VL-1 metric test"]

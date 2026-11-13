@@ -1,0 +1,11 @@
+created: '2026-11-12 22:17:25.049'
+active_cycle: 01_fm_hackrf_rpi5_mvp
+producer:
+  cycle: 01_fm_hackrf_rpi5_mvp
+  stage: S0
+  iteration: 1
+files:
+- source: .codeanvil/GT/StRS.md
+  sha256: db9d3775d3cca3683603ab998a31ca5a7df6e5b1853b6cfb954b169152a88ef3
+- source: .codeanvil/GT/SyRS.md
+  sha256: ac2230edf7cc2e6f90a3f74be322dd54f282759e2f219ac8ac4fd29cd49a76b5

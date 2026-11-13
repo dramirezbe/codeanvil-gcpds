@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>S1 dependency graph</title>
+<script src="../../.agents/skills/S1_design_system/assets/vis-network.min.js"></script>
+<style>
+  :root{color-scheme:dark;--bg:#111417;--surface:#171b1f;--line:#2b3238;--text:#e5e8e9;--muted:#89949b}
+  body{margin:0;height:100vh;display:flex;flex-direction:column;font-family:system-ui;background:var(--bg);color:var(--text)}
+  #graph{width:100%;flex:1;min-height:0}
+  #meta{flex:none;width:fit-content;max-width:calc(100% - 48px);max-height:30vh;overflow:auto;margin:12px;background:var(--surface);border:1px solid var(--line);padding:10px 12px;border-radius:6px;font:12px/1.6 monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+  #legend{flex:none;margin:0 12px 8px;font-size:11px;line-height:1.5;color:var(--muted)}
+</style>
+</head><body>
+<pre id="meta"></pre>
+<div id="legend"></div>
+<div id="graph"></div>
+<script>
+// === DATA: this is all the agent needs to change ===
+// Write identical design data to both copies; change only this theme value.
+const theme = 'dark';
+const manifest = {
+  id: '01a1d2cc-72ce-7000-932a-0fbfe3c7c34b',
+  name: 'FM HackRF RPI5 MVP',
+  gt: { strs: '.codeanvil/GT/StRS.md', syrs: '.codeanvil/GT/SyRS.md' },
+  cycle: '01_fm_hackrf_rpi5_mvp',
+};
+const subsystems = [
+  { id: 'SUB-001', label: 'SUB-001\nmeasure base\nacquisition to scan records', modules: [
+    { id: 'acq', label: 'acq\nVL-2', color: '#72c7ca' },
+    { id: 'estimator', label: 'estimator\nVL-1', color: '#83c99b' },
+    { id: 'calibration', label: 'calibration\nVL-1', color: '#83c99b' },
+    { id: 'detector', label: 'detector\nVL-1', color: '#a5b4c1' },
+    { id: 'comparator', label: 'comparator\nVL-1', color: '#a5b4c1' },
+    { id: 'duty_cycle', label: 'duty_cycle\nVL-1', color: '#83c99b' },
+    { id: 'records', label: 'records\nVL-1', color: '#d9b36f' },
+    { id: 'calibrate', label: 'calibrate\nVL-2', color: '#83c99b' },
+    { id: 'verify', label: 'verify\nVL-2', color: '#83c99b' },
+  ] },
+  { id: 'SUB-002', label: 'SUB-002\nstore_alert base\nhistory and five alert rules', modules: [
+    { id: 'history', label: 'history\nVL-1', color: '#d9b36f' },
+    { id: 'alerts', label: 'alerts\nVL-1', color: '#a5b4c1' },
+  ] },
+  { id: 'SUB-003', label: 'SUB-003\nreport base\nscreening report on disk', modules: [
+    { id: 'writer', label: 'writer\nVL-1', color: '#d9b36f' },
+  ] },
+  { id: 'SUB-004', label: 'SUB-004\nweb base\nread-only views and status', modules: [
+    { id: 'http', label: 'http\nVL-1', color: '#d9b36f' },
+    { id: 'views', label: 'views\nVL-1', color: '#d9b36f' },
+  ] },
+  { id: 'SUB-005', label: 'SUB-005\ntime base\nUTC by NTP', modules: [
+    { id: 'ntp', label: 'ntp\nVL-1', color: '#a5b4c1' },
+  ] },
+  { id: 'SUB-006', label: 'SUB-006\nsupervisor base\nconfig, processes, watchdog', modules: [
+    { id: 'config', label: 'config\nVL-1', color: '#a5b4c1' },
+    { id: 'processes', label: 'processes\nVL-1', color: '#a5b4c1' },
+    { id: 'watchdog', label: 'watchdog\nVL-2', color: '#72c7ca' },
+    { id: 'metrics', label: 'metrics\nVL-1', color: '#a5b4c1' },
+  ] },
+];
+const hardware = [
+  { id: 'HW-001', label: 'HW-001\nHackRF One',           to: ['SUB-001/acq', 'SUB-001/calibrate', 'SUB-001/verify'], phys: [] },
+  { id: 'HW-002', label: 'HW-002\nRaspberry Pi 5',        to: ['SUB-006/watchdog'],                                   phys: [] },
+  { id: 'HW-003', label: 'HW-003\nActive Cooler',         to: [],                                                     phys: ['HW-002'] },
+  { id: 'HW-004', label: 'HW-004\nmicroSD 64 GB',         to: [],                                                     phys: ['HW-002'] },
+  { id: 'HW-005', label: 'HW-005\ndipole antenna',        to: [],                                                     phys: ['HW-006'] },
+  { id: 'HW-006', label: 'HW-006\nLMR-195 cable',         to: [],                                                     phys: ['HW-001'] },
+  { id: 'HW-007', label: 'HW-007\nUSB cable',             to: [],                                                     phys: ['HW-001', 'HW-002'] },
+  { id: 'HW-008', label: 'HW-008\n65 W supply',           to: [],                                                     phys: ['HW-002'] },
+  { id: 'HW-009', label: 'HW-009\nIP66 enclosure',        to: [],                                                     phys: [] },
+  { id: 'HW-010', label: 'HW-010\ntraceable source',      to: ['SUB-001/calibrate', 'SUB-001/verify'],                phys: [] },
+  { id: 'HW-011', label: 'HW-011\nindependent reference', to: ['SUB-001/verify'],                                     phys: [] },
+];
+const subsystemContracts = [
+  { id: 'time_status.v1', from: ['SUB-005'], to: ['SUB-001', 'SUB-002', 'SUB-003', 'SUB-004'] },
+  { id: 'config_status.v1', from: ['SUB-006'], to: ['SUB-001', 'SUB-002', 'SUB-003', 'SUB-004', 'SUB-005'] },
+  { id: 'scan_records.v1', from: ['SUB-001'], to: ['SUB-002', 'SUB-003'] },
+  { id: 'duty_cycle.v1', from: ['SUB-001'], to: ['SUB-002', 'SUB-003'] },
+  { id: 'history.v1', from: ['SUB-002'], to: ['SUB-004'] },
+  { id: 'alerts.v1', from: ['SUB-002'], to: ['SUB-004'] },
+  { id: 'supervisor_status.v1', from: ['SUB-006'], to: ['SUB-002', 'SUB-004'] },
+  { id: 'progress.v1', from: ['SUB-001', 'SUB-002', 'SUB-003', 'SUB-004', 'SUB-005'], to: ['SUB-006'] },
+  { id: 'report_command.v1', from: ['SUB-006'], to: ['SUB-003'] },
+  { id: 'report_catalog.v1', from: ['SUB-003'], to: ['SUB-004'] },
+  { id: 'shutdown.v1', from: ['SUB-006'], to: ['SUB-001', 'SUB-002', 'SUB-003', 'SUB-004', 'SUB-005'] },
+];
+// ===================================================
+
+const palettes = {
+  dark: {
+    bg: '#111417', surface: '#171b1f', line: '#2b3238', text: '#e5e8e9', muted: '#89949b',
+    base: '#f0783c', edge: '#89949b', hardware: '#ef9b7a', contract: '#b4a3db',
+    layers: ['#72c7ca', '#83c99b', '#a5b4c1', '#d9b36f'],
+  },
+  light: {
+    bg: '#e9eceb', surface: '#f7f8f7', line: '#cdd3d2', text: '#1d2528', muted: '#626e72',
+    base: '#92421c', edge: '#707c82', hardware: '#99482e', contract: '#71548f',
+    layers: ['#286c70', '#28623b', '#516271', '#8b621e'],
+  },
+};
+const selectedTheme = theme === 'light' ? 'light' : 'dark';
+const palette = palettes[selectedTheme];
+document.documentElement.dataset.theme = selectedTheme;
+document.documentElement.style.colorScheme = selectedTheme;
+for (const key of ['bg', 'surface', 'line', 'text', 'muted']) {
+  document.documentElement.style.setProperty(`--${key}`, palette[key]);
+}
+const layerColor = (color) => palette.layers[palettes.dark.layers.indexOf(color)] || palette.layers[0];
+const nodeColor = (border) => ({
+  background: palette.surface, border,
+  highlight: { background: palette.surface, border },
+  hover: { background: palette.bg, border },
+});
+const box = (n) => ({ ...n, shape: 'box', font: { color: palette.text, size: 12 } });
+
+document.title = `S1 dependency graph - ${manifest.name}`;
+document.getElementById('meta').textContent =
+  `id:    ${manifest.id}\nname:  ${manifest.name}\ncycle: ${manifest.cycle}\ngt:    ${manifest.gt.strs}, ${manifest.gt.syrs}`;
+document.getElementById('legend').textContent =
+  `${selectedTheme === 'dark' ? 'Dark' : 'Light'} · Circle: subsystem base · Box: functional module / hardware · Diamond: subsystem contract`;
+
+const graph = document.getElementById('graph');
+if (typeof vis === 'undefined') {
+  graph.textContent = 'vis-network could not load: keep this page inside its project, next to the .agents folder.';
+} else {
+  // Each subsystem is a spider: base at the center, modules on the spokes.
+  // Module ids are prefixed by subsystem, so two subsystems may reuse a module name.
+  const nodes = [
+    ...subsystems.map((s) => ({ id: s.id, label: s.label, color: nodeColor(palette.base), shape: 'circle', font: { color: palette.text, size: 13 } })),
+    ...subsystems.flatMap((s) => s.modules.map((m) => box({ ...m, id: `${s.id}/${m.id}`, color: nodeColor(layerColor(m.color)) }))),
+    ...hardware.map((h) => box({ id: h.id, label: h.label, color: nodeColor(palette.hardware) })),
+    ...subsystemContracts.map((c) => ({ ...box({ id: `c:${c.id}`, label: c.id, color: nodeColor(palette.contract) }), shape: 'diamond' })),
+  ];
+  const edges = [
+    ...subsystems.flatMap((s) => s.modules.map((m) => ({ from: s.id, to: `${s.id}/${m.id}`, color: { color: palette.edge } }))),
+    ...hardware.flatMap((h) => h.to.map((to) => ({ from: h.id, to, arrows: 'to', dashes: true, color: { color: palette.hardware } }))),
+    ...hardware.flatMap((h) => (h.phys || []).map((to) => ({ from: h.id, to, dashes: [3, 5], width: 1, color: { color: palette.hardware, opacity: 0.45 } }))),
+    ...subsystemContracts.flatMap((c) => [
+      ...c.from.map((from) => ({ from, to: `c:${c.id}`, arrows: 'to', color: { color: palette.contract } })),
+      ...c.to.map((to) => ({ from: `c:${c.id}`, to, arrows: 'to', color: { color: palette.contract } })),
+    ]),
+  ];
+  new vis.Network(graph, { nodes, edges }, {
+    layout: { randomSeed: 1 },
+    physics: { solver: 'repulsion', repulsion: { nodeDistance: 470 } },
+    nodes: { borderWidth: 1.5, borderWidthSelected: 3, shadow: { enabled: true, size: 6, color: 'rgba(0,0,0,0.1)' } },
+    edges: { width: 1.5, smooth: { type: 'continuous', roundness: 0.7 } },
+    interaction: { hover: true, tooltipDelay: 100 },
+  });
+}
+</script>
+</body></html>

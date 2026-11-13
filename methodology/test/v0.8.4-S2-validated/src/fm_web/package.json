@@ -1,0 +1,19 @@
+{
+  "name": "fm_web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx main.ts",
+    "dev": "tsx watch main.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
+  }
+}

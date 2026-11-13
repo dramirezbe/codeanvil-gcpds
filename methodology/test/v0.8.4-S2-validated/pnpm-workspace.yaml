@@ -1,0 +1,9 @@
+packages:
+  - "src/fm_web"
+  - "verification/fm_web"
+
+allowBuilds:
+  esbuild: true
+
+onlyBuiltDependencies:
+  - esbuild

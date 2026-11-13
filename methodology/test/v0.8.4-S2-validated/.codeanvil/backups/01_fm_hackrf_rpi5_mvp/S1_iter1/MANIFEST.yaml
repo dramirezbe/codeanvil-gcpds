@@ -1,0 +1,13 @@
+created: '2026-11-13 14:58:08.290'
+active_cycle: 01_fm_hackrf_rpi5_mvp
+producer:
+  cycle: 01_fm_hackrf_rpi5_mvp
+  stage: S1
+  iteration: 1
+files:
+- source: .codeanvil/design/SDD.md
+  sha256: 22b2ba6af258289b7c94bb896ec1460b66f496779a217de4709622c2f2b0b656
+- source: .codeanvil/design/dependency_graph.html
+  sha256: bc69e54433822b526dacee961882b4bb73349680f8acbb1850b8e9fcd4aee4d0
+- source: .codeanvil/design/dependency_graph_light.html
+  sha256: 93d44f491bfec772064b0add4f6aee6d9264b9397cd85138e5b926ec7cd10037
