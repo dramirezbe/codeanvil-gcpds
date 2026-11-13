@@ -6,16 +6,16 @@ Agent-agnostic project scaffolding, templates, and agent definitions for the **V
 
 Works with any AI coding agent: Claude, Codex, OpenCode, Pi, or others. Runs on **Linux, macOS and Windows**.
 
-**Current release:** [v0.8.0](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.8.0). Agent-operated HIL/PIL with reusable MAC-based equipment access, published Git deployment and a simpler measurement contract.
+**Current release:** [v0.8.4](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.8.4). S1 dependency graph with physical-layer nodes and improved layout; methodology documentation synced with the implemented G2 operational/defect branch and HIL enrollment flow.
+
+Previous milestones: v0.8.3 renamed every "service" to "subsystem" across the methodology and tool (terminology now matches the V-SIL paper), added an operational-vs-design-defect branch to G2, and made `codeanvil create` git-init the scaffolded project. v0.8.0 added agent-operated HIL/PIL with reusable MAC-based equipment access, the bundled workspace UI and PTY terminal.
 
 The stages support remote PIL through the bundled
 [`vsil_hil_mcp`](templates/mcp/vsil_hil_mcp/README.md) server. Equipment is recognized
 by MAC and each PC reuses its own access keys across projects. The agent prepares
 and tests hardware after an explicit code-review pause; normal commands run directly
 and destructive actions use trusted. A fresh verifier checks GT criteria with a
-small measurement record. Remote Mock HAL tests remain VERIFIED (PIL). Final
-release acceptance tests, including integrated hardware validation, remain pending
-in the [implementation plan](odd/tasks/hil-mcp/2026-11-11_2042_hil_relaxed_refactor.md#13-publicación-v080-y-tests-pendientes).
+small measurement record. Remote Mock HAL tests remain VERIFIED (PIL).
 
 The first complete mock run, including a G2 → S1 rework loop, is archived under
 [`methodology/test/T0_FM-RPI-RTL-mock/`](methodology/test/T0_FM-RPI-RTL-mock/).
@@ -154,6 +154,11 @@ evidence, not a new G2 verdict.
 | `codeanvil backup <S0\|S1\|S2\|G2>` | Copy the stage's current outputs to `.codeanvil/backups/<cycle>/<stage>_iter<N>/` with `MANIFEST.yaml` before a skill overwrites them; a no-op when nothing exists |
 | `codeanvil list` | Registered projects (short UUID + local path) |
 | `codeanvil now [--machine]` | System timestamp: human-readable or filename-safe |
+| `codeanvil runtime sync\|add\|remove\|list\|path` | Manage the global methodology venv (`~/.codeanvil-config/runtime/`): sync from spec, add/remove packages, list installed, print interpreter path |
+| `codeanvil python <script> [args]` | Run a skill script on the methodology runtime (`-I`, from the project root); used by G0, telemetry and other skill scripts |
+| `codeanvil telemetry [--pid N] [--output F] [--interval S] [--duration S]` | Sample CPU/memory/temperature of a process tree into a JSON-lines file; called by the S2 verification kit |
+| `codeanvil sandbox <agent>` | Launch an agent (claude, opencode, codex…) with only project-local settings visible — no global skills, MCP servers or memory |
+| `codeanvil credential-setup -u <user> -i <host>` | Discover hardware MACs over SSH, install this PC's keys into `codeanvil-agent`; reuses existing keys across projects (HIL/PIL only) |
 | `codeanvil upgrade` | Reinstall codeanvil from the latest main branch (detects OS, uses uv) |
 
 In a project workspace, **Terminal** runs installed local CLIs (Claude Code,
@@ -405,6 +410,6 @@ codeanvil-gcpds/
 
 - **Python packaging** — `uv` + hatch (templates bundled via `force-include`)
 - **Installer** — `install.sh` (Linux/macOS) and `install.ps1` (Windows); both install `uv` if needed and inject PATH
-- **UI** — PySide6 (planned)
+- **UI** — FastAPI + React/TypeScript (Vite, xterm.js); bundled as a static dist in the wheel — no Node, pnpm or separate server needed at runtime
 - **Database** — SQLite (local, `~/.codeanvil-config/db/codeanvil.db`)
 - **Agent runtime** — agent-agnostic (Claude, Codex, OpenCode, Pi, etc.)
