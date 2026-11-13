@@ -951,9 +951,8 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
 <div class="btns" id="fb-btns"></div>
 <figure>
   <div class="scroll">
-  <svg id="fbt" viewBox="0 0 900 350" role="img" aria-label="Decision tree classifying a gate failure as operational problem, design defect, module defect, or RFD">
+  <svg id="fbt" viewBox="0 0 900 350" role="img" aria-label="Decision tree classifying a code or design failure as design defect, module defect, or RFD. Operational problems (DUT/environment) do not enter this tree.">
     <path id="e-f-q1" class="e" d="M450,62 V82"/>
-    <path id="e-q1-ops" class="e" style="stroke:var(--stub-s)" d="M450,196 V230 H650 V252"/><text class="tl" x="460" y="225" style="fill:var(--stub-s)">env. problem</text>
     <path id="e-q1-q2" class="e amber" d="M392,140 H312 V170"/><text class="tl" x="330" y="132">yes: defect</text>
     <path id="e-q1-rfd" class="e red" d="M508,140 H660 V188"/><text class="tl" x="545" y="132">no: infeasible</text>
     <path id="e-q2-s1" class="e amber" d="M262,232 H150 V266"/><text class="tl" x="170" y="226">design</text>
@@ -966,8 +965,8 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
     <g class="k-stage" id="n-s2"><rect class="s" x="380" y="270" width="160" height="62" rx="8"/><text class="tb mid" x="460" y="296">→ S2</text><text class="ts mid" x="460" y="316" style="fill:var(--stage-t)">module defect</text></g>
     <g class="k-rfd" id="n-rfd"><rect class="s" x="580" y="190" width="160" height="46" rx="8"/><text class="tb mid" x="660" y="218">RFD</text></g>
     <g class="k-input" id="n-bp"><rect class="s" x="580" y="270" width="160" height="62" rx="8"/><text class="tb mid" x="660" y="296">Build Package</text><text class="ts mid" x="660" y="316" style="fill:var(--input-t)">author · re-enter S0</text></g>
-    <g class="k-stub" id="n-ops"><rect class="s" x="590" y="254" width="195" height="58" rx="8"/><text class="tb mid" x="688" y="278">Operational fix</text><text class="ts mid" x="688" y="298" style="fill:var(--stub-t)">fix DUT → re-run G2</text></g>
     <text class="tl" x="770" y="214">V-SIL suspends</text>
+    <text class="ts" x="20" y="334" style="fill:var(--stub-s)">⚠ Operational problems (DUT/env) do not enter this tree → fix and re-run G2</text>
   </svg>
   </div>
   <div class="card" id="fb-card" aria-live="polite"></div>
@@ -1383,7 +1382,7 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
     S1: ["e-f-q1", "e-q1-q2", "e-q2-s1", "n-q1", "n-q2", "n-s1"],
     S2: ["e-f-q1", "e-q1-q2", "e-q2-s2", "n-q1", "n-q2", "n-s2"],
     RFD: ["e-f-q1", "e-q1-rfd", "e-rfd-bp", "n-q1", "n-rfd", "n-bp"],
-    OPS: ["e-f-q1", "e-q1-ops", "n-q1", "n-ops"],
+    OPS: [],
   };
   const CASES = [
     ["G2: codeanvil-agent cannot open HackRF (no udev/plugdev rule)", "OPS", "Operational problem: the delivered code is correct; the DUT access is misconfigured. Add the user to the device group or add a udev rule, verify with probe_target / lsusb, then re-run G2. Never routes to S1 or S2."],
@@ -1407,7 +1406,7 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
       const n = document.getElementById(id);
       if (id.startsWith("e-")) n.classList.toggle("lit", on.has(id)); else n.classList.toggle("lit-node", on.has(id));
     });
-    ["n-s1", "n-s2", "n-rfd", "n-bp", "n-q2", "n-ops"].forEach(id => document.getElementById(id).classList.toggle("dim", !on.has(id)));
+    ["n-s1", "n-s2", "n-rfd", "n-bp", "n-q2"].forEach(id => document.getElementById(id).classList.toggle("dim", !on.has(id)));
     const routeLabel = route === "RFD" ? "RFD (external)" : route === "OPS" ? "Operational fix (re-run G2)" : route + " (internal)";
     fbCard.innerHTML = `<b>${label}</b> → <b>${routeLabel}</b><br>${text}`;
   };
