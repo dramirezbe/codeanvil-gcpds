@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>V-SIL v3 Diagrams</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<script src="../../templates/skills/S1_design_services/assets/vis-network.min.js"></script>
+<script src="../../templates/skills/S1_design_system/assets/vis-network.min.js"></script>
 <style>
 /* Visual companion to V-SIL_v3.md: one section per paper diagram, inline SVG, small interactions */
 :root {
@@ -348,7 +348,7 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
     <dt>VL-0 / VL-1 / VL-2</dt><dd><b>V-SIL term.</b> Nested levels: logic, simulated system, real hardware. There is no single standard scale for these.</dd>
     <dt>Floor</dt><dd>VL-0 for every module, contract and path in every cycle.</dd>
     <dt>SIL</dt><dd>Software-in-the-loop: the real code runs on a host against a simulated environment.</dd>
-    <dt>PIL</dt><dd>Processor-in-the-loop: the code runs on the target processor with a simulated environment. Not a V-SIL level yet (FW-002).</dd>
+    <dt>PIL</dt><dd>Processor-in-the-loop: the code runs on the actual target processor with Mock HAL inputs. G2 supports PIL as a declared mode; every PIL claim stays VERIFIED, not VALIDATED. A dedicated G2.PIL sub-gate with structured timing checks is FW-002.</dd>
     <dt>HIL</dt><dd>Hardware-in-the-loop: real hardware under test, classically against a real-time simulated plant. VL-2 goes further and uses real RF.</dd>
     <dt>HAL substitution</dt><dd>Swapping the HAL behind the same port to move between levels.</dd>
   </dl></div>
@@ -947,12 +947,13 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
 
 <!-- ======================================================================= -->
 <h2 id="feedback">9 · Feedback routing</h2>
-<p>A gate failure is classified before it is routed. A <b>defect</b> (requirements achievable, implementation or design wrong) is fixed inside V-SIL. An <b>RFD</b> (requirements infeasible on the declared COTS platform) leaves V-SIL: it suspends until the Build Package is updated and re-enters at S0. <b>Pick a failure</b> to see its route.</p>
+<p>A gate failure is classified before it is routed. G2 has four first-class outcomes. An <b>operational problem</b> (permissions, SSH, udev, missing driver — the DUT is broken, not the code) is fixed on the target and G2 is re-run; it never enters the defect tree below. A <b>defect</b> (requirements achievable, implementation or design wrong) is fixed inside V-SIL. An <b>RFD</b> (requirements infeasible on the declared COTS platform) leaves V-SIL: it suspends until the Build Package is updated and re-enters at S0. <b>Pick a failure</b> to see its route.</p>
 <div class="btns" id="fb-btns"></div>
 <figure>
   <div class="scroll">
-  <svg id="fbt" viewBox="0 0 900 350" role="img" aria-label="Decision tree classifying a gate failure as design defect, module defect, or RFD">
+  <svg id="fbt" viewBox="0 0 900 350" role="img" aria-label="Decision tree classifying a gate failure as operational problem, design defect, module defect, or RFD">
     <path id="e-f-q1" class="e" d="M450,62 V82"/>
+    <path id="e-q1-ops" class="e" style="stroke:var(--stub-s)" d="M450,196 V230 H650 V252"/><text class="tl" x="460" y="225" style="fill:var(--stub-s)">env. problem</text>
     <path id="e-q1-q2" class="e amber" d="M392,140 H312 V170"/><text class="tl" x="330" y="132">yes: defect</text>
     <path id="e-q1-rfd" class="e red" d="M508,140 H660 V188"/><text class="tl" x="545" y="132">no: infeasible</text>
     <path id="e-q2-s1" class="e amber" d="M262,232 H150 V266"/><text class="tl" x="170" y="226">design</text>
@@ -965,6 +966,7 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
     <g class="k-stage" id="n-s2"><rect class="s" x="380" y="270" width="160" height="62" rx="8"/><text class="tb mid" x="460" y="296">→ S2</text><text class="ts mid" x="460" y="316" style="fill:var(--stage-t)">module defect</text></g>
     <g class="k-rfd" id="n-rfd"><rect class="s" x="580" y="190" width="160" height="46" rx="8"/><text class="tb mid" x="660" y="218">RFD</text></g>
     <g class="k-input" id="n-bp"><rect class="s" x="580" y="270" width="160" height="62" rx="8"/><text class="tb mid" x="660" y="296">Build Package</text><text class="ts mid" x="660" y="316" style="fill:var(--input-t)">author · re-enter S0</text></g>
+    <g class="k-stub" id="n-ops"><rect class="s" x="590" y="254" width="195" height="58" rx="8"/><text class="tb mid" x="688" y="278">Operational fix</text><text class="ts mid" x="688" y="298" style="fill:var(--stub-t)">fix DUT → re-run G2</text></g>
     <text class="tl" x="770" y="214">V-SIL suspends</text>
   </svg>
   </div>
@@ -1006,8 +1008,9 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
   <div class="card" id="rfd-card">Measured at G2.1 (VL-1): FFT 4096 meets STK-012 but violates STK-007; FFT 2048 meets STK-007 but violates STK-012. Recommendation in the paper: <b>C</b>.</div>
 </figure>
 
-<h3>9.4 Defect vs RFD</h3>
-<div class="compare">
+<h3>9.4 Operational fix vs Defect vs RFD</h3>
+<div class="compare" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+  <div class="card" style="border-top:4px solid var(--stub-s)"><h4>Operational fix</h4>DUT/environment problem (permissions, udev, SSH, driver) · the delivered code is correct · <b>fix on the target and re-run G2</b>. Never routes to S1 or S2.</div>
   <div class="card d"><h4>Defect</h4>Requirements achievable · implementation or design wrong · <b>fix inside V-SIL</b> (to S1 or S2).<br><span class="note">Self-diagnosis: a module that was <i>not</i> changed fails on re-test → undeclared dependency → design defect → S1.</span></div>
   <div class="card r"><h4>RFD</h4>Requirements infeasible · the COTS platform cannot deliver both · <b>Build Package must change</b>. Contents: conflicting requirements, evidence with its VL, trade-off options, impact analysis, recommendation (ECSS [16], MIL-HDBK-61A [17], NASA NPR 7150.2 [18]).</div>
 </div>
@@ -1048,13 +1051,14 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
   </dl>
 </details>
 <details class="card">
-  <summary>Example FW-002 · Processor-in-the-Loop (PIL) as intermediate level</summary>
+  <summary>Example FW-002 · Processor-in-the-Loop (PIL) as a full sub-gate</summary>
   <dl>
     <dt>Category</dt><dd>Verification depth for a later software release</dd>
+    <dt>Status</dt><dd>Partially implemented — G2 currently allows PIL as a declared mode (actual target processor, Mock HAL inputs, claim stays VERIFIED); a dedicated G2.PIL sub-gate with structured timing and scheduling checks is not yet defined</dd>
     <dt>Origin</dt><dd>SOTA review; when UC ≠ development host, compiled code on the target processor may behave differently under timing constraints</dd>
     <dt>Decision owner</dt><dd>Build Package author</dd>
     <dt>Dependency</dt><dd>Target UC identified and accessible for cross-compilation</dd>
-    <dt>Proposed acceptance</dt><dd>PIL level defined between VL-1 and VL-2 with timing and scheduling checks on the target processor</dd>
+    <dt>Proposed acceptance</dt><dd>G2.PIL sub-gate defined with explicit timing, scheduling and resource checks on the target processor</dd>
   </dl>
 </details>
 <details class="card">
@@ -1121,7 +1125,7 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
     S1: ["S1 · System of layered subsystems", "Stage", "G0-validated GT; supplied ML model only if used", "Subsystem topology, per-subsystem bases and modules, implementation DAG, runtime graph, versioned contracts, system paths, HAL mode, Mock HAL (+ Real HW HAL in mock+real), telemetry companion, optional model integration", "Design work (see §5)", "→ G1 · infeasible → RFD"],
     G1: ["G1 · Subsystem + contract validation", "Gate", "The S1 design", "PASS / FAIL / RFD on local and system checks, HAL ladder and telemetry companion; conditional ML readiness check", "Human design review (HITL); an agent may prepare it and recommend", "PASS → S2 · FAIL → S1 · infeasible → RFD"],
     S2: ["S2 · Per-subsystem implementation", "Stage", "G1-validated design", "Subsystem bases, modules in DAG order, fake peers, cross-subsystem contracts and connected paths, versioned golden vectors", "Implementation work (see §7)", "→ G2"],
-    G2: ["G2 · Adaptive verification", "Gate", "Implemented subsystems + declared VL per module and path", "Module and end-to-end evidence, each record with the companion's UC readings", "Sub-gates G2.0 (always), G2.1 (VL-1+), G2.2 (VL-2)", "PASS → Verified Prototype · design defect → S1 · module defect → S2 · infeasible → RFD"],
+    G2: ["G2 · Adaptive verification", "Gate", "Implemented subsystems + declared VL per module and path", "Module and end-to-end evidence, each record with the companion's UC readings", "Sub-gates G2.0 (always), G2.1 (VL-1+), G2.2 (VL-2 · requires enrollment)", "PASS → Verified Prototype · operational → fix DUT + re-run G2 · design defect → S1 · module defect → S2 · infeasible → RFD"],
     T: ["Verified Prototype", "Terminal output", "G2 PASS", "Per-module and system-path evidence, telemetry companion report, honesty declaration, optional future work register (see §10)", "—", "Delivered"],
     RFD: ["Request for Deviation", "External feedback", "Evidence that requirements are infeasible on the declared COTS platform", "Conflicting requirements, evidence with VL, trade-off options, impact analysis, recommendation", "Emitted from S1, G1 or G2; V-SIL suspends", "→ Build Package author → updated Build Package → S0"],
   };
@@ -1379,8 +1383,11 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
     S1: ["e-f-q1", "e-q1-q2", "e-q2-s1", "n-q1", "n-q2", "n-s1"],
     S2: ["e-f-q1", "e-q1-q2", "e-q2-s2", "n-q1", "n-q2", "n-s2"],
     RFD: ["e-f-q1", "e-q1-rfd", "e-rfd-bp", "n-q1", "n-rfd", "n-bp"],
+    OPS: ["e-f-q1", "e-q1-ops", "n-q1", "n-ops"],
   };
   const CASES = [
+    ["G2: codeanvil-agent cannot open HackRF (no udev/plugdev rule)", "OPS", "Operational problem: the delivered code is correct; the DUT access is misconfigured. Add the user to the device group or add a udev rule, verify with probe_target / lsusb, then re-run G2. Never routes to S1 or S2."],
+    ["G2: SSH authentication fails to target", "OPS", "Operational problem: transient setup fault. Fix credential/network on the target, then re-run G2."],
     ["FFT outputs wrong normalisation", "S2", "Module defect: the requirement is achievable; one module's code is wrong. Fix it in S2 and re-run its tests."],
     ["Classifier logic error", "S2", "Module defect, fixed in S2."],
     ["DAG has an undeclared dependency", "S1", "Design defect: the architecture is wrong, not the code. Back to S1, then G1 again."],
@@ -1400,8 +1407,9 @@ tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
       const n = document.getElementById(id);
       if (id.startsWith("e-")) n.classList.toggle("lit", on.has(id)); else n.classList.toggle("lit-node", on.has(id));
     });
-    ["n-s1", "n-s2", "n-rfd", "n-bp", "n-q2"].forEach(id => document.getElementById(id).classList.toggle("dim", !on.has(id)));
-    fbCard.innerHTML = `<b>${label}</b> → <b>${route === "RFD" ? "RFD (external)" : route + " (internal)"}</b><br>${text}`;
+    ["n-s1", "n-s2", "n-rfd", "n-bp", "n-q2", "n-ops"].forEach(id => document.getElementById(id).classList.toggle("dim", !on.has(id)));
+    const routeLabel = route === "RFD" ? "RFD (external)" : route === "OPS" ? "Operational fix (re-run G2)" : route + " (internal)";
+    fbCard.innerHTML = `<b>${label}</b> → <b>${routeLabel}</b><br>${text}`;
   };
   CASES.forEach((c, i) => {
     const b = document.createElement("button");
