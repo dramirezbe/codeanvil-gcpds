@@ -6,7 +6,7 @@ Agent-agnostic project scaffolding, templates, and agent definitions for the **V
 
 Works with any AI coding agent: Claude, Codex, OpenCode, Pi, or others. Runs on **Linux, macOS and Windows**.
 
-**Current release:** [v0.8.5](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.8.5). Native Codex project MCP configuration in `.codex/config.toml`, preserving unrelated settings; direct skill discovery in `.agents/skills/`, without a redundant `.codex/skills` link; documented project/folder configuration and custom agents.
+**Current release:** [v0.8.6](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.8.6). S2 and G2 continue authorized work to the next checkpoint, accept affirmative continuation aliases and offer concrete ways to resolve blockers. Includes the outer harness implementation guide with Mermaid diagrams; native Codex project configuration and `.agents/skills/` discovery remain supported.
 
 Previous milestones: v0.8.3 renamed every "service" to "subsystem" across the methodology and tool (terminology now matches the V-SIL paper), added an operational-vs-design-defect branch to G2, and made `codeanvil create` git-init the scaffolded project. v0.8.0 added agent-operated HIL/PIL with reusable MAC-based equipment access, the bundled workspace UI and PTY terminal.
 
