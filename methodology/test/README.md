@@ -1,5 +1,13 @@
 # V-SIL Test Cases (T#) and End-to-End Manual Test
 
+## Catalog
+
+| Case | Input | Execution scope |
+|------|-------|-----------------|
+| T0_FM-RPI-RTL-mock | [Build Package](T0_FM-RPI-RTL-mock/build_package.md) | Archived mock-only S0 → G2 flow. |
+| T1_HackRF-spectrum | [Build Package](T1_HackRF-spectrum/build_package.md) | x86_64 spectrum/control; deliberate triage faults, hardware validation deferred. |
+| T2_RPi5-HackRF-web-spectrum | [Guide and Build Package](T2_RPi5-HackRF-web-spectrum/README.md) | Small RPi5-hosted Vite dashboard and seven HackRF RX controls; explicit functional VL-2 protocol, not yet executed. |
+
 ## Synthetic UI fixtures — CodeAnvil 0.7.0
 
 [`v0.7.0-example-artifacts/`](v0.7.0-example-artifacts/README.md) contains five

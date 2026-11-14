@@ -95,6 +95,7 @@ checks its predecessor's report before it runs:
 |------|--------|----------|----------|
 | **T0_FM-RPI-RTL-mock** | FM occupancy, Raspberry Pi + RTL-SDR, mock-only | Build Package | Archived S0 → G2 run, copied project, runnable preview and review holdout |
 | **T1_HackRF-spectrum** | Real-time spectrum + live HackRF One parameter control, x86_64 PC | Build Package | Build Package plus `SEEDED_FAULTS.md`, the oracle for the triage/draft acid test |
+| **T2_RPi5-HackRF-web-spectrum** | Minimal web spectrum and seven RX controls, RPi5 + HackRF | Build Package | Complete functional VL-2 protocol and official HTTP/JSON/COTS sources; hardware run not yet executed |
 
 ## Gate details
 
