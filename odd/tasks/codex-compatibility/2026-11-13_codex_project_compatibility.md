@@ -40,3 +40,13 @@ Sources: current official Codex manual retrieved 2026-11-13, plus official
   TOML writer/removal change, tomlkit dependency/lock entries, accompanying tests
   and Codex documentation together. No global configuration or deployed runtime
   was changed. Local development dependencies were synchronized.
+
+## Follow-up: use native skill discovery exclusively
+
+Removed `.codex/skills` from the scaffold link registry and updated active
+documentation and the existing scaffold assertion. Canonical skills remain in
+`.agents/skills/`. Existing projects' links are left untouched.
+Validation: create/subagent tests, 80 passed; native Codex acceptance, 1 passed
+(run outside the sandbox after the restricted client startup stalled).
+Rollback: restore the removed link entry and its matching documentation/assertion.
+The initial compatibility implementation is commit `c60a65b`.

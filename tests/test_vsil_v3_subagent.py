@@ -111,6 +111,7 @@ def test_existing_scaffold_links_and_agents_md_still_hold(tmp_path, db_path):
     assert (project / ".claude" / "skills").is_symlink()
     assert (project / ".claude" / "skills").readlink() == Path("../.agents/skills")
     assert (project / ".opencode" / "skills").is_symlink()
-    assert (project / ".codex" / "skills").is_symlink()
+    assert not (project / ".codex" / "skills").exists()
+    assert not (project / ".codex" / "skills").is_symlink()
     assert (project / "CLAUDE.md").readlink() == Path("AGENTS.md")
     assert "{skill_table}" not in (project / "AGENTS.md").read_text(encoding="utf-8")

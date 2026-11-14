@@ -51,7 +51,6 @@ codeanvil create ──► scaffold project anywhere
                        ├─ .agents/skills/      (canonical skill store)
                        ├─ .claude/skills → ../.agents/skills  (symlink)
                        ├─ .opencode/skills → ../.agents/skills
-                       ├─ .codex/skills → ../.agents/skills
                        ├─ .claude/agents/, .opencode/agents/, .codex/agents/  (vsil-verifier)
                        ├─ .codeanvil/          (GT/ + build_package, design/, backups/, project.yaml, report/)
                        └─ DB registration (idempotent)
@@ -350,14 +349,13 @@ myproj/
 │   ├── agents/vsil-verifier.md      ← generated subagent
 │   └── mcp.json                     ← (if --mcp) OpenCode MCP config
 ├── .codex/
-│   ├── skills → ../.agents/skills
 │   ├── agents/vsil-verifier.toml    ← generated subagent
 │   └── config.toml                  ← (if --mcp) Codex MCP config
 ├── .github/skills  → ../.agents/skills
 └── .github/copilot-instructions.md  ← pointer to AGENTS.md
 ```
 
-Agent runtimes discover skills via their own symlinked directory. All point to the same `.agents/skills/`.
+Codex discovers `.agents/skills/` directly. Other agent runtimes use their own symlinked directories pointing to the same canonical store.
 `src/`, `verification/` and the root manifests (`pyproject.toml`, `uv.lock`, `package.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`) are not scaffolded: S2 creates them.
 
 ## Packaging and distribution

@@ -65,10 +65,9 @@ agent_skill_links:
   ".github/skills": "../.agents/skills"
   # Antigravity — reads .agents/skills/ directly (no symlink needed,
   # it's the canonical path), but kept for completeness
-  # Codex reads .agents/skills/ natively; .codex/skills is a legacy alias.
-  # OpenCode also receives an agent-specific link.
+  # Codex reads .agents/skills/ natively and needs no link.
+  # OpenCode receives an agent-specific link.
   ".opencode/skills": "../.agents/skills"
-  ".codex/skills": "../.agents/skills"
 
 # Instruction file symlinks — point agent-specific config files
 # to the canonical AGENTS.md.

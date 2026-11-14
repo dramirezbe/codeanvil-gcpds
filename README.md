@@ -302,19 +302,18 @@ codeanvil create [<name> | --name <label> [--folder <dir>]] [-p <path>] [--mcp m
        ├── .mcp.json                ← (if --mcp) Claude Code MCP server config
        ├── .claude/skills  → ../.agents/skills
        ├── .opencode/skills → ../.agents/skills
-       ├── .codex/skills   → ../.agents/skills
        └── .claude/agents/, .opencode/agents/, .codex/agents/   ← generated vsil-verifier subagent
 ```
 
 `src/`, `verification/` and the root manifests are not scaffolded: S2 creates them when it builds the code.
 The `vsil-verifier` subagent (one shared body, one file per runtime) is used only by G2 to run the verification commands in a fresh, read-only context; Copilot and Pi have no subagent file, so G2 asks for a fresh session there.
 
-Skills live in `.agents/skills/` — the single source of truth. Agent runtime directories (`.claude/skills/`, `.opencode/skills/`, `.codex/skills/`) are symlinks, so every runtime discovers the same skills automatically.
+Skills live in `.agents/skills/` — the single source of truth. Agent runtime directories (`.claude/skills/`, `.github/skills/`, `.opencode/skills/`) are symlinks. Codex discovers the canonical directory directly.
 
 ### Codex setup: project and folder configuration
 
 Checked on 2026-11-13 against the official documentation and Codex CLI 0.169.0.
-Codex discovers `.agents/skills/` directly; `.codex/skills` is a legacy alias.
+Codex discovers `.agents/skills/` directly; no `.codex/skills` link is generated.
 The CLI and IDE share configuration layers. Local MCP commands must be installed
 on the computer where Codex executes them.
 

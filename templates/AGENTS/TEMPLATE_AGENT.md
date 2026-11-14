@@ -259,8 +259,9 @@ Rules:
     .agents/skills/        <- canonical skill store (all gate skills)
     .claude/agents/        <- vsil-verifier (also .opencode/agents/, .codex/agents/)
 
-Agent-specific directories (`.claude/`, `.github/`, `.opencode/`, `.codex/`) contain
-symlinks to `.agents/skills/` and the generated `vsil-verifier` files.
+Skill links in `.claude/`, `.github/` and `.opencode/` point to `.agents/skills/`.
+The generated `vsil-verifier` files live in `.claude/agents/`, `.opencode/agents/`
+and `.codex/agents/`.
 
 Codex reads this `AGENTS.md` and `.agents/skills/` natively. When MCP servers are
 selected, `.codex/config.toml` contains their `[mcp_servers.<name>]` launcher
