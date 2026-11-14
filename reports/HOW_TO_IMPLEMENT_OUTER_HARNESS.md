@@ -62,6 +62,9 @@ mejora al harness. Su trabajo era un preprint en revisión en la versión consul
 - **Cuaderno de ingeniería de un autor:** Alex Lennon, *Durable Agent Harness*,
   baseline v1.2 del 12 de septiembre de 2026, consultado como evidencia de uso de
   *cockpit / host*, [repositorio original](https://github.com/DynamicDevices/durable-agent-harness#readme).
+- **Documentación del protocolo:** Model Context Protocol, arquitectura y capacidades
+  de servidores, edición 2026-07-28,
+  [documentación oficial](https://modelcontextprotocol.io/docs/2026-07-28/learn/architecture).
 
 Estas fuentes documentan usos y propuestas de 2026 con distinto nivel de evidencia.
 No se presupone que una metáfora de un repositorio, una definición de proveedor
@@ -141,6 +144,7 @@ project/
     review-plan/SKILL.md
     implement-change/SKILL.md
     evaluate-change/SKILL.md
+  .agents/mcp.yaml
   .harness/
     project.yaml
     inputs/
@@ -471,11 +475,116 @@ actual, conservando configuraciones portables al mover o clonar el repositorio.
 Instalar una herramienta no equivale a habilitarla para un proyecto ni a concederle
 credenciales. Cuando el runtime lo requiera, reinicia la sesión y verifica capacidades.
 
-MCP u otro adaptador aporta operaciones sobre sistemas externos. La skill explica
-cuándo usarlas; el servidor ejecutor aplica sus permisos. Un servidor de comandos
-no necesita convertirse en el coordinador del proceso.
+Cuando el proyecto habilita servidores MCP, el generador también produce el
+manifiesto canónico `.agents/mcp.yaml` y los archivos nativos de cada runtime.
+Son configuraciones de capacidades; no sustituyen los reportes del proyecto.
 
-## 10. Separa publicación del harness y despliegue del producto
+## 10. Integra los MCP como capacidades del harness
+
+**MCP, Model Context Protocol, conecta la aplicación del agente con servidores que
+exponen capacidades.** La arquitectura distingue host, clientes y servidores; el
+protocolo no determina cómo la aplicación dirige su trabajo. En este sistema, el
+runtime aloja el cliente, la skill prescribe el uso y los reportes conservan la
+decisión y la evidencia. [Arquitectura oficial, edición 2026-07-28](https://modelcontextprotocol.io/docs/2026-07-28/learn/architecture).
+
+Los servidores pueden exponer **tools**, **resources** y **prompts**: operaciones,
+fuentes de contexto y plantillas de interacción. El soporte concreto depende del
+servidor y del cliente. Una skill del repositorio es un artefacto distinto: puede
+enseñar a combinar esas capacidades, pero MCP no instala ni ejecuta automáticamente
+sus archivos Markdown. [Capacidades de servidores](https://modelcontextprotocol.io/docs/2026-07-28/learn/server-concepts).
+
+### Responsabilidad de cada pieza
+
+| Pieza | Responsabilidad en la integración |
+|-------|----------------------------------|
+| Skill | Comprobar prerrequisitos, seleccionar la operación y sus argumentos, respetar el alcance autorizado y evaluar el resultado. |
+| Runtime y cliente MCP | Conectar con el servidor, descubrir capacidades y tramitar llamadas según sus controles efectivos. |
+| Servidor MCP | Ejecutar operaciones y devolver resultados, errores o referencias a artefactos. Aplica los controles que su implementación ofrezca. |
+| Sistema de destino | Aplicar permisos de archivos, procesos, cuentas y dispositivos donde ocurre la operación. |
+| Reporte de la actividad | Registrar qué se ejecutó, sobre qué candidato, con qué resultado y qué decisión permite continuar. |
+
+Esta tabla distribuye responsabilidades del diseño; no añade roles nuevos al
+protocolo. La política sobre qué trabajo corresponde hacer sigue en las skills.
+Un servidor que ejecuta comandos no necesita interpretar la cadena ni decidir PASS.
+Una revisión humana tampoco se reemplaza por una llamada MCP exitosa.
+
+### Selección, instalación y conexión
+
+Selecciona servidores por las capacidades del diseño aprobado y por la actividad
+que los utilizará. Por ejemplo, una integración puede necesitar un servidor para
+construir artefactos técnicos y otro para operar un entorno de ejecución. Tenerlos
+disponibles no autoriza utilizarlos desde cualquier actividad.
+
+| Comprobación | Qué demuestra |
+|--------------|---------------|
+| Servidor instalado y dependencias disponibles | El host puede iniciar esa implementación. |
+| Servidor habilitado en el proyecto | Sus configuraciones están declaradas para ese repositorio. |
+| Acceso configurado al destino | Existen credenciales y un destino identificado para las operaciones que lo necesitan. |
+| Capacidad descubierta y operación permitida | La sesión actual dispone de esa herramienta bajo sus permisos efectivos. |
+
+Comprueba las cuatro condiciones aplicables. Una instalación compartida puede
+servir a varios proyectos; la habilitación es por proyecto y el acceso puede ser
+específico de cada cliente. Los secretos y rutas de claves privadas quedan fuera
+de los archivos compartidos.
+
+Un manifiesto del distribuidor puede conservar esta estructura:
+
+```yaml
+mcp_servers:
+  remote-tools:
+    command: "<ejecutable-del-harness-instalado>"
+    args: [mcp, run, remote-tools]
+    description: Operaciones sobre el entorno de ejecución y recuperación de evidencia.
+```
+
+El nombre del servidor y el ejecutable son ilustrativos. Este YAML lo consume el
+distribuidor: no es un formato de configuración universal de los clientes MCP.
+El generador lo traduce al archivo nativo que lee cada runtime. El launcher resuelve
+la instalación, el proyecto y el entorno al iniciar; evita fijar rutas absolutas
+de un equipo en cada copia del proyecto.
+
+Una distribución puede copiar también skills auxiliares incluidas por el proveedor
+del servidor. Esa es una función del instalador: conservar sus referencias, licencias
+y atribuciones, y dejar claras las actividades que pueden utilizarlas.
+
+Después de instalar o habilitar, verifica la disponibilidad real en la sesión. Si
+el runtime solo descubre servidores al abrirla, informa al usuario y espera su
+reinicio antes de continuar; no publiques una iteración como si la operación hubiera
+ocurrido. Volver a cargar la skill reconstruye la situación desde los mismos archivos.
+
+### Operaciones remotas, evidencia y feedback
+
+Un servidor puede correr localmente y operar otra máquina mediante SSH u otra API.
+La ubicación del servidor MCP y la del sistema de destino son datos diferentes.
+El diseño debe precisar en qué equipo se ejecuta el producto y dónde se observa
+cada resultado.
+
+| Operación requerida | Contrato que la skill debe comprobar |
+|--------------------|--------------------------------------|
+| Inspeccionar el destino | Identidad, sistema operativo, arquitectura y capacidades necesarias; una conexión exitosa no prueba el producto. |
+| Preparar o desplegar | Candidato identificado, alcance autorizado y preservación de datos persistentes. |
+| Ejecutar una prueba | Comando exacto, directorio, destino, salida y código de salida de la ejecución. |
+| Recuperar evidencia | Ruta devuelta, intento actual, integridad suficiente y correspondencia con candidato y criterio. |
+
+El padre prepara las acciones que requieren autorización; un evaluador delegado
+puede limitarse a inspeccionar, ejecutar las pruebas revisadas y recuperar evidencia.
+Una ampliación de alcance vuelve al padre. La disponibilidad técnica del servidor
+no elimina esa separación ni concede por sí misma permisos adicionales.
+
+Registra las operaciones y sus resultados en Description y en los artefactos ya
+definidos para la actividad. La evidencia descargada puede contener intentos
+anteriores: selecciona los archivos del intento actual antes de concluir. Un error
+de permisos, dependencia, conexión o dispositivo se diagnostica como problema de
+entorno; un resultado medido que incumple el contrato puede justificar feedback
+de implementación o diseño.
+
+Una respuesta MCP válida solo demuestra que la llamada devolvió una respuesta.
+Comprueba también errores de la herramienta, código de salida, archivos y criterios
+observados. El protocolo contempla errores de ejecución dentro del resultado de
+una herramienta; transporte correcto y prueba correcta son condiciones distintas.
+[Especificación de tools](https://modelcontextprotocol.io/specification/2026-07-28/server/tools).
+
+## 11. Separa publicación del harness y despliegue del producto
 
 Hay dos entregas: distribuir el harness al repositorio de trabajo y desplegar el
 software producido a su entorno de ejecución. Mantén sus referencias separadas.
@@ -494,7 +603,7 @@ Conserva comandos, salidas, entorno y evidencia de cada intento en una ubicació
 propia. Recuperar evidencia remota exige identificar el intento; encontrar un archivo
 con el nombre esperado no demuestra que pertenezca al candidato actual.
 
-## 11. Reanuda desde archivos y delega con contratos pequeños
+## 12. Reanuda desde archivos y delega con contratos pequeños
 
 Al abrir una sesión, inspecciona primero identidad, ciclos, reportes y vigencia.
 Pregunta qué ciclo usar y ofrece el activo como opción; no cambies la identidad
@@ -521,7 +630,7 @@ Si el runtime no ofrece subagentes, una sesión nueva puede cumplir ese papel.
 Contexto nuevo reduce arrastre de supuestos; no garantiza independencia estadística
 ni crea permisos de solo lectura por sí mismo.
 
-## 12. Verifica el harness como software
+## 13. Verifica el harness como software
 
 La consistencia de instrucciones se prueba con proyectos generados y estados de
 fallo deliberados, además de la lectura editorial de las skills.
@@ -537,6 +646,8 @@ fallo deliberados, además de la lectura editorial de las skills.
 | Se interrumpe una sesión | La recuperación usa archivos y evita duplicar efectos externos. |
 | Se mueve, clona o actualiza el proyecto | Se conservan identidad, artefactos, reportes y rutas portables. |
 | Se cambia de runtime | Se descubren instrucciones, skills y herramientas con sus permisos efectivos. |
+| MCP instalado pero no habilitado o descubierto | La actividad informa qué falta y no registra una ejecución inexistente. |
+| Llamada MCP responde, pero la operación falla | Se conservan error, salida y evidencia; no se registra un PASS por el éxito del transporte. |
 
 Empieza con un caso diminuto que recorra un avance, un feedback y una reanudación.
 Registra duración, intervención humana, bloqueos incorrectos y pérdida de contexto.
