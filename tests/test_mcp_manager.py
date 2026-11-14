@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 import yaml
+import tomlkit
 
 from codeanvil.config.paths import CONFIG
 from codeanvil.init import mcp
@@ -182,7 +183,7 @@ def _configs(project: Path) -> dict:
         "claude": json.loads((project / ".mcp.json").read_text())["mcpServers"],
         "vscode": json.loads((project / ".vscode" / "mcp.json").read_text())["servers"],
         "opencode": json.loads((project / "opencode.json").read_text())["mcp"],
-        "codex": json.loads((project / ".codex" / "mcp.json").read_text())["mcp_servers"],
+        "codex": tomlkit.parse((project / ".codex" / "config.toml").read_text()).get("mcp_servers", {}),
     }
 
 
@@ -196,9 +197,51 @@ def test_configs_call_the_launcher_and_hold_no_absolute_path(tmp_path):
     configs = _configs(first)
     assert configs == _configs(second)  # same bytes wherever the project lives
     assert configs["claude"]["marconi"] == LAUNCHER
+    assert configs["codex"]["marconi"] == LAUNCHER
+    assert not (first / ".codex" / "mcp.json").exists()
     assert configs["opencode"]["marconi"]["command"] == ["codeanvil", "mcp", "run", "marconi"]
     blob = json.dumps(configs) + (first / ".agents" / "mcp.yaml").read_text()
     assert str(tmp_path) not in blob and "PYTHONPATH" not in blob and "/" not in blob.replace("https://", "")
+
+
+def test_codex_config_preserves_user_settings_and_is_idempotent(tmp_path):
+    path = tmp_path / ".codex" / "config.toml"
+    path.parent.mkdir()
+    custom = '# Personal settings\nmodel = "custom" # keep\n[mcp_servers.docs]\nurl = "https://example.com/mcp"\n'
+    path.write_text(custom, encoding="utf-8")
+    mcp.generate_agent_mcp_configs(["marconi", "vsil_hil_mcp"], tmp_path)
+    first = path.read_text(encoding="utf-8")
+    assert first.startswith(custom)
+    mcp.generate_agent_mcp_configs(["marconi", "vsil_hil_mcp"], tmp_path)
+    assert path.read_text(encoding="utf-8") == first
+    mcp._drop_from_configs("marconi", tmp_path)
+    remaining = tomlkit.parse(path.read_text(encoding="utf-8"))
+    assert remaining["model"] == "custom"
+    assert set(remaining["mcp_servers"]) == {"docs", "vsil_hil_mcp"}
+    assert '# keep' in path.read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize("content", ['model = [', 'mcp_servers = "invalid"'])
+def test_codex_invalid_config_is_reported_without_overwriting(tmp_path, content):
+    path = tmp_path / ".codex" / "config.toml"
+    path.parent.mkdir()
+    path.write_text(content, encoding="utf-8")
+    with pytest.raises(mcp.McpError, match="Fix the Codex configuration"):
+        mcp.generate_agent_mcp_configs(["marconi"], tmp_path)
+    assert path.read_text(encoding="utf-8") == content
+    assert not (tmp_path / ".mcp.json").exists()
+
+
+def test_enable_migrates_legacy_codex_json_and_disable_cleans_both(old_project):
+    project, _ = old_project
+    legacy = project / ".codex" / "mcp.json"
+    legacy.parent.mkdir()
+    legacy.write_text(json.dumps({"mcp_servers": {"marconi": LAUNCHER, "other": {"command": "x"}}}))
+    mcp.enable_server("marconi", project)
+    assert _configs(project)["codex"]["marconi"] == LAUNCHER
+    mcp.disable_server("marconi", project)
+    assert "marconi" not in _configs(project)["codex"]
+    assert json.loads(legacy.read_text())["mcp_servers"] == {"other": {"command": "x"}}
 
 
 @pytest.fixture

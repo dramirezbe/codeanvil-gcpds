@@ -220,7 +220,7 @@ cd ~/projects/sdr-lab && claude mcp list
 | What | Where |
 |------|-------|
 | 6 Marconi skills | `.agents/skills/marconi-*` (survey-spectrum, build-receiver, simulate-scene, debug-no-signal, tx-experiment, escape-hatch) |
-| MCP server definition | `.mcp.json` (Claude Code), `.vscode/mcp.json`, `opencode.json`, `.codex/mcp.json` — all call `codeanvil mcp run marconi` |
+| MCP server definition | `.mcp.json` (Claude Code), `.vscode/mcp.json`, `opencode.json`, `.codex/config.toml` — all call `codeanvil mcp run marconi` |
 | Agent-agnostic manifest | `.agents/mcp.yaml` |
 | Server pre-approved | `.claude/settings.json` + `.claude/settings.local.json` (`enabledMcpjsonServers`) |
 
@@ -310,6 +310,101 @@ codeanvil create [<name> | --name <label> [--folder <dir>]] [-p <path>] [--mcp m
 The `vsil-verifier` subagent (one shared body, one file per runtime) is used only by G2 to run the verification commands in a fresh, read-only context; Copilot and Pi have no subagent file, so G2 asks for a fresh session there.
 
 Skills live in `.agents/skills/` — the single source of truth. Agent runtime directories (`.claude/skills/`, `.opencode/skills/`, `.codex/skills/`) are symlinks, so every runtime discovers the same skills automatically.
+
+### Codex setup: project and folder configuration
+
+Checked on 2026-11-13 against the official documentation and Codex CLI 0.169.0.
+Codex discovers `.agents/skills/` directly; `.codex/skills` is a legacy alias.
+The CLI and IDE share configuration layers. Local MCP commands must be installed
+on the computer where Codex executes them.
+
+```bash
+codeanvil create --name "My lab" --mcp vsil_hil_mcp
+cd my_lab
+codex
+```
+
+Install a selected MCP first with `codeanvil mcp add <name>` if necessary. Open
+and trust the project in Codex when prompted: untrusted projects skip local
+`.codex/` configuration. CodeAnvil leaves this user decision to Codex and writes
+no global settings. In the session, `/skills` lists skills and `/mcp` shows
+connected servers; `codex mcp list --json` inspects configured servers without
+proving a successful connection.
+
+| Purpose | Personal scope | Project or folder scope |
+|---------|----------------|-------------------------|
+| Settings and MCP servers | `~/.codex/config.toml` | `.codex/config.toml` |
+| Agent instructions | `~/.codex/AGENTS.md` | `AGENTS.md` |
+| Skills | `~/.agents/skills/<skill>/SKILL.md` | `.agents/skills/<skill>/SKILL.md` |
+| Custom subagents | `~/.codex/agents/<agent>.toml` | `.codex/agents/<agent>.toml` |
+
+For a module, place its configuration, instructions and skills under that
+module and launch Codex there, for example `codex --cd services/receiver`.
+Project configuration is layered from the repository root to the working
+directory; closer settings win, with command-line overrides taking precedence.
+Skills are discovered along that same directory path. Instructions accumulate
+from root to working directory; `AGENTS.override.md` replaces `AGENTS.md` in
+the same directory. Personal locations follow `CODEX_HOME` for Codex config,
+instructions and agents; personal skills use `~/.agents/skills`.
+
+CodeAnvil writes this MCP configuration when the server is selected:
+
+```toml
+# .codex/config.toml
+[mcp_servers.vsil_hil_mcp]
+command = "codeanvil"
+args = ["mcp", "run", "vsil_hil_mcp"]
+```
+
+To connect a separate HTTP MCP manually, add another table with
+`url = "https://example.com/mcp"` instead of `command` and `args`. Optional
+`bearer_token_env_var = "MY_MCP_TOKEN"` refers to an environment variable.
+Keep credentials outside committed files. `codex mcp add` manages personal
+configuration; edit the project's TOML for a project-scoped server.
+
+`codeanvil mcp enable <name>` merges generated launcher entries into the native
+TOML, preserving unrelated servers, settings and comments. Re-enabling rewrites
+that server's managed entry. `disable` removes its entry. Invalid TOML is
+reported without overwriting it. Older CodeAnvil projects used
+`.codex/mcp.json`, which Codex does not load: run `enable` for each selected
+server to generate the supported configuration, then restart Codex.
+
+To add a skill, create `.agents/skills/check-receiver/SKILL.md`:
+
+```markdown
+---
+name: check-receiver
+description: Check receiver logs when diagnosing dropped samples.
+---
+
+Read the receiver logs and report dropped samples with timestamps.
+```
+
+Invoke it with `$check-receiver` or select it through `/skills`. Skills can
+include `scripts/`, `references/` and assets; Codex reads their full instructions
+when selected. For project conventions, edit `AGENTS.md` instead.
+
+To add a custom agent, create `.codex/agents/log-reader.toml`:
+
+```toml
+name = "log-reader"
+description = "Read receiver logs and report dropped samples."
+developer_instructions = "Read existing logs, report evidence, and do not edit files."
+```
+
+Ask Codex explicitly to delegate log inspection to `log-reader`. Standalone
+agent files are discovered automatically; no `[agents.log-reader]` registration
+is needed. CodeAnvil generates `vsil-verifier` in this format for G2. Agents
+inherit the parent's permissions and MCP servers; a no-edit instruction is not
+an OS sandbox, and agent files cannot override the parent's permission policy.
+Current Codex enables subagents by default; a user's or administrator's
+configuration can disable them. Generated files preserve those host choices.
+
+Official references: [configuration](https://developers.openai.com/codex/config-basic/),
+[MCP](https://developers.openai.com/codex/mcp/),
+[skills](https://developers.openai.com/codex/skills/),
+[AGENTS.md](https://developers.openai.com/codex/guides/agents-md/),
+[subagents](https://developers.openai.com/codex/subagents/).
 
 GT reference templates are **locked** inside the skills that use them (`.agents/skills/S0_.../templates/` and `.agents/skills/G0_.../templates/`). Users write their Build Package in `.codeanvil/GT/`.
 

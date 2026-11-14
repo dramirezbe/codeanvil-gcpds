@@ -246,7 +246,7 @@ codeanvil mcp enable marconi       → (inside a project) wire it later, or rewr
 - `.claude/settings.json` + `.claude/settings.local.json` — `enabledMcpjsonServers` (pre-approves the server)
 - `.vscode/mcp.json` — VS Code / Copilot
 - `opencode.json` — OpenCode
-- `.codex/mcp.json` — Codex
+- `.codex/config.toml` — Codex (`mcp_servers` tables; trusted projects only)
 - `.agents/mcp.yaml` — agent-agnostic canonical manifest
 
 **System packages**: GNU Radio is installed by the system package manager (not pip) and compiled for one system Python. `mcp add` / `mcp update` build Marconi's venv on that exact interpreter (`/usr/bin/python3.X`, never a version shim) with `--system-site-packages`. The probe is a real `from gnuradio import gr` in the venv, reported as ok, missing (with the OS-family install command from `system_packages` in `templates/config.yaml`), ABI mismatch (`Run codeanvil mcp update marconi.`) or broken; `mcp run` refuses to start on a failed probe with one stderr line.
@@ -352,7 +352,7 @@ myproj/
 ├── .codex/
 │   ├── skills → ../.agents/skills
 │   ├── agents/vsil-verifier.toml    ← generated subagent
-│   └── mcp.json                     ← (if --mcp) Codex MCP config
+│   └── config.toml                  ← (if --mcp) Codex MCP config
 ├── .github/skills  → ../.agents/skills
 └── .github/copilot-instructions.md  ← pointer to AGENTS.md
 ```

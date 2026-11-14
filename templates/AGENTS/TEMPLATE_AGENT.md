@@ -261,3 +261,11 @@ Rules:
 
 Agent-specific directories (`.claude/`, `.github/`, `.opencode/`, `.codex/`) contain
 symlinks to `.agents/skills/` and the generated `vsil-verifier` files.
+
+Codex reads this `AGENTS.md` and `.agents/skills/` natively. When MCP servers are
+selected, `.codex/config.toml` contains their `[mcp_servers.<name>]` launcher
+entries. Open the project in Codex and accept its project trust prompt to load
+project configuration and custom agents. Use `/skills` and `/mcp` to inspect
+skills and connected servers. `vsil-verifier` is discovered from
+`.codex/agents/vsil-verifier.toml`; it inherits the parent session's permissions
+and MCP servers. Its no-edit instructions do not create a separate OS sandbox.

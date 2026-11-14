@@ -16,6 +16,7 @@ import sys
 from pathlib import Path
 
 import yaml
+import tomlkit
 
 from codeanvil import __version__
 from codeanvil.config.logger import get_logger
@@ -492,10 +493,10 @@ def generate_agent_mcp_configs(servers: list[str], project_dir: Path) -> None:
     """The four per-agent configs. Identical on every OS: no absolute path,
     no env — the launcher resolves both at start-up."""
     entries = {name: _launcher_entry(name) for name in servers if _server_cfg(name)}
+    _write_codex_mcp(entries, project_dir)
     _write_claude_mcp(entries, project_dir)
     _write_vscode_mcp(entries, project_dir)
     _write_opencode_mcp(entries, project_dir)
-    _write_codex_mcp(entries, project_dir)
 
 
 def _load_json(path: Path) -> dict:
@@ -507,6 +508,13 @@ def _load_json(path: Path) -> dict:
 
 
 def _drop_from_configs(name: str, project_dir: Path) -> None:
+    path = project_dir / ".codex" / "config.toml"
+    if path.exists():
+        data = _load_codex_config(path)
+        servers = data.get("mcp_servers", {})
+        if name in servers:
+            del servers[name]
+            path.write_text(tomlkit.dumps(data), encoding="utf-8")
     for path, keys in (
         (project_dir / ".mcp.json", ("mcpServers",)),
         (project_dir / ".vscode" / "mcp.json", ("servers",)),
@@ -570,13 +578,13 @@ def disable_server(name: str, project_dir: Path) -> list[str]:
     cfg = _server_cfg(name)
     servers = [server for server in project_servers(project_dir) if server != name]
     prefix = cfg.get("skill_prefix", name)
+    _drop_from_configs(name, project_dir)
     skills = project_dir / SKILLS_DIRNAME
     for path in sorted(skills.glob(f"{prefix}-*")):
         if path.is_dir():
             shutil.rmtree(path)
         else:
             path.unlink()
-    _drop_from_configs(name, project_dir)
     write_mcp_manifest(servers, project_dir)
     _refresh_agents_md_table(project_dir, servers)
     return servers
@@ -674,11 +682,26 @@ def _write_opencode_mcp(entries: dict, project_dir: Path) -> None:
 
 
 def _write_codex_mcp(entries: dict, project_dir: Path) -> None:
-    servers = {}
-    for name, e in entries.items():
-        servers[name] = {
-            "command": e["command"],
-            "args": e["args"],
-            "env": e["env"],
-        }
-    _write_json(project_dir / ".codex" / "mcp.json", {"mcp_servers": servers})
+    """Merge launcher entries into Codex's native project configuration.
+
+    Preserve unrelated settings, servers and comments. Trust is a local user
+    decision; never put an absolute project path or trust grant in the scaffold.
+    """
+    path = project_dir / ".codex" / "config.toml"
+    data = _load_codex_config(path)
+    if "mcp_servers" not in data:
+        data["mcp_servers"] = tomlkit.table()
+    for name, entry in entries.items():
+        data["mcp_servers"][name] = entry
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(tomlkit.dumps(data), encoding="utf-8")
+
+
+def _load_codex_config(path: Path) -> tomlkit.TOMLDocument:
+    try:
+        data = tomlkit.parse(path.read_text(encoding="utf-8")) if path.exists() else tomlkit.document()
+        if "mcp_servers" in data and not isinstance(data["mcp_servers"], dict):
+            raise ValueError("mcp_servers must be a table")
+        return data
+    except (OSError, ValueError, tomlkit.exceptions.ParseError) as exc:
+        raise McpError(f"Cannot update {path}: {exc}. Fix the Codex configuration and retry.") from exc
