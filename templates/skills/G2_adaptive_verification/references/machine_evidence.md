@@ -9,7 +9,8 @@ requirements when the GT or the conclusion requires them, or report `inconclusiv
 ## Before touching hardware
 
 The parent agent presents the published code/kit, target/device and planned update/deploy/test
-operations, then **stops and waits for explicit `continue`**. This checkpoint applies to remote
+operations, then **stops and waits for explicit `continue`** or an affirmative alias accepted by
+G2's Continuation responses rule. Preserve the original reply in the checkpoint note. This checkpoint applies to remote
 updates/deployment and local hardware tests, even with full host access. It is the existing
 narrative `Checkpoint:` line in the completed stage report, not a new gate or state. A fresh G2
 verifier never asks the human: the G2 parent owns the pause, preparation and trusted operations.

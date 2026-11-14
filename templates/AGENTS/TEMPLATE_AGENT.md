@@ -127,7 +127,8 @@ declared target means local execution. The opt-in `vsil_hil_mcp` server carries
 remote deploy/run/fetch and read-only target probes. Credentials stay in its
 custody; host runtime permissions govern its trusted command tool.
 
-The stage skills require explicit pre-HW `continue` before updates, deployment or
+The stage skills require explicit pre-HW `continue` (or an affirmative alias accepted by the
+G2 skill, such as `y`, `yes`, `ok` or `run`, case-insensitively) before updates, deployment or
 local device tests. After review, S2 or the G2 parent prepares tool/dependencies,
 clocks and the clean, pushed Git candidate. The fresh G2 verifier runs the reviewed
 tests without editing product/test code or asking the human. Ordinary commands

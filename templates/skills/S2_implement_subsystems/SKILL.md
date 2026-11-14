@@ -5,7 +5,7 @@ license: Apache-2.0
 compatibility: "Telemetry is collected by the `codeanvil telemetry` subcommand, part of CodeAnvil itself (not a skill script). Reads the S1 design, .codeanvil/GT/SyRS.md and .codeanvil/project.yaml. Writes src/, verification/, root manifests, .codeanvil/report/<cycle-name>/S2.md and S2_artifacts/."
 metadata:
   author: "gcpds"
-  version: "1.2"
+  version: "1.3"
   gate: "S2"
   runtime: []
   pipeline: "V-SIL"
@@ -136,6 +136,23 @@ of files read or "implementation is not finished" while an authorized next actio
 | S2 complete | Finish the floor run, backup and report contracts; only then return the completion message. |
 | Missing or contradictory design contract | Name exact files, sections, fields and affected modules; append the design-defect FEEDBACK and route to S1 under Hard Rules. |
 | Operational blocker, required permission/input/restart or runtime limit | Show the failed command/error or exact missing input, attempts made, affected scope and concrete action needed to resume. Apply the existing prerequisite/MCP/ML/backup rules where applicable; preserve work without a fabricated iteration or verdict. |
+
+### Continuation responses and unblocking options
+
+At a continuation checkpoint, trim surrounding whitespace and compare the whole reply without
+case sensitivity: `continue`, `y`, `yes`, `ok` and `run` all mean `continue` (including `Y` and
+`RUN`). Execute the already presented scope without asking for the literal word again. Record
+the canonical `continue` checkpoint and preserve the original reply verbatim in its note.
+Do not match substrings or treat a negated/conditional reply as unconditional authorization.
+These replies do not select a pause schedule, waive a prerequisite or authorize HW/G2 acceptance.
+
+For a blocker, offer one recommended concrete way forward and up to two useful alternatives,
+with each option's action, scope and check for success. Repair an operational issue within
+existing authorization directly; ask only for missing input, permission or a real choice.
+A bare affirmative accepts a single clearly presented proposal; if several incompatible actions
+remain possible, ask which one. For a missing contract, offer the required S1 rework or obtaining
+the missing reference; never offer to guess the schema or bypass a gate. After the selected
+action is authorized and the blocker resolved, resume to the next scheduled boundary.
 
 ## Execution (local)
 

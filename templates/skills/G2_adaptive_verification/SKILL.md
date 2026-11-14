@@ -5,7 +5,7 @@ license: Apache-2.0
 compatibility: "Parent reviews/prepares HW; fresh verifier runs the recorded tests and approved diagnostic commands locally or through vsil_hil_mcp. Parent handles trusted; verifier never edits DUT or asks the human. Writes only .codeanvil/report/<cycle-name>/G2.md and G2_artifacts/."
 metadata:
   author: "gcpds"
-  version: "1.1"
+  version: "1.2"
   gate: "G2"
   pipeline: "V-SIL"
 ---
@@ -97,6 +97,24 @@ brief update, then work continues unless the human explicitly pauses or redirect
 | Human verdict and decision author obtained | Perform the backup and publish the completed report and any PASS artifact in this turn; no extra `continue` is needed. A backup failure still stops without an iteration. |
 | Explicit human stop or runtime interruption/limit | Preserve evidence and identify completed/pending scope and the concrete resume action; no partial iteration or invented HITL. |
 
+### Continuation responses and unblocking options
+
+At a continuation checkpoint, trim surrounding whitespace and compare the whole reply without
+case sensitivity: `continue`, `y`, `yes`, `ok` and `run` all mean `continue` (including `Y` and
+`RUN`). This is explicit consent to the presented scope, including the pre-HW review; do not ask
+for the literal word again. Record the canonical `continue` checkpoint with the original reply
+verbatim in its note. Do not match substrings or ignore negation/conditions. These replies never
+select a level, authorize changed scope or choose the final `PASS`/`FEEDBACK`/`RFD` verdict.
+
+For a blocker, offer one recommended concrete way forward and up to two useful alternatives,
+with each option's action, scope and check for success: for example, repair a diagnosed target
+permission, retry the reviewed command or complete unaffected checks while disclosing the gap.
+The parent applies authorized operational fixes; the verifier returns setup/scope needs to it.
+Ask only for missing input, permission or a real choice. A bare affirmative accepts a single
+clearly presented proposal; if incompatible alternatives remain, ask which one. Code/test
+changes still route through S2 and design changes through S1 with the human's verdict. Never
+offer fabricated evidence, weaker criteria or bypassing required pre-HW review as an unblock.
+
 ## Who runs what
 
 Steps 2–5 run in the **`vsil-verifier` subagent**: a fresh context that did not write the code,
@@ -133,7 +151,7 @@ clean Git tree and the candidate committed — pushed to its upstream when the b
 failed pushes (when a remote is tracked) cannot reach hardware. Keep the delivered-project repo/ref separate from the
 CodeAnvil tool repo/ref. Do not invent tags, change code to make tests pass or force push.
 
-**Stop and wait for explicit `continue`**, including in full-access mode. Silence/timeouts are
+**Stop and wait for explicit `continue`** (or an affirmative alias defined above), including in full-access mode. Silence/timeouts are
 not consent. On `rework`, return code/test changes to S2; on `stop`, preserve the work and write
 no iteration. A new code candidate, scope, target, delivery or iteration renews the review. The
 same reviewed acquisition may be retried with a fresh timestamp within that scope. Record
@@ -236,7 +254,7 @@ commands — then re-run G2, rather than giving up or mislabeling it an S2 defec
 | FEEDBACK, design defect | `HITL: FEEDBACK` plus `Verdict: design defect` and the S1 sections to rework | S1 |
 | RFD | `HITL: FEEDBACK` plus the line `Verdict: RFD` | RFD skill, with the G2 report as evidence |
 
-**Asking the human.** Ask with your runtime's native question tool (`AskUserQuestion` in Claude Code): one single-select question with the options `PASS`, `FEEDBACK` and `RFD`, and a free-text answer allowed (the tool's type-your-own-answer choice). If the runtime has no question tool, ask the same question in chat and wait for the reply; never assume or default an answer. Any answer is recorded verbatim; a typed answer that does not choose `PASS` or `RFD` counts as `FEEDBACK`, never as `PASS`, and its text is the feedback. Then ask who is deciding, unless the human already said. A FEEDBACK answer names module defect or design defect; ask if it does not.
+**Asking the human.** Ask with your runtime's native question tool (`AskUserQuestion` in Claude Code): one single-select question with the options `PASS`, `FEEDBACK` and `RFD`, and a free-text answer allowed (the tool's type-your-own-answer choice). If the runtime has no question tool, ask the same question in chat and wait for the reply; never assume or default an answer. A standalone continuation alias is not a verdict: ask the human to choose `PASS`, `FEEDBACK` or `RFD` and write no HITL until that decision exists. Any answer is recorded verbatim; any other typed answer that does not choose `PASS` or `RFD` counts as `FEEDBACK`, never as `PASS`, and its text is the feedback. Then ask who is deciding, unless the human already said. A FEEDBACK answer names module defect or design defect; ask if it does not.
 
 ## Report Contract
 
