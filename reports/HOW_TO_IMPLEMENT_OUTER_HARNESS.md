@@ -25,6 +25,39 @@ no es exactamente sinónimo de una sola de sus capas. Para este documento usarem
 *runtime* al hablar de ejecución y *cockpit* solo al hablar del entorno de operación.
 Esta elección es una convención editorial apoyada en los usos anteriores.
 
+### Diagrama 1. Modelo, agente, inner harness y outer harness
+
+Vista conceptual de las capas adoptadas en esta guía. El cockpit es la superficie
+de operación; las reglas del proyecto se añaden sobre un agente ya ejecutable.
+
+```mermaid
+flowchart TB
+    User["Persona operadora"] --> Cockpit["Cockpit: interfaz y controles"]
+    subgraph Project["Contexto del proyecto"]
+        subgraph Outer["Outer harness: lo que añade el equipo"]
+            Guides["Instrucciones y skills"]
+            Records["Reportes y evidencia"]
+            Checks["Checks y reglas de avance"]
+        end
+        subgraph Agent["Agente de código"]
+            Model["Modelo"]
+            subgraph Inner["Inner harness: infraestructura incorporada"]
+                Runtime["Bucle de ejecución y contexto"]
+                Tools["Herramientas y cliente MCP"]
+                Permissions["Controles efectivos de permisos"]
+            end
+            Model <--> Runtime
+            Runtime --> Tools
+            Permissions -. "limitan acciones" .-> Tools
+        end
+        Guides --> Runtime
+        Runtime --> Records
+        Records --> Checks
+        Checks --> Runtime
+    end
+    Cockpit <--> Runtime
+```
+
 ### Cómo se relacionan las definiciones con esta guía
 
 Böckeler organiza el outer harness en **guías**, que orientan antes de actuar
@@ -108,6 +141,23 @@ exige el harness, y una aplicación de agentes puede consumir sus contratos. Nin
 garantiza corrección por sí mismo. Una carpeta de prompts tampoco crea continuidad
 si no define entradas, salidas, decisiones y reglas de recuperación.
 
+### Diagrama 2. El bucle de acción del agente
+
+El modelo propone una acción; el runtime la tramita y devuelve una observación.
+La autorización de una herramienta y la aceptación del trabajo son decisiones distintas.
+
+```mermaid
+flowchart LR
+    Context["Tarea y contexto"] --> Model["Modelo"]
+    Model --> Choice{"¿Solicita una herramienta?"}
+    Choice -->|Sí| Policy["Runtime comprueba permisos"]
+    Policy --> Action["Ejecutar o devolver bloqueo"]
+    Action --> Observation["Salida, error o artefacto"]
+    Observation --> Model
+    Choice -->|No| Response["Respuesta o propuesta de cierre"]
+    Response --> Contract["Comprobar salidas y condiciones de cierre"]
+```
+
 ## 2. Empieza por los contratos del trabajo
 
 Antes de escribir prompts, describe cada actividad con este contrato:
@@ -131,6 +181,22 @@ otro proceso puede tener actividades, ramas o decisiones diferentes.
 La separación debe seguir responsabilidades. Quien evalúa un candidato puede
 ejecutar pruebas y explicar fallos; modificar ese candidato durante la evaluación
 requiere volver a la actividad que tiene permiso para implementarlo.
+
+### Diagrama 3. Trabajo y revisión tienen autoridades distintas
+
+Los cuatro pasos son genéricos. PASS significa entrega en las actividades de
+trabajo y decisión humana en las revisiones; no se añade otro estado al reporte.
+
+```mermaid
+flowchart LR
+    Plan["Preparar plan"] --> PlanReport["plan.md: PASS de entrega"]
+    PlanReport --> Review["Persona revisa el plan"]
+    Review --> ReviewReport["review-plan.md: PASS humano"]
+    ReviewReport --> Implement["Implementar y comprobar"]
+    Implement --> Implementation["implement.md: PASS de entrega"]
+    Implementation --> Evaluate["Evaluación y decisión humana"]
+    Evaluate --> Result["evaluate.md: PASS o FEEDBACK"]
+```
 
 ## 3. Construye un proyecto que contenga el harness
 
@@ -207,6 +273,26 @@ No necesitas que el archivo raíz actúe como un programa que dirige todo el flu
 La disponibilidad de un nombre de archivo o directorio depende del entorno:
 comprueba su descubrimiento nativo y genera adaptadores cuando sean necesarios.
 
+### Diagrama 4. Distribución del harness y proyecto generado
+
+La distribución entrega contratos. Las actividades posteriores producen los
+artefactos del proyecto; el generador no ejecuta el trabajo del agente.
+
+```mermaid
+flowchart LR
+    subgraph Package["Paquete del harness"]
+        Config["Configuración de skills y prerrequisitos"]
+        Templates["Plantillas, referencias y scripts"]
+    end
+    Config --> Generator["Generador"]
+    Templates --> Generator
+    Generator --> Instructions["AGENTS.md y skills del proyecto"]
+    Generator --> Identity["Identidad y carpetas de trabajo"]
+    Generator --> Adapters["Configuraciones nativas y MCP"]
+    Instructions --> Work["Agente ejecuta una actividad"]
+    Work --> Artifacts["Diseño, producto, kit y reportes"]
+```
+
 ## 4. Declara dependencias una sola vez
 
 En el paquete que distribuye el harness, declara la relación entre skill y reporte
@@ -280,6 +366,27 @@ Una instrucción incumplida no es una barrera técnica. Para impedir realmente u
 escritura o un despliegue, utiliza permisos del runtime, aislamiento o controles en
 la herramienta ejecutora. Un agente con acceso de escritura puede falsificar un
 reporte; si necesitas una frontera de confianza, protege quién puede publicarlo.
+
+### Diagrama 5. La skill decide si puede comenzar
+
+Un bloqueo de entrada no produce una entrega ni una iteración ficticia. Las
+comprobaciones mecánicas pueden apoyarse en el lector compartido de reportes.
+
+```mermaid
+flowchart TD
+    Load["Cargar skill"] --> Cycle{"¿Ciclo abierto y seleccionado?"}
+    Cycle -->|No| Stop["Explicar bloqueo y conservar archivos"]
+    Cycle -->|Sí| Required{"¿Declara un prerrequisito?"}
+    Required -->|No| Execute["Leer entradas y ejecutar dentro del contrato"]
+    Required -->|Sí| Report{"¿Prerrequisito existente y completo?"}
+    Report -->|No| Stop
+    Report -->|Sí| Pass{"¿Última iteración en PASS?"}
+    Pass -->|No| Stop
+    Pass -->|Sí| Fresh{"¿Vigente y sin rework pendiente?"}
+    Fresh -->|No| Stop
+    Fresh -->|Sí| Execute
+    Execute --> Publish["Publicar artefactos e iteración completa"]
+```
 
 ## 6. Usa reportes como registros de decisiones
 
@@ -368,6 +475,24 @@ no es un reporte append-only adicional. El reporte de la actividad sí conserva
 sus iteraciones. La entrega final se llena desde una plantilla estable y permite
 arrancar el producto sin tener que reconstruir la conversación del agente.
 
+### Diagrama 6. Anatomía del reporte y sus referencias
+
+El reporte conserva decisiones. Los archivos de evidencia sustentan sus afirmaciones;
+la referencia al predecesor identifica qué entrada se utilizó.
+
+```mermaid
+flowchart LR
+    Report["Reporte Markdown de la actividad"] --> Header["Cabecera: Gate, Cycle, Document, Created"]
+    Report --> Iteration["Iteration N"]
+    Iteration --> Fields["Date, Timestamp, Iteration, Cycle, HITL"]
+    Iteration --> Description["Description"]
+    Description --> Basis["Based on: predecesor iteration N"]
+    Basis --> Previous["Iteración concreta del reporte anterior"]
+    Description --> Findings["Hallazgos, cambios y decisión"]
+    Description --> Evidence["Comandos, resultados y rutas de evidencia"]
+    Evidence --> Files["test_run.md, salidas y telemetría del intento"]
+```
+
 ## 7. La aprobación debe corresponder al trabajo actual
 
 Comprobar que un reporte contiene `HITL: PASS` es insuficiente. También debes comprobar
@@ -398,11 +523,48 @@ La identidad del ciclo mantiene juntas una línea base y sus decisiones. Un camb
 de objetivo puede abrir otro ciclo sin reescribir la historia. Una corrección dentro
 del alcance normalmente produce nuevas iteraciones en el ciclo existente.
 
+### Diagrama 7. Una aprobación antigua puede volverse obsoleta
+
+STALE es una condición calculada; los reportes históricos conservan su PASS.
+El cambio se propaga por las referencias Based on, no por reescribir veredictos.
+
+```mermaid
+flowchart LR
+    OldPlan["plan, iteración 4"] -->|"Based on: plan iteration 4"| Review["review-plan, iteración 2: PASS"]
+    Review -->|"Based on: review-plan iteration 2"| Implement["implement, iteración 3: PASS"]
+    Implement --> Evaluate["evaluate, iteración 1: PASS"]
+    NewPlan["Nuevo plan, iteración 5"] -. "entrada más reciente" .-> Review
+    Review -. "ahora STALE" .-> Implement
+    Implement -. "obsolescencia transitiva" .-> Evaluate
+```
+
 ## 8. Diseña el feedback como una instrucción de reentrada
 
 Un reporte que solo diga «falló» obliga al siguiente agente a reconstruir el problema.
 Un feedback útil contiene: observado, esperado, evidencia, causa o hipótesis,
 archivos afectados, actividad responsable y condición para volver a evaluar.
+
+### Diagrama 8. De la evidencia al feedback
+
+Primero se comprueba qué se ejecutó y qué evidencia existe. El resultado se
+compara con el criterio y se presenta a la autoridad de decisión, sin inventar causas.
+
+```mermaid
+flowchart TD
+    Guide["Leer test_run.md: comando, candidato, destino y criterio"] --> Run["Ejecutar la comprobación prevista"]
+    Run --> Collect["Leer salida, código de salida y archivos del intento"]
+    Collect --> Match{"¿Corresponden al candidato y destino?"}
+    Match -->|No| Diagnose["Diagnosticar evidencia incorrecta o faltante"]
+    Match -->|Sí| Enough{"¿Hay datos suficientes para esta afirmación?"}
+    Enough -->|No| Diagnose
+    Enough -->|Sí| Compare["Comparar observado con esperado"]
+    Diagnose --> Scope["Proponer repetición o limitar lo que puede concluirse"]
+    Compare --> Explain["Explicar resultado, causa o hipótesis y alcance"]
+    Scope --> Explain
+    Explain --> Human["Presentar evidencia y recomendación a la persona"]
+    Human --> Record["Registrar PASS o FEEDBACK en Description y tabla HITL"]
+    Record --> Route["Si hay FEEDBACK: listar cambios, responsable y reentrada"]
+```
 
 | Clase | Ejemplo | Ruta |
 |-------|---------|------|
@@ -444,6 +606,27 @@ Un cambio de línea base decidido puede cerrar el ciclo con
 `Superseded by cycle: <nuevo-ciclo>` y reentrar con las entradas nuevas; las skills
 rechazan ejecutar trabajo en un ciclo cerrado.
 
+### Diagrama 9. Cada feedback vuelve a su propietario
+
+El defecto se corrige donde se originó. La reparación del entorno permite repetir
+el intento; un cambio de diseño exige revisar de nuevo antes de implementar.
+
+```mermaid
+flowchart TD
+    Finding["Hallazgo con evidencia"] --> Kind{"Clasificar causa o hipótesis"}
+    Kind -->|Implementación| Implement["Cambios enumerados en Description"]
+    Implement --> Delivery["Nueva entrega de implementación"]
+    Delivery --> Evaluate["Evaluar de nuevo"]
+    Kind -->|Diseño| Plan["Corregir plan y contratos"]
+    Plan --> Review["Nueva revisión humana y mapa de impacto"]
+    Review --> Adapt["Adaptar implementación al plan revisado"]
+    Adapt --> Delivery
+    Kind -->|Entorno| Environment["Reparar permisos, dependencias o conexión"]
+    Environment --> Evaluate
+    Kind -->|Línea base| Owner["Decisión del propietario de las entradas"]
+    Owner --> Baseline["Entradas revisadas y nuevo ciclo cuando corresponda"]
+```
+
 ## 9. Distribuye el harness sin sobrescribir el proyecto
 
 El generador instala la estructura; el agente ejecuta el trabajo dentro de ella.
@@ -479,6 +662,21 @@ Cuando el proyecto habilita servidores MCP, el generador también produce el
 manifiesto canónico `.agents/mcp.yaml` y los archivos nativos de cada runtime.
 Son configuraciones de capacidades; no sustituyen los reportes del proyecto.
 
+### Diagrama 10. Instalación, proyecto y sesión son ámbitos diferentes
+
+Una instalación compartida puede atender proyectos distintos. Cada proyecto
+declara lo habilitado y cada sesión comprueba sus capacidades y permisos efectivos.
+
+```mermaid
+flowchart LR
+    Install["Servidor y dependencias instalados"] --> Launcher["Launcher portable"]
+    ProjectA["Proyecto A: manifiesto y configuración nativa"] --> Launcher
+    ProjectB["Proyecto B: manifiesto y configuración nativa"] --> Launcher
+    Launcher --> Session["Runtime inicia conexión y descubre herramientas"]
+    Access["Credenciales locales y permisos del destino"] --> Session
+    Session --> Available["Capacidad utilizable por la actividad autorizada"]
+```
+
 ## 10. Integra los MCP como capacidades del harness
 
 **MCP, Model Context Protocol, conecta la aplicación del agente con servidores que
@@ -507,6 +705,25 @@ Esta tabla distribuye responsabilidades del diseño; no añade roles nuevos al
 protocolo. La política sobre qué trabajo corresponde hacer sigue en las skills.
 Un servidor que ejecuta comandos no necesita interpretar la cadena ni decidir PASS.
 Una revisión humana tampoco se reemplaza por una llamada MCP exitosa.
+
+### Diagrama 11. La skill utiliza capacidades a través de MCP
+
+Las flechas representan instrucciones, llamadas y resultados. El servidor realiza
+la operación; la evaluación del criterio y la decisión quedan en su actividad.
+
+```mermaid
+flowchart LR
+    Skill["Skill: prerrequisitos, alcance y criterio"] --> Agent["Agente y runtime"]
+    Agent --> Client["Cliente MCP del host"]
+    Client --> Server["Servidor MCP"]
+    Server --> Target["Archivo, API o máquina de destino"]
+    Target --> Result["Salida, error y artefactos"]
+    Result --> Server
+    Server --> Client
+    Client --> Agent
+    Agent --> Assessment["Interpretar evidencia y presentar resultado"]
+    Assessment --> Report["Reporte de la actividad"]
+```
 
 ### Selección, instalación y conexión
 
@@ -603,6 +820,29 @@ Conserva comandos, salidas, entorno y evidencia de cada intento en una ubicació
 propia. Recuperar evidencia remota exige identificar el intento; encontrar un archivo
 con el nombre esperado no demuestra que pertenezca al candidato actual.
 
+### Diagrama 12. Desplegar un candidato y recuperar su evidencia
+
+El padre conserva la preparación y el alcance autorizado. La evidencia devuelta
+se vincula al intento actual antes de incorporarse a una decisión.
+
+```mermaid
+sequenceDiagram
+    actor Human as Persona
+    participant Parent as Agente padre
+    participant Exec as Ejecutor local o MCP
+    participant Target as Destino
+    Parent->>Human: Mostrar candidato, destino y operaciones
+    Human-->>Parent: Autorizar alcance concreto
+    Parent->>Exec: Preparar y desplegar revisión identificada
+    Exec->>Target: Sincronizar preservando datos persistentes
+    Parent->>Exec: Ejecutar comprobaciones autorizadas
+    Exec->>Target: Ejecutar comando del kit
+    Target-->>Exec: Salidas, código de salida y evidencia
+    Exec-->>Parent: Resultado y rutas del intento
+    Parent->>Parent: Comprobar candidato, destino y cobertura
+    Parent->>Human: Presentar conclusiones sustentadas
+```
+
 ## 12. Reanuda desde archivos y delega con contratos pequeños
 
 Al abrir una sesión, inspecciona primero identidad, ciclos, reportes y vigencia.
@@ -629,6 +869,48 @@ No permitas ajustar el código o los criterios para convertir el resultado en é
 Si el runtime no ofrece subagentes, una sesión nueva puede cumplir ese papel.
 Contexto nuevo reduce arrastre de supuestos; no garantiza independencia estadística
 ni crea permisos de solo lectura por sí mismo.
+
+### Diagrama 13. Reanudar después de una interrupción
+
+El chat no es el registro de estado. Antes de repetir un efecto externo, se
+comprueba si ya ocurrió y qué parte de la actividad sigue pendiente.
+
+```mermaid
+flowchart TD
+    Open["Abrir sesión"] --> Inspect["Leer identidad, ciclos y reportes"]
+    Inspect --> Select["Confirmar ciclo con la persona"]
+    Select --> Fresh["Resolver vigencia y feedback pendiente"]
+    Fresh --> Skill["Cargar skill correspondiente"]
+    Skill --> Artifacts["Inspeccionar artefactos ya existentes"]
+    Artifacts --> Effect{"¿La operación externa ya ocurrió?"}
+    Effect -->|Sí| Recover["Recuperar resultado y comprobarlo"]
+    Effect -->|No| Continue["Continuar dentro del alcance autorizado"]
+    Recover --> Finish["Completar trabajo e iteración"]
+    Continue --> Finish
+```
+
+### Diagrama 14. Evaluación independiente y decisión humana
+
+El evaluador obtiene contexto acotado y devuelve evidencia. El padre presenta
+el resultado y escribe el reporte con la decisión humana; el evaluador no corrige el producto.
+
+```mermaid
+sequenceDiagram
+    participant Parent as Agente padre
+    participant Reports as Reportes y kit
+    participant Verifier as Evaluador con contexto nuevo
+    participant Exec as Herramientas autorizadas
+    actor Human as Persona
+    Parent->>Reports: Leer entrega vigente y test_run.md
+    Parent->>Verifier: Candidato, ciclo, iteración y alcance revisado
+    Verifier->>Exec: Ejecutar comandos previstos
+    Exec-->>Verifier: Salidas y archivos de evidencia
+    Verifier->>Verifier: Leer evidencia y comparar con criterios
+    Verifier-->>Parent: Resultados, causas o hipótesis y cambios propuestos
+    Parent->>Human: Mostrar evidencia y recomendación
+    Human-->>Parent: PASS o FEEDBACK con sus razones
+    Parent->>Reports: Añadir iteración con Based on y Description
+```
 
 ## 13. Verifica el harness como software
 
