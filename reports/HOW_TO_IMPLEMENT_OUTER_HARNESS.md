@@ -77,7 +77,8 @@ entradas, quién puede decidir y qué evidencia permite continuar.
 Puedes implementarlo con archivos, skills y unos pocos scripts. El agente aporta
 la capacidad de razonar y modificar software; el harness aporta contratos y
 continuidad entre sesiones. Esta guía propone una arquitectura genérica: los
-nombres, estados y rutas de los ejemplos son decisiones ilustrativas.
+nombres de actividades y rutas de los ejemplos son genéricos. Los artefactos
+mantienen una estructura común de plantillas, reportes e iteraciones.
 
 ## 1. Outer harness, entorno del agente y framework
 
@@ -142,24 +143,54 @@ project/
     evaluate-change/SKILL.md
   .harness/
     project.yaml
-    workflow.yaml
     inputs/
     design/
-    reports/cycle-001/
-    evidence/cycle-001/
-  tools/
-    check_prerequisites.py
-    inspect_state.py
+    backups/
+    report/01_example/
+      plan.md
+      review-plan.md
+      implement.md
+      implement_artifacts/test_run.md
+      evaluate.md
+      evaluate_artifacts/accepted_result.md
   src/
-  tests/
+    api/
+  verification/
+    run.sh
+    golden/manifest.md
+    telemetry/<run_id>/
+    api/
+      mock_hal/
+      stubs/
+      fakes/
+      drivers/
+      test/
 ```
 
-Las rutas son una convención del ejemplo. `src/` y `tests/` pertenecen al producto;
-el generador puede dejarlas sin crear hasta que exista una implementación.
-`project.yaml` identifica el proyecto con `project_id` y el ciclo con `active_cycle`;
-ambos deben coincidir con el contexto de los reportes que consume una actividad.
-Las herramientas auxiliares del harness no deben convertirse accidentalmente en
-dependencias necesarias para ejecutar el producto entregado.
+Este árbol muestra un proyecto con trabajo realizado. Al crearlo, el generador
+instala instrucciones y skills, crea las carpetas de trabajo y registra identidad;
+los reportes y sus artefactos aparecen al ejecutar las actividades. `src/`, el kit
+`verification/` y los manifiestos del producto los escribe la actividad implementadora.
+El producto ejecutable no debe importar el kit ni depender de las herramientas
+del harness para arrancar.
+Cada paquete del producto vive en `src/<package>/`, con su base, configuración y
+módulos por responsabilidad. Su kit tiene el mismo nombre en `verification/`:
+vectores y expectativas independientes, sustitutos, drivers, pruebas y telemetría.
+
+El manifiesto de identidad conserva ID, nombre, referencias a entradas y ciclo:
+
+```yaml
+id: 019b0000-0000-7000-8000-000000000001
+name: example-project
+inputs:
+  brief: .harness/inputs/brief.md
+  criteria: .harness/inputs/criteria.md
+cycle: 01_example
+```
+
+El UUID es ilustrativo y el generador asigna uno real. La clave `cycle` se añade
+cuando el usuario elige un ciclo; después las skills la actualizan sin regenerar
+la identidad ni reescribir los demás campos.
 
 Mantén tres responsabilidades documentales:
 
@@ -174,70 +205,72 @@ comprueba su descubrimiento nativo y genera adaptadores cuando sean necesarios.
 
 ## 4. Declara dependencias una sola vez
 
-Usa un manifiesto para representar el proceso y generar sus vistas:
+En el paquete que distribuye el harness, declara la relación entre skill y reporte
+predecesor. Este fragmento de configuración se consume al generar el proyecto;
+no constituye un segundo registro de su estado de ejecución:
 
 ```yaml
-schema_version: 1
-workflow_version: 1.0.0
-steps:
+skills:
   prepare-plan:
-    kind: work
-    requires: {}
-    writes: [.harness/design/plan.md]
+    project_dir: .agents/skills/prepare-plan
+    prerequisite: null
   review-plan:
-    kind: human_review
-    requires: {prepare-plan: DELIVERED}
-    writes: []
+    project_dir: .agents/skills/review-plan
+    prerequisite: plan
   implement-change:
-    kind: work
-    requires: {review-plan: ACCEPTED}
-    writes: [src/, tests/]
+    project_dir: .agents/skills/implement-change
+    prerequisite: review-plan
   evaluate-change:
-    kind: human_review
-    requires: {implement-change: DELIVERED}
-    writes: []
-feedback_routes:
-  implementation: implement-change
-  design: prepare-plan
-  environment: retry-current
-  baseline: new-cycle
+    project_dir: .agents/skills/evaluate-change
+    prerequisite: implement
+report_order: [plan, review-plan, implement, evaluate]
+stage_reports: [plan, implement]
 ```
 
-`writes` enumera artefactos de trabajo; cada actividad también puede publicar su
-propio reporte y evidencia bajo las rutas comunes. Una revisión puede autorizar
-una herramienta para ejecutar pruebas sin autorizar ediciones de código.
+Cada skill declara qué artefactos lee/escribe y qué significa terminarla. Las de
+trabajo producen `plan.md` e `implement.md`; las de revisión producen
+`review-plan.md` y `evaluate.md`. No hace falta una tabla de permisos dentro de
+este manifiesto: los límites de edición se explicitan en el contrato de cada skill.
 
-Genera desde este manifiesto el catálogo y las precondiciones mecánicas. Evita
-mantener listas independientes en documentación, scripts e instrucciones. Valida
-IDs, referencias y ciclos de dependencias al construir la distribución. Las rutas
-de feedback son retornos de trabajo, no dependencias que deban formar un ciclo.
+Genera el catálogo de `AGENTS.md` desde esta configuración. Cada fila indica la
+skill, su reporte predecesor y que necesita su última iteración en `HITL: PASS`;
+la actividad de entrada no tiene prerrequisito.
+La condición se comprueba al cargar la skill. El generador distribuye el contrato;
+no llama al modelo ni ejecuta la cadena. Las rutas de feedback viven en las skills
+y en la descripción del reporte que solicita la corrección.
 
 ## 5. Haz que cada skill compruebe sus condiciones de entrada
 
 Una skill es un contrato que el agente debe leer antes de actuar. Su descripción
-permite descubrir cuándo utilizarla; su cuerpo contiene las reglas operativas.
-Este fragmento ilustra una skill cuyo contenido completo se genera del manifiesto:
+permite descubrir cuándo utilizarla. El generador copia la skill y adapta sus rutas;
+su cuerpo contiene las reglas operativas:
 
 ```markdown
 ---
 name: implement-change
 description: Implementar un cambio cuyo plan tiene una revisión aceptada y vigente.
+metadata:
+  gate: implement
 ---
 
-1. Resolver proyecto y ciclo activo desde .harness/project.yaml.
-2. Ejecutar la comprobación de prerrequisitos para implement-change.
-3. Si está bloqueada, explicar la causa y la actividad que debe ejecutarse; no editar.
+1. Resolver proyecto y ciclo activo desde .harness/project.yaml; detenerse si el
+   ciclo está cerrado o suspendido por una solicitud de cambio pendiente.
+2. Comprobar que .harness/report/<cycle>/review-plan.md existe y su última
+   iteración tiene HITL: PASS.
+3. Comprobar que el predecesor y sus entradas no estén obsoletos. Si falla una
+   condición, indicar qué skill debe ejecutarse; no editar ni escribir una iteración.
 4. Leer el plan aceptado y el feedback pendiente que corresponda a este candidato.
 5. Modificar únicamente los archivos autorizados por el contrato y el feedback.
 6. Ejecutar las comprobaciones declaradas y conservar su salida real.
-7. Publicar artefactos y un reporte completo que identifique sus entradas.
+7. Respaldar el test_run.md anterior antes de sobrescribirlo y añadir una
+   iteración a implement.md, identificando review-plan mediante Based on.
 8. Indicar qué actividad queda habilitada; no inventar una aceptación humana.
 ```
 
-El checker compartido resuelve rutas, lee reportes y calcula vigencia. No debe
-reemplazar el razonamiento de la actividad ni decidir una revisión humana. Si no
-existe checker todavía, la skill puede realizar esas comprobaciones explícitamente;
-extrae a código lo repetitivo a medida que se estabilice el contrato.
+`metadata.gate` identifica el reporte de esta skill; el nombre no obliga a que
+sea una revisión humana. El cuerpo distingue actividades de trabajo y revisión.
+Un lector compartido puede analizar reportes y calcular vigencia para un comando
+de estado. Eso no sustituye la regla de entrada de la skill ni decide por una persona.
 
 Una instrucción incumplida no es una barrera técnica. Para impedir realmente una
 escritura o un despliegue, utiliza permisos del runtime, aislamiento o controles en
@@ -248,70 +281,92 @@ reporte; si necesitas una frontera de confianza, protege quién puede publicarlo
 
 El estado debe sobrevivir al cierre del chat. Una implementación sencilla guarda
 un archivo Markdown por actividad y añade una sección por intento completado.
-Cada sección tiene campos estructurados y una explicación legible. Por ejemplo:
+Cada sección tiene tablas de campos y una descripción. El siguiente fragmento
+muestra la cabecera y la tercera iteración; las anteriores se conservan en el
+archivo real, y la numeración comienza en 1:
 
-````markdown
-# Reporte: implement-change
+```markdown
+# Implementation Report
+
+| Field | Value |
+|-------|-------|
+| Gate | implement |
+| Cycle | 01_example |
+| Document | .harness/report/01_example/implement_artifacts/test_run.md |
+| Created | 2026-11-13 14:30:00.000 |
+
+---
 
 ## Iteration 3
 
-```yaml
-schema_version: 1
-project_id: example-project
-cycle: cycle-001
-workflow_version: 1.0.0
-step: implement-change
-iteration: 3
-candidate: "<commit o snapshot de los artefactos de trabajo>"
-result: DELIVERED
-decided_by: agent
-based_on:
-  review-plan: 2
-responds_to:
-  evaluate-change: 1
-artifacts:
-  - src/handler.py
-  - tests/test_handler.py
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-13 15:20:00.000 |
+| Timestamp | 2026-11-13_15-20-00-000 |
+| Iteration | 3 |
+| Cycle | 01_example |
+| HITL | PASS |
+
+### Description
+
+Based on: review-plan iteration 2
+
+Responde al feedback de evaluate iteration 1.
+Se corrigió src/api/http/handler.py y verification/api/test/test_handler.py.
+El comando, código de salida y conteos de la ejecución se registran aquí
+y en implement_artifacts/test_run.md, con las rutas de evidencia del intento.
 ```
-
-### Trabajo realizado
-Se corrigió la validación indicada en el feedback de evaluación.
-
-### Evidencia
-Registrar comando exacto, candidato, entorno, salida y código de salida reales.
-````
 
 Este es un ejemplo de formato, no evidencia de una ejecución. En un reporte real
 debes identificar la revisión exacta de los artefactos, los resultados observados
 y la identidad o autorización de quien decide. Un nombre escrito por el agente
 no autentica por sí solo una decisión humana.
+Las fechas legibles y los timestamps para nombres de archivos los proporciona
+una utilidad del harness; el agente no inventa ni mantiene un reloj independiente.
 
-Mantén separados los significados de los resultados:
+El campo `HITL` conserva solo dos valores de cierre; su interpretación depende de
+quién tiene autoridad en esa actividad:
 
 | Resultado | Significado |
 |-----------|-------------|
-| DELIVERED | La actividad produjo sus salidas; no implica aceptación externa. |
-| ACCEPTED | La autoridad declarada aceptó el candidato identificado. |
-| FEEDBACK | Hay correcciones o decisiones pendientes, con una ruta explícita. |
+| PASS en una actividad de trabajo | Salidas entregadas con las comprobaciones exigidas; no es una aceptación humana del producto. |
+| PASS en una revisión humana | La persona aceptó el resultado presentado; su decisión y autor se conservan en Description. |
+| FEEDBACK | Hay correcciones o decisiones pendientes; Description explica el motivo, los cambios y la ruta. |
 
-Una comprobación determinista puede tener `PASS`/`FAIL`; su código de salida no
-equivale automáticamente a una aceptación del producto. `stale`, `missing` y
-`invalid` son estados calculados por el lector, no nuevos veredictos humanos.
+El validador determinista informa su resultado y código de salida dentro de
+Description; un error no puede convertirse en PASS por decisión del agente.
+Cuando además se exige revisión humana, el resultado del programa no la sustituye.
+`delivered`, `stale` o un estado desconocido son interpretaciones del lector, no
+valores nuevos que deban escribirse en la fila HITL.
 
-El parser debe reconocer una única cabecera estructurada por iteración, ignorar
-ejemplos citados, validar el esquema y rechazar resultados ambiguos. No busques la
-palabra ACCEPTED en cualquier parte del Markdown. Si la última iteración está
-incompleta, bloquea el avance; no recuperes silenciosamente una aceptación antigua.
+El parser reconoce `## Iteration N`, la tabla anterior a `### Description` y una
+única fila `| HITL | PASS |` o `| HITL | FEEDBACK |`. No uses una fila con ambos
+valores ni busques PASS dentro del texto libre o de ejemplos citados. Si la última
+iteración está incompleta, bloquea el avance; no recuperes una aceptación antigua.
 Publica la actualización de forma atómica y conserva las iteraciones anteriores.
 Para un MVP, asigna un solo escritor por reporte; añade bloqueo si habrá concurrencia.
 
-También puedes usar registros inmutables por intento o JSON como fuente canónica
-y generar Markdown como vista. Elige un formato y un único origen de estado;
-no mantengas una base de datos y reportes que discrepen sobre la decisión vigente.
+Los reportes Markdown son el origen de las decisiones. Un registro de proyectos
+puede ayudar a localizarlos, pero no reemplaza ni duplica sus veredictos. Los
+archivos de resultados de pruebas son evidencia; no son un segundo estado del flujo.
+
+### Artefactos que acompañan al reporte
+
+| Artefacto | Quién lo produce y qué contiene |
+|-----------|--------------------------------|
+| `design/plan.md` | Preparación: metadatos, entorno, componentes y módulos, contratos, dependencias, vectores de prueba, ejecución y trazabilidad. Incluye comando de arranque, URL o endpoint, resultado visible y cierre. |
+| Checklist de revisión | Revisión: criterios cumplidos, hallazgos abiertos, recomendación, decisión humana y, en una reentrada, mapa de impacto. Se incorpora a Description. |
+| `implement_artifacts/test_run.md` | Implementación: comandos exactos que la evaluación debe repetir; destino, SO/arquitectura y versiones; última ejecución local con código de salida y conteos; smoke del punto de entrada; IDs, tiempos y archivos de evidencia; telemetría y posibles inviabilidades. |
+| `evaluate_artifacts/accepted_result.md` | Evaluación, solo tras PASS humano: ciclo e iteraciones de origen, entorno y preparación, herramientas, resultados por módulo y recorrido, telemetría, alcance demostrado y no demostrado, árbol entregado, evaluador e instrucciones de uso. |
+
+`test_run.md` es un artefacto de trabajo que se respalda antes de sobrescribirlo;
+no es un reporte append-only adicional. El reporte de la actividad sí conserva
+sus iteraciones. La entrega final se llena desde una plantilla estable y permite
+arrancar el producto sin tener que reconstruir la conversación del agente.
 
 ## 7. La aprobación debe corresponder al trabajo actual
 
-Comprobar que un reporte dice ACCEPTED es insuficiente. También debes comprobar
+Comprobar que un reporte contiene `HITL: PASS` es insuficiente. También debes comprobar
 que pertenece al proyecto/ciclo correcto y que sigue describiendo sus entradas.
 
 La regla de entrada es: todos los prerrequisitos existen, son válidos, tienen el
@@ -321,17 +376,19 @@ la actividad con una explicación concreta.
 
 Supón que el plan tiene iteración 4 y la revisión acepta esa iteración. Si el plan
 pasa a iteración 5, la revisión anterior queda obsoleta. La implementación basada
-en ella también queda obsoleta, aunque su reporte conserve DELIVERED. La evaluación
+en ella también queda obsoleta, aunque su reporte conserve PASS. La evaluación
 de esa implementación debe considerarse obsoleta por propagación.
 
-Guarda la dependencia exacta en `based_on` y recorre sus antecesores para calcular
-vigencia. Un comando de estado debe señalar la primera entrada que cambió y la
-actividad que necesita repetirse. No debe borrar reportes ni modificar decisiones.
+Guarda la dependencia exacta como `Based on: <predecesor> iteration <N>` al inicio
+de Description y recorre sus antecesores para calcular vigencia. La actividad de
+entrada no lleva esa línea. El comando de estado señala la entrada que cambió y
+la actividad que necesita repetirse, sin borrar reportes ni modificar decisiones.
 
 Una referencia a la iteración no detecta ediciones directas del artefacto sin nuevo
-reporte. Identifica también el candidato mediante un commit, una versión inmutable
-o un digest de las rutas relevantes. Define qué cambios invalidan cada evidencia;
-no compares ciegamente todo HEAD si el único cambio es publicar el propio reporte.
+reporte. Identifica también el candidato evaluado: por ejemplo, el digest del
+documento revisado o el commit limpio de código y kit. Esa referencia se registra
+en Description o en su artefacto de evidencia; no es un campo adicional obligatorio
+en todas las iteraciones. Define qué entradas invalidan cada resultado.
 
 La identidad del ciclo mantiene juntas una línea base y sus decisiones. Un cambio
 de objetivo puede abrir otro ciclo sin reescribir la historia. Una corrección dentro
@@ -350,19 +407,38 @@ archivos afectados, actividad responsable y condición para volver a evaluar.
 | Entorno | Falta un permiso, dependencia o conexión necesaria. | Reparar la preparación y repetir el intento con evidencia nueva. |
 | Línea base | El objetivo exige una capacidad que la entrada no autoriza. | Pedir una decisión al propietario de la entrada; abrir otro ciclo si corresponde. |
 
-Ejemplo: «La evaluación 1 observó HTTP 500 ante un dato inválido; el contrato exige
-HTTP 400. Corregir el adaptador y su prueba. Conservar el resto de los módulos y
-repetir las pruebas del endpoint antes de solicitar otra evaluación».
+Una iteración de evaluación con `| HITL | FEEDBACK |` usa la misma tabla anterior.
+Su descripción puede seguir esta estructura; los nombres de pasos son genéricos:
 
-El nuevo reporte declara `responds_to` para cerrar ese feedback. Reintentar con el
-mismo candidato no resuelve un defecto de implementación o diseño. Un fallo de
-entorno sí puede justificar repetirlo, indicando la reparación y un intento nuevo.
-Una hipótesis sin confirmar no debe registrarse como causa demostrada.
+```markdown
+### Description
 
-Para correcciones en borrador, utiliza un marcador separado de los reportes finales.
-Permite editar, comprobar y resolver preguntas sin publicar una iteración por cada
-errata. El borrador no autoriza avanzar. Al cerrarlo, publica el resultado completo
-con las decisiones tomadas y la revisión final de sus entradas.
+Based on: implement iteration 2
+Verdict: module defect
+
+1. Corregir src/api/http/handler.py: devuelve HTTP 500 ante un dato inválido; se esperaba
+   HTTP 400. Evidencia: salida de la prueba del endpoint en el intento registrado.
+2. Corregir verification/api/test/test_handler.py, repetir las comprobaciones
+   afectadas y entregar otra iteración de implement. Conservar los demás módulos.
+
+Decision: la persona revisora solicita estas correcciones.
+```
+
+La lista enumerada es el canal de reentrada: indica archivos y cambios concretos.
+La implementación registra en Description qué iteración de evaluación responde;
+la comunicación entre actividades permanece en los reportes. Antes de evaluar
+otra vez, debe existir una nueva entrega de implementación. Si aparece
+`Verdict: design defect`, se modifica el plan, se obtiene otra revisión humana y
+se adapta la implementación siguiendo su mapa de impacto. El fallo de entorno
+permite repetir el intento tras repararlo; no se etiqueta como defecto del producto.
+
+Para correcciones de entradas en borrador, usa `report/<cycle>/DRAFT`, sin extensión
+Markdown. Limítalo a las actividades de preparación/revisión que lo declaren: se
+edita y comprueba sin añadir una iteración por cada errata. No autoriza avanzar.
+Se retira cuando cada hallazgo tiene una resolución y se publica la iteración final.
+Un cambio de línea base decidido puede cerrar el ciclo con
+`Superseded by cycle: <nuevo-ciclo>` y reentrar con las entradas nuevas; las skills
+rechazan ejecutar trabajo en un ciclo cerrado.
 
 ## 9. Distribuye el harness sin sobrescribir el proyecto
 
@@ -372,8 +448,9 @@ proyecto sin implementar un servicio que llame al modelo y dirija cada transici�
 Si después añades un ejecutor automático, debe consumir los mismos contratos.
 
 El scaffolding inicial debe copiar skills y referencias, crear el manifiesto de
-identidad, adaptar rutas y producir el mapa de instrucciones. Registra versión del
-harness y esquema. Valida el proyecto generado, no solo las plantillas originales.
+identidad, adaptar rutas y producir el mapa de instrucciones. Identifica la versión
+de la distribución sin añadir por ello campos al protocolo de reportes. Valida el
+proyecto generado, no solo las plantillas originales.
 
 Una actualización necesita un inventario de archivos administrados: mostrar el
 diff, respaldar lo sustituido y preservar código, entradas, reportes y modificaciones
@@ -419,10 +496,15 @@ con el nombre esperado no demuestra que pertenezca al candidato actual.
 
 ## 11. Reanuda desde archivos y delega con contratos pequeños
 
-Al abrir una sesión, identifica proyecto/ciclo, inspecciona reportes y vigencia,
-localiza el feedback pendiente y carga la skill correspondiente. Pregunta solo por
-decisiones o contexto que las fuentes persistentes no resuelvan. El historial del
-chat puede ayudar, pero no debe ser el único lugar que conserve una autorización.
+Al abrir una sesión, inspecciona primero identidad, ciclos, reportes y vigencia.
+Pregunta qué ciclo usar y ofrece el activo como opción; no cambies la identidad
+para abrir otro. Localiza el feedback pendiente y carga la skill correspondiente.
+El historial del chat puede ayudar, pero no es el origen del estado del proyecto.
+
+Las pausas dentro de una actividad tampoco son veredictos nuevos. Una respuesta
+`continue`, `rework` o `stop` se conserva como `Checkpoint: <punto> — <respuesta> —
+<nota>` en Description de la iteración completada. Si se detiene antes de entregar,
+se conservan los archivos y no se escribe una iteración parcial para simular cierre.
 
 Después de una interrupción, inspecciona artefactos y vuelve a ejecutar los checks
 pertinentes. Conserva lo que funciona. Antes de repetir una operación externa,
