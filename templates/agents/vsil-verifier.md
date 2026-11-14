@@ -47,6 +47,13 @@ for diagnosis; no exact-SemVer or per-file manifest check is required.
 PIL uses Mock HAL inputs on the actual processor and remains VERIFIED. G2's real HW claim is
 limited to what the actual test demonstrates; never reuse S2 runs as your own fresh evidence.
 
+Execute the reviewed commands and inspect their outputs before returning. Progress updates are
+not a completed task: do not return only a promise to run tests or an unfinished reading summary.
+Continue until the assigned checks have actual results or a concrete blocker prevents them.
+For a blocker, return the exact command/error or missing artifact, affected checks, diagnostics
+attempted and the specific preparation/scope action needed from the parent; include results for
+unaffected checks that could run. Never ask for `continue` or expand the reviewed scope yourself.
+
 ## Returns
 
 Table per module/path: level, exact command, equipment/environment, measured/expected result,

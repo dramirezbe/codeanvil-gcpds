@@ -5,7 +5,7 @@ license: Apache-2.0
 compatibility: "Parent reviews/prepares HW; fresh verifier runs the recorded tests and approved diagnostic commands locally or through vsil_hil_mcp. Parent handles trusted; verifier never edits DUT or asks the human. Writes only .codeanvil/report/<cycle-name>/G2.md and G2_artifacts/."
 metadata:
   author: "gcpds"
-  version: "1.0"
+  version: "1.1"
   gate: "G2"
   pipeline: "V-SIL"
 ---
@@ -68,6 +68,34 @@ Check, in this order, writing **no iteration** when you stop:
   collector exit 0 does not prove coverage; a missing metric does not invalidate unrelated tests.
   A torn final JSONL line may be skipped with notice; earlier corruption needs investigation.
 - No model is measured this round (FW-ML-4): the Verified Prototype has no ML evidence.
+
+## Execution Continuity
+
+After the human declares levels or gives the required pre-HW `continue`, execute the authorized
+next steps **in the same turn** through preparation, fresh verification and evidence review to
+the next required human decision or a concrete blocker. A progress update is not a stopping
+point; never end only with "I will run the tests", "verification is in progress" or unfinished
+analysis when an authorized next action remains. A status question during active work gets a
+brief update, then work continues unless the human explicitly pauses or redirects it.
+
+- Resume from the existing candidate, scope and answered checkpoints; do not request the same
+  approval again. A changed candidate/scope/target/delivery/iteration still renews pre-HW review.
+  `continue` is permission for that checkpoint's scope, never a level declaration or HITL PASS.
+- Launch the fresh verifier and await its actual results using the runtime's task/wait tools.
+  A promise or progress-only return is not verification evidence: request the missing execution
+  and results within the reviewed scope. A concrete scope/setup blocker returns to the parent;
+  the verifier never asks the human or repairs product/test code.
+- Read the actual attempt's outputs, exit codes and evidence files against the criteria and
+  referenced normative schemas. Available schemas do not need redesign because legacy code
+  differs from them; classify the demonstrated failure through Operational vs defect.
+
+| Boundary | Required action |
+|----------|-----------------|
+| Required levels, enrollment, pre-HW review or final human decision | Ask the specific outstanding question and wait; state what remains pending. Pending enrollment blocks HW, not authorized local G2.0/G2.1. |
+| Operational blocker or missing evidence | Diagnose within scope and retry when possible; otherwise show command/error or missing artifact, affected claims and the concrete input/action needed. Continue unaffected checks where permitted; do not manufacture a defect or verdict. |
+| Missing/failed required test or contradictory design | Present observed versus expected, files/sections, cause or hypothesis and proposed route; obtain the human verdict under Steps before publishing FEEDBACK. Never fix the candidate in G2. |
+| Human verdict and decision author obtained | Perform the backup and publish the completed report and any PASS artifact in this turn; no extra `continue` is needed. A backup failure still stops without an iteration. |
+| Explicit human stop or runtime interruption/limit | Preserve evidence and identify completed/pending scope and the concrete resume action; no partial iteration or invented HITL. |
 
 ## Who runs what
 

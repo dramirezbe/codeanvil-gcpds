@@ -8,6 +8,10 @@
 | T1_HackRF-spectrum | [Build Package](T1_HackRF-spectrum/build_package.md) | x86_64 spectrum/control; deliberate triage faults, hardware validation deferred. |
 | T2_RPi5-HackRF-web-spectrum | [Guide and Build Package](T2_RPi5-HackRF-web-spectrum/README.md) | Small RPi5-hosted Vite dashboard and seven HackRF RX controls; explicit functional VL-2 protocol, not yet executed. |
 
+For premature stops after `continue`, resumption, concrete blockers and G2 delegation, use the
+[S2/G2 execution continuity regression](execution_continuity.md). It is a manual agent evaluation,
+separate from the T# project inputs and automated scaffold checks.
+
 ## Synthetic UI fixtures — CodeAnvil 0.7.0
 
 [`v0.7.0-example-artifacts/`](v0.7.0-example-artifacts/README.md) contains five

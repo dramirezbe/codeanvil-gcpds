@@ -5,7 +5,7 @@ license: Apache-2.0
 compatibility: "Telemetry is collected by the `codeanvil telemetry` subcommand, part of CodeAnvil itself (not a skill script). Reads the S1 design, .codeanvil/GT/SyRS.md and .codeanvil/project.yaml. Writes src/, verification/, root manifests, .codeanvil/report/<cycle-name>/S2.md and S2_artifacts/."
 metadata:
   author: "gcpds"
-  version: "1.1"
+  version: "1.2"
   gate: "S2"
   runtime: []
   pipeline: "V-SIL"
@@ -111,6 +111,31 @@ there is no default list.
 - **Resume, do not restart.** On a re-run, continue from what already exists in `src/` and
   `verification/`: re-run its tests, keep what passes, build what is missing. Never rewrite working
   code to start over.
+
+## Execution Continuity
+
+After the pause schedule is selected, or a checkpoint receives `continue` or `rework`, execute
+the authorized work **in the same turn** until the next scheduled pause, completion or a concrete
+blocker. Progress updates do not end the turn: never return only a promise to continue, a summary
+of files read or "implementation is not finished" while an authorized next action remains.
+
+- Resume the same in-progress iteration with its selected schedule and answered checkpoints;
+  do not ask for the same answer again or treat resumption as a new iteration. With **Per
+  subsystem**, implement and check all remaining modules of that subsystem before pausing.
+  The module-defect rework route still asks no pause-schedule question.
+- Read the approved contract and its explicitly referenced normative schemas/annexes before
+  declaring a design defect. Existing code that differs from an available, consistent contract
+  is implementation work; correct it within the authorized scope. Do not invent a replacement
+  schema, edit GT/design or leave "schema reconciliation pending" without identifying the issue.
+- Before ending the turn, identify the boundary reached below. A status question during active
+  work gets a brief update, then work continues unless the human explicitly pauses or redirects it.
+
+| Boundary | Required action |
+|----------|-----------------|
+| Scheduled checkpoint or explicit human stop | Show completed scope and actual checks, preserve pending work and follow Pause Schedule. `continue` authorizes work to the next checkpoint, not HW or G2 acceptance. |
+| S2 complete | Finish the floor run, backup and report contracts; only then return the completion message. |
+| Missing or contradictory design contract | Name exact files, sections, fields and affected modules; append the design-defect FEEDBACK and route to S1 under Hard Rules. |
+| Operational blocker, required permission/input/restart or runtime limit | Show the failed command/error or exact missing input, attempts made, affected scope and concrete action needed to resume. Apply the existing prerequisite/MCP/ML/backup rules where applicable; preserve work without a fabricated iteration or verdict. |
 
 ## Execution (local)
 
