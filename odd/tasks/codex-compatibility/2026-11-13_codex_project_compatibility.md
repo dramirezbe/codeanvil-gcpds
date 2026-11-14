@@ -50,3 +50,15 @@ Validation: create/subagent tests, 80 passed; native Codex acceptance, 1 passed
 (run outside the sandbox after the restricted client startup stalled).
 Rollback: restore the removed link entry and its matching documentation/assertion.
 The initial compatibility implementation is commit `c60a65b`.
+
+## Release v0.8.5
+
+User requested commit/push as 0.8.5. This release includes `c60a65b` and
+`dcb8235`, updates `pyproject.toml`, synchronizes `uv.lock` and updates the README.
+Validation: full suite, 748 passed and 1 skipped; wheel and sdist build succeeded.
+The wheel contains version 0.8.5, the tomlkit dependency, native Codex MCP wiring
+and the scaffold configuration without `.codex/skills`.
+Publication target: fast-forward `main`, annotated tag `v0.8.5`, existing release
+workflow. Installation target: the local global CLI, using the verified wheel.
+Rollback boundary: the version/lock/README release metadata; a published tag is
+retained, and any later corrective release receives a new version.
