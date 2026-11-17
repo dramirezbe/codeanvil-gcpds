@@ -1,20 +1,14 @@
 # V-SIL v4: Agile-V Stage-Gate Lifecycle for COTS-Constrained Verified Prototype Development
 
 **David Ramírez-Betancourt** — Universidad Nacional de Colombia, GCPDS  
-**Version:** 4.0-draft  
+**Version:** 4.0  
 **Date:** November 2026
 
 ---
 
 ## Abstract
 
-V-SIL v4 extends v3 by inserting an **Agile-V module-planning layer** between system design and implementation. It receives a finalised Build Package (PRD with measurable constraints, COTS hardware envelope, acceptance criteria and, optionally, laboratory procedures, hardware calibration at the development team's screening grade, and tolerances in dBi) and delivers a Verified Prototype with per-module and end-to-end evidence — or, when the requirements are infeasible on the declared COTS platform, a formal Request for Deviation (RFD) with trade-off analysis.
-
-The v3 chain S0→G0→S1→G1→S2→G2 becomes the v4 chain **S0→G0→S1→G1→S2→G2→S3→G3**, where S2 is a new module-planning stage, G2 is a new micro-gate, S3 is the renamed implementation stage (v3 S2), and G3 is the renamed verification gate (v3 G2). Nothing from v3 is lost; the new layer solves context loss in large systems by giving each module a self-contained plan that carries only the contracts and traced requirements it needs.
-
-S1 may design one subsystem or a system of subsystems: each subsystem has its own layered base and modules, and subsystems meet through versioned contracts. S1 declares a HAL mode, `mock-only` or `mock+real`. It always designs a **Mock HAL** that generates deterministic and synthetic data for VL-0 and VL-1, and a mandatory **telemetry companion** that silently monitors the compute unit during all test executions and is never shipped. Only in `mock+real` does it add a **Real HW HAL** that interfaces with the physical hardware for laboratory dataset generation and field tests at VL-2. An ML model is an optional S1 input when the chosen design uses one. Implementation proceeds module by module within each subsystem and then across subsystem boundaries, each module built in a **fresh context** that carries only its PLAN.md and the contracts it touches. Verification depth is adaptive per module, while a mandatory floor of unit, sandwich-integration, cross-subsystem contract, and system-path tests applies. Every claim names the verification level and environment at which it was produced; the telemetry companion attaches compute-unit state to every evidence record. The terminal output may record scoped future work for later software versions; this does not defer current acceptance criteria.
-
-Terminology is aligned with IEEE/ISO/IEC 29119, ISO 26262, SDAD [6], the Coordinator-Implementor-Verifier pattern [10], the embedded HAL mock→SIL→HIL substitution ladder [11], the ECSS/MIL-HDBK-61A Request for Deviation process [16][17], the Agile-V compliance framework [19], and the OpenSpec delta traceability model [21].
+V-SIL v4 is a stage-gate lifecycle that receives a finalised Build Package and delivers a Verified Prototype with per-module and end-to-end evidence — or a formal Request for Deviation (RFD) when requirements are infeasible on the declared COTS platform. The chain **S0→G0→S1→G1→S2→G2→S3→G3** normalises requirements, designs the system, plans each module as a self-contained specification (PLAN.md), and implements each module in a fresh context. Verification depth is adaptive per module with a mandatory VL-0 floor; a HAL substitution ladder (Mock HAL → Real HW HAL) and a telemetry companion support staged SIL/HIL progression. V-SIL adapts the Agile-V compliance framework [19a][19b] to module-level iteration, uses OpenSpec [21] delta traceability scoped to the module boundary, and aligns terminology with IEEE/ISO/IEC 29119, ISO 26262 [5], SDAD [6], and the CIV pattern [10].
 
 ```mermaid
 flowchart LR
@@ -36,54 +30,56 @@ flowchart LR
 
 ---
 
-## 1 What Changed from v3 to v4
+## 1 Scope and Purpose
 
-### 1.1 Motivation
+V-SIL v4 defines the complete lifecycle from a finalised Build Package to a Verified Prototype. The lifecycle is organised as an eight-node stage-gate chain (four stages, four gates) with an Agile-V module-planning layer between system design and implementation. The methodology is domain-agnostic: it applies to any COTS-constrained embedded or software system where requirements must be traced through design, planning, implementation, and verification.
 
-Large verified systems decompose into many modules. When an agent (human or AI) implements module N, it must hold the full system design, the Ground Truth, and the accumulated state of modules 1…N−1 in its working context. As the system grows, context is lost, contracts are misread, and traced requirements drift from the design. V-SIL v3 has no mechanism to scope the working context to the module being built.
+### 1.1 Core architecture
 
-V-SIL v4 solves this by inserting a **module-planning stage (S2)** and its **micro-gate (G2)** between the system design (S1/G1) and implementation (now S3). Each module receives a self-contained plan (PLAN.md) that carries only the information the implementor needs: its traced requirements, its interface contracts, its ordered tasks, and its verification plan. The implementor works from this plan in a fresh context, not from the full system design.
+The lifecycle solves five problems:
 
-### 1.2 New governing principles
+1. **Requirement normalisation.** S0 casts the Build Package into IEEE 29148 blueprints; G0 validates structure mechanically.
+2. **System decomposition with traceability.** S1 designs subsystems, modules, and their dependency graph; G1 validates completeness.
+3. **Context scoping.** S2 produces a self-contained PLAN.md per module so that the implementor needs only the plan and the contracts it touches.
+4. **Fresh-context implementation.** S3 builds each module in an isolated context that carries only its specification, enforcing separation.
+5. **Adaptive verification.** G3 verifies each module at the level the user declares, with a mandatory VL-0 floor, and classifies failures into five routing classes.
 
-The v3 principles P1–P4 are unchanged. V4 adds:
+### 1.2 Governing principles
 
-**P5.** Module is the iteration unit — the Agile-V backlog is a sequence of modules ordered by topological dependency, not by priority or story points.  
-**P6.** Layers are orthogonal to iteration — the layered architecture is a structural invariant; Agile-V determines only the order in which modules are built.  
-**P7.** Fresh context per module — each module is implemented in an isolated context that carries only its PLAN.md and the contracts it touches; no accumulated implementation state leaks across modules.  
-**P8.** Living GT with delta traceability — each module's plan records which GT requirements it adds, modifies, or removes (OpenSpec-style ADDED/MODIFIED/REMOVED deltas [21]), so the system-level GT stays current without a monolithic re-review.
+**P1.** HITL is an authorisation barrier; HIL is a validation barrier.  
+**P2.** Oracle ≠ generator — the entity that verifies never approves its own work [7].  
+**P3.** G0 is the only deterministic gate: its mechanical rejection beats any approval [8]. G2 and G3 (including sub-gates G3.0, G3.1, and G3.2) are agent-prepared, human-approved. Every other gate verdict is human (HITL).  
+**P4.** *Verified* ≠ *validated* — claims name the environment [9].  
+**P5.** Module is the iteration unit — V-SIL adapts the Agile-V compliance framework [19a][19b] by replacing the task-level iteration with a module-level mini-V cycle whose backlog is ordered by topological sort of the S1 dependency graph.  
+**P6.** Layers are orthogonal to iteration — layered architecture is a structural invariant; Agile-V determines only the order in which modules are built.  
+**P7.** Fresh context per module — the implementor carries only PLAN.md and the contracts it touches.  
+**P8.** Living GT with delta traceability — ADDED/MODIFIED/REMOVED/RENAMED per module; V-SIL scopes OpenSpec's change-level model [21] to the module boundary.
 
-### 1.3 Stage renumbering
+### 1.3 Report-driven gate chain
 
-| v3 stage | v4 stage | Change |
-|---|---|---|
-| S0 — Normalisation + GT | **S0** — Normalisation + GT | Unchanged |
-| G0 — Structural validation | **G0** — Structural validation | Unchanged |
-| S1 — System design | **S1** — System design + module decomposition | Enhanced: explicit module identity, dependency graph for topological ordering |
-| G1 — Design review | **G1** — Design review | Enhanced: checks 11–12 added (module decomposition, topological slicing) |
-| *(none)* | **S2** — Module planning | **NEW**: Agile-V backlog, PLAN.md per module, delta traceability |
-| *(none)* | **G2** — Module plan micro-gate | **NEW**: 6 checks, 4 verdicts |
-| S2 — Implementation | **S3** — Per-module implementation | Renamed; enhanced with fresh-context protocol (P7) |
-| G2 — Adaptive verification | **G3** — Adaptive verification | Renamed; enhanced with plan-defect routing back to S2 |
+Each stage produces a structured report. Each gate reads and validates the predecessor stage's report as its primary input. A gate never re-derives the stage's work; it checks the report's claims against the evidence the report references. This creates a chain of accountability: S0's report feeds G0, S1's feeds G1, S2's feeds G2, S3's feeds G3. If a stage's report becomes stale (the inputs it was derived from have changed since it was written), the gate rejects it and the stage must re-run against the current inputs.
+
+### 1.4 Stale detection
+
+A report is **stale** when any of its declared inputs has changed since the report was produced. Each report records the version or digest of every input it consumed. A gate checks these digests before evaluating the report's content. If any input has been updated (a GT revision, a design change, a contract modification), the report is stale and the gate returns FAIL with reason `stale-report`, requiring the stage to re-run. This prevents a valid-looking report from masking changes that invalidate its conclusions.
 
 ---
 
 ## 2 Terminology
 
-| Informal term | Standard term | Source |
+Standard software-engineering terms (stub, driver, sandwich integration [2], layered architecture [4], interface-contract verification [3]) follow IEEE 29119, Pressman [1], and Bass et al. V-SIL-specific or adapted terms are defined below.
+
+| Term | Definition | Source |
 |---|---|---|
-| Propagation test (base → modules with placeholders) | **Top-down integration test with stubs** | IEEE 29119; Pressman [1] |
-| Backpropagation test (module → base) | **Bottom-up integration test with drivers** | IEEE 29119; Pressman [1] |
-| Combined propagation + backpropagation | **Sandwich (hybrid) integration testing** | IEEE 29119 [2] |
-| Placeholders | **Stubs** (called by the unit under test) | Standard SE |
-| Test harnesses simulating callers | **Drivers** (call the unit under test) | Standard SE |
-| Router validation | **Interface-contract verification** | Contract testing [3]; Bass et al. [4] |
-| Design by layers | **Layered architecture** with **component dependency graph** (DAG) | Bass et al. [4] |
-| Levels N0 / N1 / N2 | **Verification levels** (VL-0, VL-1, VL-2) | Adapted from ISO 26262 [5] |
-| Feedback to Build Package with trade-off | **Request for Deviation (RFD)** | ECSS [16]; MIL-HDBK-61A [17]; NASA NPR 7150.2 [18] |
-| Module backlog ordering | **Topological slicing** | Agile-V [19]; dependency-graph ordering |
-| Module plan | **PLAN.md** — self-contained module specification | V-SIL v4 |
-| Requirement delta | **ADDED / MODIFIED / REMOVED** delta annotation | OpenSpec [21] |
+| Verification level (VL-0, VL-1, VL-2) | Depth of verification: logic-only (VL-0), SIL/mock (VL-1), HIL/real hardware (VL-2) | Adapted from ISO 26262 [5] |
+| Request for Deviation (RFD) | Formal request to change Build Package requirements when infeasible on the declared COTS platform | ECSS [16]; MIL-HDBK-61A [17]; NASA NPR 7150.2 [18] |
+| Topological slicing | Partitioning modules into ordered slices by topological sort of the dependency graph | V-SIL v4; inspired by Agile-V [19a][19b] |
+| PLAN.md | Self-contained module specification produced by S2, carrying only the contracts and traced requirements the implementor needs | V-SIL v4 |
+| ADDED / MODIFIED / REMOVED / RENAMED | Delta annotations recording changes to requirements at each module boundary; V-SIL scopes OpenSpec's change-level convention [21] to the module boundary | OpenSpec [21], adapted by V-SIL v4 |
+| Processor-in-the-Loop (PIL) | Verification configuration using the actual target processor with Mock HAL inputs; every PIL claim stays VERIFIED, not VALIDATED, because the data source is synthetic | Adapted from ISO 26262 [5] |
+| Verification kit | Verification infrastructure built in Slice 0: Mock HAL, golden vectors with manifest, telemetry companion, stubs, fake peers, and drivers | V-SIL v4 |
+| Fresh context | Isolated implementation context carrying only a module's PLAN.md and its contracts, with no accumulated state from prior modules | V-SIL v4 |
+| Verifier context | Separate read-only context (subagent or fresh session) that runs verification; implements P2 (oracle ≠ generator) | V-SIL v4 |
 
 ---
 
@@ -133,17 +129,6 @@ flowchart TD
     G3 -.->|infeasible| RFD
     RFD -.->|updated| BP
 ```
-
-**Governing principles.**
-
-**P1.** HITL is an authorisation barrier; HIL is a validation barrier.  
-**P2.** Oracle ≠ generator — the model never approves its own work [7].  
-**P3.** G0 is the only deterministic gate: its mechanical rejection beats any approval [8]. Every other gate verdict is human (HITL).  
-**P4.** *Verified* ≠ *validated* — claims name the environment [9].  
-**P5.** Module is the iteration unit — the Agile-V backlog is ordered by topological dependency [19].  
-**P6.** Layers are orthogonal to iteration — layered architecture is a structural invariant; Agile-V is the iteration order.  
-**P7.** Fresh context per module — the implementor carries only PLAN.md and the contracts it touches.  
-**P8.** Living GT with delta traceability — ADDED/MODIFIED/REMOVED per module [21].
 
 ---
 
@@ -211,7 +196,7 @@ Deterministic. No AI. Binary verdict. After G0 passes, human Gate H asks: *Requi
 
 ## 6 S1 — System of Layered Subsystems with Module Decomposition
 
-S1 first divides the product into independently deployed subsystems when the requirements call for them. One subsystem remains a valid special case. A **subsystem** owns a runtime, deployment target, base layer, modules, and externally visible ports. Its modules communicate through its own base-layer interfaces; a cross-subsystem exchange goes through a declared, versioned subsystem contract. Splitting a UI from an edge process is justified when they deploy or restart independently, communicate over a network, or have distinct failure domains.
+S1 first divides the product into independently deployed subsystems when the requirements call for them. One subsystem remains a valid special case. A **subsystem** owns a runtime, deployment target, base layer, modules, and externally visible ports. Its modules communicate through its own base-layer interfaces; a cross-subsystem exchange goes through a declared, versioned subsystem contract. Splitting subsystems is justified when they deploy or restart independently, communicate over a network, or have distinct failure domains.
 
 ### 6.1 System topology and requirement allocation
 
@@ -220,10 +205,10 @@ The arrows below are **runtime messages**, not implementation dependencies.
 ```mermaid
 flowchart LR
     GT["One StRS + SyRS pair"] --> MAP["SYS-* allocated to subsystems and paths"]
-    MAP --> EDGE["Edge subsystem<br/>COTS SDR + local base + modules"]
-    MAP --> UI["UI subsystem<br/>client base + modules"]
-    EDGE -->|"occupancy.v1: measurements"| UI
-    UI -->|"configure.v1: commands"| EDGE
+    MAP --> SUB_A["Subsystem A<br/>COTS target + local base + modules"]
+    MAP --> SUB_B["Subsystem B<br/>client base + modules"]
+    SUB_A -->|"telemetry.v1: measurements"| SUB_B
+    SUB_B -->|"control.v1: commands"| SUB_A
 ```
 
 The system view records each subsystem's responsibility, deployment target, COTS resources, network link, and lifecycle. A requirement may map to one subsystem or to an **end-to-end path** spanning several subsystems. One system-level trace table owns this allocation; subsystem designs do not duplicate the Ground Truth. Cross-subsystem contracts specify producer and consumer, schema and version, units, timestamps, ordering, rate, latency, authentication, retries, duplicate handling, and behavior on disconnect or restart where applicable.
@@ -256,82 +241,59 @@ Modules are plug-in units communicating only through their subsystem's base laye
 
 ### 6.3 Module identity and dependency graph
 
-**New in v4.** S1 now assigns each module a unique identity and declares the implementation dependency graph that S2 will use for topological slicing.
+S1 assigns each module a unique identity and declares the implementation dependency graph that S2 uses for topological slicing. The graph encompasses **all subsystems** — every module that will be planned, implemented, and verified must appear here.
 
-```mermaid
-flowchart LR
-    classDef hal fill:#fee2e2,stroke:#dc2626,color:#7f1d1d
-    classDef dsp fill:#fef3c7,stroke:#d97706,color:#78350f
-    classDef dec fill:#dcfce7,stroke:#16a34a,color:#14532d
-    classDef out fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e
-
-    HW["HackRF"]:::hal
-    IQ["iq_acquisition<br/>VL-2 · HAL"]:::hal
-    FFT["fft_engine<br/>VL-1 · DSP"]:::dsp
-    FE["feature_extractor<br/>VL-1 · DSP"]:::dsp
-    CL["classifier<br/>VL-0 · Decision"]:::dec
-    DEM["audio_demod<br/>VL-1 · Output"]:::out
-    DS["data_store<br/>VL-0 · Output"]:::out
-
-    HW -->|raw RF| IQ
-    IQ -->|raw_iq| FFT
-    IQ -->|raw_iq| DEM
-    FFT -->|psd_estimate| FE
-    FE -->|channel_features| CL
-    CL -->|occupancy_decision| DS
-```
-
-Each edge carries an **interface contract** (data type, schema version, units, latency). Each subsystem's implementation dependency graph must be acyclic. Each node carries a **verification profile**: `module_id`, `subsystem_id`, `layer`, `depends_on`, `provides`, `hw_dependency`, `required_vl`. `hw_dependency` means correctness requires a specific physical device or behavior, rather than merely that the code runs on a computer.
-
-The **implementation dependency graph** orders contract definition, subsystem bases, modules, and system integration. It must be acyclic so S3 can build with stubs. The separate **runtime interaction graph** describes live messages. It may contain intentional loops, such as edge telemetry → UI → edge control, provided the contracts define ownership of state, acknowledgement, timeouts, and safe behavior. Runtime message loops do not create implementation dependency cycles.
-
-Each module now also carries a **module identity block** used by S2:
+Each module carries a **module identity block**:
 
 | Field | Description |
 |---|---|
-| `module_id` | Unique identifier (e.g. `fft_engine`) |
+| `module_id` | Unique identifier (e.g. `signal_processor`) |
 | `subsystem_id` | Parent subsystem |
-| `layer` | Architectural layer (HAL, DSP, Decision, Output, …) |
+| `layer` | Architectural layer (HAL, Processing, Decision, Output, Presentation, Control, …) |
 | `depends_on` | List of modules whose contracts this module consumes |
 | `provides` | List of interface contracts this module produces |
 | `hw_dependency` | `true` / `false` |
 | `required_vl` | VL-0, VL-1, or VL-2 |
 | `traced_reqs` | List of `SYS-*` requirements allocated to this module |
 
-| Module | Layer | HW dep. | Required VL | Traced reqs |
-|---|---|---|---|---|
-| `iq_acquisition` | HAL | **yes** | VL-2 (HIL) | SYS-001 |
-| `fft_engine` | DSP | no | VL-1 (SIL) | SYS-002, SYS-003 |
-| `feature_extractor` | DSP | no | VL-1 (SIL) | SYS-004 |
-| `classifier` | Decision | no | VL-0 (unit) | SYS-005 |
-| `audio_demod` | Output | no | VL-1 (SIL) | SYS-006 |
-| `data_store` | Output | no | VL-0 (unit) | SYS-007 |
+Each edge in the dependency graph carries an **interface contract** (data type, schema version, units, latency). Each subsystem's implementation dependency graph must be acyclic. Each node carries a **verification profile**: `module_id`, `subsystem_id`, `layer`, `depends_on`, `provides`, `hw_dependency`, `required_vl`.
+
+The **implementation dependency graph** orders contract definition, subsystem bases, modules, and system integration. It must be acyclic so S3 can build with stubs. The separate **runtime interaction graph** describes live messages. It may contain intentional loops (e.g. telemetry → display → control), provided the contracts define ownership of state, acknowledgement, timeouts, and safe behavior. Runtime message loops do not create implementation dependency cycles.
+
+#### Generic example — single-subsystem extract
+
+| Module | Layer | HW dep. | VL | Traced reqs | depends_on | provides |
+|---|---|---|---|---|---|---|
+| `hw_acquisition` | HAL | **yes** | VL-2 | SYS-001 | — | `raw_samples.v1` |
+| `signal_processor` | Processing | no | VL-1 | SYS-002, SYS-003 | `hw_acquisition` | `processed_data.v1` |
+| `feature_extractor` | Processing | no | VL-1 | SYS-004 | `signal_processor` | `features.v1` |
+| `classifier` | Decision | no | VL-0 | SYS-005 | `feature_extractor` | `decision.v1` |
+
+The dependency graph is a chain (HAL → Processing → Decision); S2 slices it into four build passes. A multi-subsystem example adds cross-subsystem contracts (`telemetry.v1`, `control.v1`) with explicit producer/consumer, schema version, and failure behavior.
 
 ### 6.4 Optional supplied ML model
 
-**Status: uncertain.** This version defines the ML model only as an optional S1 input and a G1 readiness check. Its connection to S3 and G3 (training data generation, inference adapter, measurement at G3) is not implemented and is future work, together with MLOps (FW-005).
+A supplied ML model is a controlled input to a subsystem module, not a subsystem by itself. This box is present **only when S1 chooses an ML-based module or the GT requires one**; otherwise it and its G1 check are absent.
 
-An S1 design includes this box **only when it chooses an ML-based module or the Ground Truth explicitly requires one**. Otherwise the box and its G1 check are absent. The supplied model is a controlled input to a subsystem module, not a subsystem by itself. It is trained with Mock HAL data plus labelling or, failing that, with Real HW HAL data plus labelling. S1 does not train or select a model on behalf of the Build Package author.
-
-When used, S1 identifies the model file and weights by version and digest; names its supplying owner and provenance; records the training data source and labelling procedure; specifies the inference runtime, input and output schema, units, preprocessing, labels or thresholds, and postprocessing; and records the supplied performance metadata with its evaluation dataset and conditions. It budgets inference latency, memory, and any device dependency on the declared COTS target. A deterministic fake model response supports VL-0 integration, while later levels exercise the actual supplied model.
-
-Supplied performance metadata is prior evidence, not a G3 verdict. If S1 chooses ML but the model package or the fields needed to implement it are missing, G1 returns **FAIL** for completion of the input or design. Demonstrated infeasibility against the declared COTS requirements follows the RFD route. Automating this model lifecycle with MLOps is future work (FW-005).
+When used, S1 identifies the model file and weights by version and digest; names its supplying owner and provenance; records the training data source and labelling procedure; specifies the inference contract (runtime, I/O schema, units, preprocessing, postprocessing); and budgets inference latency, memory, and device dependency on the declared COTS target. A deterministic fake response supports VL-0 integration; later levels exercise the actual model. Supplied performance metadata is prior evidence, not a G3 verdict. Missing model package or fields → G1 **FAIL**; demonstrated infeasibility → RFD. S3/G3 integration and MLOps automation are future work (FW-005).
 
 ### 6.5 HAL substitution ladder and telemetry companion
 
-S1 declares the **HAL mode** in the design Meta: `HAL mode: mock-only` or `HAL mode: mock+real`. Every later stage reads it from the design. The HAL implementations share the same base-layer interface contract but differ in what produces `raw_iq`:
+S1 declares the **HAL mode** in the design Meta: `HAL mode: mock-only` or `HAL mode: mock+real`. Every later stage reads it from the design. The HAL implementations share the same base-layer interface contract but differ in what produces the raw data:
 
-- **Mock HAL** (mandatory in every mode). A software-only signal generator. At VL-0 it emits deterministic vectors (short, repeatable, edge-case coverage). At VL-1 it produces synthetic I/Q files at known SNR, modulation, and channel conditions using an FM-modulated software synthesiser or recorded golden captures. Each golden vector is versioned with a SHA-256 digest, generation parameters, the condition it simulates, and its expected output. The Mock HAL is the default data source for all sandwich-integration and SIL tests.
+- **Mock HAL** (mandatory in every mode). A software-only signal generator. At VL-0 it emits deterministic vectors (short, repeatable, edge-case coverage). At VL-1 it produces synthetic data files at known conditions using a software synthesiser or recorded golden captures. Each golden vector is versioned with a SHA-256 digest, generation parameters, the condition it simulates, and its expected output. The Mock HAL is the default data source for all sandwich-integration and SIL tests.
 
-- **Real HW HAL** (only in `mock+real`). The production HAL that interfaces with the declared COTS SDR. It serves two purposes: (a) executing the laboratory procedures recorded in the SyRS (§6 `PROTO-*`) to generate **real datasets** with the development team's calibration quality (screening grade, not normative, SyRS §4 Correction Chains) and declared tolerances in dBi (SyRS §5 Uncertainty Budgets); and (b) running the final field tests at VL-2. The calibration grade and tolerances are inputs recorded in the SyRS, not claims of V-SIL. The Real HW HAL may be declared at VL-0 (fake device API) for a cycle, so the software for the real hardware is built without validating metrics on it; G3.2 then does not fire and the honesty declaration states it.
+- **Real HW HAL** (only in `mock+real`). The production HAL that interfaces with the declared COTS device. It serves two purposes: (a) executing the laboratory procedures recorded in the SyRS (§6 `PROTO-*`) to generate **real datasets** with the development team's calibration quality (screening grade, not normative, SyRS §4 Correction Chains) and declared tolerances (SyRS §5 Uncertainty Budgets); and (b) running the final field tests at VL-2. The calibration grade and tolerances are inputs recorded in the SyRS, not claims of V-SIL. The Real HW HAL may be declared at VL-0 (fake device API) for a cycle, so the software for the real hardware is built without validating metrics on it; G3.2 then does not fire and the honesty declaration states it.
 
-In `mock-only`, the design has no Real HW HAL, no lab procedures, calibration, or tolerances, and no module with `hw_dependency: true`; it ignores SyRS §4–§6, and every claim is capped at VL-1 (§12.2). In `mock+real`, both HALs plug into the same base-layer port; swapping one for the other is the **HAL substitution** that moves between verification levels [11].
+- **PIL** (Processor-in-the-Loop). A verification configuration that uses the actual target processor with Mock HAL inputs. PIL is relevant when the compute unit differs from the development host and compiled code may behave differently under timing constraints. Every PIL claim stays VERIFIED, not VALIDATED, because the data source is synthetic. A dedicated G3.PIL sub-gate with structured timing and scheduling checks is future work (FW-002).
+
+In `mock-only`, the design has no Real HW HAL, no lab procedures, calibration, or tolerances, and no module with `hw_dependency: true`; it ignores SyRS §4–§6, and every claim is capped at VL-1 (§11.2). In `mock+real`, both HALs plug into the same base-layer port; swapping one for the other is the **HAL substitution** that moves between verification levels. The staged SIL→HIL progression follows industry practice [5][11]; V-SIL's specific Mock HAL/golden-vector/telemetry-companion adaptation is its own contribution.
 
 S1 also specifies a **telemetry companion**, mandatory in every design and every test run: a lightweight, non-intrusive process that runs alongside every test execution and records compute-unit state — CPU utilisation, available memory, temperature, dropped buffers, and scheduling latency. It must not interfere with the system under test; its own resource footprint is declared and bounded. The companion attaches its readings to every evidence record so that G3 can determine whether the compute unit was within its operating envelope during a test. The telemetry companion is verification infrastructure, not a system module: it belongs to the methodology, not to the software. It has no `SYS-*`, does not appear in the implementation DAG, is absent from the Verified Prototype's module evidence, and is never shipped in the delivered software.
 
-The Mock HAL, the golden vectors with their manifest, the telemetry companion, the stubs, the fake peers, and the drivers form the **verification kit**. S3 builds the kit in its initial layer, before any module, together with the Real HW HAL and its fake device API in `mock+real` (§11).
+The Mock HAL, the golden vectors with their manifest, the telemetry companion, the stubs, the fake peers, and the drivers form the **verification kit**. S3 builds the kit in its initial layer, before any module, together with the Real HW HAL and its fake device API in `mock+real` (§10).
 
-S1's design Meta also declares one **`Toolchain`** entry per subsystem: `SUB-xxx: <package> · <language> · <package manager> · <test runner>`, for example `SUB-001: fm_edge · Python 3.12 · uv · pytest; SUB-002: dashboard · TypeScript · pnpm · vitest`. `<package>` is a valid identifier and names `src/<package>/`. This version allows Python with uv and pytest, and TypeScript with pnpm and vitest. S3 builds with the declared toolchain and never chooses another; an empty or incomplete `Toolchain` is a design defect.
+S1's design Meta also declares one **`Toolchain`** entry per subsystem: `SUB-xxx: <package> · <language> · <package manager> · <test runner>`. `<package>` is a valid identifier and names `src/<package>/`. S3 builds with the declared toolchain and never chooses another; an empty or incomplete `Toolchain` entry is a design defect.
 
 ---
 
@@ -353,18 +315,18 @@ G1 runs no script. The agent that prepares it validates by itself: it reads the 
 8. **Telemetry companion.** The companion spec declares what it monitors, its sampling interval, its resource budget, and that its footprint is bounded below a declared threshold.
 9. **Supplied ML model, when used.** The weights, metadata, training data source, and labelling procedure are identified, the inference contract is implementable, and the COTS budget is credible. This check is omitted when the design has no ML model.
 10. **Toolchain availability.** On the development machine, the language runtime and package manager of every `Toolchain` entry answer their version command. The agent installs a missing tool only after a brief yes from the user; a refused or failed install is an open finding.
-11. **Module decomposition completeness.** *(New in v4.)* Every module has a unique `module_id`, a `subsystem_id`, a `layer`, a `depends_on` list, a `provides` list, a `hw_dependency` flag, a `required_vl`, and a `traced_reqs` list. Every `SYS-*` in the GT appears in at least one module's `traced_reqs`. No module has an empty `traced_reqs`.
-12. **Topological slicing feasibility.** *(New in v4.)* The implementation dependency graph admits a topological sort. Every module's `depends_on` edges point only to modules or base-layer contracts that will be available (built or stubbed) before the module is scheduled.
+11. **Module decomposition completeness.** Every module across all subsystems has a unique `module_id`, a `subsystem_id`, a `layer`, a `depends_on` list, a `provides` list, a `hw_dependency` flag, a `required_vl`, and a `traced_reqs` list. Every `SYS-*` in the GT appears in at least one module's `traced_reqs`. No module has an empty `traced_reqs`.
+12. **Topological slicing feasibility.** The implementation dependency graph admits a topological sort. Every module's `depends_on` edges point only to modules or base-layer contracts that will be available (built or stubbed) before the module is scheduled.
 
-**PASS** → S2. **FAIL** → S1. **RFD** → §13.2, when the requirements are infeasible on the declared COTS platform.
+**PASS** → S2. **FAIL** → S1. **RFD** → §12.2, when the requirements are infeasible on the declared COTS platform.
 
-The [S1/G1 design template](S1_G1_template.md) expands these check families into fifteen general review items (thirteen from v3 plus two new module-decomposition items) and one conditional ML item, including design decisions, COTS coherence, HAL ladder, telemetry companion, toolchain availability, module decomposition, and risk assessment.
+The [S1/G1 design template](S1_G1_template.md) expands these check families into review items including design decisions, COTS coherence, HAL ladder, telemetry companion, toolchain availability, module decomposition, and risk assessment.
 
 ---
 
 ## 8 S2 — Module Planning (Agile-V Layer)
 
-**New in v4.** S2 is the bridge between system design (S1) and per-module implementation (S3). It takes the approved S1 design and produces a **backlog of module plans** ordered by topological dependency, so that each module can be implemented in a fresh context (P7) without losing traceability to the Ground Truth (P8).
+S2 is the bridge between system design (S1) and per-module implementation (S3). It takes the approved S1 design and produces a **backlog of module plans** ordered by topological dependency, so that each module can be implemented in a fresh context (P7) without losing traceability to the Ground Truth (P8).
 
 ### 8.1 The Agile-V model
 
@@ -411,11 +373,23 @@ flowchart LR
     L0 --> L1 --> L2 --> L3
 ```
 
-S2 performs a topological sort of the implementation dependency graph from S1 and partitions the modules into **slices**. Slice 0 is always the base layers and verification kit. Within a slice, modules that share no dependency may be built in parallel. Each module in a slice builds against the **real contracts** of modules from earlier slices and the **stub contracts** of modules in later slices (interface-first with Mock-HAL, P6).
+S2 performs a topological sort of the implementation dependency graph from S1 and partitions the modules into **slices**. Slice 0 is always the base layers and verification kit. Within a slice, modules that share no dependency may be built in parallel. Each module in a slice builds against the **real contracts** of modules from earlier slices and the **stub contracts** of modules in later slices (interface-first with Mock HAL, P6).
+
+#### Generic example — topological slicing
+
+| Slice | Subsystem A (processing) | Subsystem B (client) |
+|---|---|---|
+| 0 | Base layer + verification kit | Base layer + verification kit |
+| 1 | `hw_acquisition`, `output_formatter` | `dashboard`, `controls` |
+| 2 | `signal_processor` | `alerts`, `history` |
+| 3 | `feature_extractor` | — |
+| 4 | `classifier`, `data_store` | — |
+| 5 | Cross-subsystem contract tests | Cross-subsystem contract tests |
+| 6 | System-path integration | System-path integration |
 
 ### 8.3 PLAN.md format
 
-S2 produces one `PLAN.md` per module. This is the **sole input** to S3's fresh context for that module.
+S2 produces one `PLAN.md` per module. PLAN.md is the **specification entry-point** for S3's fresh context for that module; §10.1 lists the full context set that accompanies it.
 
 ```markdown
 # PLAN.md — <module_id>
@@ -434,20 +408,20 @@ S2 produces one `PLAN.md` per module. This is the **sole input** to S3's fresh c
 ## Traced Requirements
 | Req ID | Text | Delta | Source |
 |--------|------|-------|--------|
-| SYS-002 | FFT resolution ≥ 1024 bins | ADDED | GT v1.0 |
-| SYS-003 | Latency ≤ 50 ms | ADDED | GT v1.0 |
+| SYS-002 | Processing resolution ≥ N bins | ADDED | GT v1.0 |
+| SYS-003 | Latency ≤ T ms | ADDED | GT v1.0 |
 
 ## Interface Contracts
 ### Consumes
-- `raw_iq` from `iq_acquisition` (schema v1, units: complex float32, rate: continuous)
+- `raw_samples.v1` from `hw_acquisition` (schema v1, units: <type>, rate: continuous)
 
 ### Produces
-- `psd_estimate` (schema v1, units: dB/Hz, latency: ≤ 50 ms)
+- `processed_data.v1` (schema v1, units: <type>, latency: ≤ T ms)
 
 ## Ordered Tasks
-1. Implement FFT pipeline with configurable window
-2. Wire to base-layer `raw_iq` consumer contract
-3. Expose `psd_estimate` through base-layer producer contract
+1. Implement processing pipeline with configurable parameters
+2. Wire to base-layer consumer contract
+3. Expose producer contract through base-layer interface
 4. Unit tests: edge cases (empty buffer, single sample, max-length)
 5. Bottom-up integration: module + driver vs base
 
@@ -455,7 +429,7 @@ S2 produces one `PLAN.md` per module. This is the **sole input** to S3's fresh c
 | Level | What | Data source | Pass criterion |
 |-------|------|-------------|----------------|
 | VL-0 | Unit + sandwich | Mock HAL deterministic vectors | All pass |
-| VL-1 | SIL measured | Mock HAL synthetic I/Q | Latency ≤ 50 ms, resolution ≥ 1024 |
+| VL-1 | SIL measured | Mock HAL synthetic data | Latency ≤ T ms, resolution ≥ N |
 
 ## Delta Traceability
 - GT version: 1.0
@@ -463,8 +437,12 @@ S2 produces one `PLAN.md` per module. This is the **sole input** to S3's fresh c
 - Deltas from prior modules affecting this module: none
 
 ## Risks
-- R1: FFT library may not meet latency on COTS target → mitigation: benchmark in S3, escalate to RFD if exceeded
+- R1: Library may not meet latency on COTS target → mitigation: benchmark in S3, escalate to RFD if exceeded
 ```
+
+#### 8.3.1 INFRA-PLAN.md for Slice 0
+
+Slice 0 (base layers and verification kit) uses a distinct plan format, **INFRA-PLAN.md**, because Slice 0 does not implement a module — it builds the foundation that all modules depend on. INFRA-PLAN.md specifies: (a) base-layer orchestration, HAL, and routing for each subsystem; (b) the full verification kit (Mock HAL, golden vectors with manifest, telemetry companion, stubs, fake peers, drivers); (c) in `mock+real`, the Real HW HAL and its fake device API; (d) top-down integration tests (base + all stubs). The §10.2 implementation flowchart Step 0 loads INFRA-PLAN.md for Slice 0 and PLAN.md for Slices 1+.
 
 ### 8.4 Delta traceability (P8)
 
@@ -472,23 +450,23 @@ Each PLAN.md records the **GT version** it was derived from and any **deltas** t
 
 ```
 Delta: MODIFIED SYS-003
-  Before: Latency ≤ 50 ms
-  After:  Latency ≤ 75 ms
-  Reason: COTS FFT library floor measured at 62 ms
+  Before: Latency ≤ T ms
+  After:  Latency ≤ T' ms
+  Reason: COTS library floor measured at T'' ms
   Authority: RFD-002 approved by Build Package author
 ```
 
-The deltas follow the OpenSpec [21] convention: **ADDED** (new requirement discovered during implementation), **MODIFIED** (existing requirement changed), **REMOVED** (requirement dropped). Each delta names its authority (RFD, design review, or Build Package author decision). The system-level GT is updated after each module's G3 pass, keeping it a **living document** without requiring a monolithic re-review.
+The deltas follow the OpenSpec [21] convention, scoped by V-SIL to the module boundary: **ADDED** (new requirement discovered during implementation), **MODIFIED** (existing requirement changed), **REMOVED** (requirement dropped), **RENAMED** (identifier changed without semantic change). Each delta names its authority (RFD, design review, or Build Package author decision). The system-level GT is updated after each module's G3 pass, keeping it a **living document** without requiring a monolithic re-review.
 
 ### 8.5 Interaction with S1 living design
 
-S2 may discover that the S1 design needs adjustment (e.g. a missing interface, an undeclared dependency). Minor adjustments (adding a field to a contract) are recorded as deltas in the affected PLAN.md files. Structural changes (new module, changed DAG topology) route back to S1 through G2 FAIL or G3 design-defect feedback.
+S2 may discover that the S1 design needs adjustment (e.g. a missing interface, an undeclared dependency). **Minor adjustments** — defined as changes that do not alter the contract version or break existing stubs (e.g. adding an optional field to a contract) — are recorded as deltas in the affected PLAN.md files and must be reflected back to the S1 design document so the two stay in sync. **Structural changes** (new module, changed DAG topology, contract version bump, any change that breaks existing stubs) route back to S1 through G2 FAIL or G3 design-defect feedback.
 
 ---
 
 ## 9 G2 — Module Plan Micro-Gate
 
-**New in v4.** G2 validates each PLAN.md before the module enters S3. It is lightweight by design: the full design review happened at G1; G2 checks only that the plan is **self-contained, traceable, and buildable**.
+G2 validates each PLAN.md before the module enters S3. It is lightweight by design: the full design review happened at G1; G2 checks only that the plan is **self-contained, traceable, and buildable**.
 
 G2 runs once per module, immediately after S2 produces its PLAN.md and before S3 begins work on that module.
 
@@ -498,7 +476,7 @@ G2 runs once per module, immediately after S2 produces its PLAN.md and before S3
 |---|---|---|
 | 1 | **Completeness** | All PLAN.md sections are present and non-empty |
 | 2 | **Traceability** | Every `traced_reqs` entry exists in the current GT; deltas reference valid authority |
-| 3 | **Contract consistency** | Every `consumes` contract is provided by a module in an earlier or same slice; every `provides` contract matches the S1 design |
+| 3 | **Contract consistency** | Every `consumes` contract is provided by a module in an earlier slice or by the base layer; every `provides` contract matches the S1 design |
 | 4 | **Task ordering** | Tasks respect the dependency order; no task references an artifact that a prior task has not produced |
 | 5 | **Verification feasibility** | The verification plan's data sources and pass criteria are achievable with the declared HAL mode and available verification kit |
 | 6 | **Fresh-context sufficiency** | The PLAN.md plus its referenced contracts contain enough information to implement the module without access to the full system design or other modules' source code |
@@ -516,13 +494,11 @@ G2 runs once per module, immediately after S2 produces its PLAN.md and before S3
 
 ## 10 S3 — Per-Module Implementation and System Integration
 
-S3 is the renamed v3 S2, enhanced with the **fresh-context protocol** (P7).
-
 ### 10.1 Fresh-context protocol
 
 Each module is implemented in an **isolated context** that carries:
 
-1. The module's **PLAN.md** (from S2, approved by G2)
+1. The module's **PLAN.md** (from S2, approved by G2) — the specification entry-point
 2. The **interface contracts** it consumes and produces (from S1)
 3. The **base-layer API** of its subsystem
 4. The **verification kit** relevant to its declared VL
@@ -539,12 +515,14 @@ flowchart TD
     classDef test fill:#f0fdf4,stroke:#16a34a,color:#14532d
     classDef stub fill:#f3f4f6,stroke:#9ca3af,color:#374151,stroke-dasharray:5 3
     classDef plan fill:#ede9fe,stroke:#7c3aed,color:#3b0764
+    classDef infra fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
 
-    subgraph STEP0["Step 0 — Module context (P7)"]
-        PLAN["Load PLAN.md<br/>+ referenced contracts"]:::plan
+    subgraph STEP0["Step 0 — Context loading"]
+        PLAN_S0["Slice 0: Load INFRA-PLAN.md"]:::infra
+        PLAN_SN["Slices 1+: Load PLAN.md<br/>+ referenced contracts"]:::plan
     end
 
-    subgraph STEP1["Step 1 — Initial layer: base + verification kit"]
+    subgraph STEP1["Step 1 — Initial layer: base + verification kit (Slice 0)"]
         B["Implement base layer<br/>orchestration · HAL · routing"]:::base
         KIT["Build verification kit<br/>Mock HAL · golden vectors + manifest<br/>telemetry companion · fake peers · drivers"]:::stub
         STUBS["Generate stubs<br/>from G1 contracts"]:::stub
@@ -552,14 +530,15 @@ flowchart TD
         B --> KIT --> STUBS --> TD_
     end
 
-    subgraph STEP2["Step 2 — Each module (topological slice order)"]
+    subgraph STEP2["Step 2 — Each module (topological slice order, Slices 1+)"]
         IMPL["Implement module<br/>from PLAN.md tasks"]:::mod
         UT["Unit test<br/>in isolation"]:::test
         BU["Bottom-up integration<br/>module + driver vs base"]:::test
         IMPL --> UT --> BU
     end
 
-    PLAN --> STEP1
+    PLAN_S0 --> STEP1
+    PLAN_SN --> STEP2
     STEP1 --> STEP2
     STEP2 --> CONTRACT["Step 3 — Cross-subsystem contract tests<br/>real subsystems + fake peers"]:::test
     CONTRACT --> SYSTEM["Step 4 — System paths<br/>connected subsystems"]:::test
@@ -567,7 +546,7 @@ flowchart TD
 
 Top-down (base → stubs) + bottom-up (module → driver → base) = **sandwich integration testing** [1][2][13].
 
-Step 1 is the **initial layer**: before any module, S3 builds each subsystem base and makes every tool ready — the verification kit of §6.5 and, in `mock+real`, the Real HW HAL with its fake device API. S3 writes every test, including the VL-1 tests for modules and paths with `required_vl` VL-1 or higher, without claiming them; G3 only runs them (§12.3).
+Step 1 is the **initial layer**: before any module, S3 builds each subsystem base and makes every tool ready — the verification kit of §6.5 and, in `mock+real`, the Real HW HAL with its fake device API. S3 writes every test, including the VL-1 tests for modules and paths with `required_vl` VL-1 or higher, without claiming them; G3 only runs them (§11.3).
 
 Each subsystem lives in `src/<subsystem>/` and is built with its declared toolchain; the verification kit, tests included, lives in `verification/` and is never shipped; one command runs each verification level (`verification/run.sh vl0`, `verification/run.sh vl1`); and the delivered code has no dependency on CodeAnvil.
 
@@ -577,13 +556,13 @@ Define cross-subsystem contracts first so each subsystem can be built independen
 
 ### 10.3 Data sources by verification level
 
-The HAL substitution ladder determines what feeds the pipeline at each level. The **telemetry companion** runs during every test at every level. VL-2 needs `HAL mode: mock+real`.
+The HAL substitution ladder (§6.5) determines what feeds the pipeline at each level. The telemetry companion (§6.5) runs at every level. VL-2 needs `HAL mode: mock+real`.
 
 | Level | Data source | HAL used | Telemetry companion |
 |---|---|---|---|
-| **VL-0** | Deterministic golden vectors (short, repeatable, edge-case) | Mock HAL | Records UC state; attached to evidence |
-| **VL-1** | Synthetic I/Q at known SNR, modulation, channel conditions | Mock HAL | Records UC state; attached to evidence |
-| **VL-2** | Real RF via COTS SDR; datasets generated following the SyRS lab procedures (`PROTO-*`) with declared calibration and tolerances; only in `mock+real` | Real HW HAL | Records UC state; attached to evidence |
+| **VL-0** | Deterministic golden vectors (short, repeatable, edge-case) | Mock HAL | Active |
+| **VL-1** | Synthetic data at known conditions | Mock HAL | Active |
+| **VL-2** | Real data via COTS device; SyRS lab procedures (`PROTO-*`) with declared calibration and tolerances; only in `mock+real` | Real HW HAL | Active |
 
 ### 10.4 Golden vector governance
 
@@ -603,8 +582,6 @@ Each golden vector or synthetic capture used by the Mock HAL is a controlled art
 
 ## 11 G3 — Adaptive Verification Gate
 
-G3 is the renamed v3 G2, enhanced with a **plan-defect** routing class that feeds back to S2.
-
 ### 11.1 Verification levels
 
 ```mermaid
@@ -614,13 +591,13 @@ flowchart LR
     classDef hil fill:#fee2e2,stroke:#dc2626,color:#7f1d1d,stroke-dasharray:5 3
 
     VL0["VL-0 — Logic<br/>Unit + sandwich + subsystem contracts<br/>Deterministic system paths · MANDATORY"]:::mandatory
-    VL1["VL-1 — Mock / SIL<br/>+ measured multi-subsystem system test<br/>Synthetic I/Q · GnuRadio · OPTIONAL"]:::optional
+    VL1["VL-1 — Mock / SIL<br/>+ measured multi-subsystem system test<br/>Synthetic data · OPTIONAL"]:::optional
     VL2["VL-2 — HIL<br/>+ end-to-end acceptance where claimed<br/>Real HW · representative link · OPTIONAL<br/>only in mock+real"]:::hil
 
     VL0 -->|"user decides ▸"| VL1 -->|"user decides ▸"| VL2
 ```
 
-Each level includes all tests from the levels below. The HAL substitution ladder (§6.5) determines what feeds the pipeline: Mock HAL at VL-0 and VL-1, Real HW HAL at VL-2 (only in `mock+real`). The telemetry companion runs at every level.
+Each level includes all tests from the levels below. The HAL substitution ladder (§6.5) determines the data source; the telemetry companion (§6.5) runs at every level.
 
 ### 11.2 Adaptive rule
 
@@ -628,14 +605,14 @@ The user chooses the verification level per module and per system path, per cycl
 
 1. **Floor.** Every module and every declared cross-subsystem contract and system path reaches VL-0 in every cycle.
 2. **Honesty.** No module or end-to-end claim is higher than the environment actually tested. Passing subsystems individually does not prove a cross-subsystem requirement.
-3. **Telemetry context.** Every evidence record includes the telemetry companion's readings for the compute unit during that test. Evidence produced while the UC was outside its declared operating envelope (temperature, CPU saturation, dropped buffers) is flagged and may be invalidated by the reviewer.
-4. **HAL mode ceiling.** `mock-only` caps every claim at VL-1. `mock+real` allows VL-2, but each module and path still declares its level per cycle: the Real HW HAL may be declared at VL-0 (fake device API) for a cycle, in which case G3.2 does not fire and the honesty declaration states it. PIL (Processor-in-the-Loop) uses the actual target processor with Mock HAL inputs; every PIL claim stays VERIFIED, not VALIDATED.
+3. **Telemetry context.** Every evidence record includes telemetry companion readings (§6.5). Evidence produced outside the UC's declared operating envelope is flagged and may be invalidated.
+4. **HAL mode ceiling.** `mock-only` caps every claim at VL-1. `mock+real` allows VL-2, but each module and path still declares its level per cycle: the Real HW HAL may be declared at VL-0 (fake device API) for a cycle, in which case G3.2 does not fire and the honesty declaration states it. PIL uses the actual target processor with Mock HAL inputs; every PIL claim stays VERIFIED, not VALIDATED (see §2 and §6.5).
 
 | Scenario | User declares | G3 checks |
 |---|---|---|
 | Fast iteration | VL-0 all | Unit + sandwich for every module; contract and deterministic path tests for connected subsystems |
-| DSP validation | VL-1 for DSP; VL-0 rest | Mock/SIL for DSP; VL-0 floor for every subsystem path |
-| Pre-release (`mock+real`) | VL-1 for the edge → UI display path; VL-2 for `iq_acquisition` | Measured multi-subsystem path plus HIL acquisition |
+| Processing validation | VL-1 for processing; VL-0 rest | Mock/SIL for processing modules; VL-0 floor for every subsystem path |
+| Pre-release (`mock+real`) | VL-1 for A→B data path; VL-2 for `hw_acquisition` | Measured multi-subsystem path plus HIL acquisition |
 | Full release | All modules and system paths at `required_vl` | Every claim at its S1-declared level |
 
 ### 11.3 Sub-gates
@@ -647,26 +624,12 @@ G3 runs the tests S3 wrote and writes none; a declared level with no test is a m
 | Sub-gate | Fires when | Checks |
 |---|---|---|
 | **G3.0** | Always | Unit + sandwich, cross-subsystem contract, and deterministic system-path tests pass; Mock HAL golden vectors; telemetry companion confirms UC nominal |
-| **G3.1** | VL-1+ declared for a module or path | Mock HAL synthetic I/Q; Mock/SIL system tests across affected subsystems pass; metrics within thresholds; telemetry companion confirms UC nominal |
-| **G3.2** | VL-2 declared for a module or path | Real HW HAL on COTS SDR (only in `mock+real`); enrollment required (see above); datasets from the SyRS lab procedures (`PROTO-*`) with declared calibration and tolerances; for cross-subsystem paths, a representative link; measurements within criteria; telemetry companion confirms UC nominal |
+| **G3.1** | VL-1+ declared for a module or path | Mock HAL synthetic data; Mock/SIL system tests across affected subsystems pass; metrics within thresholds; telemetry companion confirms UC nominal |
+| **G3.2** | VL-2 declared for a module or path | Real HW HAL on COTS device (only in `mock+real`); enrollment required (see above); datasets from the SyRS lab procedures (`PROTO-*`) with declared calibration and tolerances; for cross-subsystem paths, a representative link; measurements within criteria; telemetry companion confirms UC nominal |
 
 ### 11.4 Failure classification and routing
 
-**Operational vs defect.** Before routing a G3 failure, classify it. A permission, driver, group, udev, or USB-access problem on the target DUT is **operational** — it must be fixed on the DUT and G3 re-run; it is never a module or design defect and must not route to S3, S2, or S1. A transient SSH, clock, or setup fault is operational in the same way. Only a genuine behavioral failure of the delivered code under correct operating conditions enters the defect classification below.
-
-The five first-class G3 outcomes are:
-
-| Outcome | Routes to | Example |
-|---|---|---|
-| **Operational fix** | Fix DUT → re-run G3 | USB access, SSH auth, missing udev rule |
-| **Module defect** | S3 | FFT output wrong; UI deserializes valid message incorrectly |
-| **Plan defect** *(new in v4)* | S2 | PLAN.md omitted a contract; verification plan underspecified; task ordering wrong |
-| **Design defect** | S1 | DAG has undeclared dependency; cross-subsystem contract incomplete |
-| **RFD** | §13.2 | Requirements infeasible on COTS platform |
-
-**Self-diagnosis:** if a module that was *not* changed fails during re-testing → undeclared dependency → design defect → S1.
-
-*Future work (FW-005, §6.4).* For an ML-based module or path, G3 measures the supplied model *inside the implemented system* at the declared level and checks the relevant `SYS-*` criteria. The performance metadata received at S1 is context for test design, not a substitute for those measurements.
+G3 failures are classified into five outcomes — operational fix, module defect, plan defect, design defect, or RFD — and routed per §12. Before routing, distinguish **operational** faults (DUT permissions, SSH, udev — fix the target and re-run G3) from **defects** in the delivered code. Self-diagnosis rule: if a module that was *not* changed fails during re-testing → undeclared dependency → design defect → S1.
 
 ---
 
@@ -716,10 +679,10 @@ A **defect** means V-SIL can fix it internally. The implementation, the plan, or
 
 | Class | Routes to | Example |
 |---|---|---|
-| Operational problem | Fix DUT → re-run G3 | `codeanvil-agent` cannot open the HackRF; SSH auth failure; missing udev rule |
+| Operational problem | Fix DUT → re-run G3 | Target device access failure; SSH auth failure; missing udev rule |
 | Design defect | S1 | DAG has undeclared dependency; cross-subsystem contract or state ownership is incomplete |
-| Plan defect *(new in v4)* | S2 | PLAN.md omitted a needed contract; verification plan missing a declared level; task ordering violated a dependency |
-| Module or integration defect | S3 | FFT output is wrong; UI deserializes a valid edge message incorrectly |
+| Plan defect | S2 | PLAN.md omitted a needed contract; verification plan missing a declared level; task ordering violated a dependency |
+| Module or integration defect | S3 | Processing output is wrong; UI deserializes a valid message incorrectly |
 
 **Self-diagnosis:** if a module that was *not* changed fails during re-testing → undeclared dependency → design defect → S1.
 
@@ -734,7 +697,7 @@ An RFD can be emitted from **S1, G1, or any G3 sub-gate**. S0 and G0 do not emit
 | S1 | Pipeline latency exceeds requirement under any partitioning on this HW |
 | G1 | Design review concludes that a latency budget cannot be met on this HW, by the reviewed design or by any other partitioning |
 | G3.0 | Unit tests reveal that two normative requirements conflict mathematically |
-| G3.1 | SIL metrics show P_d and P_fa cannot simultaneously meet thresholds |
+| G3.1 | SIL metrics show two performance thresholds cannot simultaneously be met |
 | G3.2 | HIL shows real hardware noise floor exceeds assumed budget |
 
 At S1 and G1 nothing has been measured yet, so the evidence is analysis and names no verification level (P4).
@@ -747,44 +710,27 @@ Per ECSS [16], MIL-HDBK-61A [17], and NASA NPR 7150.2 [18]:
 Request for Deviation — RFD-001
 
   Conflicting requirements:
-    STK-007: Latency ≤ 100 ms    (source: ITU-R SM.1880)
-    STK-012: P_d ≥ 0.95 @ 10 dB  (source: national regulator)
+    STK-xxx: <requirement A>    (source: <standard or regulator>)
+    STK-yyy: <requirement B>    (source: <standard or regulator>)
 
   Evidence (from G3.1, VL-1):
-    FFT 4096 → P_d 0.96, latency 142 ms  — STK-012 met, STK-007 violated
-    FFT 2048 → P_d 0.91, latency 71 ms   — STK-007 met, STK-012 violated
+    Config 1 → requirement B met, requirement A violated
+    Config 2 → requirement A met, requirement B violated
 
   Trade-off options:
-    A) Relax latency to ≤ 150 ms         → both met
-    B) Relax P_d to ≥ 0.92               → both met
-    C) Dual-mode: fast (2048) + deep (4096) → both met, adds complexity
+    A) Relax requirement A     → both met
+    B) Relax requirement B     → both met
+    C) Dual-mode design        → both met, adds complexity
 
   Impact analysis:
-    Option A: requires normative waiver from ITU-R SM.1880 §4.3
+    Option A: requires normative waiver from <standard>
     Option B: screening-grade only, not compliance-grade
     Option C: new module, new interface contract, S1 rework
 
-  Recommendation: C
+  Recommendation: <selected option with rationale>
 ```
 
-### 12.4 Distinction summary
-
-```mermaid
-flowchart LR
-    classDef defect fill:#fef3c7,stroke:#d97706,color:#78350f
-    classDef plan fill:#ede9fe,stroke:#7c3aed,color:#3b0764
-    classDef rfd fill:#fee2e2,stroke:#dc2626,color:#7f1d1d
-    classDef ops fill:#f3f4f6,stroke:#6b7280,color:#374151
-
-    O["Operational fix<br/>DUT/environment problem<br/>Fix target → re-run G3<br/>No S1, S2, or S3 change"]:::ops
-    P["Plan defect<br/>PLAN.md wrong<br/>Fix in S2"]:::plan
-    D["Design / module defect<br/>Requirements achievable<br/>Fix inside V-SIL"]:::defect
-    R["RFD<br/>Requirements infeasible<br/>COTS cannot deliver both<br/>Build Package must change"]:::rfd
-
-    O ---|"different from"| P ---|"different from"| D ---|"different from"| R
-```
-
-### 12.5 Failure triage and draft mode (S0 · G0 · G1)
+### 12.4 Failure triage and draft mode (S0 · G0 · G1)
 
 The requirements stages are exploratory: the Ground Truth is corrected many times before it is sound. V-SIL v4 softens the *loop*, not the *checks*, through two devices scoped to S0, G0 and G1 — never to S2, S3, or G3.
 
@@ -800,11 +746,11 @@ The Verified Prototype lists the delivered tree (`src/<subsystem>/`) apart from 
 
 ```
 Verified Prototype — V-SIL v4
-  Cycle: pre_release_01
+  Cycle: <cycle_name>
   HAL mode: mock+real
 
   Delivered software (shipped):
-    src/fm_edge/, src/dashboard/ — no CodeAnvil dependency
+    src/subsystem_a/, src/subsystem_b/ — no CodeAnvil dependency
   Module plans (not shipped):
     plans/ — PLAN.md per module, delta traceability log
   Verification kit (not shipped):
@@ -812,27 +758,29 @@ Verified Prototype — V-SIL v4
                     companion, stubs, fake peers, drivers, tests
   Verifier context: read-only verifier subagent (fresh context)
 
-  Module evidence:
-    iq_acquisition:    VL-2 (HIL)  — Real HW HAL, HackRF One, FM 88–108 MHz
-                       Plan: plans/iq_acquisition/PLAN.md (slice 1)
-    fft_engine:        VL-1 (SIL)  — Mock HAL, golden I/Q (vectors v1.2, SHA bc3f…)
-                       Plan: plans/fft_engine/PLAN.md (slice 1)
-    feature_extractor: VL-1 (SIL)  — Mock HAL, synthetic PSD at known SNR
-                       Plan: plans/feature_extractor/PLAN.md (slice 2)
-    classifier:        VL-0 (logic)— Mock HAL, deterministic vectors
-                       Plan: plans/classifier/PLAN.md (slice 2)
-    audio_demod:       VL-1 (SIL)  — Mock HAL, synthetic FM-modulated I/Q
-                       Plan: plans/audio_demod/PLAN.md (slice 1)
-    data_store:        VL-0 (logic)— Mock HAL, deterministic vectors
-                       Plan: plans/data_store/PLAN.md (slice 2)
-    dashboard:         VL-1 (SIL)  — edge messages on simulated link
-                       Plan: plans/dashboard/PLAN.md (slice 1)
-    controls:          VL-0 (logic)— command and acknowledgement vectors
-                       Plan: plans/controls/PLAN.md (slice 1)
-    alerts:            VL-0 (logic)— unit + sandwich integration
-                       Plan: plans/alerts/PLAN.md (slice 2)
-    history:           VL-0 (logic)— unit + sandwich integration
-                       Plan: plans/history/PLAN.md (slice 2)
+  Module evidence (Subsystem A — processing):
+    hw_acquisition:      VL-2 (HIL)  — Real HW HAL, COTS device
+                         Plan: plans/hw_acquisition/PLAN.md (slice 1)
+    signal_processor:    VL-1 (SIL)  — Mock HAL, golden vectors (v1.2, SHA bc3f…)
+                         Plan: plans/signal_processor/PLAN.md (slice 2)
+    feature_extractor:   VL-1 (SIL)  — Mock HAL, synthetic data at known conditions
+                         Plan: plans/feature_extractor/PLAN.md (slice 3)
+    classifier:          VL-0 (logic)— Mock HAL, deterministic vectors
+                         Plan: plans/classifier/PLAN.md (slice 4)
+    output_formatter:    VL-1 (SIL)  — Mock HAL, synthetic processed data
+                         Plan: plans/output_formatter/PLAN.md (slice 1)
+    data_store:          VL-0 (logic)— Mock HAL, deterministic vectors
+                         Plan: plans/data_store/PLAN.md (slice 4)
+
+  Module evidence (Subsystem B — client):
+    dashboard:           VL-1 (SIL)  — subsystem A messages on simulated link
+                         Plan: plans/dashboard/PLAN.md (slice 1)
+    controls:            VL-0 (logic)— command and acknowledgement vectors
+                         Plan: plans/controls/PLAN.md (slice 1)
+    alerts:              VL-0 (logic)— unit + sandwich integration
+                         Plan: plans/alerts/PLAN.md (slice 2)
+    history:             VL-0 (logic)— unit + sandwich integration
+                         Plan: plans/history/PLAN.md (slice 2)
 
   Delta traceability log:
     GT version at S2 entry: 1.0
@@ -840,9 +788,9 @@ Verified Prototype — V-SIL v4
     GT version at G3 exit: 1.0
 
   Subsystem and system-path evidence:
-    edge -> UI occupancy.v1: VL-1 — schema + latency on simulated link
-    UI -> edge configure.v1: VL-0 — commands, retries, duplicate handling
-    PATH-001 / SYS-002 occupancy display: VL-1 — edge + UI, Mock HAL synthetic RF
+    A → B telemetry.v1: VL-1 — schema + latency on simulated link
+    B → A control.v1: VL-0 — commands, retries, duplicate handling
+    PATH-001 / SYS-002 data display: VL-1 — subsystem A + B, Mock HAL synthetic data
 
   Telemetry companion report:
     All tests: UC within operating envelope
@@ -853,10 +801,10 @@ Verified Prototype — V-SIL v4
     VL-1 modules: VERIFIED against synthetic data (Mock HAL).
     VL-2 modules: VALIDATED on real hardware (Real HW HAL);
                   calibration: screening grade per SyRS §4;
-                  tolerances: ±2.1 dBi declared by development team (SyRS §5).
+                  tolerances: declared by development team (SyRS §5).
     VL-0 modules: VERIFIED at logic level only.
     SYS-002: VERIFIED across connected subsystems with synthetic input;
-             no real-link or HIL latency claim.
+             no real-link or HIL claim.
     Telemetry companion: UC nominal during all test executions.
 
   RFDs issued: 0
@@ -864,132 +812,22 @@ Verified Prototype — V-SIL v4
 
 ### 13.1 Optional future work register
 
-After G3, the prototype may include proposals for later **software versions**. Each entry records an ID, the proposed capability or improvement, its origin and evidence, a candidate version, a decision owner, dependencies, and a proposed acceptance criterion. An empty register can be omitted. The Build Package author decides whether a proposal enters a later version; an accepted proposal becomes new input at S0 and G0. Future CI/CD automation is a possible infrastructure entry for a later version; building that pipeline is outside this version of V-SIL.
+After G3, the prototype may include proposals for later software versions. Each entry records an ID, capability, origin, candidate version, decision owner, dependencies, and acceptance criterion. The Build Package author decides what enters a later version; an accepted proposal becomes new S0 input. A failing current `SYS-*` remains a defect or RFD — the register cannot turn it into a passing claim.
 
-Only work explicitly outside the current cycle's approved scope belongs here. A failing current `SYS-*` remains a defect to correct or, if infeasible on the declared COTS platform, an RFD; the register cannot turn it into a passing claim.
+The following items are forward-referenced inline throughout the document:
 
-```text
-FW-001 — Automate V-SIL verification evidence in CI/CD
-  Category: verification infrastructure
-  Origin: repeated manual G3 execution in this cycle
-  Candidate version: later software release
-  Decision owner: Build Package author
-  Dependency: stable test commands and report format
-  Proposed acceptance: a pipeline reproduces the declared G3 checks
-                       and links its reports to the cycle and source revision
-
-FW-002 — Processor-in-the-Loop (PIL) as a full sub-gate
-  Category: verification depth
-  Status: partially implemented — G3 currently allows PIL as a declared
-          mode (actual target processor, Mock HAL inputs, claim stays
-          VERIFIED); a dedicated G3.PIL sub-gate with structured timing
-          and scheduling checks is not yet defined
-  Origin: SOTA review; when UC ≠ development host, compiled code on the
-          target processor may behave differently under timing constraints
-  Candidate version: later software release
-  Decision owner: Build Package author
-  Dependency: target UC identified and accessible for cross-compilation
-  Proposed acceptance: G3.PIL sub-gate defined with explicit timing,
-                       scheduling and resource checks on the target processor
-
-FW-003 — Formal fault injection at VL-2
-  Category: verification depth
-  Origin: SOTA review (ISO 26262-5 §10; IEC 61508-3 Table A.5);
-          current VL-2 tests nominal operation only
-  Candidate version: later software release
-  Decision owner: Build Package author
-  Dependency: fault scenarios defined per module (USB disconnect,
-              buffer overflow, SDR clock drift, UC power glitch)
-  Proposed acceptance: declared fault scenarios executed at VL-2;
-                       system response documented per scenario
-
-FW-004 — SIL ↔ HIL correlation measurement
-  Category: verification confidence
-  Origin: SOTA review; VL-1 and VL-2 results are reported independently
-          with no measured correlation between them
-  Candidate version: later software release
-  Decision owner: Build Package author
-  Dependency: both VL-1 and VL-2 executed for the same modules
-  Proposed acceptance: quantified deviation between Mock HAL and
-                       Real HW HAL results for overlapping test cases
-
-FW-005 — MLOps for the optional ML model
-  Category: model lifecycle
-  Origin: the optional ML model is trained and labelled outside any
-          automated pipeline, and its S3 and G3 integration is not
-          implemented yet (§6.4)
-  Candidate version: later software release
-  Decision owner: Build Package author
-  Dependency: versioned Mock HAL or Real HW HAL datasets and a declared
-              labelling procedure
-  Proposed acceptance: a pipeline reproduces training from versioned data
-                       and labels and links each model version to its
-                       G3 evidence
-
-FW-006 — Automated PLAN.md generation from S1 design
-  Category: planning automation
-  Origin: V-SIL v4 S2 currently requires manual or agent-assisted
-          production of PLAN.md files from S1 design
-  Candidate version: later software release
-  Decision owner: Build Package author
-  Dependency: stable PLAN.md format and S1 module identity schema
-  Proposed acceptance: a tool reads the S1 design and generates
-                       PLAN.md skeletons for all modules with correct
-                       traceability and contract references
-```
-
----
-
-## 14 Compatibility Notes
-
-### 14.1 Stage renumbering mapping
-
-Tools and skills that reference v3 stage names must be updated:
-
-| v3 reference | v4 equivalent | Notes |
+| ID | Capability | Reference |
 |---|---|---|
-| `S2_implement_subsystems` | S3 | Skill and directory name update needed |
-| `G2_adaptive_verification` | G3 | Skill and directory name update needed |
-| `config.yaml` stage entries | Add `S2_module_planning`, `G2_module_plan_gate`; rename `S2` → `S3`, `G2` → `G3` | |
-
-### 14.2 `config.yaml` changes
-
-```yaml
-# V-SIL v4 stage-gate chain
-stages:
-  - S0_normalise_build_package
-  - G0_valid_req_and_GT
-  - S1_design_system          # enhanced: module decomposition
-  - G1_design_review           # enhanced: checks 11-12
-  - S2_module_planning         # NEW
-  - G2_module_plan_gate        # NEW
-  - S3_implement_subsystems    # renamed from S2
-  - G3_adaptive_verification   # renamed from G2
-```
-
-### 14.3 Preserved v3 concepts
-
-The following v3 concepts are **unchanged** in v4:
-
-- S0 normalisation and GT generation
-- G0 deterministic structural validation
-- HAL substitution ladder (Mock HAL, Real HW HAL)
-- Telemetry companion
-- Verification levels VL-0, VL-1, VL-2
-- Sandwich integration testing
-- Golden vector governance
-- RFD process and contents
-- Failure triage and draft mode (S0, G0, G1)
-- Future work register
-- All governing principles P1–P4
-- IEEE 29148 blueprint approach
-- Cross-subsystem contracts
-- Verifier context (P2)
-- Optional ML model (unchanged; still future work)
+| FW-001 | CI/CD automation of G3 evidence | §11 |
+| FW-002 | PIL as a full G3 sub-gate with timing/scheduling checks | §6.5 |
+| FW-003 | Formal fault injection at VL-2 (ISO 26262-5 §10) | §11.3 |
+| FW-004 | SIL ↔ HIL correlation measurement | §11.2 |
+| FW-005 | MLOps for the optional ML model (S3/G3 integration) | §6.4 |
+| FW-006 | Automated PLAN.md generation from S1 design | §8.3 |
 
 ---
 
-## 15 References
+## 14 References
 
 [1] R. S. Pressman, B. R. Maxim, *Software Engineering*, 9th ed., 2020.
 [2] ISO/IEC/IEEE 29119-1:2022, "Software testing — Part 1."
@@ -1001,7 +839,7 @@ The following v3 concepts are **unchanged** in v4:
 [8] V. Reddy et al., "Reason Less, Verify More," arXiv:2607.07405, Jul. 2026.
 [9] Sheridan Tech, "Design Validation vs Verification," Mar. 2026.
 [10] Augment Code, "Coordinator-Implementor-Verifier Pattern," Jun. 2026.
-[11] OPAL-RT, "Guide to HIL Testing," Sep. 2026.
+[11] OPAL-RT, "Guide to HIL Testing," Sep. 2026. — Staged SIL→HIL progression for real-time simulation; V-SIL's Mock HAL/golden-vector/telemetry-companion adaptation is its own contribution.
 [12] IEEE/ISO/IEC 29148:2018, "Requirements engineering."
 [13] V. Lavecchia, "Sandwich testing strategies," 2024.
 [14] B. Trinnes, "Test Architecture Patterns," GitHub, Apr. 2026.
@@ -1009,6 +847,7 @@ The following v3 concepts are **unchanged** in v4:
 [16] ECSS-Q-ST-10-09C, "Nonconformance control system," European Cooperation for Space Standardization. — Defines Request for Deviation (RFD) as a "planned departure" from requirements.
 [17] MIL-HDBK-61A, "Configuration Management Guidance," U.S. DoD, 2001. — Deviation processing: request when a product cannot meet technical requirements; includes impact analysis and trade-off options.
 [18] NASA NPR 7150.2, "NASA Software Engineering Requirements." — Deviation/waiver evaluation: technical justification, risk assessment, impact to safety, and proposed alternatives.
-[19] Agile-V Compliance Framework — Module-as-iteration-unit model for verified systems; topological ordering of backlog by dependency graph.
+[19a] C. Koch, J. A. Wellbrock, "Agile V: A Compliance-Oriented Framework for AI-Augmented Engineering," arXiv:2602.20684, Feb. 2026. — Infinity Loop merging Agile iteration with V-Model verification; task as iteration unit; human approval gates.
+[19b] C. Koch, "Agentic Agile-V: From Vibe Coding to Verified Engineering in Software and Hardware Development," arXiv:2605.20456, May 2026. — SCOPE-V micro-cycle (Specify, Constrain, Orchestrate, Prove, Evolve, Verify); minimum input artifacts for agentic work.
 [20] GitHub Spec-Kit — Specification-driven development toolkit for stage-gate methodologies.
-[21] OpenSpec Delta Traceability Model — ADDED/MODIFIED/REMOVED annotation convention for living requirements documents with per-module change tracking.
+[21] OpenSpec Delta Traceability Model — ADDED/MODIFIED/REMOVED/RENAMED annotation convention for living requirements documents with change-level tracking; V-SIL scopes the convention to the module boundary.

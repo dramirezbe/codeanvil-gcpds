@@ -13,7 +13,6 @@ from codeanvil.config.paths import (
     CONFIG,
     PROJECT_BACKUPS,
     PROJECT_CODEANVIL,
-    PROJECT_CUSTODY,
     PROJECT_DESIGN,
     PROJECT_GT,
     PROJECT_MANIFEST,
@@ -235,14 +234,13 @@ def _create_gt_dir(project_dir: Path) -> None:
 
 
 def _create_codeanvil_dirs(project_dir: Path) -> None:
-    """The methodology tree: identity, GT, design, reports, backups, custody."""
+    """The methodology tree: identity, GT, design, reports, backups."""
     for path in (
         PROJECT_CODEANVIL,
         PROJECT_GT,
         PROJECT_DESIGN,
         PROJECT_REPORT,
         PROJECT_BACKUPS,
-        PROJECT_CUSTODY,
     ):
         (project_dir / path).mkdir(parents=True, exist_ok=True)
 
@@ -337,20 +335,24 @@ def _collect_skill_summaries(skills_root: Path) -> list[dict]:
     return summaries
 
 
-def _configured_skills() -> dict[str, str | None]:
-    """Skill directory name -> prerequisite report id, in chain order.
+def _configured_skills() -> dict[str, dict[str, str | None]]:
+    """Skill directory name -> {prerequisite, loop_after} in chain order.
 
-    Declaration order in config.yaml is the gate chain; `None` marks an
-    entry point. Skills absent here (for example MCP-provided ones) have no
-    prerequisite entry in the generated table."""
+    Declaration order in config.yaml is the gate chain; prerequisite `None`
+    marks an entry point. `loop_after` names the gate that re-triggers this
+    skill after each pass (cadence gating). Skills absent here (for example
+    MCP-provided ones) have no prerequisite entry in the generated table."""
     return {
-        Path(cfg["project_dir"]).name: cfg.get("prerequisite")
+        Path(cfg["project_dir"]).name: {
+            "prerequisite": cfg.get("prerequisite"),
+            "loop_after": cfg.get("loop_after"),
+        }
         for cfg in CONFIG.get("skills", {}).values()
     }
 
 
 def _order_summaries(
-    summaries: list[dict], configured: dict[str, str | None]
+    summaries: list[dict], configured: dict[str, dict[str, str | None]]
 ) -> list[dict]:
     """Configured skills first, in chain order; then any remaining skill."""
     by_dir = {summary["dir"]: summary for summary in summaries}
@@ -359,18 +361,26 @@ def _order_summaries(
     return ordered
 
 
-def _prerequisite_cell(skill_dir: str, prerequisites: dict[str, str | None]) -> str:
+def _prerequisite_cell(skill_dir: str, prerequisites: dict[str, dict[str, str | None]]) -> str:
     """The prerequisite report a skill checks before it runs."""
     if skill_dir not in prerequisites:
         return "-"
-    prerequisite = prerequisites[skill_dir]
+    info = prerequisites[skill_dir]
+    prerequisite = info.get("prerequisite")
+    loop_after = info.get("loop_after")
+    
     if prerequisite is None:
         return "None (entry point)"
+    
+    # Cadence gating: S2 loops after G3 completes each slice
+    if loop_after:
+        return f"`{prerequisite}.md` PASS (first slice) or `{loop_after}.md` PASS of the previous slice"
+    
     return f"`{prerequisite}.md` latest iteration `HITL: PASS`"
 
 
 def _skill_table(
-    summaries: list[dict], prerequisites: dict[str, str | None] | None = None
+    summaries: list[dict], prerequisites: dict[str, dict[str, str | None]] | None = None
 ) -> str:
     """Render skill summaries as the chain table (or a clear empty note)."""
     if not summaries:
