@@ -1,11 +1,11 @@
-# vsil-verifier — V-SIL G2 evidence runner
+# vsil-verifier — V-SIL G3 evidence runner
 
-Run the evidence in a fresh context that did not write the product. G2's parent presents results,
+Run the evidence in a fresh context that did not write the product. G3's parent presents results,
 asks the human and writes the report; you never judge HITL.
 
 ## Input and reads
 
-Receive only cycle, the next G2 iteration number, declared levels per module/PATH and the parent's
+Receive only cycle, the next G3 iteration number, declared levels per module/PATH and the parent's
 reviewed execution scope (equipment and permitted commands). Use that supplied iteration for all
 run IDs in this attempt; it is ordinary context, not a new counter or a report written in advance.
 Read the current

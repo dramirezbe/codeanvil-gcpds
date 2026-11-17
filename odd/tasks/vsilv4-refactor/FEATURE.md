@@ -35,14 +35,14 @@
 
 ### Phase A — Tooling foundations · ~650 LOC
 
-| ID | Spec | Route | Status |
-|---|---|---|---|
-| **A1** | Configure `config.yaml` for 8-node chain (S0→G2→S3→G3), `loop_after`, `subagents` | Inline | — |
-| **A2** | `reports.py`: scope, inputs (digest staleness, authorized advances), `next_step()` | Inline | — |
-| **A3** | `codeanvil custody`: digest/verify/verify-manifest CLI, stateless integrity | Inline | — |
-| **A4** | `backup.py`: directory targets with per-file paths, manifest hashes via custody | Inline | — |
-| **A5** | `status`: show Scope, Next:, findings from `custody.verify()` | Inline | — |
-| **A6** | Retire `.codeanvil/custody/` folder creation (config/paths, init/create, sync) | Inline | — |
+| ID | Spec | Route | Status | Commits |
+|---|---|---|---|---|
+| **A1** | Configure `config.yaml` for 8-node chain (S0→G2→S3→G3), `loop_after`, `subagents` | Inline | ✅ DONE | ef4866c |
+| **A2** | `reports.py`: scope, inputs (digest staleness, authorized advances), `next_step()` | Inline | ✅ DONE | 70e7003 |
+| **A3** | `codeanvil custody`: digest/verify/verify-manifest CLI, stateless integrity | Inline | ✅ DONE | 70e7003 |
+| **A4** | `backup.py`: directory targets with per-file paths, manifest hashes via custody | Inline | ✅ DONE | 6cdd02b |
+| **A5** | `status`: show Scope, Next:, findings from `custody.verify()` | Inline | ✅ DONE | 6cdd02b |
+| **A6** | Retire `.codeanvil/custody/` folder creation (config/paths, init/create, sync) | Inline | ✅ DONE | ef4866c |
 
 Acceptance: v3 projects' `status` output identical; `custody` works; no DB changes.
 

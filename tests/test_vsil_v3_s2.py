@@ -16,7 +16,7 @@ from codeanvil.config.logger import ColoredFormatter
 from codeanvil.config.time import format_timestamp
 from test_create import TEMPLATES_DIR, _scaffold_skill, _skill_text, db_path  # noqa: F401  (fixture)
 
-SKILL = "S2_implement_subsystems"
+SKILL = "S3_implement_modules"
 _TIMESTAMP = re.compile(r"^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}\] ")
 _FIXED_CREATED = datetime(2026, 11, 5, 19, 30, 15, 123000, tzinfo=timezone.utc).timestamp()
 
@@ -219,7 +219,7 @@ def test_reference_logger_ts_matches_the_python_line(tmp_path, db_path):
 
 def _layout_text() -> str:
     from codeanvil.config.paths import TEMPLATES_DIR
-    path = TEMPLATES_DIR / "skills" / "S2_implement_subsystems" / "references" / "project_layout.md"
+    path = TEMPLATES_DIR / "skills" / "S3_implement_modules" / "references" / "project_layout.md"
     return path.read_text(encoding="utf-8")
 
 
@@ -239,7 +239,7 @@ def test_layout_tsconfig_declares_the_console_types():
 
 
 def test_s2_skill_backs_up_before_overwriting_the_test_run():
-    text = " ".join(_skill_text("S2_implement_subsystems").split())
+    text = " ".join(_skill_text("S3_implement_modules").split())
 
     assert "codeanvil backup S2" in text
     assert "If it exits nonzero, stop and show its message; write no iteration." in text
@@ -248,7 +248,7 @@ def test_s2_skill_backs_up_before_overwriting_the_test_run():
 # --- design-defect rework from the G1 impact map (2026-11-06) --------------
 
 def test_s2_skill_uses_the_g1_impact_map_for_design_defect_rework():
-    text = " ".join(_skill_text("S2_implement_subsystems").split())
+    text = " ".join(_skill_text("S3_implement_modules").split())
 
     assert "latest PASS iteration's impact map" in text
     assert "Rework, design defect" in text
@@ -259,7 +259,7 @@ def test_s2_skill_uses_the_g1_impact_map_for_design_defect_rework():
 def test_s2_skill_module_defect_rework_applies_the_g2_description_change_list():
     """HIL-1: a G2 module-defect FEEDBACK carries the exact change list in its
     report Description; S2 applies it verbatim, with no AskUser and no redesign."""
-    text = " ".join(_skill_text("S2_implement_subsystems").split())
+    text = " ".join(_skill_text("S3_implement_modules").split())
 
     assert "read the change list in the latest `G2.md` iteration's `### Description`" in text
     assert "apply exactly those changes" in text

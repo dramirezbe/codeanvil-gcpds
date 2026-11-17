@@ -13,7 +13,7 @@ from codeanvil.init.create import _parse_skill_frontmatter
 from test_create import _scaffold_skill, _skill_text, db_path  # noqa: F401  (db_path is a fixture)
 from test_hil_measurements import captured  # noqa: F401 (fixture)
 
-SKILL = "G2_adaptive_verification"
+SKILL = "G3_adaptive_verification"
 PROTOTYPE = TEMPLATES_DIR / "skills" / SKILL / "references" / "verified_prototype.md"
 
 
@@ -82,14 +82,14 @@ def test_scaffold_ships_the_g2_reference(tmp_path, db_path):
 
 
 def test_g2_fresh_session_runs_the_steps_itself():
-    text = _skill_text("G2_adaptive_verification")
+    text = _skill_text("G3_adaptive_verification")
 
     assert "In a fresh session that did not run S2, G2 runs steps 2–5 itself" in text
     assert "`Verifier` = `fresh session`" in text
 
 
 def test_g2_skill_backs_up_before_overwriting_the_verified_prototype():
-    text = " ".join(_skill_text("G2_adaptive_verification").split())
+    text = " ".join(_skill_text("G3_adaptive_verification").split())
 
     assert "codeanvil backup G2" in text
     assert "If it exits nonzero, stop and show its message; write no iteration." in text
@@ -98,7 +98,7 @@ def test_g2_skill_backs_up_before_overwriting_the_verified_prototype():
 # --- rework route split by verdict (2026-11-06) -----------------------------
 
 def test_g2_prerequisite_splits_the_rework_route_by_verdict():
-    text = " ".join(_skill_text("G2_adaptive_verification").split())
+    text = " ".join(_skill_text("G3_adaptive_verification").split())
 
     assert ("return exactly `S2 must rework first. Run the S2 skill.` for `Verdict: module defect`, "
             "or `S1 must rework first. Run the S1 skill.` for `Verdict: design defect`.") in text
@@ -132,7 +132,7 @@ def test_g2_module_feedback_carries_the_change_list_in_the_description():
 
 
 def test_g2_rejects_placeholder_telemetry_as_measured_evidence():
-    text = " ".join(_skill_text("G2_adaptive_verification").split())
+    text = " ".join(_skill_text("G3_adaptive_verification").split())
 
     assert "A constant or placeholder telemetry reading is not measured evidence" in text
     assert "Reject a constant or placeholder reading as measured evidence" in text
@@ -200,11 +200,11 @@ def test_machine_record_accepts_general_metrics_without_hil_attestation():
 def test_scaffold_rewrites_the_machine_validation_command_and_ships_references(tmp_path, db_path):
     cmd_create(None, tmp_path, project_name="Proj")
     machine = _scaffold_skill(tmp_path, SKILL, "references", "machine_evidence.md").read_text()
-    s2 = _scaffold_skill(tmp_path, "S2_implement_subsystems", "SKILL.md").read_text()
+    s2 = _scaffold_skill(tmp_path, "S3_implement_modules", "SKILL.md").read_text()
 
     assert "templates/skills/" not in machine
-    assert ".agents/skills/G2_adaptive_verification/scripts/validate_measurement.py" in machine
-    assert ".agents/skills/S2_implement_subsystems/references/machine_evidence.md" in s2
+    assert ".agents/skills/G3_adaptive_verification/scripts/validate_measurement.py" in machine
+    assert ".agents/skills/S3_implement_modules/references/machine_evidence.md" in s2
     assert _scaffold_skill(tmp_path, SKILL, "references", "measurement.schema.json").is_file()
 
 
@@ -212,12 +212,12 @@ def test_s2_owns_an_executable_copy_of_canonical_measurement_assets(tmp_path, db
     record, _ = captured
     cmd_create(None, tmp_path, project_name="Proj")
     producer = _scaffold_skill(tmp_path, SKILL)
-    consumer = _scaffold_skill(tmp_path, "S2_implement_subsystems")
+    consumer = _scaffold_skill(tmp_path, "S3_implement_modules")
     for relative in ("scripts/validate_measurement.py", "references/measurement.schema.json"):
         assert (consumer / relative).read_bytes() == (producer / relative).read_bytes()
     guide = (consumer / "references/machine_evidence.md").read_text()
-    assert ".agents/skills/S2_implement_subsystems/scripts/validate_measurement.py" in guide
-    assert ".agents/skills/G2_adaptive_verification/" not in guide
+    assert ".agents/skills/S3_implement_modules/scripts/validate_measurement.py" in guide
+    assert ".agents/skills/G3_adaptive_verification/" not in guide
 
     # Removing the producer from this temporary scaffold proves the consumer is standalone.
     shutil.rmtree(producer)
@@ -231,6 +231,6 @@ def test_s2_owns_an_executable_copy_of_canonical_measurement_assets(tmp_path, db
 @pytest.mark.parametrize("asset,error", [("references/missing.json", FileNotFoundError),
                                          ("../outside.json", ValueError)])
 def test_broken_shared_asset_configuration_fails_explicitly(tmp_path, db_path, monkeypatch, asset, error):
-    monkeypatch.setitem(CONFIG, "shared_skill_assets", {SKILL: {"S2_implement_subsystems": [asset]}})
+    monkeypatch.setitem(CONFIG, "shared_skill_assets", {SKILL: {"S3_implement_modules": [asset]}})
     with pytest.raises(error, match="shared skill asset"):
         cmd_create(None, tmp_path, project_name="Proj")

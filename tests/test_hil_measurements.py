@@ -11,7 +11,7 @@ import pytest
 from codeanvil.init.create import scaffold_project
 
 ROOT = Path(__file__).resolve().parents[1]
-SCRIPT = ROOT / "templates/skills/G2_adaptive_verification/scripts/validate_measurement.py"
+SCRIPT = ROOT / "templates/skills/G3_adaptive_verification/scripts/validate_measurement.py"
 VALIDATOR = runpy.run_path(str(SCRIPT))
 
 
@@ -111,7 +111,7 @@ def test_duplicate_fields_cannot_hide_a_failed_result(captured):
 def test_scaffolded_checker_accepts_v2_and_leaves_historical_evidence_unchanged(captured, tmp_path):
     path, record = captured
     project = scaffold_project("Measurement fixture", "proj", tmp_path)
-    script = project / ".agents/skills/G2_adaptive_verification/scripts/validate_measurement.py"
+    script = project / ".agents/skills/G3_adaptive_verification/scripts/validate_measurement.py"
     args = [sys.executable, str(script), str(path)]
     good = subprocess.run(args, capture_output=True, text=True, cwd=project)
     assert good.returncode == 0, good.stderr

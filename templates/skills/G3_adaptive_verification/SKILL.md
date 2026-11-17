@@ -1,12 +1,12 @@
 ---
-name: g2-adaptive-verification
-description: "Trigger: G2, adaptive verification, verify the S2 build, Verified Prototype. Run the S2 evidence at the declared levels in a fresh context, present it to a human and record the PASS, FEEDBACK or RFD answer."
+name: g3-adaptive-verification
+description: "Trigger: G2, adaptive verification, verify the S3 build, Verified Prototype. Run the S3 evidence at the declared levels in a fresh context, present it to a human and record the PASS, FEEDBACK or RFD answer."
 license: Apache-2.0
-compatibility: "Parent reviews/prepares HW; fresh verifier runs the recorded tests and approved diagnostic commands locally or through vsil_hil_mcp. Parent handles trusted; verifier never edits DUT or asks the human. Writes only .codeanvil/report/<cycle-name>/G2.md and G2_artifacts/."
+compatibility: "Parent reviews/prepares HW; fresh verifier runs the recorded tests and approved diagnostic commands locally or through vsil_hil_mcp. Parent handles trusted; verifier never edits DUT or asks the human. Writes only .codeanvil/report/<cycle-name>/G3.md and G3_artifacts/."
 metadata:
   author: "gcpds"
-  version: "1.2"
-  gate: "G2"
+  version: "1.3"
+  gate: "G3"
   pipeline: "V-SIL"
 ---
 
@@ -249,7 +249,7 @@ commands — then re-run G2, rather than giving up or mislabeling it an S2 defec
 
 | Human answer | Row written | Route |
 |--------------|-------------|-------|
-| PASS | `HITL: PASS` plus `G2_artifacts/verified_prototype.md` | Done: return "G2 passed. Verified Prototype written." |
+| PASS | `HITL: PASS` plus `G3_artifacts/verified_prototype.md` | Done: return "G2 passed. Verified Prototype written." |
 | FEEDBACK, module defect | `HITL: FEEDBACK` plus `Verdict: module defect`, the modules (including missing VL-1 tests) and the Description's enumerated change list | S2 |
 | FEEDBACK, design defect | `HITL: FEEDBACK` plus `Verdict: design defect` and the S1 sections to rework | S1 |
 | RFD | `HITL: FEEDBACK` plus the line `Verdict: RFD` | RFD skill, with the G2 report as evidence |
@@ -258,9 +258,9 @@ commands — then re-run G2, rather than giving up or mislabeling it an S2 defec
 
 ## Report Contract
 
-Write only `.codeanvil/report/<cycle-name>/G2.md`, append-only, and on PASS
-`.codeanvil/report/<cycle-name>/G2_artifacts/verified_prototype.md` filled from the template.
-Diagnostic artifacts may be kept under `G2_artifacts/`; they do not become report states.
+Write only `.codeanvil/report/<cycle-name>/G3.md`, append-only, and on PASS
+`.codeanvil/report/<cycle-name>/G3_artifacts/verified_prototype.md` filled from the template.
+Diagnostic artifacts may be kept under `G3_artifacts/`; they do not become report states.
 
 - First run: header plus `## Iteration 1`; later runs append `## Iteration <N>`.
 - Header: a `| Field | Value |` table with `Gate` = `G2`, `Cycle`, `Document` (the `test_run.md`

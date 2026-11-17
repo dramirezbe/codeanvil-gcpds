@@ -1,12 +1,12 @@
 ---
-name: s2-implement-subsystems
+name: s3-implement-modules
 description: "Trigger: S2, implement subsystems, build the code, verification kit, VL-0. From a G1-passed design, build the subsystems and the verification kit, prove the VL-0 floor and write the VL-1 tests."
 license: Apache-2.0
-compatibility: "Telemetry is collected by the `codeanvil telemetry` subcommand, part of CodeAnvil itself (not a skill script). Reads the S1 design, .codeanvil/GT/SyRS.md and .codeanvil/project.yaml. Writes src/, verification/, root manifests, .codeanvil/report/<cycle-name>/S2.md and S2_artifacts/."
+compatibility: "Telemetry is collected by the `codeanvil telemetry` subcommand, part of CodeAnvil itself (not a skill script). Reads the S1 design, .codeanvil/GT/SyRS.md and .codeanvil/project.yaml. Writes src/, verification/, root manifests, .codeanvil/report/<cycle-name>/S3.md and S3_artifacts/."
 metadata:
   author: "gcpds"
-  version: "1.3"
-  gate: "S2"
+  version: "1.4"
+  gate: "S3"
   runtime: []
   pipeline: "V-SIL"
 ---
@@ -211,7 +211,7 @@ when it is unavailable.
   `S2 stopped at the human's request. Run the S2 skill to resume.`
 
 Record every answer as a checkpoint line in the iteration's Description, never as a gate verdict:
-`Checkpoint: <pause point> — <continue|rework|stop> — <note>`. A `stop` writes no `S2.md`; the next
+`Checkpoint: <pause point> — <continue|rework|stop> — <note>`. A `stop` writes no `S3.md`; the next
 run resumes from `src/` under **Resume, do not restart**.
 
 ## Module Subagents
@@ -283,11 +283,11 @@ bottom-up: revise the affected contract and its stub first, then the owning modu
 bottom-up, sandwich), then replace the stub. Preserve every module the impact map does not name.
 Rerun the affected `PATH-*` and the changed VL-1 tests, then back up and run the full VL-0 floor
 (steps 6 and 7). Record
-in `S2.md` the changed IDs, files, commands, results and the G2 iteration it answers.
+in `S3.md` the changed IDs, files, commands, results and the G2 iteration it answers.
 
 ## Test Run Contract
 
-Write `.codeanvil/report/<cycle-name>/S2_artifacts/test_run.md`, overwritten on every pass:
+Write `.codeanvil/report/<cycle-name>/S3_artifacts/test_run.md`, overwritten on every pass:
 
 - exact `verification/run.sh vl0` and `verification/run.sh vl1` commands and, in `mock+real`, the
   `verification/run.sh vl2` command/scripts and structural-record checker that G2 will run;
@@ -303,7 +303,7 @@ Write `.codeanvil/report/<cycle-name>/S2_artifacts/test_run.md`, overwritten on 
 
 ## Report Contract
 
-Write exactly one file: `.codeanvil/report/<cycle-name>/S2.md`, append-only.
+Write exactly one file: `.codeanvil/report/<cycle-name>/S3.md`, append-only.
 
 - First run: header plus `## Iteration 1`; later runs append `## Iteration <N>`.
 - Header: a `| Field | Value |` table with `Gate` = `S2`, `Cycle`, `Document` (the `test_run.md`

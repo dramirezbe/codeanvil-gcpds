@@ -339,14 +339,19 @@ def test_config_declares_skill_prerequisite_chain():
     assert list(skills) == [
         "S0_normalise_build_package", "G0_valid_req_and_GT",
         "S1_design_system", "G1_design_review",
-        "S2_implement_subsystems", "G2_adaptive_verification",
+        "S2_plan_modules", "G2_plan_review",
+        "S3_implement_modules", "G3_adaptive_verification",
     ]
     assert skills["S0_normalise_build_package"]["prerequisite"] is None
     assert skills["G0_valid_req_and_GT"]["prerequisite"] == "S0"
     assert skills["S1_design_system"]["prerequisite"] == "G0"
     assert skills["G1_design_review"]["prerequisite"] == "S1"
-    assert skills["S2_implement_subsystems"]["prerequisite"] == "G1"
-    assert skills["G2_adaptive_verification"]["prerequisite"] == "S2"
+    assert skills["S2_plan_modules"]["prerequisite"] == "G1"
+    assert skills["G2_plan_review"]["prerequisite"] == "S2"
+    assert skills["S3_implement_modules"]["prerequisite"] == "G2"
+    assert skills["G3_adaptive_verification"]["prerequisite"] == "S3"
+    # Cadence gating: S2 loops after G3 completes each slice
+    assert skills["S2_plan_modules"].get("loop_after") == "G3"
 
 
 def test_create_makes_report_dir_without_cycle_subdir(tmp_path, db_path):
@@ -362,8 +367,10 @@ def test_create_scaffolds_the_methodology_tree_under_codeanvil(tmp_path, db_path
 
     project = tmp_path / "proj"
     for rel in (".codeanvil/GT", ".codeanvil/design", ".codeanvil/backups",
-                ".codeanvil/report", ".codeanvil/custody"):
+                ".codeanvil/report"):
         assert (project / rel).is_dir(), rel
+    # .codeanvil/custody/ was retired in Phase A6
+    assert not (project / ".codeanvil/custody").exists()
     assert (project / ".codeanvil/GT/README.md").is_file()
     assert not (project / "GT").exists()
 
@@ -423,19 +430,23 @@ def test_agents_md_skill_table_shows_the_prerequisite_chain(tmp_path, db_path):
 
     assert "| Gate | Skill | Prerequisite |" in text
     lines = text.splitlines()
+    # Phase B: S2_plan_modules and G2_plan_review don't have implementations yet
+    # They're declared in config.yaml but not scaffolded; scaffold only 6 skills
     rows = {
         name: next(line for line in lines if f".agents/skills/{name}/" in line)
         for name in ("S0_normalise_build_package", "G0_valid_req_and_GT",
-                     "S1_design_system", "G1_design_review", "S2_implement_subsystems",
-                     "G2_adaptive_verification", "RFD_request_for_deviation")
+                     "S1_design_system", "G1_design_review", "S3_implement_modules",
+                     "G3_adaptive_verification", "RFD_request_for_deviation")
     }
 
     assert "None (entry point)" in rows["S0_normalise_build_package"]
     assert "`S0.md` latest iteration `HITL: PASS`" in rows["G0_valid_req_and_GT"]
     assert "`G0.md` latest iteration `HITL: PASS`" in rows["S1_design_system"]
     assert "`S1.md` latest iteration `HITL: PASS`" in rows["G1_design_review"]
-    assert "`G1.md` latest iteration `HITL: PASS`" in rows["S2_implement_subsystems"]
-    assert "`S2.md` latest iteration `HITL: PASS`" in rows["G2_adaptive_verification"]
+    # S3 prerequisite is now G2 (which doesn't exist as a skill yet)
+    assert "`G2.md` latest iteration `HITL: PASS`" in rows["S3_implement_modules"]
+    # G3 prerequisite is now S3
+    assert "`S3.md` latest iteration `HITL: PASS`" in rows["G3_adaptive_verification"]
     assert rows["RFD_request_for_deviation"].rstrip().endswith("| - |")
     order = [lines.index(rows[name]) for name in rows]
     assert order == sorted(order)
@@ -468,7 +479,7 @@ def test_scaffold_ships_the_v3_chain_and_not_the_retired_skills(tmp_path, db_pat
     skills = tmp_path / "proj" / ".agents" / "skills"
 
     for name in ("S0_normalise_build_package", "G0_valid_req_and_GT", "S1_design_system",
-                 "G1_design_review", "S2_implement_subsystems", "G2_adaptive_verification",
+                 "G1_design_review", "S3_implement_modules", "G3_adaptive_verification",
                  "RFD_request_for_deviation"):
         assert (skills / name / "SKILL.md").is_file()
     assert not (skills / "custody-chain").exists()

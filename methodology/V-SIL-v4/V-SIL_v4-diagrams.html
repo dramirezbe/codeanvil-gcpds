@@ -1,0 +1,1077 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>V-SIL v4 Diagrams</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script src="../../templates/skills/S1_design_system/assets/vis-network.min.js"></script>
+<style>
+:root {
+  --bg: #fafaf8;
+  --fg: #1a1a1e;
+  --muted: #6b6b74;
+  --surface: #f0f0ec;
+  --surface-2: #ffffff;
+  --border: #d8d8d2;
+  --line: #64748b;
+  --hl: #2563eb;
+
+  --stage-f: #e0f2fe; --stage-s: #0284c7; --stage-t: #0c4a6e;
+  --gate-f: #dcfce7;  --gate-s: #16a34a;  --gate-t: #14532d;
+  --input-f: #f3f4f6; --input-s: #6b7280; --input-t: #1f2937;
+  --rfd-f: #fee2e2;   --rfd-s: #dc2626;   --rfd-t: #7f1d1d;
+  --amber-f: #fef3c7; --amber-s: #d97706; --amber-t: #78350f;
+  --proc-f: #ede9fe;  --proc-s: #7c3aed;  --proc-t: #3b0764;
+  --stub-f: #f3f4f6;  --stub-s: #9ca3af;  --stub-t: #374151;
+
+  --port-c: #3a7bd5;  --port-f: #f08c3a;  --port-v: #b45309;  --port-m: #8b8b94;
+  --grc-f: #ffffff;    --grc-head: #eef2f7;
+
+  font-family: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111114; --fg: #e4e4e0; --muted: #8f8f99; --surface: #1c1c20; --surface-2: #17171b; --border: #2e2e34;
+    --line: #8592a6; --hl: #60a5fa;
+    --stage-f: #0c2a3e; --stage-s: #38bdf8; --stage-t: #bae6fd;
+    --gate-f: #0b2e1a;  --gate-s: #4ade80;  --gate-t: #bbf7d0;
+    --input-f: #23232a; --input-s: #8b8b96; --input-t: #e4e4e7;
+    --rfd-f: #3b1010;   --rfd-s: #f87171;   --rfd-t: #fecaca;
+    --amber-f: #3a2606; --amber-s: #fbbf24; --amber-t: #fde68a;
+    --proc-f: #24133f;  --proc-s: #a78bfa;  --proc-t: #ddd6fe;
+    --stub-f: #1f1f25;  --stub-s: #6b7280;  --stub-t: #c4c4cc;
+    --port-c: #60a5fa;  --port-f: #fb9a5b;  --port-v: #f59e0b; --port-m: #8b8b94;
+    --grc-f: #1a1a20;   --grc-head: #24242c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111114; --fg: #e4e4e0; --muted: #8f8f99; --surface: #1c1c20; --surface-2: #17171b; --border: #2e2e34;
+  --line: #8592a6; --hl: #60a5fa;
+  --stage-f: #0c2a3e; --stage-s: #38bdf8; --stage-t: #bae6fd;
+  --gate-f: #0b2e1a;  --gate-s: #4ade80;  --gate-t: #bbf7d0;
+  --input-f: #23232a; --input-s: #8b8b96; --input-t: #e4e4e7;
+  --rfd-f: #3b1010;   --rfd-s: #f87171;   --rfd-t: #fecaca;
+  --amber-f: #3a2606; --amber-s: #fbbf24; --amber-t: #fde68a;
+  --proc-f: #24133f;  --proc-s: #a78bfa;  --proc-t: #ddd6fe;
+  --stub-f: #1f1f25;  --stub-s: #6b7280;  --stub-t: #c4c4cc;
+  --port-c: #60a5fa;  --port-f: #fb9a5b;  --port-v: #f59e0b; --port-m: #8b8b94;
+  --grc-f: #1a1a20;   --grc-head: #24242c;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  margin: 0 auto; max-width: 1060px; line-height: 1.6;
+  padding: 2rem max(16px, env(safe-area-inset-right, 0px)) 4rem max(16px, env(safe-area-inset-left, 0px));
+}
+h1 { font-size: 1.6rem; line-height: 1.25; margin: 0 0 .35rem; }
+h2 { font-size: 1.25rem; margin: 3rem 0 .4rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+h3 { font-size: 1.02rem; margin: 1.8rem 0 .4rem; }
+p { margin: .5rem 0; }
+code, .mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: .88em; }
+a { color: var(--hl); }
+.sub { color: var(--muted); margin: 0; }
+.note { color: var(--muted); font-size: .9rem; }
+.tag { display: inline-block; font-size: .72rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+       padding: .05rem .45rem; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); }
+header { display: flex; gap: 1rem; justify-content: space-between; align-items: flex-start; }
+#theme { flex: none; }
+nav.toc { margin: 1.2rem 0 0; display: flex; flex-wrap: wrap; gap: .35rem; }
+nav.toc a { text-decoration: none; font-size: .82rem; padding: .15rem .55rem; border: 1px solid var(--border);
+            border-radius: 6px; color: var(--fg); background: var(--surface); }
+nav.toc a:hover { border-color: var(--hl); }
+
+figure { margin: 1rem 0; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: .8rem; }
+figcaption { font-size: .85rem; color: var(--muted); margin-top: .4rem; }
+.scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.scroll > svg { min-width: 860px; }
+.scroll.wide > svg { min-width: 1000px; }
+svg { display: block; width: 100%; height: auto; }
+
+button { font: inherit; font-size: .85rem; cursor: pointer; color: var(--fg); background: var(--surface);
+         border: 1px solid var(--border); border-radius: 6px; padding: .3rem .7rem; }
+button:hover { border-color: var(--hl); }
+button[aria-pressed="true"] { border-color: var(--hl); background: color-mix(in srgb, var(--hl) 14%, var(--surface)); }
+.btns { display: flex; flex-wrap: wrap; gap: .4rem; margin: .6rem 0; }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: .7rem .9rem; margin-top: .6rem; }
+.card h4 { margin: 0 0 .25rem; font-size: .95rem; }
+.card dl { display: grid; grid-template-columns: max-content 1fr; gap: .15rem .8rem; margin: .3rem 0 0; font-size: .9rem; }
+.card dt { color: var(--muted); }
+.card dd { margin: 0; }
+.grid { display: grid; gap: .7rem; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+.grid .card { margin: 0; }
+
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { text-align: left; padding: .35rem .55rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; font-size: .8rem; text-transform: uppercase; letter-spacing: .03em; }
+.tablewrap { overflow-x: auto; }
+tr[data-mod] { cursor: pointer; }
+tr.hl td { background: color-mix(in srgb, var(--hl) 12%, transparent); }
+
+.t  { font: 500 13px 'IBM Plex Sans', system-ui, sans-serif; fill: var(--fg); }
+.tb { font: 600 13.5px 'IBM Plex Sans', system-ui, sans-serif; fill: var(--fg); }
+.ts { font: 400 11px 'IBM Plex Sans', system-ui, sans-serif; fill: var(--muted); }
+.tm { font: 400 10.5px 'IBM Plex Mono', ui-monospace, monospace; fill: var(--fg); }
+.tl { font: 500 11px 'IBM Plex Sans', system-ui, sans-serif; fill: var(--muted); }
+.mid { text-anchor: middle; }
+.end { text-anchor: end; }
+
+.s { stroke-width: 1.6; }
+.k-stage .s { fill: var(--stage-f); stroke: var(--stage-s); } .k-stage text { fill: var(--stage-t); }
+.k-gate  .s { fill: var(--gate-f);  stroke: var(--gate-s); }  .k-gate text  { fill: var(--gate-t); }
+.k-input .s { fill: var(--input-f); stroke: var(--input-s); } .k-input text { fill: var(--input-t); }
+.k-rfd   .s { fill: var(--rfd-f);   stroke: var(--rfd-s); }   .k-rfd text   { fill: var(--rfd-t); }
+.k-amber .s { fill: var(--amber-f); stroke: var(--amber-s); } .k-amber text { fill: var(--amber-t); }
+.k-proc  .s { fill: var(--proc-f);  stroke: var(--proc-s); }  .k-proc text  { fill: var(--proc-t); }
+.k-stub  .s { fill: var(--stub-f);  stroke: var(--stub-s); stroke-dasharray: 5 3; } .k-stub text { fill: var(--stub-t); }
+.k-term  .s { stroke-width: 3; }
+.k-hal .s { fill: var(--rfd-f); stroke: var(--rfd-s); }     .k-hal text { fill: var(--rfd-t); }
+.k-dsp .s { fill: var(--amber-f); stroke: var(--amber-s); } .k-dsp text { fill: var(--amber-t); }
+.k-dec .s { fill: var(--gate-f); stroke: var(--gate-s); }   .k-dec text { fill: var(--gate-t); }
+.k-out .s { fill: var(--stage-f); stroke: var(--stage-s); } .k-out text { fill: var(--stage-t); }
+
+.e { fill: none; stroke: var(--line); stroke-width: 1.6; marker-end: url(#m-line); }
+.e.dash { stroke-dasharray: 6 4; }
+.e.red { stroke: var(--rfd-s); marker-end: url(#m-red); }
+.e.green { stroke: var(--gate-s); marker-end: url(#m-green); }
+.e.amber { stroke: var(--amber-s); marker-end: url(#m-amber); }
+.e.proc { stroke: var(--proc-s); marker-end: url(#m-proc); }
+.e.noarrow { marker-end: none; }
+
+.click { cursor: pointer; }
+.click:hover .s, .click:focus-visible .s { stroke-width: 2.6; }
+.click:focus { outline: none; }
+.sel .s { stroke: var(--hl) !important; stroke-width: 3 !important; }
+.dim { opacity: .25; transition: opacity .2s; }
+.lit { stroke: var(--hl) !important; stroke-width: 3 !important; marker-end: url(#m-hl) !important; }
+.lit-node .s { stroke: var(--hl) !important; stroke-width: 3 !important; }
+
+.grc .blk { fill: var(--grc-f); stroke: var(--border); stroke-width: 1.2; }
+.grc .head { fill: var(--grc-head); }
+.grc .bt { font: 600 12px 'IBM Plex Sans', system-ui, sans-serif; fill: var(--fg); }
+.grc .bp { font: 400 10.5px 'IBM Plex Mono', ui-monospace, monospace; fill: var(--muted); }
+.grc .w { fill: none; stroke-width: 2; }
+.grc .w.c { stroke: var(--port-c); } .grc .w.f { stroke: var(--port-f); }
+.grc .w.v { stroke: var(--port-v); } .grc .w.m { stroke: var(--port-m); stroke-dasharray: 4 3; }
+.pc { fill: var(--port-c); } .pf { fill: var(--port-f); } .pv { fill: var(--port-v); } .pm { fill: var(--port-m); }
+.zone { stroke-width: 1.4; stroke-dasharray: 7 4; rx: 12; }
+.zone.hal { fill: color-mix(in srgb, var(--rfd-f) 55%, transparent); stroke: var(--rfd-s); }
+.zone.dsp { fill: color-mix(in srgb, var(--amber-f) 55%, transparent); stroke: var(--amber-s); }
+.zone.dec { fill: color-mix(in srgb, var(--gate-f) 55%, transparent); stroke: var(--gate-s); }
+.zone.out { fill: color-mix(in srgb, var(--stage-f) 55%, transparent); stroke: var(--stage-s); }
+.zl { font: 600 12px 'IBM Plex Mono', ui-monospace, monospace; }
+.zone-g { cursor: pointer; }
+.zone-g.hl .zone, [data-mod].hl > .s { stroke: var(--hl) !important; stroke-width: 3 !important; stroke-dasharray: none; }
+.chip rect { fill: var(--surface-2); stroke: var(--border); }
+.chip text { font: 500 10.5px 'IBM Plex Mono', ui-monospace, monospace; fill: var(--fg); }
+.chip.click:hover rect, .chip.sel rect { stroke: var(--hl); stroke-width: 2; }
+
+#stars { width: 100%; height: 600px; }
+
+.vl-matrix { display: grid; grid-template-columns: minmax(130px, 1.4fr) repeat(3, minmax(56px, 1fr)) minmax(120px, 1.6fr); gap: 4px; font-size: .88rem; align-items: stretch; }
+.vl-matrix .h { color: var(--muted); font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; padding: .2rem .3rem; }
+.vl-matrix .m { font-family: 'IBM Plex Mono', monospace; font-size: .82rem; padding: .35rem .3rem; }
+.vl-matrix .c { border: 1px solid var(--border); border-radius: 6px; min-height: 2rem; position: relative; background: var(--surface); }
+.vl-matrix .c.on0 { background: var(--gate-f); border-color: var(--gate-s); }
+.vl-matrix .c.on1 { background: var(--amber-f); border-color: var(--amber-s); }
+.vl-matrix .c.on2 { background: var(--rfd-f); border-color: var(--rfd-s); }
+.vl-matrix .c.req::after { content: "required"; position: absolute; inset: auto 0 2px 0; text-align: center; font-size: .66rem; font-weight: 600; color: var(--fg); }
+.vl-matrix .c.req { outline: 2px solid var(--fg); outline-offset: -4px; }
+.vl-matrix .st { font-size: .8rem; padding: .35rem .3rem; color: var(--muted); }
+.subgates { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .7rem; }
+.subgates div { border: 1px solid var(--border); border-radius: 8px; padding: .4rem .7rem; font-size: .85rem; background: var(--surface); opacity: .45; }
+.subgates div.on { opacity: 1; border-color: var(--gate-s); background: var(--gate-f); color: var(--gate-t); }
+
+.evid { display: grid; gap: .5rem; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+.ev { border: 1px solid var(--border); border-left-width: 5px; border-radius: 8px; padding: .5rem .7rem; background: var(--surface); }
+.ev.v0 { border-left-color: var(--gate-s); } .ev.v1 { border-left-color: var(--amber-s); } .ev.v2 { border-left-color: var(--rfd-s); }
+.ev .mono { font-weight: 500; }
+.badge { display: inline-block; font-size: .72rem; font-weight: 700; padding: 0 .4rem; border-radius: 4px; margin-left: .3rem; }
+.b0 { background: var(--gate-f); color: var(--gate-t); } .b1 { background: var(--amber-f); color: var(--amber-t); } .b2 { background: var(--rfd-f); color: var(--rfd-t); }
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; }
+@media (max-width: 620px) { .compare { grid-template-columns: 1fr; } }
+.compare .card { margin: 0; }
+.compare .d { border-top: 4px solid var(--amber-s); }
+.compare .r { border-top: 4px solid var(--rfd-s); }
+.gloss { display: grid; gap: .7rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 430px), 1fr)); margin-top: .6rem; }
+.gloss .card { margin: 0; }
+.gloss dl { grid-template-columns: minmax(5rem, 8.5rem) 1fr; gap: .35rem .8rem; }
+.gloss dt { color: var(--fg); font-weight: 600; }
+.principles { display: grid; gap: .6rem; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); margin-top: .8rem; }
+.principles .card { margin: 0; }
+.principles b { display: block; font-size: 1.05rem; color: var(--hl); }
+.legend { display: flex; flex-wrap: wrap; gap: .4rem .9rem; font-size: .8rem; color: var(--muted); margin: .4rem 0 0; }
+.legend span::before { content: ""; display: inline-block; width: .8rem; height: .8rem; border-radius: 3px; margin-right: .3rem; vertical-align: -1px; border: 1.5px solid var(--b); background: var(--f); }
+@media (prefers-reduced-motion: no-preference) {
+  .pulse .s { animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 50% { stroke-width: 4; } }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="m-line" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--line)"/></marker>
+    <marker id="m-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--rfd-s)"/></marker>
+    <marker id="m-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--gate-s)"/></marker>
+    <marker id="m-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--amber-s)"/></marker>
+    <marker id="m-proc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--proc-s)"/></marker>
+    <marker id="m-hl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--hl)"/></marker>
+  </defs>
+</svg>
+
+<header>
+  <div>
+    <span class="tag">Visual companion · V-SIL v4 · 4.0</span>
+    <h1>V-SIL v4: Agile-V Stage-Gate Lifecycle, diagram by diagram</h1>
+    <p class="sub">Eight-node stage-gate chain <b>S0→G0→S1→G1→S2→G2→S3→G3</b>. S2 decomposes the design into self-contained PLAN.md per module with topological slicing; S3 implements each module in fresh context. Verification is adaptive per module with a mandatory VL-0 floor. Report-driven gate chain with stale detection. HAL substitution ladder and telemetry companion tie every claim to its data source and compute-unit state.</p>
+  </div>
+  <button id="theme" type="button" aria-label="Toggle colour theme">◐ Theme</button>
+</header>
+
+<nav class="toc" aria-label="Sections">
+  <a href="#big">0 Big picture</a><a href="#terms">1 Terminology</a><a href="#overview">2 Stage-gate</a>
+  <a href="#s0">3 S0</a><a href="#g0">4 G0</a><a href="#s1">5 S1</a><a href="#subsystem-stars">Stars</a><a href="#hal-ladder">HAL + telemetry</a><a href="#g1">6 G1</a>
+  <a href="#s2-planning">7 S2 Planning</a><a href="#g2-microgate">8 G2 Micro-gate</a>
+  <a href="#s3">9 S3</a><a href="#g3">10 G3</a><a href="#feedback">11 Feedback</a><a href="#triage">12 Triage</a><a href="#terminal">13 Output</a><a href="#future-work">Future work</a>
+</nav>
+
+<p class="note" style="margin-top:1rem">Colours follow the paper: <b style="color:var(--stage-s)">blue</b> stages, <b style="color:var(--gate-s)">green</b> gates, grey inputs, <b style="color:var(--rfd-s)">red</b> RFD / HIL, <b style="color:var(--amber-s)">amber</b> defects / optional levels, <b style="color:var(--proc-s)">purple</b> new S2/G2 layer. Solid arrows are the nominal flow; dashed arrows are feedback.</p>
+
+<!-- ======================================================================= -->
+<h2 id="big">0 · The big picture</h2>
+<p>V-SIL v4 is a function with one input and two possible outputs. It never edits its input: when the Build Package cannot be met on the declared COTS hardware, it returns an RFD and waits.</p>
+<figure>
+  <div class="scroll">
+  <svg viewBox="0 0 1000 250" role="img" aria-label="Build Package goes into V-SIL v4, which outputs a Verified Prototype or a Request for Deviation">
+    <g class="k-input"><rect class="s" x="20" y="40" width="210" height="126" rx="10"/>
+      <text class="tb mid" x="125" y="66">Build Package</text>
+      <text class="t mid" x="125" y="88">PRD · COTS envelope</text>
+      <text class="t mid" x="125" y="106">acceptance criteria</text>
+      <text class="t mid" x="125" y="124">lab procedures · calibration</text>
+      <text class="t mid" x="125" y="142">tolerances</text></g>
+    <g class="k-stage"><rect class="s" x="300" y="45" width="380" height="116" rx="10"/>
+      <text class="tb mid" x="490" y="82">V-SIL v4</text>
+      <text class="t mid" x="490" y="106">S0 → G0 → S1 → G1 → S2 → G2 → S3 → G3</text>
+      <text class="ts mid" x="490" y="126" style="fill:var(--stage-t)">module planning · fresh-context implementation</text>
+      <text class="ts mid" x="490" y="142" style="fill:var(--stage-t)">report-driven · stale detection</text></g>
+    <g class="k-gate k-term"><rect class="s" x="760" y="20" width="210" height="76" rx="10"/>
+      <text class="tb mid" x="865" y="52">Verified Prototype</text>
+      <text class="t mid" x="865" y="73">module + path VL evidence</text></g>
+    <g class="k-rfd"><rect class="s" x="760" y="118" width="210" height="80" rx="10"/>
+      <text class="tb mid" x="865" y="145">Request for Deviation</text>
+      <text class="t mid" x="865" y="165">infeasibility evidence</text>
+      <text class="t mid" x="865" y="183">+ trade-off options</text></g>
+    <path class="e" d="M230,103 H296"/>
+    <path class="e green" d="M680,90 C720,90 720,58 756,58"/>
+    <text class="tl mid" x="718" y="62">nominal</text>
+    <path class="e red dash" d="M680,118 C720,118 720,158 756,158"/>
+    <text class="tl mid" x="716" y="153">infeasible</text>
+    <path class="e red dash" d="M865,198 V232 H125 V170"/>
+    <text class="tl mid" x="490" y="226">updated Build Package (re-enters at S0)</text>
+  </svg>
+  </div>
+  <figcaption>Abstract diagram. Each stage produces a structured report; each gate reads and validates its predecessor's report. A stale report (input changed since it was written) is rejected automatically. The lifecycle is domain-agnostic: any COTS-constrained embedded or software system where requirements must be traced through design, planning, implementation, and verification.</figcaption>
+</figure>
+
+<!-- ======================================================================= -->
+<h2 id="terms">1 · Terminology used in the diagrams</h2>
+<div class="gloss">
+  <div class="card"><h4>Lifecycle</h4><dl>
+    <dt>Stage / gate</dt><dd>A stage produces work; a gate decides whether it moves on. Gate verdicts: PASS, FAIL or RFD.</dd>
+    <dt>Sub-gate</dt><dd><b>V-SIL.</b> G3.0, G3.1 and G3.2: the parts of G3 that fire for the declared level.</dd>
+    <dt>HITL</dt><dd>Human-in-the-loop: a person makes the decision. <b>Gate H</b> is the human authorisation after G0.</dd>
+    <dt>Build Package</dt><dd><b>V-SIL.</b> The input: PRD, COTS envelope, acceptance criteria, lab procedures, calibration and tolerances.</dd>
+    <dt>COTS</dt><dd>Commercial off-the-shelf hardware whose limits the design must accept.</dd>
+    <dt>RFD</dt><dd>Request for Deviation: planned departure from a requirement (ECSS). V-SIL raises it when the COTS platform cannot meet the requirements.</dd>
+    <dt>Verified Prototype</dt><dd><b>V-SIL.</b> The output: built system with per-module and path evidence.</dd>
+    <dt>PLAN.md</dt><dd><b>V-SIL.</b> Self-contained module specification from S2: scope, contracts, traced reqs, tasks, verification plan, delta traceability, risks.</dd>
+    <dt>INFRA-PLAN.md</dt><dd><b>V-SIL.</b> Slice 0 plan: base layers + verification kit, distinct from module PLAN.md.</dd>
+    <dt>Agile-V</dt><dd>Module as the iteration unit: each runs a mini-V cycle (plan → implement → verify) [19a][19b].</dd>
+    <dt>Topological slicing</dt><dd>Ordering modules by S1's dependency graph into slices: lower layers first.</dd>
+    <dt>Fresh context</dt><dd><b>V-SIL.</b> Each module enters S3 with only its PLAN.md and contracts it touches. No accumulated state.</dd>
+    <dt>Living GT delta</dt><dd><b>V-SIL.</b> Per-module ADDED / MODIFIED / REMOVED / RENAMED. OpenSpec [21] scoped to module boundary.</dd>
+    <dt>Stale detection</dt><dd><b>V-SIL.</b> A report is stale when any declared input has changed since the report was produced. Gates reject stale reports.</dd>
+    <dt>Report-driven</dt><dd><b>V-SIL.</b> Each stage writes a report; each gate reads it. No re-derivation; accountability chain.</dd>
+    <dt>Draft mode</dt><dd><b>V-SIL.</b> S0/G0/G1 enter draft automatically when unresolved items exist; cannot advance until resolved.</dd>
+    <dt>Failure triage</dt><dd><b>V-SIL.</b> Machine or gate failures are translated before reaching the human, with concrete reconciliation options.</dd>
+  </dl></div>
+  <div class="card"><h4>Requirements</h4><dl>
+    <dt>GT</dt><dd>Ground Truth: the StRS + SyRS pair that defines what "correct" means.</dd>
+    <dt>IEEE 29148</dt><dd>Requirements engineering standard supplying the document blueprints.</dd>
+    <dt>StRS</dt><dd>Stakeholder Requirements Specification (§9.4).</dd>
+    <dt>SyRS</dt><dd>System Requirements Specification (§9.5).</dd>
+    <dt>STK-* / NRM-* / HWC-*</dt><dd>Stakeholder / normative / COTS hardware constraint blocks.</dd>
+    <dt>SYS-*</dt><dd>System requirement blocks; must trace to StRS blocks.</dd>
+    <dt>Verification</dt><dd>Built right (ISO 15288). V-SIL keeps VERIFIED for synthetic evidence.</dd>
+    <dt>Validation</dt><dd>The right thing built (ISO 15288). V-SIL keeps VALIDATED for real-hardware evidence.</dd>
+    <dt>Honesty declaration</dt><dd><b>V-SIL.</b> Statement of which environment backs each claim.</dd>
+  </dl></div>
+  <div class="card"><h4>Architecture</h4><dl>
+    <dt>Subsystem</dt><dd>Independently deployed unit with its own base and modules.</dd>
+    <dt>Base layer</dt><dd>Orchestration, HAL and data routing — built first.</dd>
+    <dt>Module</dt><dd>Unit of function with a unique module_id and verification profile.</dd>
+    <dt>Module identity</dt><dd><b>V-SIL.</b> module_id, subsystem_id, layer, depends_on, provides, hw_dependency, required_vl, traced_reqs.</dd>
+    <dt>DAG</dt><dd>Directed acyclic graph of build dependencies. Runtime loops are allowed.</dd>
+    <dt>Interface contract</dt><dd>What crosses an edge: type, schema version, units, latency.</dd>
+    <dt>Subsystem contract</dt><dd>Versioned contract between subsystems with failure behaviour.</dd>
+    <dt>HAL</dt><dd>Hardware abstraction layer hiding hardware details from software above.</dd>
+    <dt>Mock HAL</dt><dd><b>V-SIL.</b> Software signal generator. VL-0: deterministic vectors; VL-1: synthetic data.</dd>
+    <dt>Real HW HAL</dt><dd><b>V-SIL.</b> Production HAL driving the declared COTS device. Only in <code>mock+real</code>.</dd>
+    <dt>PIL</dt><dd>Processor-in-the-loop: actual target processor with Mock HAL inputs. Claims stay VERIFIED.</dd>
+    <dt>Telemetry companion</dt><dd><b>V-SIL.</b> Process beside each test recording UC state; verification infrastructure, not a module.</dd>
+    <dt>Verification kit</dt><dd><b>V-SIL.</b> Mock HAL, golden vectors + manifest, telemetry companion, stubs, fake peers, drivers.</dd>
+  </dl></div>
+  <div class="card"><h4>Testing</h4><dl>
+    <dt>Stub / driver</dt><dd>Double giving canned answers / routine calling the unit under test.</dd>
+    <dt>Fake peer</dt><dd>Working but simplified stand-in for the other subsystem.</dd>
+    <dt>Sandwich</dt><dd>Top-down (base + stubs) + bottom-up (module + driver) hybrid integration.</dd>
+    <dt>Golden vector</dt><dd>Versioned input with known expected output. SHA-256, generation params, condition, expected output.</dd>
+    <dt>VL-0 / VL-1 / VL-2</dt><dd><b>V-SIL.</b> Logic, simulated system, real hardware. Nested: each includes the level below.</dd>
+    <dt>Floor</dt><dd>VL-0 for every module, contract and path in every cycle. Cannot be skipped.</dd>
+    <dt>HAL substitution</dt><dd>Swapping the HAL behind the same port to move between VL levels.</dd>
+    <dt>Verifier context</dt><dd>Separate read-only context (subagent or fresh session) that runs verification. P2: oracle ≠ generator.</dd>
+  </dl></div>
+</div>
+
+<!-- ======================================================================= -->
+<h2 id="overview">2 · Stage-gate overview</h2>
+<p>Four stages do work; four gates decide. S2 and G2 are the agile planning layer. Each gate sends work forward on PASS or back to the stage that can fix it. G3 has five routing classes including plan defect → S2. <b>Click any node</b> to see what it consumes, produces, who decides, and where it routes.</p>
+<div class="btns">
+  <button type="button" id="ov-fb" aria-pressed="true">Show feedback routes</button>
+</div>
+<figure>
+  <div class="scroll wide">
+  <svg id="ov" viewBox="0 0 1380 360" role="img" aria-label="Stage-gate overview: Build Package, S0, G0, S1, G1, S2, G2, S3, G3, Verified Prototype, with failure and RFD routes">
+    <g class="fb">
+      <path class="e amber dash" d="M270,88 C270,38 170,38 170,100"/><text class="tl mid" x="220" y="41">FAIL</text>
+      <path class="e amber dash" d="M470,88 C470,44 380,44 380,100"/><text class="tl mid" x="425" y="47">FAIL</text>
+      <path class="e amber dash" d="M670,88 C670,50 560,50 560,100"/><text class="tl mid" x="615" y="53">FAIL</text>
+      <path class="e amber dash" d="M950,88 C950,4 370,4 370,100"/><text class="tl mid" x="660" y="17">design defect → S1</text>
+      <path class="e proc dash" d="M940,160 C920,210 620,210 580,160"/><text class="tl mid" x="750" y="208">plan defect → S2</text>
+      <path class="e amber dash" d="M930,151 C910,230 830,230 785,160"/><text class="tl mid" x="870" y="225">module defect → S3</text>
+      <path class="e red dash" d="M385,160 C385,288 500,288 621,288"/><text class="tl" x="397" y="262">infeasible</text>
+      <path class="e red dash" d="M470,172 C470,250 660,250 696,269"/><text class="tl" x="540" y="244">infeasible</text>
+      <path class="e red dash" d="M950,172 C950,288 830,288 779,288"/><text class="tl end" x="938" y="262">infeasible</text>
+      <path class="e red dash" d="M700,313 V340 H50 V160"/><text class="tl mid" x="370" y="334">updated Build Package</text>
+    </g>
+    <path class="e" d="M100,130 H116"/>
+    <path class="e" d="M210,130 H228"/>
+    <path class="e green" d="M310,130 H336"/><text class="tl mid" x="320" y="194">PASS + Gate H</text>
+    <path class="e" d="M430,130 H448"/>
+    <path class="e green" d="M510,130 H536"/><text class="tl mid" x="520" y="194">PASS</text>
+    <path class="e" d="M630,130 H648"/>
+    <path class="e green" d="M710,130 H736"/><text class="tl mid" x="720" y="194">PASS</text>
+    <path class="e" d="M830,130 H906"/>
+    <path class="e green" d="M990,130 H1131"/><text class="tl mid" x="1060" y="122">PASS</text>
+
+    <g class="k-input click" data-node="BP" tabindex="0" role="button"><rect class="s" x="6" y="100" width="94" height="60" rx="8"/><text class="tb mid" x="53" y="126">Build</text><text class="tb mid" x="53" y="143">Package</text></g>
+    <g class="k-stage click" data-node="S0" tabindex="0" role="button"><rect class="s" x="120" y="100" width="90" height="60" rx="8"/><text class="tb mid" x="165" y="124">S0</text><text class="ts mid" x="165" y="142" style="fill:var(--stage-t)">Normalise + GT</text></g>
+    <g class="k-gate click" data-node="G0" tabindex="0" role="button"><polygon class="s" points="270,88 310,130 270,172 230,130"/><text class="tb mid" x="270" y="135">G0</text></g>
+    <g class="k-stage click" data-node="S1" tabindex="0" role="button"><rect class="s" x="340" y="100" width="90" height="60" rx="8"/><text class="tb mid" x="385" y="124">S1</text><text class="ts mid" x="385" y="142" style="fill:var(--stage-t)">System design</text></g>
+    <g class="k-gate click" data-node="G1" tabindex="0" role="button"><polygon class="s" points="470,88 510,130 470,172 430,130"/><text class="tb mid" x="470" y="135">G1</text></g>
+    <g class="k-stage click" data-node="S2" tabindex="0" role="button"><rect class="s" x="540" y="100" width="90" height="60" rx="8"/><text class="tb mid" x="585" y="120">S2</text><text class="ts mid" x="585" y="138" style="fill:var(--stage-t);font-size:9.5px">Module plan</text><text class="ts mid" x="585" y="152" style="fill:var(--stage-t);font-size:9.5px">(Agile-V)</text></g>
+    <g class="k-gate click" data-node="G2" tabindex="0" role="button"><polygon class="s" points="670,88 710,130 670,172 630,130"/><text class="tb mid" x="670" y="131">G2</text><text class="ts mid" x="670" y="145" style="fill:var(--gate-t);font-size:8px">μ-gate</text></g>
+    <g class="k-stage click" data-node="S3" tabindex="0" role="button"><rect class="s" x="740" y="100" width="90" height="60" rx="8"/><text class="tb mid" x="785" y="120">S3</text><text class="ts mid" x="785" y="138" style="fill:var(--stage-t);font-size:9.5px">Implement</text><text class="ts mid" x="785" y="152" style="fill:var(--stage-t);font-size:9.5px">(per module)</text></g>
+    <g class="k-gate click" data-node="G3" tabindex="0" role="button"><polygon class="s" points="950,88 990,130 950,172 910,130"/><text class="tb mid" x="950" y="131">G3</text><text class="ts mid" x="950" y="145" style="fill:var(--gate-t);font-size:8px">adaptive</text></g>
+    <g class="k-stage k-term click" data-node="T" tabindex="0" role="button"><rect class="s" x="1135" y="98" width="140" height="64" rx="8"/><text class="tb mid" x="1205" y="124">Verified</text><text class="tb mid" x="1205" y="142">Prototype</text></g>
+    <g class="k-rfd click" data-node="RFD" tabindex="0" role="button"><rect class="s" x="625" y="263" width="150" height="50" rx="8"/><text class="tb mid" x="700" y="284">RFD</text><text class="ts mid" x="700" y="300" style="fill:var(--rfd-t)">Request for Deviation</text></g>
+  </svg>
+  </div>
+  <div class="card" id="ov-card" aria-live="polite"></div>
+</figure>
+
+<h3>Governing principles (P1–P8)</h3>
+<div class="principles">
+  <div class="card"><b>P1</b>HITL is an <i>authorisation</i> barrier; HIL is a <i>validation</i> barrier.</div>
+  <div class="card"><b>P2</b>Oracle ≠ generator: the entity that verifies never approves its own work [7].</div>
+  <div class="card"><b>P3</b>G0 is the only deterministic gate: its mechanical rejection beats any approval [8]. G2 and G3 are agent-prepared, human-approved.</div>
+  <div class="card"><b>P4</b><i>Verified</i> ≠ <i>validated</i>: every claim names the environment [9].</div>
+  <div class="card"><b>P5</b>Module is the iteration unit — Agile-V [19a][19b] with module-level mini-V cycle.</div>
+  <div class="card"><b>P6</b>Layers are orthogonal to iteration — layered architecture is a structural invariant.</div>
+  <div class="card"><b>P7</b>Fresh context per module — only PLAN.md and contracts it touches.</div>
+  <div class="card"><b>P8</b>Living GT with delta traceability — ADDED/MODIFIED/REMOVED/RENAMED per module [21].</div>
+</div>
+
+<!-- ======================================================================= -->
+<h2 id="s0">3 · S0: Normalisation and Ground Truth</h2>
+<p>S0 is a <b>casting</b> step, not a review: it pours the Build Package into the IEEE 29148 blueprints and makes no judgement about sufficiency or scope. Any iteration happens later, at G0. Following SDAD Phase 1 (spec crystallisation) [6].</p>
+<figure>
+  <div class="scroll">
+  <svg viewBox="0 0 900 330" role="img" aria-label="Build Package content cast into StRS and SyRS blueprints">
+    <g class="k-input"><rect class="s" x="20" y="25" width="230" height="280" rx="10"/>
+      <text class="tb mid" x="135" y="52">Build Package</text></g>
+    <g class="k-input"><rect class="s" x="38" y="68" width="194" height="44" rx="6" style="fill:var(--surface-2)"/><text class="t mid" x="135" y="95">Obligations</text></g>
+    <g class="k-input"><rect class="s" x="38" y="124" width="194" height="44" rx="6" style="fill:var(--surface-2)"/><text class="t mid" x="135" y="151">COTS constraints</text></g>
+    <g class="k-input"><rect class="s" x="38" y="180" width="194" height="44" rx="6" style="fill:var(--surface-2)"/><text class="t mid" x="135" y="201">Stakeholder needs /</text><text class="t mid" x="135" y="216">quality attributes</text></g>
+    <g class="k-input"><rect class="s" x="38" y="236" width="194" height="52" rx="6" style="fill:var(--surface-2)"/><text class="t mid" x="135" y="257">Lab procedures</text><text class="t mid" x="135" y="275">calibration · tolerances</text></g>
+    <path class="e" d="M232,90 C290,90 290,135 326,135"/>
+    <path class="e" d="M232,146 H326"/>
+    <path class="e" d="M232,202 C290,202 290,157 326,157"/>
+    <path class="e" d="M232,262 C300,262 300,170 326,170"/>
+    <g class="k-proc"><rect class="s" x="330" y="112" width="170" height="68" rx="10"/>
+      <text class="tb mid" x="415" y="140">Fill IEEE 29148</text><text class="t mid" x="415" y="160">blueprints</text></g>
+    <path class="e" d="M500,135 C550,135 550,75 596,75"/>
+    <path class="e" d="M500,157 C550,157 550,200 596,200"/>
+    <g class="k-stage"><rect class="s" x="600" y="20" width="280" height="120" rx="8"/>
+      <text class="tb" x="616" y="44">G0_StRS.md</text><text class="ts" x="864" y="44" text-anchor="end">§9.4 stakeholder</text></g>
+    <g class="chip"><rect x="616" y="58" width="80" height="26" rx="5"/><text x="656" y="75" class="mid">NRM-*</text></g>
+    <g class="chip"><rect x="704" y="58" width="80" height="26" rx="5"/><text x="744" y="75" class="mid">HWC-*</text></g>
+    <g class="chip"><rect x="792" y="58" width="72" height="26" rx="5"/><text x="828" y="75" class="mid">STK-*</text></g>
+    <text class="ts" x="672" y="108">normative · COTS hw · stakeholder</text>
+    <text class="ts" x="672" y="124">requirement blocks</text>
+    <g class="k-stage"><rect class="s" x="600" y="160" width="280" height="90" rx="8"/>
+      <text class="tb" x="616" y="184">G0_SyRS.md</text><text class="ts" x="864" y="184" text-anchor="end">§9.5 system</text></g>
+    <g class="chip"><rect x="616" y="198" width="80" height="26" rx="5"/><text x="656" y="215" class="mid">SYS-*</text></g>
+    <text class="ts" x="706" y="215">per-measurand system reqs</text>
+    <path class="e dash" d="M656,198 V90"/>
+    <text class="tl" x="662" y="152">traces to</text>
+  </svg>
+  </div>
+  <figcaption>Lab procedures, calibration and tolerances go into SyRS §6 (<code>PROTO-*</code>), §4 Correction Chains and §5 Uncertainty Budgets; otherwise each holds <code>Not applicable: no lab inputs in the Build Package.</code></figcaption>
+</figure>
+
+<!-- ======================================================================= -->
+<h2 id="g0">4 · G0: Structural validation</h2>
+<p>Deterministic, no AI, binary verdict: <code>g0_validate.py</code> runs four families of checks and exits 0 or 1. Only after a PASS does the human <b>Gate H</b> ask: <i>requirements complete, bounded, and verifiable?</i></p>
+<div class="btns"><button type="button" id="g0-sim" aria-pressed="false">Simulate a failing block field</button></div>
+<figure>
+  <div class="scroll">
+  <svg id="g0-diagram" viewBox="0 0 900 310" role="img" aria-label="G0 script runs four checks and exits 0 for PASS or 1 for FAIL">
+    <g class="k-stage"><rect class="s" x="20" y="70" width="125" height="50" rx="6"/><text class="t mid" x="82" y="100">G0_StRS.md</text></g>
+    <g class="k-stage"><rect class="s" x="20" y="150" width="125" height="50" rx="6"/><text class="t mid" x="82" y="180">G0_SyRS.md</text></g>
+    <path class="e" d="M145,95 C170,95 170,125 186,125"/><path class="e" d="M145,175 C170,175 170,145 186,145"/>
+    <g class="k-gate"><rect class="s" x="190" y="95" width="160" height="80" rx="8"/>
+      <text class="tb mid" x="270" y="122">g0_validate.py</text><text class="ts mid" x="270" y="142" style="fill:var(--gate-t)">deterministic · stdlib-only</text><text class="ts mid" x="270" y="158" style="fill:var(--gate-t)">no AI</text></g>
+    <g id="g0-phases">
+      <path class="e noarrow" d="M350,135 H372 M372,58 V217"/>
+      <path class="e" d="M372,58 H396"/><path class="e" d="M372,113 H396"/><path class="e" d="M372,168 H396"/><path class="e" d="M372,217 H396"/>
+      <g class="k-gate" data-ph="1"><rect class="s" x="400" y="40" width="160" height="36" rx="6"/><text class="t" x="414" y="63">Headings</text><text class="t end ok" x="548" y="63">✓</text></g>
+      <g class="k-gate" data-ph="2"><rect class="s" x="400" y="95" width="160" height="36" rx="6"/><text class="t" x="414" y="118">Metadata</text><text class="t end ok" x="548" y="118">✓</text></g>
+      <g class="k-gate" data-ph="3"><rect class="s" x="400" y="150" width="160" height="36" rx="6"/><text class="t" x="414" y="173">Block fields</text><text class="t end ok" x="548" y="173">✓</text></g>
+      <g class="k-gate" data-ph="4"><rect class="s" x="400" y="199" width="160" height="36" rx="6"/><text class="t" x="414" y="222">Cross-doc G0-X</text><text class="t end ok" x="548" y="222">✓</text></g>
+      <path class="e noarrow" d="M560,58 H582 M560,113 H582 M560,168 H582 M560,217 H582 M582,58 V217"/>
+      <path class="e" d="M582,138 H600"/>
+    </g>
+    <g class="k-gate"><polygon class="s" points="640,98 680,138 640,178 600,138"/><text class="tb mid" x="640" y="143">G0</text></g>
+    <path id="g0-pass" class="e green" d="M670,118 C700,85 700,72 726,72"/><text class="tl" x="706" y="112">exit 0</text>
+    <path id="g0-fail" class="e red" d="M670,158 C700,190 700,204 726,204"/><text class="tl" x="706" y="170">exit 1</text>
+    <g class="k-gate" id="g0-passbox"><rect class="s" x="730" y="45" width="150" height="54" rx="8"/><text class="tb mid" x="805" y="68">PASS</text><text class="ts mid" x="805" y="86" style="fill:var(--gate-t)">→ human Gate H → S1</text></g>
+    <g class="k-rfd" id="g0-failbox"><rect class="s" x="730" y="177" width="150" height="54" rx="8"/><text class="tb mid" x="805" y="200">FAIL</text><text class="ts mid" x="805" y="218" style="fill:var(--rfd-t)">→ edit GT</text></g>
+    <path class="e red dash" d="M805,231 V285 H82 V204"/>
+    <text class="tl mid" x="440" y="279">back to S0: validate against the original Build Package</text>
+  </svg>
+  </div>
+  <div class="card" id="g0-card">All four check families pass, so the script exits 0. Gate H, a human, now authorises the move to S1 (P1: authorisation, not evidence).</div>
+</figure>
+
+<!-- ======================================================================= -->
+<h2 id="s1">5 · S1: System of Layered Subsystems with Module Decomposition</h2>
+<p>S1 allocates the Ground Truth to subsystems, designs layered architecture within each, and decomposes modules with their dependency graph. The hierarchy is <b>system → subsystem → module</b>. Each module carries a full identity block: <code>module_id</code>, <code>subsystem_id</code>, <code>layer</code>, <code>depends_on</code>, <code>provides</code>, <code>hw_dependency</code>, <code>required_vl</code>, <code>traced_reqs</code>.</p>
+
+<h3 id="subsystem-stars">5.1 Two subsystem stars: edge + UI</h3>
+<p>Each star has a local base at its center and modules on its spokes. The two subsystems meet through versioned contracts. Drag nodes to rearrange.</p>
+<div class="btns" id="star-btns">
+  <button type="button" data-star-view="all" aria-pressed="true">Whole system</button>
+  <button type="button" data-star-view="telemetry" aria-pressed="false">Telemetry → UI</button>
+  <button type="button" data-star-view="control" aria-pressed="false">UI commands → edge</button>
+</div>
+<figure>
+  <div id="stars" role="img" aria-label="Two subsystem spider graphs"></div>
+  <figcaption>Same graph style S1 delivers as <code>dependency_graph.html</code>. Purple = subsystem base, red = hardware and subsystem contracts. Implementation dependency graph must be acyclic; runtime message loops are reviewed separately for bounded behavior.</figcaption>
+  <div class="card" id="star-card" aria-live="polite"></div>
+</figure>
+
+<h3>5.2 Layered architecture inside each subsystem</h3>
+<figure>
+  <div class="scroll">
+  <svg viewBox="0 0 900 400" role="img" aria-label="S1 produces three layers: base, modules, integration">
+    <rect x="20" y="16" width="860" height="370" rx="14" style="fill:none;stroke:var(--border);stroke-width:1.4;stroke-dasharray:7 5"/>
+    <text class="tl" x="36" y="38">S1 produces per subsystem</text>
+    <text class="tb" x="40" y="92">1 · Base layer</text>
+    <text class="ts" x="40" y="110">built and tested first</text><text class="ts" x="40" y="125">(S3 step 1)</text>
+    <g class="k-stage"><rect class="s" x="210" y="56" width="650" height="84" rx="10"/>
+      <text class="tb mid" x="535" y="84">Base Layer</text>
+      <text class="t mid" x="535" y="105">Orchestration · HAL · data routing</text>
+      <text class="t mid" x="535" y="124">interface contracts</text></g>
+    <path class="e" d="M535,140 V168"/>
+    <text class="tb" x="40" y="214">2 · Modules</text>
+    <text class="ts" x="40" y="232">plug-in units, built one</text><text class="ts" x="40" y="247">by one (S3 step 2)</text>
+    <g class="k-proc"><rect class="s" x="210" y="172" width="650" height="98" rx="10" style="fill:color-mix(in srgb,var(--proc-f) 45%,transparent)"/>
+      <text class="ts" x="224" y="191" style="fill:var(--proc-t)">Modules</text></g>
+    <g class="k-proc"><rect class="s" x="232" y="202" width="120" height="50" rx="8"/><text class="tb mid" x="292" y="232">M1</text></g>
+    <g class="k-proc"><rect class="s" x="382" y="202" width="120" height="50" rx="8"/><text class="tb mid" x="442" y="232">M2</text></g>
+    <g class="k-proc"><rect class="s" x="532" y="202" width="120" height="50" rx="8"/><text class="tb mid" x="592" y="232">M3</text></g>
+    <text class="tb mid" x="687" y="232" style="fill:var(--muted)">…</text>
+    <g class="k-proc"><rect class="s" x="722" y="202" width="120" height="50" rx="8"/><text class="tb mid" x="782" y="232">MN</text></g>
+    <path class="e" d="M535,270 V298"/>
+    <text class="tb" x="40" y="330">3 · Integration</text>
+    <text class="ts" x="40" y="348">the assembled subsystem</text>
+    <g class="k-stage"><rect class="s" x="210" y="302" width="650" height="68" rx="10"/>
+      <text class="tb mid" x="535" y="330">Integration</text>
+      <text class="t mid" x="535" y="352">Modules wired through base-layer interfaces</text></g>
+  </svg>
+  </div>
+  <figcaption>Modules communicate only through their subsystem's base layer. No direct module-to-module calls.</figcaption>
+</figure>
+
+<h3 id="hal-ladder">5.3 HAL substitution ladder and telemetry companion</h3>
+<p>S1 declares <code>HAL mode: mock-only</code> or <code>HAL mode: mock+real</code>. Both HALs sit behind one base-layer interface contract. The telemetry companion is mandatory in every design and every test run. <b>Pick a level</b> to see what feeds the port.</p>
+<div class="btns" id="hal-btns">
+  <button type="button" data-hal="v0" aria-pressed="true">VL-0 · Mock HAL</button>
+  <button type="button" data-hal="v1" aria-pressed="false">VL-1 · Mock HAL</button>
+  <button type="button" data-hal="v2" aria-pressed="false">VL-2 · Real HW HAL (only in mock+real)</button>
+</div>
+<figure>
+  <div class="scroll">
+  <svg id="hal" viewBox="0 0 1000 390" role="img" aria-label="Mock HAL and Real HW HAL plug into the same base-layer port; telemetry companion attaches UC state">
+    <rect class="zone" x="20" y="20" width="330" height="170" style="fill:color-mix(in srgb,var(--amber-f) 45%,transparent);stroke:var(--amber-s)"/>
+    <text class="tb" x="36" y="44" style="fill:var(--amber-t)">Mock HAL</text>
+    <text class="ts" x="36" y="60">software-only · default for sandwich and SIL tests</text>
+    <g id="hal-v0" class="k-gate"><rect class="s" x="36" y="72" width="298" height="48" rx="6"/><text class="t mid" x="185" y="92">VL-0 · deterministic vectors</text><text class="ts mid" x="185" y="110" style="fill:var(--gate-t)">short · repeatable · edge-case · SHA-256 digest</text></g>
+    <g id="hal-v1" class="k-amber"><rect class="s" x="36" y="128" width="298" height="48" rx="6"/><text class="t mid" x="185" y="148">VL-1 · synthetic data at known conditions</text><text class="ts mid" x="185" y="166" style="fill:var(--amber-t)">software synthesiser or recorded golden captures</text></g>
+    <g id="hal-v2" class="k-rfd"><rect class="s" x="20" y="206" width="330" height="72" rx="8"/><text class="tb mid" x="185" y="230">Real HW HAL</text><text class="t mid" x="185" y="249">VL-2 · declared COTS device</text><text class="ts mid" x="185" y="267" style="fill:var(--rfd-t)">SyRS PROTO-* · screening-grade calibration · tolerances</text></g>
+    <g id="hal-bp" class="k-input"><rect class="s" x="20" y="306" width="330" height="56" rx="8"/><text class="tb mid" x="185" y="329">Build Package</text><text class="ts mid" x="185" y="349" style="fill:var(--input-t)">lab procedures · calibration grade · tolerances</text></g>
+    <path id="e-hal-bp" class="e" d="M185,306 V282"/>
+    <path id="e-hal-v0" class="e" d="M334,96 C390,96 390,145 436,145"/>
+    <path id="e-hal-v1" class="e" d="M334,152 C380,152 390,163 436,163"/>
+    <path id="e-hal-v2" class="e" d="M350,242 C395,242 395,181 436,181"/>
+    <g class="k-stage"><rect class="s" x="440" y="118" width="170" height="90" rx="8"/><text class="tb mid" x="525" y="144">Base-layer port</text><text class="tm mid" x="525" y="164" style="fill:var(--stage-t)">raw_iq</text><text class="ts mid" x="525" y="186" style="fill:var(--stage-t)">same interface contract</text></g>
+    <path class="e" d="M610,163 H686"/>
+    <g class="k-stage"><rect class="s" x="690" y="118" width="290" height="90" rx="8"/><text class="tb mid" x="835" y="152">Base + modules</text><text class="ts mid" x="835" y="174" style="fill:var(--stage-t)">system under test</text></g>
+    <path class="e dash" d="M715,208 V246"/><text class="tl" x="723" y="232">reads UC state</text>
+    <path class="e" d="M890,208 V264"/><text class="tl" x="898" y="240">test result</text>
+    <g class="k-proc"><rect class="s" x="440" y="250" width="300" height="102" rx="8"/><text class="tb mid" x="590" y="274">Telemetry companion</text><text class="t mid" x="590" y="294">beside every test, at every level</text><text class="ts mid" x="590" y="314" style="fill:var(--proc-t)">CPU · memory · temperature · dropped buffers</text><text class="ts mid" x="590" y="332" style="fill:var(--proc-t)">scheduling latency · footprint declared, bounded</text></g>
+    <path class="e" d="M740,301 H796"/>
+    <g class="k-gate"><rect class="s" x="800" y="268" width="180" height="66" rx="8"/><text class="tb mid" x="890" y="292">Evidence record</text><text class="ts mid" x="890" y="310" style="fill:var(--gate-t)">result + UC readings</text><text class="ts mid" x="890" y="325" style="fill:var(--gate-t)">outside envelope → flagged</text></g>
+    <text class="ts" x="440" y="376">Verification infrastructure, not a system module: no SYS-*, not in the DAG, never shipped.</text>
+  </svg>
+  </div>
+  <div class="card" id="hal-card" aria-live="polite"></div>
+</figure>
+
+<!-- ======================================================================= -->
+<h2 id="g1">6 · G1: Design Review (12 checks + 1 conditional)</h2>
+<p>G1 asks: <i>are all implementation-critical design choices resolved, and is every module identifiable and plannable?</i> Human HITL review — the agent prepares, the human decides. The agent reads the whole design and GT, re-derives every check from source sections, and runs the declared toolchain.</p>
+<div class="grid">
+  <div class="card"><h4>1 · Subsystem topology</h4><p>Every subsystem: one responsibility, deployment target, state owner, declared ports. Network and COTS envelope support the topology.</p></div>
+  <div class="card"><h4>2 · DAG acyclicity</h4><p>No dependency cycle within or between subsystem build units. Runtime message loops reviewed for bounded behavior.</p></div>
+  <div class="card"><h4>3 · Interface completeness</h4><p>Every internal edge has a typed contract; every cross-subsystem exchange has a versioned contract with failure behavior.</p></div>
+  <div class="card"><h4>4 · Coverage</h4><p>Every <code>SYS-*</code> traces to module(s) or an end-to-end path, with owner and measurable acceptance evidence.</p></div>
+  <div class="card"><h4>5 · Stub feasibility</h4><p>Every contract is complete enough to write a deterministic stub or fake peer.</p></div>
+  <div class="card"><h4>6 · Verification-profile consistency</h4><p><code>hw_dependency: true</code> → <code>required_vl: VL-2</code>; system paths have a declared level and environment.</p></div>
+  <div class="card"><h4>7 · HAL substitution ladder</h4><p>Mock HAL exposes the base-layer interface; golden vectors carry digest, parameters and expected outputs. In <code>mock+real</code>, Real HW HAL references SyRS <code>PROTO-*</code>.</p></div>
+  <div class="card"><h4>8 · Telemetry companion</h4><p>Declares what it monitors, sampling interval, resource budget, footprint bounded below threshold.</p></div>
+  <div class="card"><h4>9 · Supplied ML model (conditional)</h4><p>Weights, metadata, training data, labelling, inference contract, COTS budget. Omitted when no ML model.</p></div>
+  <div class="card"><h4>10 · Toolchain availability</h4><p>Language runtime and package manager of every <code>Toolchain</code> entry answer their version command on the dev machine.</p></div>
+  <div class="card"><h4>11 · Module decomposition</h4><p>Every module has all identity fields. Every <code>SYS-*</code> in the GT appears in at least one <code>traced_reqs</code>. No empty <code>traced_reqs</code>.</p></div>
+  <div class="card"><h4>12 · Topological slicing feasibility</h4><p>The DAG admits a topological sort. Every <code>depends_on</code> points to modules or base-layer contracts available before the module is scheduled.</p></div>
+  <div class="card" style="display:flex;flex-direction:column;justify-content:center;text-align:center">
+    <p style="margin:0"><b style="color:var(--gate-s)">PASS</b> → S2 &nbsp;·&nbsp; <b style="color:var(--amber-s)">FAIL</b> → S1 &nbsp;·&nbsp; <b style="color:var(--rfd-s)">RFD</b> if infeasible</p></div>
+</div>
+
+<!-- ======================================================================= -->
+<h2 id="s2-planning">7 · S2: Module Planning (Agile-V Layer)</h2>
+<p>S2 takes the G1-validated design and produces a <b>PLAN.md per module</b> (or INFRA-PLAN.md for Slice 0). The backlog is ordered by <b>topological slicing</b> of S1's dependency graph. Each plan carries a living GT delta (ADDED / MODIFIED / REMOVED / RENAMED).</p>
+
+<h3>7.1 Mini-V cycle per module</h3>
+<figure>
+  <div class="scroll">
+  <svg viewBox="0 0 900 340" role="img" aria-label="Mini-V cycle per module: scope, acceptance, test strategy → PLAN.md → G2">
+    <g class="k-stage"><rect class="s" x="60" y="20" width="200" height="50" rx="8"/><text class="tb mid" x="160" y="40">Scope</text><text class="ts mid" x="160" y="58" style="fill:var(--stage-t)">traced SYS-* · contracts from S1</text></g>
+    <path class="e" d="M260,45 H310"/>
+    <g class="k-stage"><rect class="s" x="310" y="70" width="200" height="50" rx="8"/><text class="tb mid" x="410" y="90">Acceptance criteria</text><text class="ts mid" x="410" y="108" style="fill:var(--stage-t)">measurable · per VL</text></g>
+    <path class="e" d="M510,95 H560"/>
+    <g class="k-stage"><rect class="s" x="560" y="120" width="200" height="50" rx="8"/><text class="tb mid" x="660" y="140">Test strategy</text><text class="ts mid" x="660" y="158" style="fill:var(--stage-t)">stubs · vectors · VL target</text></g>
+    <path class="e" d="M660,170 V200"/>
+    <g class="k-proc"><rect class="s" x="280" y="200" width="380" height="60" rx="10"/><text class="tb mid" x="470" y="224">PLAN.md</text><text class="ts mid" x="470" y="246" style="fill:var(--proc-t)">self-contained specification entry-point for S3</text></g>
+    <path class="e dash" d="M660,220 V200 H800 V170"/>
+    <g class="k-amber"><rect class="s" x="700" y="120" width="180" height="50" rx="8" style="stroke-dasharray:5 3"/><text class="tb mid" x="790" y="140">Implementation notes</text><text class="ts mid" x="790" y="158" style="fill:var(--amber-t)">filled in S3</text></g>
+    <g class="k-gate"><rect class="s" x="460" y="280" width="200" height="44" rx="8"/><text class="tb mid" x="560" y="307">→ G2 micro-gate</text></g>
+    <path class="e" d="M470,260 V276"/>
+    <g class="k-input"><rect class="s" x="60" y="280" width="160" height="44" rx="8"/><text class="tb mid" x="140" y="300">S1 SDD</text><text class="ts mid" x="140" y="316" style="fill:var(--input-t)">contracts · SYS-* · DAG</text></g>
+    <path class="e" d="M140,280 V76 H60 V40 H56"/><text class="tl" x="148" y="195">inherits</text>
+    <g class="k-gate"><rect class="s" x="60" y="200" width="180" height="50" rx="8"/><text class="tb mid" x="150" y="218" style="font-size:12px">Living GT delta</text><text class="ts mid" x="150" y="238" style="fill:var(--gate-t)">ADDED · MODIFIED · REMOVED · RENAMED</text></g>
+    <path class="e" d="M240,225 H276"/>
+  </svg>
+  </div>
+  <figcaption>The mini-V is planned in S2 and executed in S3. Each PLAN.md inherits only the contracts and traced requirements it needs. INFRA-PLAN.md for Slice 0 specifies base layers + verification kit instead.</figcaption>
+</figure>
+
+<h3>7.2 Topological slicing</h3>
+<figure>
+  <div class="scroll">
+  <svg viewBox="0 0 900 150" role="img" aria-label="Topological build order: Slice 0 base, Slice 1 leaves, Slice 2 dependents, Slice 3 integration">
+    <g class="k-stage"><rect class="s" x="20" y="30" width="180" height="80" rx="10"/><text class="tb mid" x="110" y="55">Slice 0</text><text class="t mid" x="110" y="75">Base layers</text><text class="t mid" x="110" y="92">+ verification kit</text></g>
+    <path class="e" d="M200,70 H236"/>
+    <g class="k-gate"><rect class="s" x="240" y="30" width="150" height="80" rx="10"/><text class="tb mid" x="315" y="55">Slice 1</text><text class="t mid" x="315" y="75">Leaf modules</text><text class="t mid" x="315" y="92">(no module deps)</text></g>
+    <path class="e" d="M390,70 H426"/>
+    <g class="k-amber"><rect class="s" x="430" y="30" width="150" height="80" rx="10"/><text class="tb mid" x="505" y="55">Slice 2</text><text class="t mid" x="505" y="75">Modules depending</text><text class="t mid" x="505" y="92">on Slice 1</text></g>
+    <path class="e" d="M580,70 H616"/>
+    <g class="k-rfd"><rect class="s" x="620" y="30" width="150" height="80" rx="10"/><text class="tb mid" x="695" y="55">Slice 3+</text><text class="t mid" x="695" y="75">Integration +</text><text class="t mid" x="695" y="92">system paths</text></g>
+    <text class="ts" x="20" y="136">INFRA-PLAN.md for Slice 0 · PLAN.md for Slices 1+ · within a slice, independent modules may be built in parallel</text>
+  </svg>
+  </div>
+</figure>
+
+<!-- ======================================================================= -->
+<h2 id="g2-microgate">8 · G2: Module Plan Micro-Gate</h2>
+<p>G2 validates each PLAN.md before the module enters S3. Lightweight by design: G1 did the full review; G2 checks only that the plan is <b>self-contained, traceable, and buildable</b>. Runs once per module.</p>
+<figure>
+  <div class="scroll">
+  <svg viewBox="0 0 900 200" role="img" aria-label="G2: six checks on a module plan, then PASS to S3 or FAIL back to S2">
+    <g class="k-proc"><rect class="s" x="20" y="40" width="150" height="50" rx="8"/><text class="tb mid" x="95" y="60">PLAN.md</text><text class="ts mid" x="95" y="78" style="fill:var(--proc-t)">from S2</text></g>
+    <path class="e" d="M170,65 H206"/>
+    <g class="k-gate"><rect class="s" x="210" y="12" width="440" height="106" rx="8"/>
+      <text class="tb" x="224" y="34">G2 micro-gate checks</text>
+      <text class="ts" x="224" y="52" style="fill:var(--gate-t)">1. Completeness — all PLAN.md sections present and non-empty</text>
+      <text class="ts" x="224" y="66" style="fill:var(--gate-t)">2. Traceability — every traced_reqs entry exists in current GT</text>
+      <text class="ts" x="224" y="80" style="fill:var(--gate-t)">3. Contract consistency — consumes/provides match S1 and slice order</text>
+      <text class="ts" x="224" y="94" style="fill:var(--gate-t)">4. Task ordering — dependencies respected, no forward references</text>
+      <text class="ts" x="224" y="108" style="fill:var(--gate-t)">5. Verification feasibility — data sources and criteria achievable</text></g>
+    <text class="ts" x="500" y="52" style="fill:var(--gate-t)">6. Fresh-context sufficiency</text>
+    <path class="e green" d="M650,65 H696"/><text class="tl" x="658" y="58">PASS</text>
+    <g class="k-stage"><rect class="s" x="700" y="40" width="170" height="50" rx="8"/><text class="tb mid" x="785" y="60">→ S3</text><text class="ts mid" x="785" y="78" style="fill:var(--stage-t)">fresh context per module</text></g>
+    <path class="e amber dash" d="M430,118 V146"/><text class="tl" x="438" y="136">FAIL</text>
+    <g class="k-amber"><rect class="s" x="260" y="150" width="340" height="40" rx="8"/><text class="tb mid" x="430" y="175">→ S2 (plan defect) · S1 (design defect) · S0 (GT defect)</text></g>
+  </svg>
+  </div>
+  <figcaption>G2 is fast: one plan at a time. Four verdict types: PASS → S3, FAIL plan defect → S2, FAIL design defect → S1, FAIL GT defect → S0.</figcaption>
+</figure>
+
+<!-- ======================================================================= -->
+<h2 id="s3">9 · S3: Per-Module Implementation and System Integration</h2>
+<p>Each module enters S3 in <b>fresh context</b> (P7): PLAN.md + contracts + base-layer API + verification kit + stubs. The context does NOT carry: full system design, complete GT, other modules' source code, or accumulated state. <b>Step through the sandwich integration.</b></p>
+<div class="btns">
+  <button type="button" id="s2-prev">◀ Previous</button>
+  <button type="button" id="s2-next">Next ▶</button>
+  <span class="note" id="s2-count" style="align-self:center"></span>
+</div>
+<figure>
+  <div class="scroll">
+  <svg id="s2-diagram" viewBox="0 0 900 300" role="img" aria-label="Sandwich integration stepper">
+    <g id="s2-slots"></g>
+    <g class="k-stage" id="s2-base"><rect class="s" x="30" y="222" width="840" height="58" rx="10"/>
+      <text class="tb mid" x="450" y="247">Base layer</text><text class="t mid" x="450" y="266">orchestration · HAL interface · routing</text></g>
+  </svg>
+  </div>
+  <div class="card" id="s2-card" aria-live="polite"></div>
+</figure>
+
+<div class="tablewrap card">
+<table>
+  <thead><tr><th>Mandatory floor (VL-0): cannot be skipped</th><th>Always required</th></tr></thead>
+  <tbody>
+    <tr><td><b>Base layer</b></td><td>Unit test + top-down integration with stubs</td></tr>
+    <tr><td><b>Each module</b></td><td>Unit test + bottom-up integration with driver</td></tr>
+    <tr><td><b>Each cross-subsystem contract</b></td><td>Producer and consumer tests with fake peers, incl. version and failure cases</td></tr>
+    <tr><td><b>Each cross-subsystem SYS-* path</b></td><td>Deterministic test across connected subsystem processes</td></tr>
+    <tr><td><b>Telemetry companion</b></td><td>Running and recording during all tests; UC state attached to every evidence record</td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ======================================================================= -->
+<h2 id="g3">10 · G3: Adaptive Verification Gate</h2>
+<h3>10.1 Verification levels nest</h3>
+<figure>
+  <div class="scroll">
+  <svg viewBox="0 0 900 300" role="img" aria-label="VL-2 contains VL-1 which contains VL-0; telemetry companion spans all">
+    <rect x="20" y="20" width="560" height="220" rx="14" style="fill:var(--rfd-f);stroke:var(--rfd-s);stroke-width:1.6;stroke-dasharray:6 4"/>
+    <text class="tb" x="38" y="46" style="fill:var(--rfd-t)">VL-2 · HIL</text><text class="ts" x="38" y="64" style="fill:var(--rfd-t)">+ real HW · real data · only in mock+real · optional</text>
+    <rect x="50" y="80" width="500" height="140" rx="12" style="fill:var(--amber-f);stroke:var(--amber-s);stroke-width:1.6;stroke-dasharray:6 4"/>
+    <text class="tb" x="68" y="106" style="fill:var(--amber-t)">VL-1 · Mock / SIL</text><text class="ts" x="68" y="124" style="fill:var(--amber-t)">+ measured multi-subsystem system test · optional</text>
+    <rect x="80" y="140" width="440" height="60" rx="10" style="fill:var(--gate-f);stroke:var(--gate-s);stroke-width:2"/>
+    <text class="tb" x="98" y="165" style="fill:var(--gate-t)">VL-0 · Logic — MANDATORY</text>
+    <text class="ts" x="98" y="184" style="fill:var(--gate-t)">unit + sandwich + contracts + deterministic system paths</text>
+    <g class="k-proc"><rect class="s" x="20" y="254" width="860" height="34" rx="8"/><text class="t mid" x="450" y="276">Telemetry companion · every level · UC state attached to every evidence record</text></g>
+  </svg>
+  </div>
+</figure>
+
+<h3>10.2 Adaptive rule: pick a scenario</h3>
+<p>The user chooses a level per module and system path, per cycle. Four constraints: <b>floor</b> (VL-0 always), <b>honesty</b> (claim ≤ environment tested), <b>telemetry context</b> (outside envelope → flagged), <b>HAL mode ceiling</b> (<code>mock-only</code> caps at VL-1). G3 runs the tests S3 wrote and writes none; runs in a separate verifier context (P2).</p>
+<div class="btns" id="scen-btns"></div>
+<figure>
+  <div class="vl-matrix" id="vlm" aria-live="polite"></div>
+  <div class="subgates" id="subgates">
+    <div data-sg="0"><b>G3.0</b> always · unit + sandwich + contracts + deterministic paths · Mock HAL golden vectors · companion UC nominal</div>
+    <div data-sg="1"><b>G3.1</b> VL-1+ · Mock HAL synthetic data · Mock/SIL across subsystems · metrics within thresholds · companion UC nominal</div>
+    <div data-sg="2"><b>G3.2</b> VL-2 (only <code>mock+real</code>) · Real HW HAL on COTS · enrollment required · SyRS <code>PROTO-*</code> · representative link · companion UC nominal</div>
+  </div>
+  <div class="card" id="scen-card"></div>
+</figure>
+
+<!-- ======================================================================= -->
+<h2 id="feedback">11 · Feedback routing (5 classes)</h2>
+<p>G3 failures are classified into five outcomes. An <b>operational problem</b> (DUT/environment) is fixed on the target and G3 re-run. A <b>defect</b> is fixed inside V-SIL. An <b>RFD</b> suspends V-SIL until the Build Package is updated. <b>Self-diagnosis:</b> if a module that was <i>not</i> changed fails → undeclared dependency → design defect → S1. <b>Pick a failure</b> to see its route.</p>
+<div class="btns" id="fb-btns"></div>
+<figure>
+  <div class="scroll">
+  <svg id="fbt" viewBox="0 0 900 370" role="img" aria-label="Decision tree: operational, design defect, plan defect, module defect, or RFD">
+    <path id="e-f-q1" class="e" d="M450,62 V82"/>
+    <path id="e-q1-q2" class="e amber" d="M392,140 H262 V170"/><text class="tl" x="290" y="132">yes: defect</text>
+    <path id="e-q1-rfd" class="e red" d="M508,140 H660 V188"/><text class="tl" x="545" y="132">no: infeasible</text>
+    <path id="e-q2-s1" class="e amber" d="M212,232 H110 V266"/><text class="tl" x="130" y="226">design</text>
+    <path id="e-q2-s2" class="e proc" d="M262,292 V316"/><text class="tl" x="270" y="308">plan</text>
+    <path id="e-q2-s3" class="e amber" d="M312,232 H430 V266"/><text class="tl" x="360" y="226">module</text>
+    <path id="e-rfd-bp" class="e red dash" d="M660,236 V266"/>
+    <g class="k-input" id="n-fail"><rect class="s" x="370" y="16" width="160" height="46" rx="8"/><text class="tb mid" x="450" y="44">Gate failure</text></g>
+    <g class="k-input" id="n-q1"><polygon class="s" points="450,84 508,140 450,196 392,140"/><text class="ts mid" x="450" y="128" style="fill:var(--input-t)">requirements</text><text class="ts mid" x="450" y="142" style="fill:var(--input-t)">achievable on</text><text class="ts mid" x="450" y="156" style="fill:var(--input-t)">this COTS?</text></g>
+    <g class="k-amber" id="n-q2"><polygon class="s" points="262,172 312,232 262,292 212,232"/><text class="ts mid" x="262" y="227" style="fill:var(--amber-t)">where is</text><text class="ts mid" x="262" y="241" style="fill:var(--amber-t)">the fault?</text></g>
+    <g class="k-stage" id="n-s1"><rect class="s" x="30" y="270" width="160" height="52" rx="8"/><text class="tb mid" x="110" y="292">→ S1</text><text class="ts mid" x="110" y="310" style="fill:var(--stage-t)">design defect</text></g>
+    <g class="k-proc" id="n-s2"><rect class="s" x="182" y="320" width="160" height="52" rx="8"/><text class="tb mid" x="262" y="342">→ S2</text><text class="ts mid" x="262" y="360" style="fill:var(--proc-t)">plan defect</text></g>
+    <g class="k-stage" id="n-s3"><rect class="s" x="350" y="270" width="160" height="52" rx="8"/><text class="tb mid" x="430" y="292">→ S3</text><text class="ts mid" x="430" y="310" style="fill:var(--stage-t)">module defect</text></g>
+    <g class="k-rfd" id="n-rfd"><rect class="s" x="580" y="190" width="160" height="46" rx="8"/><text class="tb mid" x="660" y="218">RFD</text></g>
+    <g class="k-input" id="n-bp"><rect class="s" x="580" y="270" width="160" height="52" rx="8"/><text class="tb mid" x="660" y="292">Build Package</text><text class="ts mid" x="660" y="310" style="fill:var(--input-t)">author · re-enter S0</text></g>
+    <text class="tl" x="770" y="214">V-SIL suspends</text>
+    <text class="ts" x="20" y="360" style="fill:var(--stub-s)">⚠ Operational problems (DUT/env) do not enter this tree → fix and re-run G3</text>
+  </svg>
+  </div>
+  <div class="card" id="fb-card" aria-live="polite"></div>
+</figure>
+
+<div class="compare" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">
+  <div class="card" style="border-top:4px solid var(--stub-s)"><h4>Operational fix</h4>DUT/env problem (SSH, udev, permissions). Fix target, re-run G3.</div>
+  <div class="card d"><h4>Design defect → S1</h4>DAG undeclared dependency; contract incomplete. Self-diagnosis: unchanged module fails → S1.</div>
+  <div class="card" style="border-top:4px solid var(--proc-s)"><h4>Plan defect → S2</h4>PLAN.md omitted contract; verification plan missing level; task ordering violated.</div>
+  <div class="card d"><h4>Module defect → S3</h4>Processing output wrong; deserialisation bug.</div>
+  <div class="card r"><h4>RFD</h4>Requirements infeasible on COTS. Build Package must change.</div>
+</div>
+
+<!-- ======================================================================= -->
+<h2 id="triage">12 · Failure triage and draft mode (S0 · G0 · G1)</h2>
+<p>V-SIL v4 softens the <i>loop</i>, not the <i>checks</i>, through two devices scoped to S0, G0 and G1 — never to S2, S3, or G3.</p>
+<div class="grid">
+  <div class="card"><h4>Failure triage</h4><p>Every G0 ERROR, missing-list placeholder and G1 open finding is translated before it reaches the human. The agent describes each requirement by what it asks (block ID in parentheses) and offers 2–4 concrete reconciliation options. The human chooses; the agent applies. The verdict stays the validator's exit code (G0) or the human's answer (Gate H, G1).</p></div>
+  <div class="card"><h4>Draft mode</h4><p>When a requirements stage finds unresolved items, it <b>enters draft automatically</b> and cannot advance until each one is resolved. Mechanical fixes (removing scaffolding, filling a stated value, dropping broken references) are auto-applied and reported. Judgment calls go to the human: fix, ignore/accept (recorded with decider's name), or escalate to RFD. On commit — all items decided — one recorded run is written.</p></div>
+</div>
+
+<!-- ======================================================================= -->
+<h2 id="terminal">13 · Terminal output: the Verified Prototype</h2>
+<p>The deliverable lists delivered software (<code>src/</code>), module plans (<code>plans/</code>), and verification kit (<code>verification/</code>). Evidence per module and cross-subsystem path, with the environment behind each claim (P4). The verifier context is named.</p>
+<div class="evid">
+  <div class="ev v2"><span class="mono">iq_acquisition</span><span class="badge b2">VL-2 HIL</span><br><span class="note">Real HW HAL, COTS device · Plan: plans/hw_acquisition/PLAN.md (slice 1)</span><br><b style="color:var(--rfd-s)">VALIDATED</b> on real hardware</div>
+  <div class="ev v1"><span class="mono">fft_engine</span><span class="badge b1">VL-1 SIL</span><br><span class="note">Mock HAL, golden vectors (v1.2, SHA bc3f…) · Plan: slice 2</span><br><b style="color:var(--amber-s)">VERIFIED</b> against synthetic data</div>
+  <div class="ev v1"><span class="mono">feature_extractor</span><span class="badge b1">VL-1 SIL</span><br><span class="note">Mock HAL, synthetic data · Plan: slice 3</span><br><b style="color:var(--amber-s)">VERIFIED</b></div>
+  <div class="ev v0"><span class="mono">classifier</span><span class="badge b0">VL-0 logic</span><br><span class="note">Mock HAL, deterministic vectors · Plan: slice 4</span><br><b style="color:var(--gate-s)">VERIFIED</b> at logic level</div>
+  <div class="ev v1"><span class="mono">audio_demod</span><span class="badge b1">VL-1 SIL</span><br><span class="note">Mock HAL, synthetic FM-modulated I/Q · Plan: slice 1</span><br><b style="color:var(--amber-s)">VERIFIED</b></div>
+  <div class="ev v0"><span class="mono">data_store</span><span class="badge b0">VL-0 logic</span><br><span class="note">Mock HAL, deterministic vectors · Plan: slice 4</span><br><b style="color:var(--gate-s)">VERIFIED</b> at logic level</div>
+  <div class="ev v1"><span class="mono">dashboard · UI</span><span class="badge b1">VL-1</span><br><span class="note">edge messages on simulated link · Plan: slice 1</span><br><b style="color:var(--amber-s)">VERIFIED</b></div>
+  <div class="ev v0"><span class="mono">controls · UI</span><span class="badge b0">VL-0</span><br><span class="note">command and ack vectors · Plan: slice 1</span><br><b style="color:var(--gate-s)">VERIFIED</b></div>
+  <div class="ev v1"><span class="mono">PATH-001 · edge → UI</span><span class="badge b1">VL-1</span><br><span class="note">SYS-002 occupancy display, connected subsystems, Mock HAL</span><br><b style="color:var(--amber-s)">VERIFIED</b> end to end</div>
+</div>
+<div class="grid" style="margin-top:.7rem">
+  <div class="card"><h4>Telemetry companion</h4>All tests: UC within envelope.<br><span class="mono">CPU 63% · Temp 68 °C · Dropped 0</span><br><span class="note">Verification infrastructure, not module evidence.</span></div>
+  <div class="card"><h4>Honesty declaration</h4><b>VL-2:</b> validated on real hardware; screening grade calibration.<br><b>VL-1:</b> verified against synthetic data.<br><b>VL-0:</b> verified at logic level only.<br><b>PIL:</b> VERIFIED, not VALIDATED (Mock HAL inputs).</div>
+  <div class="card"><h4>Delta traceability log</h4><span class="mono">GT at S2 entry: v1.0</span><br><span class="mono">Deltas: 0 ADDED, 0 MODIFIED, 0 REMOVED</span><br><span class="mono">GT at G3 exit: v1.0</span></div>
+</div>
+
+<h3 id="future-work">13.1 Future work register</h3>
+<details class="card"><summary>FW-001 · CI/CD automation of G3 evidence</summary><p>A pipeline reproduces declared G3 checks and links reports to cycle and source revision.</p></details>
+<details class="card"><summary>FW-002 · PIL as a full G3 sub-gate with timing/scheduling checks</summary><p>Currently PIL is a declared mode; a dedicated G3.PIL sub-gate is not yet defined.</p></details>
+<details class="card"><summary>FW-003 · Formal fault injection at VL-2 (ISO 26262-5 §10)</summary><p>Current VL-2 tests nominal operation only. Fault scenarios per module.</p></details>
+<details class="card"><summary>FW-004 · SIL ↔ HIL correlation measurement</summary><p>Quantified deviation between Mock HAL and Real HW HAL results for overlapping test cases.</p></details>
+<details class="card"><summary>FW-005 · MLOps for the optional ML model (S3/G3 integration)</summary><p>Pipeline reproduces training from versioned data and links each model version to its G3 evidence.</p></details>
+<details class="card"><summary>FW-006 · Automated PLAN.md generation from S1 design</summary><p>Reduce manual S2 effort for large module counts.</p></details>
+
+<p class="note" style="margin-top:1rem">Source: <code>methodology/V-SIL-v4/V-SIL_v4.md</code> (4.0, November 2026). References [n] refer to that paper's list.</p>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const SVGNS = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs = {}, text) => {
+    const n = document.createElementNS(SVGNS, tag);
+    for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+    if (text != null) n.textContent = text;
+    return n;
+  };
+  const activate = (node, fn) => {
+    node.addEventListener("click", fn);
+    node.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fn(); } });
+  };
+  const press = (group, btn) => $$("button", group).forEach(b => b.setAttribute("aria-pressed", String(b === btn)));
+
+  // ---- theme ----------------------------------------------------------
+  $("#theme").addEventListener("click", () => {
+    const root = document.documentElement;
+    const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    root.dataset.theme = dark ? "light" : "dark";
+  });
+
+  // ---- §2 overview ----------------------------------------------------
+  const INFO = {
+    BP: ["Build Package", "Input, owned outside V-SIL", "PRD with measurable constraints, COTS envelope, acceptance criteria, lab procedures, calibration, tolerances.", "—", "Its author", "→ S0. Receives RFDs and returns an updated Build Package."],
+    S0: ["S0 · Normalisation + GT", "Stage", "Build Package", "G0_StRS.md (§9.4) and G0_SyRS.md (§9.5). Report records version/digest of every input.", "Fills IEEE 29148 blueprints; makes no judgement on sufficiency. SDAD Phase 1.", "→ G0"],
+    G0: ["G0 · Structural validation", "Gate (deterministic)", "StRS + SyRS + S0 report", "Exit code 0 or 1. Checks stale detection on S0's report.", "g0_validate.py (stdlib-only, no AI), then human Gate H", "PASS + Gate H → S1 · FAIL → S0"],
+    S1: ["S1 · System design with module decomposition", "Stage", "G0-validated GT", "SDD: subsystems, layered architecture, module identity blocks, DAG, contracts, HAL mode, verification kit spec, telemetry companion, toolchain. Report with input digests.", "Design work (see §5–6)", "→ G1 · infeasible → RFD"],
+    G1: ["G1 · Design review (12 checks + 1 conditional)", "Gate (HITL)", "S1 SDD + GT", "PASS / FAIL / RFD on 12 check families + conditional ML check", "Human design review; agent prepares and recommends", "PASS → S2 · FAIL → S1 · infeasible → RFD"],
+    S2: ["S2 · Module Planning (Agile-V)", "Stage", "G1-validated SDD + topological order", "INFRA-PLAN.md (Slice 0) + PLAN.md per module (Slices 1+). Delta traceability. Report with input digests.", "Per-module mini-V: scope → acceptance → test strategy → PLAN.md", "→ G2 (per module)"],
+    G2: ["G2 · Module Plan Micro-Gate", "Gate (lightweight, per-module)", "PLAN.md for one module", "PASS / FAIL on 6 checks. Stale detection on S2 report.", "Agent-prepared, human-approved", "PASS → S3 · plan defect → S2 · design defect → S1 · GT defect → S0"],
+    S3: ["S3 · Per-module implementation", "Stage", "G2-approved PLAN.md; fresh context (P7)", "Subsystem bases, modules in DAG order, verification kit, tests at all declared VL. S3 writes tests; G3 runs them.", "Fresh context per module. Sandwich integration.", "→ G3"],
+    G3: ["G3 · Adaptive verification", "Gate", "Implemented system + declared VL per module/path", "Per-module and system-path evidence with UC readings. 5 failure classes.", "Sub-gates G3.0 (always), G3.1 (VL-1+), G3.2 (VL-2, enrollment required). Verifier context (P2).", "PASS → Verified Prototype · operational → fix DUT · design → S1 · plan → S2 · module → S3 · infeasible → RFD"],
+    T: ["Verified Prototype", "Terminal output", "G3 PASS", "Delivered src/, plans/, verification/, delta traceability log, honesty declaration, telemetry companion report, optional FW register", "—", "Delivered"],
+    RFD: ["Request for Deviation", "External feedback", "Evidence that requirements are infeasible on declared COTS", "Conflicting reqs, evidence with VL, trade-off options, impact analysis, recommendation (ECSS/MIL-HDBK-61A/NASA NPR 7150.2)", "From S1, G1 or G3. S0/G0 do not emit. S2/G2 do not emit directly.", "→ Build Package author → updated Build Package → S0"],
+  };
+  const ovCard = $("#ov-card");
+  const showNode = id => {
+    const [title, kind, input, output, decider, routes] = INFO[id];
+    $$("#ov [data-node]").forEach(n => n.classList.toggle("sel", n.dataset.node === id));
+    ovCard.innerHTML = `<h4>${title} <span class="tag">${kind}</span></h4><dl>
+      <dt>Consumes</dt><dd>${input}</dd><dt>Produces</dt><dd>${output}</dd>
+      <dt>Who decides</dt><dd>${decider}</dd><dt>Routes</dt><dd>${routes}</dd></dl>`;
+  };
+  $$("#ov [data-node]").forEach(n => activate(n, () => showNode(n.dataset.node)));
+  showNode("G3");
+  $("#ov-fb").addEventListener("click", e => {
+    const on = e.currentTarget.getAttribute("aria-pressed") !== "true";
+    e.currentTarget.setAttribute("aria-pressed", String(on));
+    $("#ov .fb").style.display = on ? "" : "none";
+  });
+
+  // ---- §4 G0 simulation ----------------------------------------------
+  $("#g0-sim").addEventListener("click", e => {
+    const fail = e.currentTarget.getAttribute("aria-pressed") !== "true";
+    e.currentTarget.setAttribute("aria-pressed", String(fail));
+    const ph = $('#g0-diagram [data-ph="3"]');
+    ph.classList.toggle("k-gate", !fail); ph.classList.toggle("k-rfd", fail);
+    $(".ok", ph).textContent = fail ? "✗" : "✓";
+    $("#g0-pass").classList.toggle("dim", fail); $("#g0-passbox").classList.toggle("dim", fail);
+    $("#g0-fail").classList.toggle("dim", !fail); $("#g0-failbox").classList.toggle("dim", !fail);
+    $("#g0-card").textContent = fail
+      ? "A required field is missing in one SYS-* block, so the script exits 1 (P3: mechanical rejection beats any approval). The GT is edited in S0 and G0 runs again."
+      : "All four check families pass, so the script exits 0. Gate H, a human, now authorises the move to S1 (P1: authorisation, not evidence).";
+  });
+  $("#g0-fail").classList.add("dim"); $("#g0-failbox").classList.add("dim");
+
+  // ---- §5 subsystem stars -----------------------------------------------
+  const STAR_SUBSYSTEMS = [
+    { id: "SUB-EDGE", label: "SUB-EDGE\nEDGE base\nHAL, routing", modules: [
+      { id: "iq_acquisition", label: "iq_acquisition\nHAL · VL-2", color: "#378ADD" },
+      { id: "fft_engine", label: "fft_engine\nDSP · VL-1", color: "#1D9E75" },
+      { id: "feature_extractor", label: "feature_extractor\nDSP · VL-1", color: "#1D9E75" },
+      { id: "classifier", label: "classifier\nDecision · VL-0", color: "#B7791F" },
+      { id: "audio_demod", label: "audio_demod\nOutput · VL-1", color: "#1D9E75" },
+      { id: "data_store", label: "data_store\nOutput · VL-0", color: "#888780" },
+    ] },
+    { id: "SUB-UI", label: "SUB-UI\nUI base\nAPI, state", modules: [
+      { id: "dashboard", label: "dashboard\nPresentation · VL-1", color: "#378ADD" },
+      { id: "controls", label: "controls\nControl · VL-0", color: "#378ADD" },
+      { id: "alerts", label: "alerts\nPresentation · VL-0", color: "#888780" },
+      { id: "history", label: "history\nPresentation · VL-0", color: "#888780" },
+    ] },
+  ];
+  const STAR_HARDWARE = [{ id: "HWC-001", label: "HWC-001\nHackRF", to: ["SUB-EDGE/iq_acquisition"] }];
+  const STAR_CONTRACTS = [
+    { id: "occupancy.v1", view: "telemetry", from: "SUB-EDGE", to: "SUB-UI" },
+    { id: "configure.v1", view: "control", from: "SUB-UI", to: "SUB-EDGE" },
+  ];
+  const STAR_RED = "#D85A30", STAR_GREY = "#B4B2A9", STAR_BASE = "#7F77DD";
+  const STAR_INFO = {
+    all: "<b>One system, two subsystems.</b> Each subsystem owns its base and modules. The shared GT allocates SYS-* to modules or cross-subsystem paths. Contracts defined before either subsystem is implemented.",
+    telemetry: "<b>occupancy.v1 · edge → UI.</b> Timestamped occupancy with units, schema version, latency budget. SYS-002 accepted when connected edge → dashboard path meets its declared criterion.",
+    control: "<b>configure.v1 · UI → edge.</b> Authorization, acknowledgement, timeout, retry, disconnect behavior. Runtime return path; implementation DAG stays acyclic.",
+  };
+  const starBox = n => ({ ...n, shape: "box", font: { color: "#fff", size: 20 } });
+  let starNodes = null, starEdges = null, starView = "all";
+  const paintStars = () => {
+    if (!starNodes) return;
+    STAR_CONTRACTS.forEach(c => {
+      const on = starView === "all" || starView === c.view, opacity = on ? 1 : .16;
+      starNodes.update({ id: `c:${c.id}`, opacity });
+      [`${c.id}:in`, `${c.id}:out`].forEach(id => starEdges.update({
+        id, width: starView === c.view ? 4 : 1.5, color: { color: STAR_RED, opacity },
+      }));
+    });
+  };
+  const drawStars = () => {
+    starNodes = new vis.DataSet([
+      ...STAR_SUBSYSTEMS.map(s => ({ id: s.id, label: s.label, color: STAR_BASE, shape: "circle", font: { color: "#fff", size: 20 } })),
+      ...STAR_SUBSYSTEMS.flatMap(s => s.modules.map(m => starBox({ ...m, id: `${s.id}/${m.id}` }))),
+      ...STAR_HARDWARE.map(h => starBox({ id: h.id, label: h.label, color: STAR_RED })),
+      ...STAR_CONTRACTS.map(c => starBox({ id: `c:${c.id}`, label: c.id, color: STAR_RED })),
+    ]);
+    starEdges = new vis.DataSet([
+      ...STAR_SUBSYSTEMS.flatMap(s => s.modules.map(m => ({ from: s.id, to: `${s.id}/${m.id}`, color: { color: STAR_GREY } }))),
+      ...STAR_HARDWARE.flatMap(h => h.to.map(to => ({ from: h.id, to, arrows: "to", dashes: true, color: { color: STAR_RED } }))),
+      ...STAR_CONTRACTS.flatMap(c => [
+        { id: `${c.id}:in`, from: c.from, to: `c:${c.id}`, arrows: "to", color: { color: STAR_RED } },
+        { id: `${c.id}:out`, from: `c:${c.id}`, to: c.to, arrows: "to", color: { color: STAR_RED } },
+      ]),
+    ]);
+    new vis.Network($("#stars"), { nodes: starNodes, edges: starEdges }, {
+      layout: { randomSeed: 1 },
+      physics: { solver: "repulsion", repulsion: { nodeDistance: 180 } },
+      nodes: { borderWidth: 0, shadow: { enabled: true, size: 6, color: "rgba(0,0,0,0.1)" } },
+      edges: { width: 1.5, smooth: { type: "continuous" } },
+      interaction: { hover: true, tooltipDelay: 100, zoomView: false },
+    });
+    paintStars();
+  };
+  if (window.vis) {
+    drawStars();
+  } else {
+    const cdn = document.createElement("script");
+    cdn.src = "https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.9/dist/vis-network.min.js";
+    cdn.onload = drawStars;
+    cdn.onerror = () => { $("#stars").textContent = "vis-network could not load."; };
+    document.head.append(cdn);
+  }
+  const starBtns = $("#star-btns");
+  $$("button[data-star-view]", starBtns).forEach(btn => btn.addEventListener("click", () => {
+    press(starBtns, btn);
+    starView = btn.dataset.starView;
+    paintStars();
+    $("#star-card").innerHTML = STAR_INFO[starView];
+  }));
+  $("#star-card").innerHTML = STAR_INFO.all;
+
+  // ---- §5.3 HAL substitution ladder -----------------------------------
+  const HAL_INFO = {
+    v0: "<b>VL-0 · Mock HAL.</b> Deterministic golden vectors: short, repeatable, edge-case. Each vector carries SHA-256 digest, generation parameters, condition, expected output.",
+    v1: "<b>VL-1 · Mock HAL.</b> Synthetic data files at known conditions using a software synthesiser or recorded golden captures.",
+    v2: "<b>VL-2 · Real HW HAL (only in <code>mock+real</code>).</b> COTS device. Executes SyRS <code>PROTO-*</code> lab procedures, screening-grade calibration, declared tolerances. Final field tests.",
+  };
+  const halBtns = $("#hal-btns");
+  const showHal = id => {
+    ["v0", "v1", "v2"].forEach(v => {
+      $(`#hal-${v}`).classList.toggle("dim", v !== id);
+      const edge = $(`#e-hal-${v}`);
+      edge.classList.toggle("dim", v !== id);
+      edge.classList.toggle("lit", v === id);
+    });
+    $("#hal-bp").classList.toggle("dim", id !== "v2");
+    $("#e-hal-bp").classList.toggle("dim", id !== "v2");
+    $("#hal-card").innerHTML = HAL_INFO[id];
+  };
+  $$("button[data-hal]", halBtns).forEach(btn => btn.addEventListener("click", () => {
+    press(halBtns, btn);
+    showHal(btn.dataset.hal);
+  }));
+  showHal("v0");
+
+  // ---- §9 S3 stepper --------------------------------------------------
+  const MODS = [
+    ["iq_acquisition", "k-hal"], ["fft_engine", "k-dsp"], ["audio_demod", "k-out"],
+    ["feature_extractor", "k-dsp"], ["classifier", "k-dec"], ["data_store", "k-out"],
+  ];
+  const STEPS = [
+    "<b>Step 0 · INFRA-PLAN.md → base + verification kit.</b> Implement orchestration, HAL interface, routing. Build the full verification kit: Mock HAL, golden vectors + manifest, telemetry companion, stubs, fake peers, drivers. Every module is a <b>stub</b>. Run <b>top-down integration</b>: base + all stubs.",
+    ...MODS.map(([m], i) => `<b>Step 1.${i + 1} · <span class="mono">${m}</span> (PLAN.md, fresh context).</b> Implement from PLAN.md tasks. <b>Unit-test</b> in isolation. <b>Driver</b> calls it through the base (<b>bottom-up integration</b>). Stub replaced.`),
+    "<b>Subsystem complete.</b> Base and modules pass local unit + sandwich tests. Build the other subsystem the same way. Cross-subsystem contract tests with fake peers, then connected-subsystem path tests. Those complete VL-0 floor.",
+  ];
+  let step = 0;
+  const slots = $("#s2-slots");
+  const drawS2 = () => {
+    slots.replaceChildren();
+    MODS.forEach(([m, kind], i) => {
+      const x = 30 + i * 142, state = step === 0 ? "stub" : i + 1 < step || step === STEPS.length - 1 ? "done" : i + 1 === step ? "active" : "stub";
+      const g = el("g", { class: state === "stub" ? "k-stub" : `${kind}${state === "active" ? " pulse" : ""}` });
+      g.append(el("rect", { class: "s", x, y: 104, width: 132, height: 58, rx: 8 }));
+      g.append(el("text", { class: "t mid mono", x: x + 66, y: 129, style: "font-size:11.5px" }, m));
+      g.append(el("text", { class: "ts mid", x: x + 66, y: 148 }, state === "stub" ? "stub" : state === "active" ? "unit ✓ · driver ✓" : "integrated"));
+      slots.append(g);
+      slots.append(el("path", { class: `e${state === "stub" ? " dash" : ""}`, d: `M${x + 66},162 V218` }));
+      if (state === "active") {
+        const d = el("g", { class: "k-proc" });
+        d.append(el("rect", { class: "s", x: x + 16, y: 24, width: 100, height: 40, rx: 6 }));
+        d.append(el("text", { class: "ts mid", x: x + 66, y: 48, style: "fill:var(--proc-t)" }, "driver"));
+        slots.append(d, el("path", { class: "e", d: `M${x + 66},64 V100` }));
+      }
+    });
+    const lbl = step === 0 ? "top-down: base + all stubs (INFRA-PLAN.md)" : step === STEPS.length - 1 ? "sandwich integration complete" : "bottom-up: driver → module → base (PLAN.md, fresh context)";
+    slots.append(el("text", { class: "tl", x: 30, y: 14 }, lbl));
+    $("#s2-card").innerHTML = STEPS[step];
+    $("#s2-count").textContent = `${step + 1} / ${STEPS.length}`;
+    $("#s2-prev").disabled = step === 0; $("#s2-next").disabled = step === STEPS.length - 1;
+  };
+  $("#s2-prev").addEventListener("click", () => { step = Math.max(0, step - 1); drawS2(); });
+  $("#s2-next").addEventListener("click", () => { step = Math.min(STEPS.length - 1, step + 1); drawS2(); });
+  drawS2();
+
+  // ---- §10 G3 scenarios ------------------------------------------------
+  const REQ = { iq_acquisition: 2, fft_engine: 1, feature_extractor: 1, classifier: 0, audio_demod: 1, data_store: 0 };
+  const ORDER = Object.keys(REQ);
+  const SCEN = {
+    "Fast iteration": [{}, "VL-0 for every module and path: unit, sandwich, contract and deterministic connected-subsystem tests."],
+    "DSP validation": [{ fft_engine: 1, feature_extractor: 1 }, "Mock/SIL for DSP; VL-0 floor for everything else. G3.1 fires for DSP modules."],
+    "Pre-release": [Object.fromEntries(ORDER.map(m => [m, m === "iq_acquisition" ? 2 : 1])), "VL-1 for most; HIL for acquisition. All three sub-gates fire. Enrollment required for G3.2."],
+    "Full release": [{ ...REQ }, "Every module and system path at its S1 required_vl. The matrix shows edge modules."],
+  };
+  const vlm = $("#vlm"), sb = $("#scen-btns");
+  const drawScen = name => {
+    const [over, text] = SCEN[name], decl = Object.fromEntries(ORDER.map(m => [m, over[m] ?? 0]));
+    vlm.innerHTML = `<div class="h">Module</div><div class="h">VL-0</div><div class="h">VL-1</div><div class="h">VL-2</div><div class="h">vs required</div>` +
+      ORDER.map(m => {
+        const cells = [0, 1, 2].map(l => `<div class="c${l <= decl[m] ? ` on${decl[m]}` : ""}${l === REQ[m] ? " req" : ""}" aria-label="VL-${l}${l <= decl[m] ? " declared" : ""}${l === REQ[m] ? ", required" : ""}"></div>`).join("");
+        const gap = decl[m] < REQ[m] ? `below (VL-${REQ[m]})` : decl[m] > REQ[m] ? "above required" : "at required";
+        return `<div class="m">${m}</div>${cells}<div class="st">${gap}</div>`;
+      }).join("");
+    const max = Math.max(...Object.values(decl));
+    $$("#subgates [data-sg]").forEach(d => d.classList.toggle("on", Number(d.dataset.sg) <= max));
+    $("#scen-card").innerHTML = `<b>${name}.</b> ${text}`;
+  };
+  Object.keys(SCEN).forEach((name, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = name; b.setAttribute("aria-pressed", String(i === 0));
+    b.addEventListener("click", () => { press(sb, b); drawScen(name); });
+    sb.append(b);
+  });
+  drawScen("Fast iteration");
+
+  // ---- §11 feedback cases ----------------------------------------------
+  const PATHS = {
+    S1: ["e-f-q1", "e-q1-q2", "e-q2-s1", "n-q1", "n-q2", "n-s1"],
+    S2: ["e-f-q1", "e-q1-q2", "e-q2-s2", "n-q1", "n-q2", "n-s2"],
+    S3: ["e-f-q1", "e-q1-q2", "e-q2-s3", "n-q1", "n-q2", "n-s3"],
+    RFD: ["e-f-q1", "e-q1-rfd", "e-rfd-bp", "n-q1", "n-rfd", "n-bp"],
+    OPS: [],
+  };
+  const CASES = [
+    ["G3: SSH auth failure to target", "OPS", "Operational problem: fix DUT access, re-run G3. Never routes to S1/S2/S3."],
+    ["G3: udev/plugdev rule missing", "OPS", "Operational: code is correct, device access misconfigured. Fix and re-run G3."],
+    ["FFT wrong normalisation", "S3", "Module defect: code is wrong, requirement is achievable. Fix in S3, re-test."],
+    ["Classifier logic error", "S3", "Module defect, fixed in S3."],
+    ["PLAN.md omitted needed contract", "S2", "Plan defect: the plan is incomplete. Fix PLAN.md in S2."],
+    ["Verification plan missing declared VL", "S2", "Plan defect: test strategy incomplete. Back to S2."],
+    ["DAG undeclared dependency", "S1", "Design defect: architecture is wrong. Back to S1, then G1 again."],
+    ["Unchanged module fails on re-test", "S1", "Self-diagnosis: undeclared dependency → design defect → S1."],
+    ["S1: latency exceeds req on any partitioning", "RFD", "RFD from S1: analysis only, nothing measured yet."],
+    ["G3.0: normative requirements conflict", "RFD", "RFD from G3.0: requirements contradict mathematically."],
+    ["G3.1: P_d and P_fa both unmeetable", "RFD", "RFD from G3.1: SIL metrics show impossible trade-off."],
+    ["G3.2: real noise floor exceeds budget", "RFD", "RFD from G3.2: real hardware worse than assumed."],
+  ];
+  const fbb = $("#fb-btns"), fbCard = $("#fb-card");
+  const allIds = [...new Set(Object.values(PATHS).flat())];
+  const showCase = ([label, route, text]) => {
+    const on = new Set(PATHS[route]);
+    allIds.forEach(id => {
+      const n = document.getElementById(id);
+      if (!n) return;
+      if (id.startsWith("e-")) n.classList.toggle("lit", on.has(id)); else n.classList.toggle("lit-node", on.has(id));
+    });
+    ["n-s1", "n-s2", "n-s3", "n-rfd", "n-bp", "n-q2"].forEach(id => {
+      const n = document.getElementById(id);
+      if (n) n.classList.toggle("dim", !on.has(id));
+    });
+    const routeLabel = route === "RFD" ? "RFD (external)" : route === "OPS" ? "Operational fix (re-run G3)" : route + " (internal)";
+    fbCard.innerHTML = `<b>${label}</b> → <b>${routeLabel}</b><br>${text}`;
+  };
+  CASES.forEach((c, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = c[0]; b.setAttribute("aria-pressed", String(i === 0));
+    b.addEventListener("click", () => { press(fbb, b); showCase(c); });
+    fbb.append(b);
+  });
+  showCase(CASES[0]);
+})();
+</script>
+</body>
+</html>
