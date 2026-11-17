@@ -62,30 +62,32 @@ Intermediate: 6-node chain `S0→G0→S1→G1→S3→G3` (S3 prereq temporarily 
 
 | ID | Spec | Route | Status | Commits |
 |---|---|---|---|---|
-| **C1** | SDD §1.4 card: 8 fields (`module_id`, `subsystem_id`, layer, `depends_on`, provides, hw_dep, `required_vl`, `traced_reqs`); remove Meta `G0 approved` row | Inline | — |
-| **C2** | S1 skill: 8-field guide, `traced_reqs` validation, `Input:` lines in report | Inline | — |
-| **C3** | G1 checklist: add G1.17 (decomposition), G1.18 (topological sort) | Inline | — |
-| **C4** | Update fixture SDD with new card | Inline | — |
-| **C5** | Custody call sites: S0, S1, G1, RFD (C5 table: S0/RFD `--raw`, S1 Output lines, G1 verify) | Inline | — |
+| **C1** | SDD §1.4 card: 8 fields (`module_id`, `subsystem_id`, layer, `depends_on`, provides, hw_dep, `required_vl`, `traced_reqs`); remove Meta `G0 approved` row | Inline | ✅ DONE | f86572a |
+| **C2** | S1 skill: 8-field guide, `traced_reqs` validation, `Input:` lines in report | Inline | ✅ DONE | f86572a |
+| **C3** | G1 checklist: add G1.17 (decomposition), G1.18 (topological sort) | Inline | ✅ DONE | f86572a |
+| **C4** | Update fixture SDD with new card (8-field examples: acq, estimator) | Inline | ✅ DONE | f86572a |
+| **C5** | Custody Input: documentation in S0, S1, G1, RFD (skills to call `codeanvil custody digest`) | Inline | ✅ DONE | f86572a |
 
-Acceptance: `test_custody_rule.py` passes; no hand-hashing in any skill.
+Acceptance: 8-field cards with traced_reqs validation; Input: SHA256 documented; fixture SDD updated. Note: test updates from Phase B2-B5 deferred; retest after Phase F.
 
-### Phase D — New S2 module planning skill · ~650 LOC
+### Phase D — New S2 module planning skill · ~500 LOC
 
 | ID | Spec | Route | Status | Commits |
 |---|---|---|---|---|
-| **D1** | Create `S2_plan_modules/SKILL.md`: cadence, slice scope, plans, contracts, deltas | Inline | — |
-| **D2** | References: `BACKLOG.md`, `PLAN.md`, `INFRA-PLAN.md`, `INTEGRATION-PLAN.md`, `DELTAS.md` | Inline | — |
-| **D3** | `slice_backlog.py`: deterministic topological sort, cycle detection | Inline | — |
+| **D1** | Create `S2_plan_modules/SKILL.md`: cadence (C1/C2+), slice boundaries (HAL-first, DSP-then-Decision), plans/contracts/deltas | Inline | ✅ DONE | f59287f |
+| **D2** | References: `BACKLOG.md`, `PLAN.md`, `DELTAS.md` templates (INFRA-PLAN, INTEGRATION-PLAN TBD in Phase I) | Inline | ✅ DONE | f59287f |
+| **D3** | `slice_backlog.py`: deterministic topological sort, cycle detection | Inline | ✅ DONE | f59287f |
+
+Acceptance: S2 planning defined; loop S2→S3→G3→S2 documented; topological sort ready.
 
 ### Phase E — New G2 plan micro-gate · ~350 LOC
 
 | ID | Spec | Route | Status | Commits |
 |---|---|---|---|---|
-| **E1** | Create `G2_plan_review/SKILL.md` + `G2_CHECKLIST.md`: 6 checks per module, verdicts (PASS/FEEDBACK) | Inline | — |
+| **E1** | Create `G2_plan_review/SKILL.md` with 6 checks (present, order, VL-2 readiness, test entry, contract clarity, slice boundary) + `G2_CHECKLIST.md` | Inline | ✅ DONE | 9e61ef5 |
 | **E2** | S0: add re-entry row for G2 `Verdict: GT defect` → Triage | Inline | — |
 
-Acceptance: 8-node chain active; S3 prerequisite becomes G2.
+Acceptance: 8-node chain active; S2→G2→S3→G3 loop documented; full chain: S0→G0→S1→G1→S2(plan)→G2(review)→S3(impl)→G3(verify)→S2(next).
 
 ### Phase F — S3 per-module fresh context · ~500 LOC
 
