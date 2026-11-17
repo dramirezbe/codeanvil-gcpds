@@ -66,28 +66,43 @@ Intermediate: 6-node chain `S0→G0→S1→G1→S3→G3` (S3 prereq temporarily 
 | **C2** | S1 skill: 8-field guide, `traced_reqs` validation, `Input:` lines in report | Inline | ✅ DONE | f86572a |
 | **C3** | G1 checklist: add G1.17 (decomposition), G1.18 (topological sort) | Inline | ✅ DONE | f86572a |
 | **C4** | Update fixture SDD with new card (8-field examples: acq, estimator) | Inline | ✅ DONE | f86572a |
-| **C5** | Custody Input: documentation in S0, S1, G1, RFD (skills to call `codeanvil custody digest`) | Inline | ✅ DONE | f86572a |
+| **C5** | Replace all hand-computed hashes (`hashlib`, `sha256sum`, `shasum`, `Get-FileHash`) in skills with `codeanvil custody digest`; guard test in `test_custody_rule.py` | Inline | ✅ DONE | 2c0740e, 2eeee1d |
 
-Acceptance: 8-field cards with traced_reqs validation; Input: SHA256 documented; fixture SDD updated. Note: test updates from Phase B2-B5 deferred; retest after Phase F.
+C-fix commit `64b9168`: test fixes (backup flattening, v3→v4 renames in tests, UI skip markers). Suite: 711 passed, 40 skipped.
 
 ### Phase D — New S2 module planning skill · ~500 LOC
 
 | ID | Spec | Route | Status | Commits |
 |---|---|---|---|---|
 | **D1** | Create `S2_plan_modules/SKILL.md`: cadence (C1/C2+), slice boundaries (HAL-first, DSP-then-Decision), plans/contracts/deltas | Inline | ✅ DONE | f59287f |
-| **D2** | References: `BACKLOG.md`, `PLAN.md`, `DELTAS.md` templates (INFRA-PLAN, INTEGRATION-PLAN TBD in Phase I) | Inline | ✅ DONE | f59287f |
+| **D2** | References: `BACKLOG.md`, `PLAN.md`, `DELTAS.md` templates | Inline | ✅ DONE | f59287f |
 | **D3** | `slice_backlog.py`: deterministic topological sort, cycle detection | Inline | ✅ DONE | f59287f |
 
-Acceptance: S2 planning defined; loop S2→S3→G3→S2 documented; topological sort ready.
+**D-fix PENDING (review 2026-11-17):** the following items were reviewed and found incomplete:
+
+| ID | Required fix | Status |
+|---|---|---|
+| **D-fix.1** | PLAN.md must be **per module** at `.codeanvil/plans/<SUB-xxx>/<module_id>/PLAN.md` (D2, §3.2, P7). Currently per-slice (line 104 of SKILL.md: "One PLAN.md per slice"). Restructure SKILL.md and references/PLAN.md. | ❌ PENDING |
+| **D-fix.2** | Add `references/INFRA-PLAN.md` (Slice 0, paper §8.3.1 (a)–(d): bases, verification kit, stubs, top-down integration) | ❌ PENDING |
+| **D-fix.3** | Add `references/INTEGRATION-PLAN.md` (D12: system-scope cross-subsystem contract tests, PATH-*, entry point) | ❌ PENDING |
+| **D-fix.4** | `DELTAS.md` must be empty-on-first-run; G3/RFD delta logic belongs to Phase H | ❌ PENDING |
+| **D-fix.5** | Tests for `slice_backlog.py`: Kahn levels, cycle→exit 1, unknown dependency→exit 1, deterministic order | ❌ PENDING |
 
 ### Phase E — New G2 plan micro-gate · ~350 LOC
 
 | ID | Spec | Route | Status | Commits |
 |---|---|---|---|---|
-| **E1** | Create `G2_plan_review/SKILL.md` with 6 checks (present, order, VL-2 readiness, test entry, contract clarity, slice boundary) + `G2_CHECKLIST.md` | Inline | ✅ DONE | 9e61ef5 |
-| **E2** | S0: add re-entry row for G2 `Verdict: GT defect` → Triage | Inline | — |
+| **E1** | Create `G2_plan_review/SKILL.md` + `G2_CHECKLIST.md` | Inline | ✅ DONE | 9e61ef5 |
+| **E2** | S0: add re-entry row for G2 `Verdict: GT defect` → Triage | Inline | ✅ DONE | 36a1311 |
 
-Acceptance: 8-node chain active; S2→G2→S3→G3 loop documented; full chain: S0→G0→S1→G1→S2(plan)→G2(review)→S3(impl)→G3(verify)→S2(next).
+**E-fix PENDING (review 2026-11-17):** G2 checks must be rewritten per paper §9.1:
+
+| ID | Required fix | Status |
+|---|---|---|
+| **E-fix.1** | G2 checks are still the 6 invented ones (Module present, Dependency order, VL-2 readiness, Test entry, Contract clarity, Slice boundary). Must rewrite to §9.1: (1) completeness, (2) traceability, (3) contract consistency, (4) task ordering, (5) verification feasibility, (6) fresh-context sufficiency. Rewrite both `SKILL.md` and `G2_CHECKLIST.md`. | ❌ PENDING |
+| **E-fix.2** | Verdicts must follow plan §3.4: PASS→S3; plan defect→S2; design defect→S1; GT defect→S0 | ❌ PENDING |
+
+Acceptance: 8-node chain with correct G2 checks per §9.1 and per-module PLAN.md granularity (P7).
 
 ### Phase F — S3 per-module fresh context · ~500 LOC
 
@@ -151,4 +166,10 @@ Acceptance: 8-node chain active; S2→G2→S3→G3 loop documented; full chain: 
 - Branch `feat/vsil-v4` ✓
 - Modified plan: removed Phase J (migration), removed migrate from Phase I, reordered delivery chain (now 7 PRs: A–I, K–L)
 
-**Next:** Start Phase A (tooling foundations).
+**L3** (2026-11-17 review):
+- Phase C fix committed (64b9168): tests green (711/40 skip), custody guard test added, hand-computed hashes eliminated.
+- Phase E2 committed (36a1311): S0 GT-defect re-entry row.
+- Review found D and E NOT properly fixed: per-module PLAN.md missing (still per-slice), no INFRA/INTEGRATION templates, no slice_backlog tests, G2 checks still invented (not §9.1). D-fix and E-fix items added above as PENDING.
+- Branch pushed to `origin/feat/vsil-v4`.
+
+**Next:** D-fix commit, then E-fix commit (both must be green), then Phase F.
