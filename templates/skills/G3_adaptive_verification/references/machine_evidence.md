@@ -45,7 +45,7 @@ existing report; do not relabel an old S2 measurement as a fresh G2 test.
 Run the copied structural checker locally through the methodology runtime:
 
 ```sh
-codeanvil python templates/skills/G2_adaptive_verification/scripts/validate_measurement.py \
+codeanvil python templates/skills/G3_adaptive_verification/scripts/validate_measurement.py \
   <record-path>/measurement.json
 ```
 

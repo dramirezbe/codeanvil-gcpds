@@ -98,17 +98,16 @@ def _manifest_digests(folder: Path) -> dict[str, str]:
 def _write_backup(
     folder: Path, project_dir: Path, file_entries: list[tuple[Path, Path]], manifest: dict
 ) -> None:
-    """Copy into a staging folder preserving paths, then rename: no half-written
-    backup is ever mistaken for an existing one."""
+    """Copy into a staging folder flat (no directory nesting), then rename: no half-written
+    backup is ever mistaken for an existing one. Source paths are stored in MANIFEST."""
     staging = folder.with_name(f"{folder.name}.tmp")
     if staging.exists():
         shutil.rmtree(staging)
     staging.mkdir(parents=True)
     
-    # Copy files, preserving their project-relative paths in the backup
+    # Copy files flat (just filename, no nested dirs) in the backup folder
     for rel_path, abs_path in file_entries:
-        dest = staging / rel_path
-        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest = staging / abs_path.name
         shutil.copy2(abs_path, dest)
     
     (staging / "MANIFEST.yaml").write_text(

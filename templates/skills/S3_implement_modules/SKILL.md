@@ -177,9 +177,9 @@ result inconclusive — never widen tolerances or invent readings. Preserve desi
 manifest governance. The vl2 script uses run ID `<cycle>_<iteration>_<codeanvil now --machine>` and
 stores `<cycle>_<iteration>_<timestamp>.jsonl`, `measurement.json` v2 and script outputs under
 `verification/telemetry/<run_id>/`, following this skill's locked
-`templates/skills/S2_implement_subsystems/references/machine_evidence.md` and basic checker. **G2 runs
-these scripts on the enrolled target**; S2 only implements them, and a required missing test returns
-from G2 to S2 to implement it.
+`templates/skills/S3_implement_modules/references/machine_evidence.md` and basic checker. **G3 runs
+these scripts on the enrolled target**; S3 only implements them, and a required missing test returns
+from G3 to S3 to implement it.
 
 ## Pause Schedule
 

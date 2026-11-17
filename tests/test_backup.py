@@ -210,28 +210,28 @@ def test_backup_refuses_a_cycle_named_like_the_unknown_bucket(tmp_path, monkeypa
     assert not (project / PROJECT_BACKUPS).exists()
 
 
-def test_backup_expands_the_active_cycle_for_s2(tmp_path, monkeypatch, capsys):
+def test_backup_expands_the_active_cycle_for_s3(tmp_path, monkeypatch, capsys):
     project = _make_project(tmp_path, cycle="01_run")
     monkeypatch.chdir(project)
-    _write_report(project, "01_run", "S2", [(1, "PASS")])
-    artifact = project / ".codeanvil/report/01_run/S2_artifacts/test_run.md"
+    _write_report(project, "01_run", "S3", [(1, "PASS")])
+    artifact = project / ".codeanvil/report/01_run/S3_artifacts/test_run.md"
     artifact.parent.mkdir(parents=True)
     artifact.write_text("# run\n", encoding="utf-8")
 
-    cmd_backup("S2")
+    cmd_backup("S3")
 
-    folder = project / PROJECT_BACKUPS / "01_run" / "S2_iter1"
+    folder = project / PROJECT_BACKUPS / "01_run" / "S3_iter1"
     assert (folder / "test_run.md").read_text(encoding="utf-8") == "# run\n"
-    assert "S2_iter1" in capsys.readouterr().out
+    assert "S3_iter1" in capsys.readouterr().out
 
 
-def test_backup_requires_an_active_cycle_for_s2(tmp_path, monkeypatch):
+def test_backup_requires_an_active_cycle_for_s3(tmp_path, monkeypatch):
     log = _capture_errors(monkeypatch)
     project = _make_project(tmp_path, cycle=None)
     monkeypatch.chdir(project)
 
     with pytest.raises(SystemExit) as exc:
-        cmd_backup("S2")
+        cmd_backup("S3")
 
     assert exc.value.code == 1
     assert "no active cycle" in log.errors[0]

@@ -240,7 +240,7 @@ commands — then re-run G2, rather than giving up or mislabeling it an S2 defec
    flag), the entry-point smoke result, the draft honesty declaration and a recommendation. Ask
    the human: **PASS**,
    **FEEDBACK** or **RFD**, as **Asking the human** says below.
-8. **Back up the previous Verified Prototype before overwriting it.** Run `codeanvil backup G2`
+8. **Back up the previous Verified Prototype before overwriting it.** Run `codeanvil backup G3`
    from the project root. If it exits nonzero, stop and show its message; write no iteration.
    Cite the printed backup path in the iteration's Description. Backups never cover `src/` or
    `verification/`: code recovery relies on git.

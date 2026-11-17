@@ -112,7 +112,7 @@ def test_g1_runs_no_script_at_all():
 
     assert "python -c" not in text
     assert "hashlib" not in text
-    assert "sha256sum" in text
+    assert "codeanvil custody digest" in text
     assert "G1 runs no script" in text
 
 

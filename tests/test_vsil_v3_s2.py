@@ -29,7 +29,7 @@ def test_s2_skill_checks_its_prerequisites():
     assert "G1 must pass first. Run the G1 skill." in text
     assert "S1 must rework first. Run the S1 skill." in text
     assert "Based on: G1 iteration" in text
-    assert 'gate: "S2"' in text
+    assert 'gate: "S3"' in text
 
 
 def test_s2_skill_builds_with_the_design_toolchain_and_layout():
@@ -354,7 +354,7 @@ def test_s2_writes_hw_scripts_for_g2_with_small_records_and_conditional_metrolog
     skill = " ".join(_skill_text(SKILL).split())
     layout = " ".join(_layout_text().split())
     assert "**Write** `verification/run.sh vl2`" in skill
-    assert "G2 runs these scripts on the enrolled target" in skill
+    assert "G3 runs these scripts on the enrolled target" in skill
     assert "S2 builds the code, never the measurement" in skill
     assert "Functional HW tests need no universal oracle or calibration" in skill
     assert "inconclusive" in skill

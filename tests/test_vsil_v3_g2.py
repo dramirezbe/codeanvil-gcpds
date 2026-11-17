@@ -24,8 +24,8 @@ def _g2_text() -> str:
 def test_g2_frontmatter_keeps_the_gate_shape():
     meta = _parse_skill_frontmatter(TEMPLATES_DIR / "skills" / SKILL / "SKILL.md")
 
-    assert meta["name"] == "g2-adaptive-verification"
-    assert meta["gate"] == "G2"
+    assert meta["name"] == "g3-adaptive-verification"
+    assert meta["gate"] == "G3"
     assert "Not implemented" not in meta["description"]
 
 
@@ -91,7 +91,7 @@ def test_g2_fresh_session_runs_the_steps_itself():
 def test_g2_skill_backs_up_before_overwriting_the_verified_prototype():
     text = " ".join(_skill_text("G3_adaptive_verification").split())
 
-    assert "codeanvil backup G2" in text
+    assert "codeanvil backup G3" in text
     assert "If it exits nonzero, stop and show its message; write no iteration." in text
 
 
@@ -181,7 +181,7 @@ def test_scaffolded_g2_and_verifier_keep_parent_pauses_and_causal_feedback(tmp_p
     assert "never asks the human" in g2
     assert "Ask the human anything" in verifier
     assert "without editing the DUT" in verifier
-    assert "the next G2 iteration number" in verifier
+    assert "the next G3 iteration number" in verifier
     assert "templates/skills/" not in g2
 
 
