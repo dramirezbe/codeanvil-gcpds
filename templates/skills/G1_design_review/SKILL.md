@@ -138,3 +138,8 @@ Write exactly one file: `.codeanvil/report/<cycle-name>/G1.md`, append-only.
 
 Return the findings (`open` first), the recommendation, the human's answer, the report path with
 the iteration number, and the route.
+
+**Report structure:**
+
+The report includes:
+- `Input: .codeanvil/design/SDD.md sha256:‹hash›` — hash of the input SDD (use `codeanvel custody digest`)

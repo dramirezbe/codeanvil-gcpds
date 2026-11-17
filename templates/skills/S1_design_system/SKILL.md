@@ -2,7 +2,7 @@
 name: s1-design-system
 description: "Trigger: S1, design subsystems, architecture, subsystem topology, contracts, stubs, dependency graph. From a passed G0 pair, write the S1 design document (layered subsystems, contracts with stubs, traceability, decisions, risks) and its dependency graph."
 license: Apache-2.0
-compatibility: "No network access, no scripts. Reads .codeanvil/GT/StRS.md, .codeanvil/GT/SyRS.md and .codeanvil/project.yaml. Writes .codeanvil/design/SDD.md, .codeanvil/design/dependency_graph.html (dark), .codeanvil/design/dependency_graph_light.html and .codeanvil/report/<cycle-name>/S1.md."
+compatibility: "No network access, no scripts. Reads .codeanvil/GT/StRS.md, .codeanvil/GT/SyRS.md, .codeanvil/project.yaml, and .codeanvil/design/SDD.md (from G1 rework). Writes .codeanvil/design/SDD.md, .codeanvil/design/dependency_graph.html (dark), dependency_graph_light.html, and .codeanvil/report/<cycle-name>/S1.md. Report includes Scope: system and Input: sha256 lines for all read GT files."
 metadata:
   author: "gcpds"
   version: "1.0"
@@ -210,3 +210,11 @@ Write exactly one file: `.codeanvil/report/<cycle-name>/S1.md`, append-only.
 
 Return the design path, both graph paths, the report path with the iteration number, and the
 next step (`S1 complete. Run the G1 skill.`).
+
+**Report structure:**
+
+The report includes:
+- `Scope: system` — this design covers the whole system
+- `Input: .codeanvil/GT/StRS.md sha256:‹hash›` — hash of the input StRS (use `codeanvil custody digest`)
+- `Input: .codeanvil/GT/SyRS.md sha256:‹hash›` — hash of the input SyRS
+- For G1 rework: `Input: .codeanvil/design/SDD.md sha256:‹hash›` — hash of the previous SDD if reworking from G1 feedback

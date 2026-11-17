@@ -127,3 +127,8 @@ Write exactly one file: `.codeanvil/report/<cycle-name>/S0.md`, append-only.
 
 Return the two GT paths, the inventory counts, the missing list, and the report path with
 the iteration number.
+
+**Report structure:**
+
+The report includes:
+- `Input: .codeanvil/GT/build_package.md sha256:‹hash›` — hash of the input Build Package (use `codeanvil custody digest`)

@@ -21,7 +21,7 @@
 ## Decisions (confirmed 2026-11-17)
 
 | ID | Decision | Chosen | Notes |
-|---|---|---|---|
+|---|---|---|---|---|
 | D2 | Mini-V cadence | Per slice | Each slice k: S2(k)→G2(k)→S3(k)→G3(k), then slice k+1 |
 | D3 | Plans location | `.codeanvil/plans/` | Methodology-owned, like `.codeanvil/design/` |
 | D8 | Living GT | Full | Accepted deltas applied by S0/S1 in `delta-sync`; staleness accepts authorized advances |
@@ -36,7 +36,7 @@
 ### Phase A — Tooling foundations · ~650 LOC
 
 | ID | Spec | Route | Status | Commits |
-|---|---|---|---|---|
+|---|---|---|---|---|---|
 | **A1** | Configure `config.yaml` for 8-node chain (S0→G2→S3→G3), `loop_after`, `subagents` | Inline | ✅ DONE | ef4866c |
 | **A2** | `reports.py`: scope, inputs (digest staleness, authorized advances), `next_step()` | Inline | ✅ DONE | 70e7003 |
 | **A3** | `codeanvil custody`: digest/verify/verify-manifest CLI, stateless integrity | Inline | ✅ DONE | 70e7003 |
@@ -48,9 +48,9 @@ Acceptance: v3 projects' `status` output identical; `custody` works; no DB chang
 
 ### Phase B — Rename S2/G2 to S3/G3 · ~300 LOC
 
-| ID | Spec | Route | Status |
-|---|---|---|---|
-| **B1** | `git mv S2_implement_subsystems→S3_implement_modules`, `G2_adaptive_verification→G3_adaptive_verification` | Inline | — |
+| ID | Spec | Route | Status | Commits |
+|---|---|---|---|---|
+| **B1** | `git mv S2_implement_subsystems→S3_implement_modules`, `G2_adaptive_verification→G3_adaptive_verification` | Inline | ✅ DONE | 3460764 |
 | **B2** | Rename in `vsil-verifier.md`, S1/G1/RFD/skills | Inline | — |
 | **B3** | Add skip marker to `test_ui_workspace.py` (§0: UI deferred) | Inline | — |
 | **B4** | Update help text, HIL MCP docs | Inline | — |
@@ -60,8 +60,8 @@ Intermediate: 6-node chain `S0→G0→S1→G1→S3→G3` (S3 prereq temporarily 
 
 ### Phase C — S1/G1 module identity, slicing readiness · ~300 LOC
 
-| ID | Spec | Route | Status |
-|---|---|---|---|
+| ID | Spec | Route | Status | Commits |
+|---|---|---|---|---|
 | **C1** | SDD §1.4 card: 8 fields (`module_id`, `subsystem_id`, layer, `depends_on`, provides, hw_dep, `required_vl`, `traced_reqs`); remove Meta `G0 approved` row | Inline | — |
 | **C2** | S1 skill: 8-field guide, `traced_reqs` validation, `Input:` lines in report | Inline | — |
 | **C3** | G1 checklist: add G1.17 (decomposition), G1.18 (topological sort) | Inline | — |
@@ -72,16 +72,16 @@ Acceptance: `test_custody_rule.py` passes; no hand-hashing in any skill.
 
 ### Phase D — New S2 module planning skill · ~650 LOC
 
-| ID | Spec | Route | Status |
-|---|---|---|---|
+| ID | Spec | Route | Status | Commits |
+|---|---|---|---|---|
 | **D1** | Create `S2_plan_modules/SKILL.md`: cadence, slice scope, plans, contracts, deltas | Inline | — |
 | **D2** | References: `BACKLOG.md`, `PLAN.md`, `INFRA-PLAN.md`, `INTEGRATION-PLAN.md`, `DELTAS.md` | Inline | — |
 | **D3** | `slice_backlog.py`: deterministic topological sort, cycle detection | Inline | — |
 
 ### Phase E — New G2 plan micro-gate · ~350 LOC
 
-| ID | Spec | Route | Status |
-|---|---|---|---|
+| ID | Spec | Route | Status | Commits |
+|---|---|---|---|---|
 | **E1** | Create `G2_plan_review/SKILL.md` + `G2_CHECKLIST.md`: 6 checks per module, verdicts (PASS/FEEDBACK) | Inline | — |
 | **E2** | S0: add re-entry row for G2 `Verdict: GT defect` → Triage | Inline | — |
 
@@ -89,23 +89,23 @@ Acceptance: 8-node chain active; S3 prerequisite becomes G2.
 
 ### Phase F — S3 per-module fresh context · ~500 LOC
 
-| ID | Spec | Route | Status |
-|---|---|---|---|
+| ID | Spec | Route | Status | Commits |
+|---|---|---|---|---|
 | **F1** | Create `vsil-implementor.md` subagent: one PLAN.md, write-scoped to module only | Inline | — |
 | **F2** | S3 skill: slice cadence, MCP analysis, Pause Schedule, proposed deltas | Inline | — |
 
 ### Phase G — G3 adaptive verification by slice · ~400 LOC
 
-| ID | Spec | Route | Status |
-|---|---|---|---|
+| ID | Spec | Route | Status | Commits |
+|---|---|---|---|---|
 | **G1** | G3 skill: slice scope, VL-0 floor regression, self-diagnosis, enrollment/pre-HW review | Inline | — |
 | **G2** | Verified Prototype v4: GT version, module table with Slice/Plan/Evidence, DELTAS summary | Inline | — |
 | **G3** | `vsil-verifier.md`: receives scope, runs G3.0, all digests from custody | Inline | — |
 
 ### Phase H — Living GT and design sync · ~350 LOC
 
-| ID | Spec | Route | Status |
-|---|---|---|---|
+| ID | Spec | Route | Status | Commits |
+|---|---|---|---|---|
 | **H1** | `DELTAS.md` schema: ID, Type, Target, Document, Before/After, Reason, Authority, Status, Applied in, Before/After sha256, Interface impact | Inline | — |
 | **H2** | `authorized_advance()`: chains of applied deltas with no interface impact | Inline | — |
 | **H3** | S0 `delta-sync`: apply GT deltas, bump Version, write to DELTAS.md | Inline | — |
@@ -113,8 +113,8 @@ Acceptance: 8-node chain active; S3 prerequisite becomes G2.
 
 ### Phase I — Generated and repo documentation · ~300 LOC
 
-| ID | Spec | Route | Status |
-|---|---|---|---|
+| ID | Spec | Route | Status | Commits |
+|---|---|---|---|---|
 | **I1** | `TEMPLATE_AGENT.md`: 8-node chain, cadence, routing §3.4, RFD sources (S1/G1/G3), custody rule | Inline | — |
 | **I2** | Repo docs: `AGENTS.md`, `CLAUDE.md`, `README.md`, `methodology/test/README.md` | Inline | — |
 | **I3** | UI disclosure (§0): v3-only until follow-up; non-chain features kept working | Inline | — |
@@ -122,14 +122,14 @@ Acceptance: 8-node chain active; S3 prerequisite becomes G2.
 
 ### Phase K — End-to-end validation · no product LOC
 
-| ID | Spec | Route | Status |
-|---|---|---|---|
+| ID | Spec | Route | Status | Commits |
+|---|---|---|---|---|
 | **K1** | Run T0_FM-RPI-RTL-mock under v4 to Verified Prototype; 8 probes (plan defect, GT defect, design defect, self-diagnosis, deltas, stale cascade, fresh sessions, UI smoke) | Inline | — |
 
 ### Phase L — Release
 
-| ID | Spec | Route | Status |
-|---|---|---|---|
+| ID | Spec | Route | Status | Commits |
+|---|---|---|---|---|
 | **L1** | `pyproject.toml` → 0.9.0, changelog, tag, `CLAUDE.md` | Inline | — |
 
 ---

@@ -96,3 +96,10 @@ iteration (not Withdrawn):
 
 Return the RFD path, the options with the recommendation, the report path and iteration, and
 the next step: the author's decision, or the S0 re-entry.
+
+**Report structure:**
+
+The report includes:
+- `Input: .codeanvil/GT/build_package.md sha256:‹hash›` — hash of the input Build Package (use `codeanvil custody digest`)
+- `Input: .codeanvil/GT/StRS.md sha256:‹hash›` — hash of the SyRS if available
+- `Input: .codeanvil/report/<cycle>/<raising-stage>.md sha256:‹hash›` — hash of the report from the stage that raised the RFD (S1, G1, or S2/G2)
