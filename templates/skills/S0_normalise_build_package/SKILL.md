@@ -53,7 +53,7 @@ Package (TRIAGE.md §2). While drafting, the digest and overwrite checks above d
 | Situation | Action |
 |-----------|--------|
 | `.codeanvil/GT/build_package.md` present, no GT pair | Normalise |
-| Build Package present, GT pair present, an `S0.md` exists in **any** cycle | Re-normalise, applying the latest G0 feedback (an RFD re-entry lands here) |
+| Build Package present, GT pair present, an `S0.md` exists in **any** cycle | Re-normalise, applying the latest G0 or G2 GT-defect feedback. Run Triage if needed. (RFD re-entry lands here) |
 | Build Package present, GT pair present, no `S0.md` in any cycle | Hand-written pair: ask once before overwriting it |
 | No Build Package, GT pair present | No-op iteration: "pair supplied as normalised input". Write nothing to `.codeanvil/GT/` |
 | Neither | Stop and ask the user for `.codeanvil/GT/build_package.md` |
