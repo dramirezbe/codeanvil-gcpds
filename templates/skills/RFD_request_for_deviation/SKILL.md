@@ -86,7 +86,7 @@ iteration (not Withdrawn):
 3. Add these exact lines to the Description: `Superseded by cycle: <name>` and
    `Build Package digest: <sha256 of .codeanvil/GT/build_package.md, or none when there is no Build Package>`
    (compute it with
-   `python -c "import hashlib,sys;print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" .codeanvil/GT/build_package.md`).
+      Run `codeanvil custody digest .codeanvil/GT/build_package.md --raw` to get the hash
    `codeanvil status` then shows the old cycle as closed. It stays read-only, and the chain skills
    refuse to run in it.
 4. Return: "Update `.codeanvil/GT/build_package.md`, then run the S0 skill in cycle `<name>`." The S0 skill

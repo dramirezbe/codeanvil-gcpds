@@ -27,8 +27,7 @@ S0 has **no prerequisite**: it is the entry point of the V-SIL chain.
 3. Create `.codeanvil/report/<cycle-name>/` when it does not exist.
 4. **After an RFD:** if another cycle's latest `RFD.md` iteration holds
    `Superseded by cycle: <this cycle>`, this is the re-entry cycle and the whole flow is redone from
-   here. Compute the SHA-256 of `.codeanvil/GT/build_package.md`
-   (`python -c "import hashlib,sys;print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" .codeanvil/GT/build_package.md`).
+   here. Run `codeanvil custody digest .codeanvil/GT/build_package.md --raw` to get the SHA-256.
    If it equals that RFD's `Build Package digest:` line, return exactly
    `Build Package unchanged since the RFD. Update .codeanvil/GT/build_package.md first.` and write nothing.
    A digest of `none` (the RFD was decided on a hand-written pair) skips this check.
@@ -122,6 +121,11 @@ Write exactly one file: `.codeanvil/report/<cycle-name>/S0.md`, append-only.
   `codeanvil status` reads as `UNKNOWN`). Then `### Description`.
 - S0 is a **stage**: `PASS` means "output delivered". The human verdict belongs to G0's
   Gate H. S0 has no `Based on` line.
+
+## Hard Rules
+
+**Digests:** Run `codeanvil custody digest`, paste its output verbatim, never type or compute a hash;
+check with `codeanvil custody verify`.
 
 ## Output Contract
 

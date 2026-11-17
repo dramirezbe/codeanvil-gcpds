@@ -85,10 +85,9 @@ Otherwise check, in this order, writing **no iteration** when you stop:
    Version differences alone are not defects; assess whether the required commands work. Keep
    tool and delivered-project repositories/refs separate. Missing installable tools do not block
    G1 when the design includes a viable setup; an impossible tool/capability is an open finding.
-4. Recompute the GT digests with the system's hash command (`sha256sum .codeanvil/GT/StRS.md
-   .codeanvil/GT/SyRS.md`; `shasum -a 256` on macOS, `Get-FileHash` in PowerShell) and show the human
-   whether they match the design's Meta row. Information only: it never blocks. Compute the
-   `SDD.md` digest the same way and record it in the iteration: S2 and G2 use it to detect a design
+4. Run `codeanvil custody digest .codeanvil/GT/StRS.md .codeanvil/GT/SyRS.md` to verify
+   they match the design's Meta row. Information only: it never blocks. Compute the
+   `SDD.md` digest the same way (`codeanvil custody digest .codeanvil/design/SDD.md --raw`) and record it in the iteration: S2 and G2 use it to detect a design
    changed after this review.
 5. Present the findings, `open` first, and a recommendation. **If any finding is `open`, enter
    draft** — write the `DRAFT` marker ([references/TRIAGE.md](references/TRIAGE.md) §2) — and run
