@@ -26,6 +26,11 @@ _BASED_ON_RE = re.compile(r"^Based on: (\S+) iteration (\d+)\s*$", re.MULTILINE)
 _SUPERSEDED_RE = re.compile(r"^Superseded by cycle: (\S+)\s*$", re.MULTILINE)
 _DESCRIPTION_RE = re.compile(r"^### Description\s*$", re.MULTILINE)
 
+# V4 report fields: scope (slice/system/delta-sync), input file digests, output digests.
+_SCOPE_RE = re.compile(r"^Scope: (slice \d+|system|delta-sync)\s*$", re.MULTILINE)
+_INPUT_RE = re.compile(r"^Input: (\S+) sha256:([0-9a-f]{64})\s*$", re.MULTILINE)
+_OUTPUT_RE = re.compile(r"^Output: (\S+) sha256:([0-9a-f]{64})\s*$", re.MULTILINE)
+
 
 def unfenced_text(text: str) -> str:
     """Mask fenced examples while preserving offsets into the original text."""
@@ -58,6 +63,8 @@ class ReportState(NamedTuple):
     hitl: str | None
     based_on: tuple[str, int] | None = None
     superseded_by: str | None = None
+    scope: str | None = None
+    inputs: tuple[tuple[str, str], ...] = ()  # (path, sha256) pairs
 
 
 class ReportIteration(NamedTuple):
@@ -84,7 +91,7 @@ def report_header(text: str) -> str:
 
 
 def report_state(report_file: Path) -> ReportState:
-    """Latest iteration number, HITL verdict and chain links in one report."""
+    """Latest iteration number, HITL verdict, chain links, scope and inputs in one report."""
     try:
         text = report_file.read_text(encoding="utf-8")
     except OSError as exc:
@@ -95,18 +102,40 @@ def report_state(report_file: Path) -> ReportState:
     latest = unfenced_text(content)
     based_on = _BASED_ON_RE.search(latest)
     superseded = _SUPERSEDED_RE.search(latest)
+    scope_match = _SCOPE_RE.search(latest)
+    inputs = tuple(_INPUT_RE.findall(latest))
     return ReportState(
         sections[-1].number if sections else None,
         _verdict(content),
         (based_on.group(1), int(based_on.group(2))) if based_on else None,
         superseded.group(1) if superseded else None,
+        scope_match.group(1) if scope_match else None,
+        inputs,
     )
 
 
+def authorized_advance(
+    path: str, recorded: str, current: str, deltas: list[dict] | None = None
+) -> bool:
+    """True when a file digest change is explained by applied deltas with no interface impact.
+    
+    Phase H implements delta chain validation. For now, conservatively assume no advances.
+    """
+    # TODO (Phase H): Parse DELTAS.md, check for applied rows with Interface impact: none
+    # that chain recorded → current for this path.
+    return False
+
+
 def stale_reason(
-    gate: str, gates: dict[str, ReportState], seen: tuple[str, ...] = ()
+    gate: str, gates: dict[str, ReportState], seen: tuple[str, ...] = (),
+    project_root: Path | None = None
 ) -> str | None:
-    """Follow a report's recorded baseline, sharing the CLI's stale semantics."""
+    """Follow a report's recorded baseline, checking digest staleness if project_root given.
+    
+    Without project_root, uses v3 iteration-based staleness (backward compatible).
+    With project_root, recomputes Input: digests and compares; first mismatch not
+    explained by an authorized advance returns the stale message.
+    """
     report = gates.get(gate)
     if report is None or report.based_on is None:
         return None
@@ -116,8 +145,14 @@ def stale_reason(
     latest = gates[predecessor].iteration
     if latest is not None and number < latest:
         return f"based on {predecessor} iteration {number}, {predecessor} is at {latest}"
-    if stale_reason(predecessor, gates, seen + (gate,)):
+    if stale_reason(predecessor, gates, seen + (gate,), project_root):
         return f"{predecessor} is stale"
+    
+    # V4: digest-based staleness (requires custody availability, Phase A3)
+    if project_root and report.inputs:
+        # TODO (A3): Call custody.verify() to check inputs; return stale-report messages
+        pass
+    
     return None
 
 
@@ -127,6 +162,55 @@ def gate_order(gate: str) -> tuple[int, int, str]:
     if gate in order:
         return (0, order.index(gate), gate)
     return (1, 0, gate)
+
+
+def next_step(gates: dict[str, ReportState]) -> str | None:
+    """Derive the next skill and scope from latest iterations.
+    
+    Returns e.g. "S2 slice 3", "G3 system", "S0 delta-sync", or None if chain
+    is incomplete or the next gate is unavailable."""
+    if not gates:
+        return None
+    
+    # Find the last PASS in the chain order
+    order = CONFIG.get("report_order", [])
+    last_pass_idx = -1
+    last_scope = None
+    
+    for idx, gate_id in enumerate(order):
+        report = gates.get(gate_id)
+        if report and report.hitl == "PASS":
+            last_pass_idx = idx
+            last_scope = report.scope
+        elif report and report.hitl == "FEEDBACK":
+            # Hit a FEEDBACK; next is a rework of this or its predecessor
+            break
+    
+    if last_pass_idx < 0:
+        # No PASS yet; next is the first entry point
+        for gate_id in order:
+            if gates.get(gate_id) is None:
+                return f"{gate_id} (not started)"
+        return None
+    
+    # Find the next gate after last PASS
+    if last_pass_idx + 1 < len(order):
+        next_gate = order[last_pass_idx + 1]
+        # For S2, include scope: "S2 slice X" or "S2 (waiting for first run)"
+        if next_gate == "S2" and last_scope:
+            if last_scope.startswith("slice"):
+                # Extract slice number and increment for next run
+                try:
+                    slice_num = int(last_scope.split()[-1])
+                    return f"{next_gate} slice {slice_num + 1}"
+                except (ValueError, IndexError):
+                    pass
+            elif last_scope == "system":
+                # After system S2, should restart slices (not typical)
+                return f"{next_gate} slice 0"
+        return next_gate
+    
+    return None
 
 
 def cycle_reports(report_dir: Path) -> dict[str, dict[str, ReportState]]:

@@ -6,6 +6,7 @@ from codeanvil.CLI.commands import (
     cmd_backup,
     cmd_create,
     cmd_credential_setup,
+    cmd_custody,
     cmd_delete,
     cmd_init,
     cmd_list,
@@ -42,6 +43,8 @@ def choose_option(args: argparse.Namespace) -> None:
             cmd_delete(args.project, remove_files=args.remove_files, yes=args.yes)
         case "status":
             cmd_status(args.name)
+        case "custody":
+            cmd_custody(args)
         case "backup":
             cmd_backup(args.stage)
         case "runtime":
