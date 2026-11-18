@@ -66,6 +66,8 @@ class ReportState(NamedTuple):
     scope: str | None = None
     inputs: tuple[tuple[str, str], ...] = ()  # (path, sha256) pairs
     verdict: str | None = None
+    accepted_deltas: tuple[str, ...] = ()
+    sync_only: bool = False
 
 
 class ReportIteration(NamedTuple):
@@ -99,22 +101,38 @@ def report_state(report_file: Path) -> ReportState:
         log.warning("cannot read %s: %s", report_file, exc)
         return ReportState(None, None)
     sections = parse_report_iterations(text)
-    content = sections[-1].content if sections else text
+    return _state_from_content(sections[-1].content if sections else text,
+                               sections[-1].number if sections else None)
+
+
+def _state_from_content(content: str, number: int | None) -> ReportState:
     latest = unfenced_text(content)
     based_on = _BASED_ON_RE.search(latest)
     superseded = _SUPERSEDED_RE.search(latest)
-    scope_match = _SCOPE_RE.search(latest)
-    inputs = tuple(_INPUT_RE.findall(latest))
+    scope = _SCOPE_RE.search(latest)
+    verdict = re.search(r"^Verdict: ([^\n]+)", latest, re.MULTILINE)
     return ReportState(
-        sections[-1].number if sections else None,
-        _verdict(content),
+        number, _verdict(content),
         (based_on.group(1), int(based_on.group(2))) if based_on else None,
         superseded.group(1) if superseded else None,
-        scope_match.group(1) if scope_match else None,
-        inputs,
-        (re.search(r"^Verdict: ([^\n]+)", latest, re.MULTILINE).group(1).strip()
-         if re.search(r"^Verdict: ([^\n]+)", latest, re.MULTILINE) else None),
+        scope.group(1) if scope else None, tuple(_INPUT_RE.findall(latest)),
+        verdict.group(1).strip() if verdict else None,
+        tuple(re.findall(r"^Delta accepted: (D-[A-Za-z0-9_-]+)\b", latest, re.MULTILINE)),
+        bool(re.search(r"^Sync-only: yes\s*$", latest, re.MULTILINE)),
     )
+
+
+def scoped_report_state(report_file: Path, scope: str) -> ReportState:
+    """Latest iteration *of this scope*, never an older PASS after its FEEDBACK."""
+    try:
+        sections = parse_report_iterations(report_file.read_text(encoding="utf-8"))
+    except OSError:
+        return ReportState(None, None)
+    for section in reversed(sections):
+        state = _state_from_content(section.content, section.number)
+        if state.scope == scope:
+            return state
+    return ReportState(None, None)
 
 
 def read_deltas(project_root: Path) -> list[dict[str, str]]:
@@ -177,10 +195,10 @@ def stale_reason(
         return None
     latest = gates[predecessor].iteration
     if latest is not None and number < latest:
-        # A later delta-sync does not invalidate an unchanged, explicitly recorded
-        # input set; every changed input must have an authorized advance above.
-        if not (project_root is not None and report.inputs
-                and gates[predecessor].scope == "delta-sync"):
+        # Only a reviewed G0/G1 delta-sync may preserve downstream baselines.
+        # G0/G1 themselves must review every new S0/S1 delivery.
+        if not (project_root is not None and report.inputs and predecessor in {"G0", "G1"}
+                and gates[predecessor].scope == "delta-sync" and gates[predecessor].hitl == "PASS"):
             return f"based on {predecessor} iteration {number}, {predecessor} is at {latest}"
     if stale_reason(predecessor, gates, seen + (gate,), project_root):
         return f"{predecessor} is stale"
@@ -195,6 +213,36 @@ def gate_order(gate: str) -> tuple[int, int, str]:
     return (1, 0, gate)
 
 
+def _sync_reviewed(report: ReportState, rows: list[dict], gates: dict[str, ReportState]) -> bool:
+    """A sync-only feedback needs each applied delta's stage AND human gate delivery."""
+    if not report.accepted_deltas:
+        return False
+    for delta_id in report.accepted_deltas:
+        matching = [row for row in rows if row.get("ID") == delta_id]
+        if len(matching) != 1 or matching[0].get("Status") != "applied":
+            return False
+        row = matching[0]
+        stage, gate = ("S1", "G1") if row.get("Type") == "design-sync" else ("S0", "G0")
+        applied = re.fullmatch(rf"{stage} iteration (\d+)", row.get("Applied in", ""))
+        delivery, review = gates.get(stage), gates.get(gate)
+        if (not applied or not delivery or not review or delivery.hitl != "PASS"
+                or (delivery.iteration is None or delivery.iteration < int(applied.group(1))) or review.hitl != "PASS"
+                or review.based_on != (stage, delivery.iteration) or review.scope != "delta-sync"):
+            return False
+    return True
+
+
+def _pending_sync_review(stage: str, gate: str, gates: dict[str, ReportState]) -> str | None:
+    delivery, review = gates.get(stage), gates.get(gate)
+    if not delivery or delivery.scope != "delta-sync" or delivery.hitl != "PASS":
+        return None
+    if not review or review.based_on != (stage, delivery.iteration):
+        return gate
+    if review.hitl == "FEEDBACK":
+        return stage
+    return gate if review.hitl != "PASS" else None
+
+
 def next_step(gates: dict[str, ReportState], project_root: Path | None = None) -> str | None:
     """Derive the next skill and scope from latest iterations.
     
@@ -203,21 +251,42 @@ def next_step(gates: dict[str, ReportState], project_root: Path | None = None) -
     if not gates:
         return None
     
+    rfd = gates.get("RFD")
+    g3 = gates.get("G3")
+    if rfd and rfd.superseded_by:
+        return f"Cycle closed by RFD. Continue in cycle {rfd.superseded_by}."
+    rows = read_deltas(project_root) if project_root is not None else []
     if project_root is not None:
-        for row in read_deltas(project_root):
-            if row.get("Status") == "accepted":
-                return "S1 delta-sync" if row.get("Type") == "design-sync" else "S0 delta-sync"
+        logged_ids = {row.get("ID") for row in rows if row.get("Status") in {"accepted", "applied"}}
+        if g3 and g3.hitl in {"PASS", "FEEDBACK"} and set(g3.accepted_deltas) - logged_ids:
+            return "S2 delta-intake"
+        if any(row.get("Status") == "accepted" and row.get("Type") != "design-sync" for row in rows):
+            return "S0 delta-sync"
+        pending = _pending_sync_review("S0", "G0", gates)
+        if pending:
+            return pending
+        if any(row.get("Status") == "accepted" and row.get("Type") == "design-sync" for row in rows):
+            return "S1 delta-sync"
+        pending = _pending_sync_review("S1", "G1", gates)
+        if pending:
+            return pending
     order = [g for g in CONFIG.get("report_order", []) if g != "RFD"]
     # Scope changes distinguish a new slice from the preceding slice's reports.
     previous = None
     for gate in order:
         report = gates.get(gate)
         if report is None or report.iteration is None:
-            scope = previous.scope if previous else None
-            return f"{gate} {scope}" if scope else ("S2 slice 0" if gate == "S2" else gate)
-        if gate in {"G2", "S3", "G3"} and previous and report.based_on != (order[order.index(gate)-1], previous.iteration):
+            if gate == "S2":
+                return "S2 slice 0"
+            scope = previous.scope if previous and gate in {"G2", "S3", "G3"} else None
+            return f"{gate} {scope}" if scope else gate
+        if (gate in {"G2", "S3", "G3"} and previous
+                and (report.based_on != (order[order.index(gate)-1], previous.iteration)
+                     or report.scope != previous.scope)):
             return f"{gate} {previous.scope}" if previous.scope else gate
         if report.hitl == "FEEDBACK":
+            if gate == "G3" and report.sync_only and _sync_reviewed(report, rows, gates):
+                return f"S2 {report.scope}" if report.scope else "S2"
             routes = {"plan defect": "S2", "module defect": "S3", "design defect": "S1",
                       "GT defect": "S0", "RFD": "RFD"}
             return routes.get(report.verdict, {"G0": "S0", "G1": "S1", "G2": "S2", "G3": "S3"}.get(gate, gate))

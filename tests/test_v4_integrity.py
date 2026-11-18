@@ -42,7 +42,7 @@ def test_latest_inputs_only_and_delta_sync(tmp_path):
     assert verify(tmp_path) == []
     gates = {"S0": ReportState(2, "PASS", scope="delta-sync"),
              "G0": ReportState(1, "PASS", ("S0", 1), inputs=(("GT.md", before),))}
-    assert stale_reason("G0", gates, project_root=tmp_path) is None
+    assert "based on S0 iteration 1" in stale_reason("G0", gates, project_root=tmp_path)
     (tmp_path / "GT.md").write_text("unapproved")
     assert "stale-report" in stale_reason("G0", gates, project_root=tmp_path)
 
