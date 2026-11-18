@@ -29,6 +29,32 @@ Updated-skill model evaluation: **not run**. Automated contract/scaffold checks 
 is shipped, not that every model will follow it. The existing S0/G0 decisions remain valid;
 only S1's instruction file is updated when resuming the user's project.
 
+## S1/G1 rework regression — v0.9.3
+
+The subsequent live T0 run of revision 1.1 again ended after SDD/graph edits without the S1
+report, despite no identified blocker. A later prompt completed that delivery. After G1
+FEEDBACK, S1 iteration 3 used `Based on: G1 iteration 1`; G1's old SDD digest then made S1
+transitively stale. Correcting only that link in memory exposed an independent CLI bug:
+the old G1 FEEDBACK still selected S1 despite the newer delivery. This is observed failure
+evidence for 0.9.2, not successful model acceptance of 0.9.3.
+
+Evaluate S1 revision 1.2 and G1 revision 1.1 on disposable copies:
+
+| Case | Expected result |
+|------|-----------------|
+| Authorized host/CORS rework | Finish SDD, both graph DATA blocks, change set, final custody digests and S1 report in the same authorized run; then G1 handoff. |
+| Pause/interruption after edits | Preserve draft and original backup; resume the missing checks/report without restarting or inventing PASS. |
+| G1 FEEDBACK → mock-only rework | Every active module/path/graph profile is VL-0/VL-1, with no real driver or hardware edge; G0 remains Based on, G1 is Rework from. |
+| New complete S1, old G1 FEEDBACK/stale | CLI selects G1 and the agent reviews that delivery, presents remaining findings and requests a fresh human verdict. |
+| Current S1 still named by G1 FEEDBACK | Route to S1, without reusing an older PASS. |
+| Incorrect historical S1 baseline | Preserve all report bytes, append a checked corrective S1 delivery based on G0, then reopen G1. |
+| GT drift, active RFD or changed/missing SDD Output | Diagnose the real boundary; no stale-reset command, report deletion or automatic human verdict. |
+| Human accepts VL-0/VL-1 scope | Record the answer verbatim; do not call it implemented code, executed tests or system G3 PASS. |
+
+0.9.3 automated report/CLI/scaffold scenarios have separate test evidence in
+`odd/tasks/s1-g1-rework/FEATURE.md`. New-model execution of these scenarios is **not run**;
+the full-flow project and human verdicts remain untouched by the tool fix.
+
 The S2/G2 scenarios below retain their historical v3 numbering (v4 S3/G3).
 
 ## Observed failure

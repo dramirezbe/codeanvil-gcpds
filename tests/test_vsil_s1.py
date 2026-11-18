@@ -132,6 +132,32 @@ def test_scaffolded_s1_retains_continuity_and_local_reference_paths(tmp_path):
     assert _continuity(text) == _continuity(_skill_text('S1_design_system'))
     assert '.agents/skills/S1_design_system/references/SDD.md' in text
     assert 'templates/skills/' not in text
-    assert 'version: "1.1"' in text
+    assert 'version: "1.2"' in text
     assert not list((project / '.codeanvil/design').iterdir())
     assert not list((project / '.codeanvil/report').glob('**/S1.md'))
+
+
+def test_s1_delivery_procedure_keeps_upstream_baseline_and_checks_all_profiles():
+    text = _skill_text('S1_design_system')
+    reference = (TEMPLATES_DIR / 'skills/S1_design_system/references/rework_delivery.md').read_text()
+    assert 'references/rework_delivery.md' in text
+    assert 'never write `Based on: G1 ...`' in text
+    assert 'Rework from: G1 iteration <N>' in text
+    for rule in ('no module/path requires VL-2', 'synchronize module levels, hardware edges and labels',
+                 'Responsibility', 'Append the next', 'never rewriting history'):
+        assert rule in reference or rule in text
+    assert 'codeanvil custody verify --cycle <cycle> --gate S1' in text
+
+
+def test_generated_s1_g1_ship_the_delivery_reference_and_recovery_route(tmp_path):
+    from codeanvil.init.create import scaffold_project
+    project = scaffold_project('Rework instructions', 'rework', tmp_path)
+    skills = project / '.agents/skills'
+    reference = skills / 'S1_design_system/references/rework_delivery.md'
+    assert reference.is_file()
+    g1 = (skills / 'G1_design_review/SKILL.md').read_text()
+    assert '../S1_design_system/references/rework_delivery.md' in g1
+    agents = (project / 'AGENTS.md').read_text()
+    assert 'resume the `Next:` step' in agents
+    assert 'Rework from: G1 iteration <N>' in agents
+    assert 'templates/skills/' not in reference.read_text()

@@ -5,7 +5,7 @@ license: Apache-2.0
 compatibility: "No scripts. Read-only toolchain/version probes on the named execution targets, through vsil_hil_mcp when remote. S3/G3 prepare target tools after the pre-HW review. Writes only .codeanvil/report/<cycle-name>/G1.md."
 metadata:
   author: "gcpds"
-  version: "1.0"
+  version: "1.1"
   gate: "G1"
   pipeline: "V-SIL"
 ---
@@ -38,11 +38,15 @@ Otherwise check, in this order, writing **no iteration** when you stop:
    `HITL: PASS`: return exactly `S1 must pass first. Run the S1 skill.`
 2. `codeanvil status` marks `S1` or any earlier report of the cycle `stale`: return the same
    line, naming the earliest stale report.
+   Check upstream delivery integrity, not the previous G1's staleness. A new S1 normally makes
+   the previous G1 stale; that is why this review is required. For `undelivered-output` or
+   `invalid-baseline`, route to S1 using [Delivery and rework](../S1_design_system/references/rework_delivery.md).
 3. G1's own latest iteration is `FEEDBACK`. With `Verdict: RFD`, return exactly
    `Cycle suspended by RFD. Run the RFD skill.`, unless the latest `RFD.md` iteration states
    `Outcome: Withdrawn`. Otherwise, if its `Based on` line names the current latest S1
    iteration, the design was not reworked: return exactly
    `S1 must rework first. Run the S1 skill.` An unchanged design is never reviewed twice.
+   If S1 is newer, proceed with a fresh review of that delivery; never reuse the old verdict.
 
 ## Inputs
 
@@ -74,6 +78,15 @@ Otherwise check, in this order, writing **no iteration** when you stop:
   necessary tools and project dependencies after the pre-HW review. Missing installable
   dependencies do not demand that S2 start before G1 passes.
 
+## Execution continuity
+
+Once authorized and the current S1 prerequisite passes, complete the review through the required
+human decision question or a concrete blocker. Reading, status and custody are preparation.
+After the human's answer and decision maker are known, publish the report without another
+continuation request. On FEEDBACK, finish recording the decision before handing off to S1;
+if the user already authorized that rework, load S1 and continue within its ownership rules.
+Never edit design/GT as G1, assume a verdict, or treat prototype scope acceptance as G3 PASS.
+
 ## Steps
 
 1. Give the human both graph paths from `S1.md` (dark and light): their spiders support the topology and
@@ -87,6 +100,8 @@ Otherwise check, in this order, writing **no iteration** when you stop:
    G1 when the design includes a viable setup; an impossible tool/capability is an open finding.
 4. Run `codeanvil custody verify --cycle <cycle> --gate S1` and compare S1's Output digest with the
    current SDD. An input mismatch is an open finding: design was written against different GT.
+   Require the SDD Output line; absence is an incomplete S1 delivery, even if legacy reports
+   without outputs parse successfully. A delivery mismatch routes to S1 before recording G1.
    Record Input digests for StRS, SyRS and SDD from `codeanvil custody digest`, pasted verbatim.
 5. Present the findings, `open` first, and a recommendation. **If any finding is `open`, enter
    draft** — write the `DRAFT` marker ([references/TRIAGE.md](references/TRIAGE.md) §2) — and run

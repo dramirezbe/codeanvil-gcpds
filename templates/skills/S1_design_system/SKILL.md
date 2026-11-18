@@ -5,7 +5,7 @@ license: Apache-2.0
 compatibility: "No network access, no scripts. Reads .codeanvil/GT/StRS.md, .codeanvil/GT/SyRS.md, .codeanvil/project.yaml, and .codeanvil/design/SDD.md (from G1 rework). Writes .codeanvil/design/SDD.md, .codeanvil/design/dependency_graph.html (dark), dependency_graph_light.html, and .codeanvil/report/<cycle-name>/S1.md. Report includes Scope: system and Input: sha256 lines for all read GT files."
 metadata:
   author: "gcpds"
-  version: "1.1"
+  version: "1.2"
   gate: "S1"
   pipeline: "V-SIL"
 ---
@@ -36,6 +36,10 @@ When S1 already delivered and nothing asks for rework, say so and point to the G
 is requested by a `G1.md` iteration with `FEEDBACK` (named sections to rework), by an `S2.md` or
 `G2.md` iteration with `FEEDBACK` and the line `Verdict: design defect` naming the sections to
 rework, or by the user.
+
+On every rework, keep G0 as the upstream baseline. Record the feedback source separately as
+`Rework from: <gate> iteration <N>`. Follow [Delivery and rework](references/rework_delivery.md)
+through report publication; an old G1 becoming stale is expected and does not invalidate S1.
 
 ## Inputs and Outputs
 
@@ -150,7 +154,8 @@ or `yes, but stop before the report`; clarify only when the requested scope rema
    nonzero, stop and show its message; write no iteration. Cite the printed backup path in the
    iteration's Description. Backups never cover `src/` or `verification/`: code recovery relies
    on git.
-2. Copy the template to `.codeanvil/design/SDD.md`. Obtain GT digests using
+2. On first delivery copy the template to `.codeanvil/design/SDD.md`; on rework resume the existing
+   design and preserve valid sections. Obtain GT digests using
    `codeanvil custody digest .codeanvil/GT/StRS.md .codeanvil/GT/SyRS.md` and record the
    returned Input lines in S1.md. Do not add retired approval fields to the SDD Meta.
 3. Allocate `SYS-*` to subsystems and paths: §0.4, §1.1, §4.1.
@@ -170,7 +175,11 @@ or `yes, but stop before the report`; clarify only when the requested scope rema
     §1.6 execution targets resolved and §1.7 present for every target.
     This is a courtesy to the reviewer, not a gate.
 11. Build both dependency graph versions (next section).
-12. Write the iteration with the row `| HITL | PASS |` and both graph paths in the Description.
+12. Finish the [delivery checks](references/rework_delivery.md), then write the iteration with
+    the row `| HITL | PASS |`, the final SDD Output digest and both graph paths in the Description.
+    Run `codeanvil custody verify --cycle <cycle> --gate S1` and `codeanvil status`.
+    Resolve a failed delivery check before claiming completion. An obsolete previous G1 is the
+    reason for a new review, never a reason to restart a complete S1 delivery.
     Return the design path and `S1 complete. Run the G1 skill.`
 
 ## Rework (bounded)
@@ -247,6 +256,9 @@ Write exactly one file: `.codeanvil/report/<cycle-name>/S1.md`, append-only.
   G0 iteration when the work starts, followed by the design and both graph paths and the SHA-256 of
   `.codeanvil/design/SDD.md` (command in `## Rework (bounded)`). On rework it also carries the
   design change set.
+- Keep that G0 line on rework too. Use `Rework from: G1 iteration <N>` (or the actual feedback
+  gate) as separate provenance; never write `Based on: G1 ...` in S1. A malformed historical
+  baseline is recovered by appending a checked corrective delivery, never rewriting history.
 - S1 is a **stage**: `PASS` means "output delivered". The human verdict belongs to G1.
 
 ## Output Contract

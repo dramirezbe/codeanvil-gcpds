@@ -59,9 +59,9 @@ already shows an active cycle, offer it as the default choice.
 
 - Offer the cycles that already exist under `.codeanvil/report/` as choices,
   plus the option of a new name.
-- If the user selects an existing cycle, resume it: the next step is the first one, in
-  chain order, whose report is missing, not at `HITL: PASS`, or marked `stale` by
-  `codeanvil status`. Load that skill; its prerequisite check sends you to the right step.
+- If the user selects an existing cycle, resume the `Next:` step shown by `codeanvil status`.
+  Load that skill and check its prerequisites. Historical FEEDBACK/staleness can remain after
+  a replacement stage delivery; do not restart S1 just because its previous G1 is stale.
   A cycle `codeanvil status` shows as closed is not resumed.
 - If the user gives a new name, normalize it to a directory-safe slug:
   1. lowercase;
@@ -216,6 +216,9 @@ Rules:
   line `Based on: <predecessor id> iteration <N>`, where `N` is the predecessor's latest
   iteration when the work starts. S0 and RFD have no such line. `codeanvil status` uses
   it to mark a report `stale` when its predecessor was reworked.
+- S1 always uses `Based on: G0 iteration <N>`, including after G1 FEEDBACK. Record the feedback
+  source separately as `Rework from: G1 iteration <N>`; it is provenance, not a chain link.
+  A complete newer S1 requires a new G1 review and never inherits the previous human verdict.
 - There is **no DENIED** state — a rejected result is `FEEDBACK` with the
   user's comments, and the gate re-runs.
 - For G0 (deterministic), the Description carries the full script report, and

@@ -39,9 +39,21 @@ the old G1 remains historical and stale. RFD, GT drift and incomplete deliveries
    Rollback: remove the shared S1 output comparison, CLI help changes and associated tests.
 3. S1/G1 completion and re-review instructions, generated reference alignment,
    recovery procedure, manual agent evaluation scenarios and release metadata.
+   S1 revision 1.2 and G1 revision 1.1 share `rework_delivery.md`: close the report,
+   preserve G0, keep feedback provenance separate, check all module/path/graph profiles
+   and recover malformed historical delivery metadata by appending a corrective iteration.
+   G1 completes the review through its human decision boundary and never inherits a verdict.
+   Focused skill/scaffold/custody/status tests: **123 passed** (1.59 s).
+   Full `.venv/bin/python -m pytest -q`: **762 passed, 40 skipped, 1 existing
+   FastAPI/httpx deprecation warning** (13.22 s).
+   Runtime boundary: generated-project tests include the new reference and both skills;
+   a fresh model-driven S1/G1 evaluation is **not run**. The manual evaluation guide records
+   the observed 0.9.2 failure and the new scenarios without inventing a passing transcript.
+   Rollback: revert the skill/reference/scaffold instructions and their contract tests.
 
 Keep these units independently reviewable; no final PR is created. The CLI remains
 stateless and does not execute methodology stages or decide human gates. Automated
 fixtures prove state transitions, not model obedience or a real Verified Prototype.
 
-Work-unit commits: `edcf70c` (state/routing); later units recorded at release preparation.
+Work-unit commits: `edcf70c` (state/routing), `6ba2466` (delivery integrity);
+later units recorded at release preparation.
