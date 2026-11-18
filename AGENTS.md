@@ -1,6 +1,6 @@
 # CodeAnvil — Agent Architecture
 
-## V-SIL v4 — 0.9.4
+## V-SIL v4 — 0.9.5
 
 The active chain is `S0 → G0 → S1 → G1 → S2 → G2 → S3 → G3`.
 S2 plans one module PLAN.md per topological slice; G2 is the human plan micro-gate.
@@ -14,11 +14,12 @@ v4 scaffold/cycle; archived v3 evidence is not reclassified as a v4 verdict.
 
 `codeanvil ui` is v3-only and incompatible with the v4 chain until its separate follow-up.
 Its non-chain operations remain available. No UI source changes belong to this refactor.
-Release [v0.9.4](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.9.4)
-rejects malformed report digests and missing S2 inputs, and clarifies S2's complete delivery flow.
-The S1/G1 rework and delivery-integrity fixes from 0.9.3 remain active.
-Existing projects must refresh the S2 skill/references separately from the CLI;
-the release never rewrites project evidence. See [S2 delivery and recovery](templates/skills/S2_plan_modules/references/delivery.md).
+Release [v0.9.5](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.9.5)
+backs up plan directories with distinct nested paths and applies S3 pause schedules by scope.
+Per module is valid for slice 0; its first checkpoint follows infrastructure and checks.
+The digest validation and S1/G1/S2 delivery fixes remain active. Existing projects must refresh
+their instructions separately from the CLI; the release never rewrites project evidence.
+See [S3 checkpoints](templates/skills/S3_implement_modules/references/pause_schedule.md).
 The T0 v4 full-flow execution and human gate acceptance remain pending.
 
 Archived v2/v3 materials, no-tools skills, backups and first_full_flow snapshots remain

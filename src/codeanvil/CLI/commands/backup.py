@@ -5,7 +5,6 @@ overwriting skill runs it immediately before the step that rewrites the
 artifact, and cites the printed backup path in its iteration.
 """
 
-import hashlib
 import shutil
 import sys
 from pathlib import Path
@@ -96,18 +95,21 @@ def _manifest_digests(folder: Path) -> dict[str, str]:
 
 
 def _write_backup(
-    folder: Path, project_dir: Path, file_entries: list[tuple[Path, Path]], manifest: dict
+    folder: Path, project_dir: Path, file_entries: list[tuple[Path, Path, Path]], manifest: dict
 ) -> None:
-    """Copy into a staging folder flat (no directory nesting), then rename: no half-written
-    backup is ever mistaken for an existing one. Source paths are stored in MANIFEST."""
+    """Stage and rename atomically; directory targets retain their project-relative tree.
+
+    Individual file targets keep their historical flat layout. MANIFEST records each
+    backup_path so restoring a tree never relies on its files having unique basenames.
+    """
     staging = folder.with_name(f"{folder.name}.tmp")
     if staging.exists():
         shutil.rmtree(staging)
     staging.mkdir(parents=True)
     
-    # Copy files flat (just filename, no nested dirs) in the backup folder
-    for rel_path, abs_path in file_entries:
-        dest = staging / abs_path.name
+    for rel_path, abs_path, backup_path in file_entries:
+        dest = staging / backup_path
+        dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(abs_path, dest)
     
     (staging / "MANIFEST.yaml").write_text(
@@ -141,17 +143,14 @@ def _run(stage: str) -> None:
     file_entries = []  # (project_relative_path, absolute_path)
     for target in targets:
         target_abs = project_dir / target
-        if target.as_posix().endswith("/"):
-            # Directory target: recursively gather files, preserve project-relative paths
-            if target_abs.is_dir():
-                for file_path in sorted(target_abs.rglob("*")):
-                    if file_path.is_file():
-                        rel_path = file_path.relative_to(project_dir)
-                        file_entries.append((rel_path, file_path))
-        else:
-            # File target
-            if target_abs.is_file():
-                file_entries.append((target, target_abs))
+        # Path normalizes away a trailing slash; inspect the filesystem instead.
+        if target_abs.is_dir():
+            for file_path in sorted(target_abs.rglob("*")):
+                if file_path.is_file():
+                    rel_path = file_path.relative_to(project_dir)
+                    file_entries.append((rel_path, file_path, rel_path))
+        elif target_abs.is_file():
+            file_entries.append((target, target_abs, Path(target_abs.name)))
     
     if not file_entries:
         print("nothing to back up")
@@ -166,8 +165,9 @@ def _run(stage: str) -> None:
         folder = backups_dir / producer[0] / f"{stage}_iter{producer[1]}"
 
     files = [
-        {"source": rel_path.as_posix(), "sha256": _sha256(abs_path)}
-        for rel_path, abs_path in file_entries
+        {"source": rel_path.as_posix(), "sha256": _sha256(abs_path),
+         "backup_path": backup_path.as_posix()}
+        for rel_path, abs_path, backup_path in file_entries
     ]
 
     if folder.exists():

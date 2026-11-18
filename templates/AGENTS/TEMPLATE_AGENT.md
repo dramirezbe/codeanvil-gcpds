@@ -309,6 +309,10 @@ The tool CLI does not orchestrate the chain. codeanvil ui remains v3-only until 
 
 ### Scope and re-entry boundaries
 
+S3 applies the selected pause schedule to the admitted scope. Per module is valid for slice 0:
+the parent completes infrastructure and its checks before pausing. Only system has the
+checkpoint before PATH tests. Resume an answered schedule using the S3 skill's scope matrix.
+
 G2-approved plans are immutable until S2 rework and a new G2 review. S3 writes implementation
 notes in S3.md. Slice 0 proves base/stub startup and placeholder handshakes; module slices prove
 built-module regression and their declared VL tests. Only system requires final PATH-* and the

@@ -5,7 +5,7 @@ license: Apache-2.0
 compatibility: "Telemetry is collected by the `codeanvil telemetry` subcommand, part of CodeAnvil itself (not a skill script). Reads the S1 design, .codeanvil/GT/SyRS.md and .codeanvil/project.yaml. Writes src/, verification/, root manifests, .codeanvil/report/<cycle-name>/S3.md and S3_artifacts/."
 metadata:
   author: "gcpds"
-  version: "1.4"
+  version: "1.5"
   gate: "S3"
   runtime: []
   pipeline: "V-SIL"
@@ -28,6 +28,9 @@ writing **no iteration** when you stop:
 1. Require latest G2 PASS for the selected S2 scope, else return exactly
    `G2 must pass first. Run the G2 skill.` Run `codeanvil custody verify --cycle <cycle> --gate G2`;
    stale inputs stop without an iteration. Compare G2 inputs to S2 outputs.
+   Invalid upstream reports are repaired through their owning S2/G2 skills; S3 never appends
+   replacement upstream verdicts itself. A metadata correction does not transfer a human PASS
+   to a new delivery. Recheck custody after the required review before resuming code.
 2. Own latest FEEDBACK with `Verdict: plan defect` requires a newer S2/G2 delivery.
    A design defect requires S1/G1 rework then S2/G2. Return the named prerequisite when missing.
 3. Latest G3 `Verdict: RFD` returns `Cycle suspended by RFD. Run the RFD skill.` unless RFD was withdrawn.
@@ -119,6 +122,9 @@ After the pause schedule is selected, or a checkpoint receives `continue` or `re
 the authorized work **in the same turn** until the next scheduled pause, completion or a concrete
 blocker. Progress updates do not end the turn: never return only a promise to continue, a summary
 of files read or "implementation is not finished" while an authorized next action remains.
+`Per module` is valid for `slice 0`: implement the parent-owned infrastructure and its checks
+before its infrastructure checkpoint. Do not ask for a "compatible" replacement schedule or
+pause before writing code merely because this scope implements no modules.
 
 - Resume the same in-progress iteration with its selected schedule and answered checkpoints;
   do not ask for the same answer again or treat resumption as a new iteration. With **Per
@@ -187,6 +193,8 @@ from G3 to S3 to implement it.
 Ask the pause schedule at the start of **every** iteration, before any code, with your runtime's
 native question tool (`AskUserQuestion` in Claude Code): one single-select question in English, with
 no option preselected.
+Reuse a choice already supplied for the same in-progress iteration; selecting a schedule is
+authorization to work to its first applicable checkpoint, not a checkpoint in itself.
 
 | Option | Pauses |
 |--------|--------|
@@ -197,7 +205,17 @@ Ask using the native question tool, or chat if unavailable; wait for an actual a
 A module-defect rework follows G3's fixed change list without asking a new schedule.
 If the runtime has no question tool, ask in chat and wait for the reply.
 
-Every schedule adds one pause after cross-subsystem integration and before the `PATH-*` tests. At each
+For `system` only, every schedule adds one pause after cross-subsystem integration and before the `PATH-*` tests.
+Earlier scopes have no PATH checkpoint. Apply this scope matrix and the precise
+[checkpoint procedure](references/pause_schedule.md); do not pause twice at one boundary:
+
+| Scope | Per module | Per slice |
+|-------|------------|-----------|
+| slice 0 | After bases, kit, stubs, placeholder integration and the scope VL-0 checks; no module implementation or delegation | After the completed infrastructure slice and its checks |
+| slice k (k >= 1) | After each approved module's implementation and prescribed checks; no repeated infrastructure pause | After all approved modules and the full built VL-0 floor |
+| system | After cross-subsystem integration, before PATH tests; no invented module checkpoints | Before PATH tests and after completed system scope/checks |
+
+At each
 pause the human answers `continue`, `rework` or `stop`, through the same question tool or in chat
 when it is unavailable.
 
@@ -210,6 +228,8 @@ when it is unavailable.
 Record every answer as a checkpoint line in the iteration's Description, never as a gate verdict:
 `Checkpoint: <pause point> — <continue|rework|stop> — <note>`. A `stop` writes no `S3.md`; the next
 run resumes from `src/` under **Resume, do not restart**.
+After the final answered checkpoint, finish the remaining floor/evidence/report steps and hand
+off to G3; do not restart the schedule or invent another confirmation before publication.
 
 ## Module Subagents — mandatory fresh context
 
@@ -229,6 +249,7 @@ Collect changed paths, exact commands, exit codes, criteria and blockers per mod
 
 - `slice 0`: parent implements INFRA-PLAN.md (bases, kit, loggers, stubs and top-down
   placeholder integration). Run steps 1–2 and the scope's VL-0 checks; do not implement modules.
+  Both pause options are admitted. No module implementor is required for this parent-owned work.
 - `slice k`: delegate only the modules named in BACKLOG for k; run step 3 for each in fresh
   context, inspect write scope, then full `verification/run.sh vl0`. Do not implement future slices.
   Within step 3 also write and exercise the current module's VL-1 tests (when required) and
@@ -245,7 +266,8 @@ Collect changed paths, exact commands, exit codes, criteria and blockers per mod
 
 ## Steps
 
-Execute only the steps selected by Scope execution above. Before work, ask the pause schedule as **Pause Schedule** says above.
+Execute only the steps selected by Scope execution above. Before work, resolve the pause schedule
+as **Pause Schedule** says above; retain an already answered choice on resume.
 
 1. **ML (future work).** If design §1.5 exists, stop before any code with exactly
    `ML integration is future work. Remove design §1.5 for this round.` and write no iteration.

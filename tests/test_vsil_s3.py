@@ -305,6 +305,38 @@ def test_s2_pause_schedule_records_checkpoints_not_verdicts():
     assert "Resume, do not restart" in section
 
 
+def test_s3_scope_matrix_admits_per_module_infrastructure_and_limits_path_pause():
+    section = _section('Pause Schedule')
+    assert 'selecting a schedule is authorization to work' in section
+    assert '| slice 0 | After bases, kit, stubs, placeholder integration and the scope VL-0 checks' in section
+    assert '| slice k (k >= 1) | After each approved module' in section
+    assert 'For `system` only' in section and 'Earlier scopes have no PATH checkpoint' in section
+    assert 'do not pause twice at one boundary' in section
+    continuity = _section('Execution Continuity')
+    assert '`Per module` is valid for `slice 0`' in continuity
+    assert 'Do not ask for a "compatible" replacement schedule' in continuity
+
+
+def test_s3_upstream_report_repairs_keep_stage_ownership_and_human_verdicts():
+    section = _section('Prerequisite and Cycle')
+    assert 'through their owning S2/G2 skills' in section
+    assert 'S3 never appends replacement upstream verdicts itself' in section
+    assert 'does not transfer a human PASS' in section
+
+
+def test_generated_s3_ships_scope_checkpoints_and_reload_guidance(tmp_path):
+    from codeanvil.init.create import scaffold_project
+    project = scaffold_project('S3 checkpoint probe', 's3', tmp_path)
+    skill = project / '.agents/skills/S3_implement_modules'
+    assert 'version: "1.5"' in (skill / 'SKILL.md').read_text()
+    reference = (skill / 'references/pause_schedule.md').read_text()
+    for rule in ('redirects their content to a null device is not a reload',
+                 'no module implementations', 'Do not double-pause',
+                 'does not fabricate evidence', 'Only G3 system'):
+        assert rule in reference
+    assert not list((project / '.codeanvil/report').glob('**/S3.md'))
+
+
 def test_s2_module_subagents_are_optional_and_bounded():
     section = _section("Module Subagents")
 
