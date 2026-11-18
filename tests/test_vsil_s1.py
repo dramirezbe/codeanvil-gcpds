@@ -93,3 +93,45 @@ def test_s1_skill_writes_a_bounded_design_change_set_on_rework():
     assert "no code impact" in text
     assert "Keep the IDs of unchanged elements stable" in text
     assert "SHA-256 of the final `SDD.md`" in text
+
+
+def _continuity(text):
+    return ' '.join(text.split('## Execution Continuity\n', 1)[1].split('## Steps (one pass)\n', 1)[0].split())
+
+
+def test_s1_must_execute_past_preparation_and_deliver_all_artifacts():
+    section = _continuity(_skill_text('S1_design_system'))
+    for expected in ('**in the same turn**', 'S1 has no scheduled internal human checkpoint',
+                     'preparation, not a completed stage', 'Write the design incrementally',
+                     'Do not return only a reading summary', 'an assumed turn budget is not a blocker'):
+        assert expected in section
+    for path in ('.codeanvil/design/SDD.md', '.codeanvil/design/dependency_graph.html',
+                 '.codeanvil/design/dependency_graph_light.html', '.codeanvil/report/<cycle-name>/S1.md'):
+        assert path in section
+    assert 'Record PASS only after the design and both graphs are complete' in section
+    assert "Never assume G1's human verdict" in section
+
+
+def test_s1_resumes_without_restarting_or_bypassing_real_stop_conditions():
+    section = _continuity(_skill_text('S1_design_system'))
+    for expected in ('Resume, do not restart', 'Preserve valid sections and stable IDs',
+                     'Do not repeat an already successful backup', '`nothing to back up` result is not a blocker',
+                     'complete unaffected work first', 'failed command/error',
+                     'Explicit human stop or actual runtime interruption', 'write no fabricated completed iteration'):
+        assert expected in section
+    for response in ('`continue`', '`run`', '`y`', '`yes`', '`ok`', '`RUN`', '`do not run`'):
+        assert response in section
+    assert 'never waive a prerequisite, expand scope or decide G1' in section
+
+
+def test_scaffolded_s1_retains_continuity_and_local_reference_paths(tmp_path):
+    from codeanvil.init.create import scaffold_project
+    project = scaffold_project('S1 continuity probe', 's1-continuity', tmp_path)
+    generated = project / '.agents/skills/S1_design_system/SKILL.md'
+    text = generated.read_text(encoding='utf-8')
+    assert _continuity(text) == _continuity(_skill_text('S1_design_system'))
+    assert '.agents/skills/S1_design_system/references/SDD.md' in text
+    assert 'templates/skills/' not in text
+    assert 'version: "1.1"' in text
+    assert not list((project / '.codeanvil/design').iterdir())
+    assert not list((project / '.codeanvil/report').glob('**/S1.md'))

@@ -1,6 +1,6 @@
 # V-SIL Test Cases (T#) and End-to-End Manual Test
 
-## V-SIL v4 — 0.9.1
+## V-SIL v4 — 0.9.2
 
 The active chain is `S0 → G0 → S1 → G1 → S2 → G2 → S3 → G3`.
 S2 plans one module PLAN.md per topological slice; G2 is the human plan micro-gate.
@@ -14,8 +14,8 @@ v4 scaffold/cycle; archived v3 evidence is not reclassified as a v4 verdict.
 
 `codeanvil ui` is v3-only and incompatible with the v4 chain until its separate follow-up.
 Its non-chain operations remain available. No UI source changes belong to this refactor.
-Release [v0.9.1](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.9.1)
-is merged into main and published before the full-flow trial by owner authorization.
+Release [v0.9.2](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.9.2)
+is merged into main and published by owner authorization.
 The T0 v4 full-flow execution and human gate acceptance remain pending.
 
 Archived v2/v3 materials, no-tools skills, backups and first_full_flow snapshots remain
@@ -31,7 +31,7 @@ historical, unchanged. References to their S2/G2 stages retain their original me
 | T2_RPi5-HackRF-web-spectrum | [Guide and Build Package](T2_RPi5-HackRF-web-spectrum/README.md) | Small RPi5-hosted Vite dashboard and seven HackRF RX controls; explicit functional VL-2 protocol, not yet executed. |
 
 For premature stops after `continue`, resumption, concrete blockers and G2 delegation, use the
-[S2/G2 execution continuity regression](execution_continuity.md). It is a manual agent evaluation,
+[stage execution continuity regression](execution_continuity.md). It is a manual agent evaluation,
 separate from the T# project inputs and automated scaffold checks.
 
 ## Synthetic UI fixtures — CodeAnvil 0.7.0
