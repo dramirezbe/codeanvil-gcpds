@@ -1,53 +1,6 @@
 {
-  "$help": "Cargar en audit_prompt_builder.py. Sustituir los marcadores por los documentos antes de usar el prompt.",
+  "$help": "Cargar este perfil en app.py. Sustituir los marcadores por los documentos antes de usar el prompt. Ver docs/input-format.md.",
   "mode": "Focused",
-  "stages": {
-    "Decomposition": false,
-    "Novelty and prior-art check": false,
-    "Gap matrix": false,
-    "Matrix scoring": true,
-    "Failure-mode analysis": false,
-    "Recommendation": false
-  },
-  "dimensions": [
-    {
-      "name": "Propósito y principios",
-      "weight": 1,
-      "definition": "¿las instrucciones conservan la filosofía declarada y el papel de la skill?",
-      "low": "0: not satisfied",
-      "mid": "3: partly satisfied",
-      "high": "5: fully satisfied"
-    },
-    {
-      "name": "Consistencia",
-      "weight": 1,
-      "definition": "¿pueden cumplirse juntas las reglas aplicables? Revisar terminología, condiciones, excepciones y ejemplos.",
-      "low": "0: not satisfied",
-      "mid": "3: partly satisfied",
-      "high": "5: fully satisfied"
-    },
-    {
-      "name": "Requerimientos",
-      "weight": 1,
-      "definition": "identificar requerimientos aplicables omitidos o cambiados y obligaciones añadidas sin justificación. No exigir que una skill cubra toda la metodología.",
-      "low": "0: not satisfied",
-      "mid": "3: partly satisfied",
-      "high": "5: fully satisfied"
-    },
-    {
-      "name": "Claridad",
-      "weight": 1,
-      "definition": "señalar ambigüedades o información ausente que puedan cambiar una decisión importante. Separar defectos probados, falta de contexto y mejoras opcionales.",
-      "low": "0: not satisfied",
-      "mid": "3: partly satisfied",
-      "high": "5: fully satisfied"
-    }
-  ],
-  "rules": {
-    "two_pass": false,
-    "evidence": true,
-    "disagree": "report both values and flag for human arbitration"
-  },
   "context": {
     "title": "Auditoría conceptual de una skill metodológica",
     "domain": "Metodología, filosofía y requerimientos",
@@ -57,6 +10,49 @@
     "assumptions": "",
     "prior": ""
   },
+  "stages": {
+    "Decomposition": false,
+    "Novelty and prior-art check": false,
+    "Gap matrix": false,
+    "Matrix scoring": true,
+    "Failure-mode analysis": false,
+    "Recommendation": false
+  },
+  "scale": 5,
+  "dimensions": [
+    {
+      "name": "Propósito y principios",
+      "weight": 1,
+      "definition": "¿las instrucciones conservan la filosofía declarada y el papel de la skill?",
+      "low": "0: no se cumple",
+      "mid": "3: se cumple parcialmente",
+      "high": "5: se cumple por completo"
+    },
+    {
+      "name": "Consistencia",
+      "weight": 1,
+      "definition": "¿pueden cumplirse juntas las reglas aplicables? Revisar terminología, condiciones, excepciones y ejemplos.",
+      "low": "0: no se cumple",
+      "mid": "3: se cumple parcialmente",
+      "high": "5: se cumple por completo"
+    },
+    {
+      "name": "Requerimientos",
+      "weight": 1,
+      "definition": "identificar requerimientos aplicables omitidos o cambiados y obligaciones añadidas sin justificación. No exigir que una skill cubra toda la metodología.",
+      "low": "0: no se cumple",
+      "mid": "3: se cumple parcialmente",
+      "high": "5: se cumple por completo"
+    },
+    {
+      "name": "Claridad",
+      "weight": 1,
+      "definition": "señalar ambigüedades o información ausente que puedan cambiar una decisión importante. Separar defectos probados, falta de contexto y mejoras opcionales.",
+      "low": "0: no se cumple",
+      "mid": "3: se cumple parcialmente",
+      "high": "5: se cumple por completo"
+    }
+  ],
   "audit": {
     "enabled": true,
     "checks": [
@@ -67,9 +63,15 @@
     ],
     "documents": "[SKILL OBJETIVO | nombre y versión]\n<PEGAR SKILL>\n\n[FILOSOFÍA Y METODOLOGÍA | fuentes aplicables y versiones]\n<PEGAR PRINCIPIOS Y ALCANCE>\n\n[REQUERIMIENTOS | fuente y autoridad]\n<PEGAR REQUERIMIENTOS APLICABLES>"
   },
+  "rules": {
+    "two_pass": false,
+    "evidence": true,
+    "disagree": "report both values and flag for human arbitration"
+  },
   "output": {
     "format": "Markdown",
-    "language": "Español"
-  },
-  "scale": 5
+    "language": "Español",
+    "max_words": 350,
+    "max_findings": 5
+  }
 }

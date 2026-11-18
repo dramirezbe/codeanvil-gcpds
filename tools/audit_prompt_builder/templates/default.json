@@ -1,5 +1,5 @@
 {
-  "$help": "Copy this file into tools/inputs/, fill it, then load it in the app sidebar. Every field is described in tools/README.md.",
+  "$help": "Copy to profiles/<name>.json, fill the fields, and load it in app.py. See docs/input-format.md.",
   "mode": "Focused",
   "context": {
     "title": "",
@@ -61,6 +61,8 @@
   },
   "output": {
     "format": "Markdown",
-    "language": "English"
+    "language": "English",
+    "max_words": 350,
+    "max_findings": 5
   }
 }

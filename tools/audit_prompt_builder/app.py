@@ -1,10 +1,4 @@
-"""
-LLM Validation Prompt Builder
-Run:  streamlit run audit_prompt_builder.py
-Starting content lives in prompt_inputs.template.json, next to this script.
-An agent (or a person) can fill a copy of it into inputs/; load it from the
-sidebar, adjust anything in the interface, then save the prompt. See README.md.
-"""
+"""Build audit prompts. Run: streamlit run tools/audit_prompt_builder/app.py."""
 
 import json
 import re
@@ -21,9 +15,9 @@ except ImportError:  # tool may run in a Streamlit-only env without codeanvil in
         return datetime.now().astimezone().strftime("%Y-%m-%d_%H-%M-%S")
 
 TOOLS_DIR = Path(__file__).resolve().parent
-PROMPTS_DIR = TOOLS_DIR / "prompts"
-INPUTS_DIR = TOOLS_DIR / "inputs"
-TEMPLATE_PATH = TOOLS_DIR / "prompt_inputs.template.json"
+PROMPTS_DIR = TOOLS_DIR / "outputs"
+INPUTS_DIR = TOOLS_DIR / "profiles"
+TEMPLATE_PATH = TOOLS_DIR / "templates/default.json"
 
 st.set_page_config(page_title="LLM Validation Prompt Builder", layout="wide")
 
@@ -39,11 +33,11 @@ STAGES = [
     ("Gap matrix",
      "Build a problem x method table. Mark empty cells as candidate gaps and state, for each, why it may be empty or whether it is worth filling."),
     ("Matrix scoring",
-     "Score every dimension in the scoring matrix, with evidence and visible arithmetic."),
+     "Assess the scoring dimensions against evidence; return only the compact result."),
     ("Failure-mode analysis",
      "List the five most likely failure modes. For each: likelihood, impact, detection method, and mitigation."),
     ("Recommendation",
-     "Give a verdict and the smallest next experiment that would most change the score."),
+     "Identify the smallest correction that addresses the material findings."),
 ]
 
 SCALES = [3, 4, 5, 10]
@@ -65,6 +59,7 @@ IS_STR = (lambda v: isinstance(v, str), "a string")
 IS_BOOL = (lambda v: isinstance(v, bool), "true or false")
 IS_WEIGHT = (lambda v: isinstance(v, (int, float)) and not isinstance(v, bool) and 0 <= v <= 10,
              "a number from 0 to 10")
+IS_POSITIVE_INT = (lambda v: isinstance(v, int) and not isinstance(v, bool) and v > 0, "a positive integer")
 IS_STR_LIST = (lambda v: isinstance(v, list) and all(isinstance(x, str) for x in v), "a list of strings")
 
 def one_of(options):
@@ -97,7 +92,8 @@ def parse_inputs(data):
         "stages": {label: IS_BOOL for label, _ in STAGES},
         "audit": {"enabled": IS_BOOL, "checks": IS_STR_LIST, "documents": IS_STR},
         "rules": {"two_pass": IS_BOOL, "evidence": IS_BOOL, "disagree": one_of(DISAGREE_OPTIONS)},
-        "output": {"format": one_of(FORMATS), "language": IS_STR},
+        "output": {"format": one_of(FORMATS), "language": IS_STR,
+                   "max_words": IS_POSITIVE_INT, "max_findings": IS_POSITIVE_INT},
     }
     for key, value in data.items():
         if key.startswith("$"):
@@ -140,7 +136,8 @@ def to_inputs(cfg):
         "audit": {"enabled": cfg["audit_on"], "checks": [c["text"] for c in cfg["checks"]],
                   "documents": cfg["docs"]},
         "rules": {"two_pass": cfg["two_pass"], "evidence": cfg["evidence"], "disagree": cfg["disagree"]},
-        "output": {"format": cfg["fmt"], "language": cfg["lang"]},
+        "output": {"format": cfg["fmt"], "language": cfg["lang"],
+                   "max_words": cfg["max_words"], "max_findings": cfg["max_findings"]},
     }
 
 # =============================================================================
@@ -176,6 +173,8 @@ def apply_inputs(inp):
     ss.disagree = inp["rules"]["disagree"]
     ss.fmt = inp["output"]["format"]
     ss.lang = inp["output"]["language"]
+    ss.max_words = inp["output"]["max_words"]
+    ss.max_findings = inp["output"]["max_findings"]
 
 def load_inputs(raw, source):
     """Parse raw JSON bytes and apply them; the outcome is shown once in the sidebar."""
@@ -191,7 +190,7 @@ def load_inputs(raw, source):
 
 def on_pick():
     name = st.session_state.pick
-    load_inputs((INPUTS_DIR / name).read_bytes(), f"inputs/{name}")
+    load_inputs((INPUTS_DIR / name).read_bytes(), f"profiles/{name}")
 
 def on_upload():
     f = st.session_state.upload
@@ -203,21 +202,53 @@ if "initialized" not in st.session_state:
     st.session_state.next_id = 100
     apply_inputs(load_template())
 
-JSON_SCHEMA = """{
-  "scores": [{"dimension": "", "score": 0, "weight": 0, "evidence": "", "status": "EVIDENCED or ASSUMED"}],
-  "weighted_percent": 0,
-  "stages": {"<stage name>": "summary"},
-  "findings": [{"id": "", "location": "", "check": 0, "severity": "CRITICAL|MAJOR|MINOR",
-                "spans": [], "explanation": "", "fix": ""}],
-  "coverage_note": "",
-  "verdict": "PROCEED | REVISE | STOP",
-  "top_risks": [],
-  "human_questions": []
-}"""
-
 # =============================================================================
 # PROMPT BUILDER
 # =============================================================================
+
+def scoring_section(cfg):
+    out = []
+    out.append(f"\n# SCORING\nScore each named dimension from 0 to {cfg['scale']} against its anchors.")
+    for d in cfg["dims"]:
+        if d["name"].strip():
+            out.append(f"- {d['name']} (weight {d['weight']:g}): {d['definition']} "
+                       f"Low: {d['low'] or 'unsupported'}. Mid: {d['mid'] or 'partly satisfied'}. "
+                       f"High: {d['high'] or 'fully satisfied'}.")
+    out.append("Final score (%) = 100 × sum(score × weight) / "
+               f"({cfg['scale']} × sum of assessed weights). Mark unassessable dimensions N/A "
+               "and exclude them from the calculation; if no positive assessed weight remains, "
+               "report N/A. Note incomplete coverage on the final score line. A high average "
+               "does not cancel a critical finding. Calculate once; do not show intermediate arithmetic.")
+    return "\n".join(out)
+
+
+def response_section(cfg, scoring):
+    out = [
+        "\n# RESPONSE",
+        f"Return only the requested results, aiming for at most {cfg['max_words']} words. "
+        f"Include up to {cfg['max_findings']} "
+        "consequential distinct findings, ordered by impact; report all CRITICAL findings even if "
+        "this exceeds those guidelines. Do not invent findings to fill a quota.",
+        "Each finding: severity (CRITICAL: defeats the purpose; MAJOR: changes an important decision; "
+        "MINOR: local effect), location and brief evidence, then one short correction. "
+        "Cite both passages for a contradiction. Preserve the intended meaning; if unclear, "
+        "make the suggested correction conditional on the author's decision.",
+        "No introduction, verdict, risk list, questions section, reasoning transcript, or closing summary. "
+        "If material is missing, state that briefly within the requested results.",
+    ]
+    if cfg["fmt"] == "JSON":
+        fields = ('"final_score" (object with "percent" as number or null and "coverage" as a brief note), '
+                  '"matrix_summary" (array of objects with "dimension", "score" as number or null, '
+                  '"weight", and "basis"), ') if scoring else ""
+        out.append('Return one JSON object with only ' + fields + '"findings" '
+                   '(array of objects with "severity", "location", "evidence", and "correction").')
+    else:
+        sections = ("1. Final score: one line.\n"
+                    "2. Matrix scoring summary: a compact table (dimension | score | weight | "
+                    "brief basis or finding ID).\n3. Findings and corrections: short bullets.") if scoring else "Findings and corrections: short bullets."
+        out.append("Use Markdown with only:\n" + sections)
+    return "\n".join(out)
+
 
 def build_focused_prompt(cfg):
     """Ask for one bounded review with evidence and actionable corrections."""
@@ -243,39 +274,8 @@ def build_focused_prompt(cfg):
         out.extend(f"- {check}" for check in checks)
     scoring = cfg["stages"].get("Matrix scoring", False)
     if scoring:
-        out.append(f"\n# SCORING\nScore each named dimension from 0 to {cfg['scale']} against its anchors.")
-        for d in cfg["dims"]:
-            if d["name"].strip():
-                out.append(f"- {d['name']} (weight {d['weight']:g}): {d['definition']} "
-                           f"Low: {d['low'] or 'unsupported'}. Mid: {d['mid'] or 'partly satisfied'}. "
-                           f"High: {d['high'] or 'fully satisfied'}.")
-        out.append("Final score (%) = 100 × sum(score × weight) / "
-                   f"({cfg['scale']} × sum of assessed weights). Mark unassessable dimensions N/A "
-                   "and exclude them from the calculation; if no positive assessed weight remains, "
-                   "report N/A. Note incomplete coverage on the final score line. A high average "
-                   "does not cancel a critical finding. Calculate once; do not show intermediate arithmetic.")
-    out.extend([
-        "\n# RESPONSE",
-        "Return only the requested results, aiming for at most 350 words. Include up to five "
-        "consequential distinct findings, ordered by impact; report all CRITICAL findings even if "
-        "this exceeds those guidelines. Do not invent findings to fill a quota.",
-        "Each finding: severity (CRITICAL: defeats the purpose; MAJOR: changes an important decision; "
-        "MINOR: local effect), location and brief evidence, then one short correction. "
-        "Cite both passages for a contradiction. Preserve the intended meaning; if unclear, "
-        "make the suggested correction conditional on the author's decision.",
-        "No introduction, verdict, risk list, questions section, reasoning transcript, or closing summary. "
-        "If material is missing, state that briefly within the requested results.",
-    ])
-    if cfg["fmt"] == "JSON":
-        fields = ('"final_score" (object with percent or null and a brief coverage note), "matrix_summary" '
-                  '(array of dimension, score or null, weight, and brief basis), ') if scoring else ""
-        out.append('Return one JSON object with only ' + fields + '"findings" '
-                   '(array of severity, location, evidence, and correction).')
-    else:
-        sections = ("1. Final score: one line.\n"
-                    "2. Matrix scoring summary: a compact table (dimension | score | weight | "
-                    "brief basis or finding ID).\n3. Findings and corrections: short bullets.") if scoring else "Findings and corrections: short bullets."
-        out.append("Use Markdown with only:\n" + sections)
+        out.append(scoring_section(cfg))
+    out.append(response_section(cfg, scoring))
     out.append(f"Respond in {cfg['lang']}.")
     if cfg["audit_on"] and cfg["docs"].strip():
         out.extend(["\n# DOCUMENTS", "<documents>", cfg["docs"].strip(), "</documents>"])
@@ -285,7 +285,6 @@ def build_focused_prompt(cfg):
 def build_prompt(cfg):
     if cfg.get("mode", "Focused") == "Focused":
         return build_focused_prompt(cfg)
-    smax = cfg["scale"]
     out = []
     a = out.append
 
@@ -310,8 +309,8 @@ def build_prompt(cfg):
     a("# TASK")
     active = [(l, d) for l, d in STAGES if cfg["stages"].get(l)]
     if active:
-        a("Run the stages below in order. Do not skip one. If a stage lacks information, "
-          "write INSUFFICIENT DATA, list exactly what is missing, and continue.")
+        a("Use these stages to inform the review; do not output separate stage reports. "
+          "Record missing evidence briefly in the final score or matrix basis.")
     else:
         a("Review the material against the criteria below.")
     for n, (label, desc) in enumerate(active, 1):
@@ -320,30 +319,10 @@ def build_prompt(cfg):
 
     scoring = cfg["stages"].get("Matrix scoring", False)
     if scoring:
-        a("# SCORING MATRIX")
-        a(f"Score each dimension from 0 to {smax}, using its anchors. If a case falls between "
-          "anchors, choose the lower score and justify it.")
-        for d in [d for d in cfg["dims"] if d["name"].strip()]:
-            a(f"- **{d['name']}** (weight {d['weight']:g}). {d['definition'].strip()}")
-            a(f"  - Lowest: {d['low'].strip() or 'n/a'}")
-            a(f"  - Middle: {d['mid'].strip() or 'n/a'}")
-            a(f"  - Highest ({smax}): {d['high'].strip() or 'n/a'}")
-        a(f"\nWeighted score = sum(score x weight) / ({smax} x sum of weights), as a percentage. "
-          "Show the arithmetic and recheck it before finalizing.")
-        a("")
-
-        a("## Scoring rules")
-        if cfg["evidence"]:
-            a("- Every score needs evidence: a quote or reference to the input, or the label ASSUMED.")
+        a(scoring_section(cfg))
         if cfg["two_pass"]:
-            a("- Recheck scores in a second pass and report material differences. "
-              "This is a self-check, not independent evidence.")
-        if cfg["two_pass"]:
-            a(f"- If the passes differ by 2 or more points, or any score is ASSUMED: {cfg['disagree']}.")
-        elif cfg["evidence"]:
-            a("- If any score is ASSUMED, flag it for human review.")
-        a("- Never hide disagreement.")
-        a("")
+            a("Recheck scores once; this is a self-check, not independent evidence. "
+              "Record any material uncertainty briefly in the matrix basis.")
 
     if cfg["audit_on"]:
         checks = [c["text"].strip() for c in cfg["checks"] if c["text"].strip()]
@@ -352,31 +331,10 @@ def build_prompt(cfg):
             a("Audit the documents in the DOCUMENTS section against these checks:")
             for n, c in enumerate(checks, 1):
                 a(f"{n}. {c}")
-            a("For every finding report: ID; location (section, paragraph or line); check number; "
-              "severity (CRITICAL / MAJOR / MINOR); the conflicting spans, kept short; how they "
-              "conflict; and the smallest edit that resolves it. Do not rewrite the document.")
-            a("Finish with a coverage note: which checks found nothing, and which could not be "
-              "tested from the text provided.")
             a("")
 
-    a("# OUTPUT FORMAT")
-    if cfg["fmt"] == "JSON":
-        a("Return a single JSON object matching this schema. Put stage details inside \"stages\".")
-        a("```json")
-        schema = json.loads(JSON_SCHEMA)
-        if not scoring:
-            schema.pop("scores")
-            schema.pop("weighted_percent")
-        a(json.dumps(schema, indent=2))
-        a("```")
-    else:
-        a("Use Markdown: short stage summaries and a findings list; include scores only when requested.")
+    a(response_section(cfg, scoring))
     a(f"Respond in {cfg['lang']}.")
-    a("")
-
-    a("# FINAL SUMMARY")
-    a("End with a verdict PROCEED, REVISE or STOP, a short justification, "
-      "the main risks, and questions that could materially change the assessment.")
 
     if cfg["audit_on"] and cfg["docs"].strip():
         a("")
@@ -388,7 +346,7 @@ def build_prompt(cfg):
     return "\n".join(out)
 
 def save_prompt(prompt, title):
-    """Write the prompt to tools/prompts/<title-slug>_<timestamp>.txt and return the path."""
+    """Write the prompt to outputs/<title-slug>_<timestamp>.txt and return the path."""
     slug = re.sub(r"[^a-z0-9]+", "_", (title or "").lower()).strip("_") or "prompt"
     PROMPTS_DIR.mkdir(parents=True, exist_ok=True)
     path = PROMPTS_DIR / f"{slug}_{format_timestamp_machine()}.txt"
@@ -404,15 +362,15 @@ st.caption("Fill each area. The (?) icons explain every field. Use + to add item
            "Remove to delete them. The prompt at the bottom updates as you type.")
 
 with st.sidebar:
-    st.header("Inputs file")
-    st.caption("Load a JSON inputs file, then edit any field on the page. "
-               "Its format is prompt_inputs.template.json; an agent can fill a copy into tools/inputs/.")
+    st.header("Review profiles")
+    st.caption("Choose a profile or upload JSON, then edit the fields. "
+               "Start new profiles from templates/default.json.")
     files = sorted(p.name for p in INPUTS_DIR.glob("*.json")) if INPUTS_DIR.is_dir() else []
     if files:
-        st.selectbox("From tools/inputs/", files, key="pick")
+        st.selectbox("From profiles/", files, key="pick")
         st.button("Load selected file", key="load_pick", on_click=on_pick)
     else:
-        st.caption("No .json files in tools/inputs/ yet.")
+        st.caption("No JSON profiles found.")
     st.file_uploader("Or upload a JSON file", type="json", key="upload", on_change=on_upload)
     st.button("Reset to template defaults", key="reset", on_click=lambda: apply_inputs(load_template()))
     msg = st.session_state.pop("load_msg", None)
@@ -531,15 +489,16 @@ with st.expander("Detailed review: scoring rules"):
     cfg["two_pass"] = st.checkbox(
         "Recheck scores in a second pass", key="two_pass",
         help="An optional self-check; it is not an independent review.")
-    cfg["evidence"] = st.checkbox(
-        "Require evidence for every score", key="evidence",
-        help="Each score must cite the input or be labelled ASSUMED. This makes unsupported scores visible.")
-    cfg["disagree"] = st.selectbox(
-        "When passes disagree", DISAGREE_OPTIONS, key="disagree",
-        help="How to treat disagreement. Flagging for a human is safest; the lower score is the conservative option.")
+    # Preserve legacy values when exporting; current reviews always require evidence.
+    cfg["evidence"] = st.session_state.evidence
+    cfg["disagree"] = st.session_state.disagree
 cfg["fmt"] = st.selectbox(
     "Output format", FORMATS, key="fmt",
     help="Markdown is easier to read. JSON is easier to parse into a spreadsheet or database.")
+with st.expander("Output limits"):
+    cfg["max_words"] = st.number_input("Target response words", min_value=1, step=50, key="max_words")
+    cfg["max_findings"] = st.number_input("Target findings", min_value=1, step=1, key="max_findings")
+    st.caption("All critical findings are reported even if they exceed these targets.")
 cfg["lang"] = st.text_input(
     "Response language", key="lang",
     help="Language of the model's answer.")
@@ -555,7 +514,7 @@ c1, c2, c3 = st.columns(3)
 c1.download_button("Download prompt (.md)", prompt, "validation_prompt.md", "text/markdown")
 c2.download_button("Save my inputs (.json)", json.dumps(to_inputs(cfg), indent=2, ensure_ascii=False),
                    "validation_inputs.json", "application/json",
-                   help="Same format as prompt_inputs.template.json. Put it in tools/inputs/ or upload it to load it again.")
-if c3.button("Save prompt to tools/prompts (.txt)", key="save_txt",
-             help="Writes the prompt as a .txt file in the prompts/ folder next to this script."):
+                   help="Uses templates/default.json format. Save in profiles/ or upload it later.")
+if c3.button("Save prompt to outputs (.txt)", key="save_txt",
+             help="Writes a dated .txt export in this tool’s outputs/ folder."):
     st.success(f"Saved: {save_prompt(prompt, cfg['title'])}")

@@ -1,6 +1,15 @@
 {
-  "$help": "Load in audit_prompt_builder.py. Replace the document placeholders before using the prompt.",
+  "$help": "Load this profile in app.py. Replace document placeholders before using the prompt. See docs/input-format.md.",
   "mode": "Focused",
+  "context": {
+    "title": "Conceptual audit of a methodological skill",
+    "domain": "Methodology, philosophy, and requirements",
+    "problem": "",
+    "idea": "Refine the skill by checking its coherence with its purpose and philosophy, and its consistency with applicable requirements.",
+    "constraints": "Review concepts and requirements, not software development. Preserve the author's intent. Use the authority and scope stated in the supplied documents; ask when precedence is unclear. Propose local corrections, not a full rewrite. Do not require code, tests, empirical performance metrics, or empirical proof of philosophical commitments.",
+    "assumptions": "",
+    "prior": ""
+  },
   "stages": {
     "Decomposition": false,
     "Novelty and prior-art check": false,
@@ -9,6 +18,7 @@
     "Failure-mode analysis": false,
     "Recommendation": false
   },
+  "scale": 5,
   "dimensions": [
     {
       "name": "Purpose and principles",
@@ -43,20 +53,6 @@
       "high": "5: fully satisfied"
     }
   ],
-  "rules": {
-    "two_pass": false,
-    "evidence": true,
-    "disagree": "report both values and flag for human arbitration"
-  },
-  "context": {
-    "title": "Conceptual audit of a methodological skill",
-    "domain": "Methodology, philosophy, and requirements",
-    "problem": "",
-    "idea": "Refine the skill by checking its coherence with its purpose and philosophy, and its consistency with applicable requirements.",
-    "constraints": "Review concepts and requirements, not software development. Preserve the author's intent. Use the authority and scope stated in the supplied documents; ask when precedence is unclear. Propose local corrections, not a full rewrite. Do not require code, tests, empirical performance metrics, or empirical proof of philosophical commitments.",
-    "assumptions": "",
-    "prior": ""
-  },
   "audit": {
     "enabled": true,
     "checks": [
@@ -67,9 +63,15 @@
     ],
     "documents": "[TARGET SKILL | name and version]\n<PASTE SKILL>\n\n[PHILOSOPHY AND METHODOLOGY | applicable sources and versions]\n<PASTE PRINCIPLES AND SCOPE>\n\n[REQUIREMENTS | source and authority]\n<PASTE APPLICABLE REQUIREMENTS>"
   },
+  "rules": {
+    "two_pass": false,
+    "evidence": true,
+    "disagree": "report both values and flag for human arbitration"
+  },
   "output": {
     "format": "Markdown",
-    "language": "English"
-  },
-  "scale": 5
+    "language": "English",
+    "max_words": 350,
+    "max_findings": 5
+  }
 }
