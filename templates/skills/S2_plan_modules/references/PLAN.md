@@ -1,49 +1,48 @@
-# Slice {{slice_id}} Plan
+# Module PLAN — {{SUB-xxx/module_id}}
 
 | Field | Value |
 |-------|-------|
-| Slice ID | {{slice_id}} (e.g., slice-01-hal, slice-02-dsp) |
-| Modules | {{module_1}}, {{module_2}}, ... |
-| VL floor | {{VL-0 / VL-1 / VL-2}} |
+| Module | {{qualified module identity}} |
+| Slice | {{k}} |
+| GT version | {{SyRS Version at S2 entry}} |
+| Traced requirements | {{SYS IDs and verbatim text}} |
 | HAL mode | {{mock-only / mock+real}} |
-| Build order | {{topological sort of module_id}} |
-| Test entry | {{verification/run.sh vl0 \| vl1 \| vl2}} |
-| Expected outputs | {{contracts produced by this slice}} |
-| Infrastructure ready | {{Mock HAL / golden vectors / stubs / (list)}} |
-| Telemetry scope | {{codeanvil telemetry + verification/logger}} |
+| Required VL | {{VL-0 / VL-1 / VL-2}} |
+| Allowed write paths | {{module source directory, module tests, own stub}} |
 
-## Module Details
+## Scope and acceptance criteria
 
-For each module in this slice:
-
-| Module | Responsibility | Tests | Deliverables |
-|--------|-----------------|-------|--------------|
-| {{module_id}} | {{one-sentence from SDD}} | {{test file(s)}} | {{code path / library / artifact}} |
+{{Responsibility, exclusions, measurable criteria for each traced SYS requirement and VL.}}
 
 ## Contracts
 
-Which contracts this slice **produces** (available to later slices):
+{{Copy relevant provided/consumed SDD §3 contracts verbatim, including headings, versions,
+types, units, error semantics, producer identities and dependency slice.}}
 
-- {{contract_name}}: {{brief description}}
-- ...
+## Context set
 
-Which contracts this slice **consumes** (must be available, mocked or real):
+{{Exact paths and relevant API sections: base API, verification kit for required VL,
+dependency stubs, vectors. Every required type/value must resolve here or in this plan.
+Do not load the full SDD, full GT or other module source into the implementor.}}
 
-- {{contract_name}}: {{from which prior slice, or mocked}}
-- ...
+## Ordered tasks
 
-## Blockers and Assumptions
+{{Unit, bottom-up and sandwich tests; replace own stub only after checks pass.
+Each task names input, action, expected outcome and file scope.}}
 
-- {{blocking assumption or external dependency}}
-- {{infrastructure readiness}}
-- ...
+## Test strategy
 
----
+{{Commands, expected output, synthetic vectors/generation parameters, declared HAL,
+HW target/prerequisites for VL-2, telemetry envelope. No real HW during S3.}}
 
-**Instructions:**
+## Delta Traceability
 
-1. Fill this plan during S2, once per slice.
-2. Archive prior plans as PLAN-slice-NN.md before writing the next slice plan.
-3. VL floor: typically VL-0 for logic, VL-1 when real data or deterministic vectors are needed, VL-2 when real hardware is required.
-4. Build order: topological sort of module dependencies; use slice_backlog.py output.
-5. Test entry: S3 runs this command to prove VL-0 floor before moving to later levels.
+{{Applicable D-xxx rows and authority; empty if none.}}
+
+## Risks
+
+{{Unresolved risks, no invented prerequisites or requirement values.}}
+
+## Implementation notes
+
+{{S3 parent fills from implementor return after G2; module agents do not edit this plan.}}

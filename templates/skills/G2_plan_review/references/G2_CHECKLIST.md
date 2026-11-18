@@ -1,55 +1,19 @@
-# G2 Plan Review Checklist
+# G2 — per-module checklist
 
-A human-facing checklist for reviewing each module in the slice plan. Use this during G2 review to systematically
-validate all 6 checks.
+Scope: {{slice k / system}}
 
-## Slice: {{slice_id}}
+| Check | Required evidence |
+|-------|-------------------|
+| G2.1 Completeness | Scope, criteria, tasks, test strategy and context set filled for every module; infra/system sections complete for their scope. |
+| G2.2 Traceability | Each traced SYS exists in current SyRS, copied text and GT version match; each delta has a valid authority. |
+| G2.3 Contract consistency | Consumes provided by earlier slice/base; provided contracts match SDD verbatim, including types and versions. |
+| G2.4 Task ordering | Tasks respect module and base dependencies; no producer/consumer pair in the same slice. |
+| G2.5 Verification feasibility | Data sources, vectors, oracle, declared HAL and target prerequisites support every required VL and tolerance. |
+| G2.6 Fresh-context sufficiency | Every type, value and path resolves to PLAN.md or its Context set without full GT/SDD or other module source. |
 
-| Module | G2.1 Present | G2.2 Order | G2.3 VL-2 Ready | G2.4 Test Entry | G2.5 Contracts | G2.6 Boundary | Findings |
-|--------|:---:|:---:|:---:|:---:|:---:|:---:|---------|
-| {{module_id}} | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | (open or advisory) |
+| Module or infra/system | Check | Evidence (path/section) | State | Finding |
+|------------------------|-------|-------------------------|-------|---------|
 
----
-
-## Per-Module Details
-
-For modules with open findings, record the issue and resolution:
-
-### {{module_id}}
-
-- **Issue:** {{what failed}}
-- **Check(s):** {{G2.N}}
-- **Resolution:** {{how to fix, or escalation}}
-- **Verdict:** {{open / advisory / resolved}}
-
----
-
-## Cross-Slice Dependencies
-
-List any modules in later slices that depend on contracts produced by this slice:
-
-| Later Module | Depends On | Status |
-|--------------|-----------|--------|
-| {{later_module_id}} | {{contract}} | ✓ available / ⚠️ deferred / ✗ missing |
-
----
-
-## Open Findings Summary
-
-| Check | Count | Severity | Blocking? |
-|-------|-------|----------|-----------|
-| G2.1 | — | — | — |
-| G2.2 | — | — | — |
-| G2.3 | — | — | — |
-| G2.4 | — | — | — |
-| G2.5 | — | — | — |
-| G2.6 | — | — | — |
-
----
-
-## Recommendation
-
-- [ ] **PASS:** All checks passed. Recommend S3 proceed.
-- [ ] **FEEDBACK, plan defect:** Replan and S2 re-enters.
-- [ ] **FEEDBACK, infra defect:** Infrastructure incomplete; defer or escalate.
-- [ ] **FEEDBACK, GT defect:** Requirement or design issue; consider RFD.
+States: open, advisory, resolved. Report open findings first; unresolved required checks block PASS.
+Recommend PASS or FEEDBACK: plan defect → S2 (Modules:), design defect → S1, GT defect → S0.
+Record human answer verbatim and Decided by. G2 never offers RFD.
