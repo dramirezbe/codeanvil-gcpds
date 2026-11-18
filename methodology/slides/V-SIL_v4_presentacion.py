@@ -1,13 +1,11 @@
-"""Build six editable Spanish slides from the V-SIL v4 paper; no empirical claims.
+"""Build six editable Spanish slides introducing V-SIL v4; no empirical claims.
 
 Rebuild from the repo root:
   uv run --isolated --no-project --with python-pptx==1.0.2 python methodology/slides/V-SIL_v4_presentacion.py
   libreoffice -env:UserInstallation=file:///tmp/vsil-slides-lo --headless --convert-to pdf --outdir methodology/slides methodology/slides/V-SIL_v4_presentacion.pptx
 
-Source: methodology/V-SIL-v4/V-SIL_v4.md, especially principles P1–P8,
-stage/gate overview, module mini-V, HAL ladder, adaptive evidence, RFD and terminal output.
 The final slide deliberately reserves blank space for future results. Speaker notes carry
-scope nuances and source sections. All visible text and shapes remain editable.
+scope nuances without bibliographic references. All visible text and shapes remain editable.
 Rollback: remove this generator and its two generated presentation files independently.
 Validation: six PDF pages, render review and blank results area; this deck is not run evidence.
 """
@@ -24,10 +22,9 @@ from pptx.util import Inches, Pt
 
 HERE = Path(__file__).resolve().parent
 OUTPUT = HERE / 'V-SIL_v4_presentacion.pptx'
-PAPER = 'methodology/V-SIL-v4/V-SIL_v4.md'
 W, H = 13.333, 7.5
 INK, TEAL, BLUE = '122B40', '087F78', '3B5B9A'
-MUTED, LINE, WHITE, PAPER_BG = '52697C', 'DAE5ED', 'FFFFFF', 'FAFCFE'
+MUTED, LINE, WHITE, BACKGROUND = '52697C', 'DAE5ED', 'FFFFFF', 'FAFCFE'
 SOFT_TEAL, SOFT_BLUE, AMBER = 'E7F5F2', 'EDF2FB', 'B77521'
 FONT = 'DejaVu Sans'
 
@@ -97,18 +94,17 @@ def arrow(slide, x, y, w=0.28):
     no_shadow(shape)
 
 
-def base(deck, index, kicker, title, sections, notes):
+def base(deck, index, kicker, title, notes):
     slide = deck.slides.add_slide(deck.slide_layouts[6])
     slide.background.fill.solid()
-    slide.background.fill.fore_color.rgb = rgb(PAPER_BG)
+    slide.background.fill.fore_color.rgb = rgb(BACKGROUND)
     box(slide, 0.65, 0.39, 0.42, 0.055, TEAL, TEAL)
     text(slide, 1.19, 0.30, 9.7, 0.34, f'V-SIL v4  /  {kicker.upper()}', 11, TEAL, True)
     text(slide, 0.65, 0.92, 12.0, 1.12, title, 32, INK, True)
     rule(slide, 0.65, 7.0, 12.0)
     text(slide, 0.65, 7.13, 8.6, 0.22, 'GCPDS · Universidad Nacional de Colombia', 8.5, MUTED)
-    text(slide, 8.6, 7.13, 3.1, 0.22, f'Paper v4 · {sections}', 8.5, MUTED, align=PP_ALIGN.RIGHT)
     text(slide, 11.95, 7.10, 0.7, 0.28, f'{index} / 6', 10, TEAL, True, PP_ALIGN.RIGHT)
-    slide.notes_slide.notes_text_frame.text = f'Fuente primaria: {PAPER}, {sections}.\n\n{notes}'
+    slide.notes_slide.notes_text_frame.text = notes
     return slide
 
 
@@ -120,12 +116,12 @@ def main():
     deck.core_properties.author = 'David Ramírez-Betancourt · GCPDS · Universidad Nacional de Colombia'
     deck.core_properties.keywords = 'V-SIL v4, SDR, COTS, Agile-V, verificación, evidencia'
 
-    slide = base(deck, 1, 'Problema y contexto', 'SDR COTS exige evidencia\nmás allá de una demo', '§§1, 6, 11',
+    slide = base(deck, 1, 'Problema y contexto', 'SDR COTS exige evidencia\nmás allá de una demo',
         'V-SIL es una metodología general para software limitado por COTS; esta presentación usa SDR como contexto. '
         'El hardware comercial fija restricciones de tasa, recursos y entorno. La señal RF, el host y los enlaces '
         'afectan las observaciones. Una demo o un módulo aislado no prueban los requisitos de extremo a extremo. '
         'La asistencia por IA aumenta la necesidad de contratos y evidencia; no se afirma aquí una mejora medida. '
-        'Autor del paper: David Ramírez-Betancourt. COTS: componentes comerciales disponibles.')
+        'COTS: componentes comerciales disponibles.')
     text(slide, 0.65, 2.28, 12.0, 0.7,
          'El reto: demostrar requisitos de extremo a extremo\nen una plataforma y un entorno declarados.', 20, MUTED)
     labels = ['SDR comercial', 'Host COTS', 'Procesamiento', 'Enlace', 'Interfaz']
@@ -146,12 +142,13 @@ def main():
         text(slide, x, 5.14, 3.8, 0.4, title, 18, INK, True)
         text(slide, x, 5.75, 3.8, 0.8, body, 17, MUTED)
 
-    slide = base(deck, 2, 'Filosofía', 'Cada afirmación necesita evidencia', '§1.2 · P1–P8',
-        'P1: HITL es barrera de autorización; HIL es barrera de validación. '
-        'P2: el oráculo no es el generador; se usa un contexto verificador separado y de solo lectura. '
-        'P3: G0 es la única compuerta determinista; una aprobación no anula su rechazo mecánico. '
-        'P4: verificado no equivale a validado; las afirmaciones nombran entorno y nivel. '
-        'P5–P8 se desarrollan en la diapositiva 4. No se atribuye certificación normativa a la metodología.')
+    slide = base(deck, 2, 'Filosofía', 'Cada afirmación necesita evidencia',
+        'HITL es barrera de autorización; HIL es barrera de validación. '
+        'El oráculo no es el generador; se usa un contexto verificador separado y de solo lectura. '
+        'G0 es la única compuerta determinista; una aprobación no anula su rechazo mecánico. '
+        'Verificado no equivale a validado; las afirmaciones nombran entorno y nivel. '
+        'La iteración por módulo y la trazabilidad de cambios se desarrollan en la diapositiva 4. '
+        'No se atribuye certificación normativa a la metodología.')
     principles = [
         ('Requisitos como contrato', 'Ground Truth (GT), sin requisitos inventados.\nCambios con autoridad y trazabilidad.'),
         ('Generador ≠ verificador', 'Implementación y verificación separadas,\ncon criterios y vectores definidos.'),
@@ -166,7 +163,7 @@ def main():
     box(slide, 0.65, 6.03, 12.0, 0.62, INK, INK)
     text(slide, 0.85, 6.20, 11.6, 0.36, 'Requisitos → decisiones → pruebas → evidencia', 20, WHITE, True, PP_ALIGN.CENTER)
 
-    slide = base(deck, 3, 'Flujo y decisiones', 'Un flujo con compuertas y trazabilidad', '§§3–13',
+    slide = base(deck, 3, 'Flujo y decisiones', 'Un flujo con compuertas y trazabilidad',
         'Cadena: S0→G0→S1→G1→S2→G2→S3→G3. G0 verifica estructura de manera determinista; '
         'Gate H es la autorización humana posterior a G0. G1, G2 y G3 son preparados por agentes y decididos '
         'por humanos. Los reportes registran inputs y evidencia; un cambio puede volverlos obsoletos. '
@@ -195,14 +192,14 @@ def main():
     text(slide, 0.65, 6.52, 12.0, 0.3,
          'Si es inviable en COTS: solicitud de desviación (RFD) al autor; el agente no relaja el contrato.', 13.5, MUTED)
 
-    slide = base(deck, 4, 'Aportes de v4', 'La unidad de iteración es el módulo', '§§6, 8–10, 12',
+    slide = base(deck, 4, 'Aportes de v4', 'La unidad de iteración es el módulo',
         'V-SIL adapta Agile-V a una mini-V por módulo. Las capas son la estructura, no el orden de iteración. '
         'S2 ordena el backlog por dependencias y produce un PLAN.md autocontenido con requisitos, contratos, '
         'tareas y verificaciones. G2 revisa antes de implementar. S3 utiliza contexto nuevo por módulo, '
         'solo su plan y contexto necesario. G3 ejecuta en contexto verificador separado y el humano decide. '
         'Slice 0 construye bases y kit antes de módulos: Mock HAL, vectores/manifiesto, telemetría, stubs, '
         'pares falsos y drivers. La integración final verifica rutas entre subsistemas. '
-        'P8: GT vivo con deltas ADDED/MODIFIED/REMOVED/RENAMED autorizados y revisión correspondiente; '
+        'GT vivo con deltas ADDED/MODIFIED/REMOVED/RENAMED autorizados y revisión correspondiente; '
         'no autoriza al agente a inventar o relajar requisitos. La metodología es agnóstica al agente.')
     loop = [
         ('S2', 'Plan autocontenido', 'PLAN.md + contratos'),
@@ -231,7 +228,7 @@ def main():
         text(slide, x, 5.56, 3.8, 0.68, body, 16, MUTED)
     text(slide, 0.65, 6.52, 12.0, 0.3, 'GT vivo: cambios autorizados y trazables desde el requisito hasta la evidencia.', 14, MUTED)
 
-    slide = base(deck, 5, 'Verificación adaptativa', 'La evidencia declara hasta dónde llega', '§§6.5, 11, 13',
+    slide = base(deck, 5, 'Verificación adaptativa', 'La evidencia declara hasta dónde llega',
         'El piso VL-0 es obligatorio para cada módulo, contrato y ruta declarados. La profundidad se '
         'declara por módulo y ruta. VL-1 usa entrada sintética conocida; VL-2 usa COTS reales en el alcance '
         'ensayado y los criterios/procedimientos pertinentes. Mock-only limita las afirmaciones a VL-1; '
@@ -257,7 +254,7 @@ def main():
     text(slide, 0.83, 5.85, 11.6, 0.30, 'Telemetría en cada prueba: recursos, temperatura y buffers; declarar señales ausentes.', 15, WHITE)
     text(slide, 0.65, 6.53, 12.0, 0.3, 'mock-only: techo VL-1 · La aprobación final requiere evidencia de módulos y rutas del sistema.', 13.5, MUTED)
 
-    slide = base(deck, 6, 'Espacio reservado', 'Resultados', 'evaluación pendiente',
+    slide = base(deck, 6, 'Espacio reservado', 'Resultados',
         'Espacio deliberadamente en blanco. Aún no hay resultados experimentales para presentar. '
         'Cuando existan, incorporar solo evidencia real por módulo/ruta y nivel, condiciones COTS, '
         'telemetría, criterios y limitaciones. No usar tests del CLI CodeAnvil ni el snapshot histórico '
