@@ -60,13 +60,15 @@ timestamp in the same `YYYY-MM-DD_HH-MM-SS` format.
 
 **Focused** is the default, including for old JSON files without `mode`. Supply
 the goal, a few distinct criteria, and the relevant documents. The prompt requests
-one review, aiming for 600 words and five consequential findings. All critical
-issues must still be reported. Each finding needs evidence, impact, and a minimal
-correction; missing context must be disclosed. No scores or repeated reviews are
-requested. Context and checks are preserved verbatim, so keep those concise too.
+one review, aiming for 350 words and five consequential findings. Output contains
+only the final score, a compact scoring matrix, and findings with brief corrections.
+All critical issues must still be reported. Each finding needs a location and
+evidence. Unassessable dimensions are N/A and excluded from the weighted percentage;
+incomplete coverage is noted beside the final score. No verdict, risk list, or
+closing summary is requested. Context and checks are preserved verbatim.
 
 **Detailed** enables the stages, matrix, and scoring rules in the collapsed
-settings. Scores are included only when **Matrix scoring** is selected. A second
+settings. **Include scoring summary** controls scoring in both styles. A second
 scoring pass is an optional self-check, not independent evidence. Both styles
 support Markdown and JSON. The displayed word count includes supplied documents.
 This tool only builds text: model latency and review quality depend on the model,
@@ -75,13 +77,13 @@ corpus, and task; a short prompt cannot guarantee a completion time.
 For conceptual reviews, load `inputs/methodological-skill-coherence-audit.en.json`
 (English) or `inputs/auditoria-coherencia-skill-metodologica.json` (Spanish).
 Replace the document placeholders with the skill, its philosophy/methodology,
-and applicable requirements. These profiles use four criteria and no scoring.
+and applicable requirements. These profiles score four conceptual criteria equally.
 
 The defaults apply clear goals, relevant context, separated source material, and
 explicit output expectations from [OpenAI's reasoning guidance](https://developers.openai.com/api/docs/guides/reasoning-best-practices),
 [Anthropic's September 2025 context guidance](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents),
 and [Google's prompt design guidance](https://ai.google.dev/gemini-api/docs/prompting-strategies),
-consulted on 2026-11-18. The 600-word/five-finding targets are product defaults,
+consulted on 2026-11-18. The 350-word/five-finding targets are product defaults,
 not claims from those guides. No external model evaluation is bundled.
 
 Check this standalone tool with its requirements installed:
@@ -98,7 +100,7 @@ with `$` (such as `$help`) are ignored.
 
 | Field                 | Type                  | Allowed values / meaning                                                       |
 |-----------------------|-----------------------|--------------------------------------------------------------------------------|
-| `mode`                | string                | `"Focused"` (default) or `"Detailed"`; stages, anchors, weights and scoring rules apply only to Detailed |
+| `mode`                | string                | `"Focused"` (default) or `"Detailed"`; extra stages and repeated scoring apply only to Detailed |
 | `context.title`       | string                | Short name of the idea or project                                              |
 | `context.domain`      | string                | Subject area, e.g. `"Methodology and philosophy"`                              |
 | `context.problem`     | string                | What goes wrong today, and for whom                                            |

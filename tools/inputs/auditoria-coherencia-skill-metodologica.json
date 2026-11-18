@@ -5,11 +5,44 @@
     "Decomposition": false,
     "Novelty and prior-art check": false,
     "Gap matrix": false,
-    "Matrix scoring": false,
+    "Matrix scoring": true,
     "Failure-mode analysis": false,
     "Recommendation": false
   },
-  "dimensions": [],
+  "dimensions": [
+    {
+      "name": "Propósito y principios",
+      "weight": 1,
+      "definition": "¿las instrucciones conservan la filosofía declarada y el papel de la skill?",
+      "low": "0: not satisfied",
+      "mid": "3: partly satisfied",
+      "high": "5: fully satisfied"
+    },
+    {
+      "name": "Consistencia",
+      "weight": 1,
+      "definition": "¿pueden cumplirse juntas las reglas aplicables? Revisar terminología, condiciones, excepciones y ejemplos.",
+      "low": "0: not satisfied",
+      "mid": "3: partly satisfied",
+      "high": "5: fully satisfied"
+    },
+    {
+      "name": "Requerimientos",
+      "weight": 1,
+      "definition": "identificar requerimientos aplicables omitidos o cambiados y obligaciones añadidas sin justificación. No exigir que una skill cubra toda la metodología.",
+      "low": "0: not satisfied",
+      "mid": "3: partly satisfied",
+      "high": "5: fully satisfied"
+    },
+    {
+      "name": "Claridad",
+      "weight": 1,
+      "definition": "señalar ambigüedades o información ausente que puedan cambiar una decisión importante. Separar defectos probados, falta de contexto y mejoras opcionales.",
+      "low": "0: not satisfied",
+      "mid": "3: partly satisfied",
+      "high": "5: fully satisfied"
+    }
+  ],
   "rules": {
     "two_pass": false,
     "evidence": true,
@@ -20,7 +53,7 @@
     "domain": "Metodología, filosofía y requerimientos",
     "problem": "",
     "idea": "Refinar la skill revisando su coherencia con su propósito y filosofía, y su consistencia con los requerimientos aplicables.",
-    "constraints": "Revisar conceptos y requerimientos, no desarrollo de software. Preservar la intención del autor. Usar la autoridad y el alcance declarados en los documentos; preguntar si la precedencia es incierta. Proponer correcciones locales, no una reescritura completa. No exigir código, tests, métricas numéricas ni prueba empírica de compromisos filosóficos.",
+    "constraints": "Revisar conceptos y requerimientos, no desarrollo de software. Preservar la intención del autor. Usar la autoridad y el alcance declarados en los documentos; preguntar si la precedencia es incierta. Proponer correcciones locales, no una reescritura completa. No exigir código, tests, métricas empíricas de rendimiento ni prueba empírica de compromisos filosóficos.",
     "assumptions": "",
     "prior": ""
   },
@@ -37,5 +70,6 @@
   "output": {
     "format": "Markdown",
     "language": "Español"
-  }
+  },
+  "scale": 5
 }

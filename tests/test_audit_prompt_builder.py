@@ -24,11 +24,13 @@ class AuditPromptBuilderTests(unittest.TestCase):
 
     def test_default_review_is_bounded_and_evidence_based(self):
         text = self.prompt()
-        self.assertLess(len(text.split()), 450)
-        for required in ["600 words", "five most consequential", "every CRITICAL",
-                         "cite both", "Missing context", "not assessable"]:
+        self.assertLess(len(text.split()), 650)
+        for required in ["350 words", "up to five", "all CRITICAL",
+                         "Cite both", "Missing context", "not assessable",
+                         "Final score", "Matrix scoring summary", "Findings and corrections",
+                         "no positive assessed weight remains"]:
             self.assertIn(required, text)
-        self.assertNotIn("Weighted score", text)
+        self.assertNotIn("Finish with a short verdict", text)
         self.assertNotIn("Run two passes", text)
 
     def test_legacy_input_loads_and_detailed_scoring_is_optional(self):
@@ -45,13 +47,19 @@ class AuditPromptBuilderTests(unittest.TestCase):
         self.assertNotIn("scores", schema)
         self.assertNotIn("weighted_percent", schema)
 
-    def test_focused_json_keeps_material_and_omits_scoring(self):
+    def test_focused_json_has_only_scores_matrix_and_findings(self):
         self.app.text_area(key="docs").set_value("[PRINCIPLE] Preserve the author's intent.").run()
         self.app.selectbox(key="fmt").set_value("JSON").run()
         text = self.prompt()
         self.assertIn("[PRINCIPLE] Preserve the author's intent.", text)
-        self.assertIn('"limitations" (array)', text)
-        self.assertNotIn('"weighted_percent"', text)
+        self.assertIn('"final_score"', text)
+        self.assertIn('"matrix_summary"', text)
+        self.assertNotIn('"limitations"', text)
+        self.assertNotIn('"verdict"', text)
+        self.app.checkbox(key="stage_3").uncheck().run()
+        self.assertNotIn('"final_score"', self.prompt())
+        self.assertNotIn('"matrix_summary"', self.prompt())
+        self.assertIn('"findings"', self.prompt())
 
     def test_conceptual_profiles_are_short_and_focus_on_requirements(self):
         for name in ["auditoria-coherencia-skill-metodologica.json",
@@ -60,9 +68,10 @@ class AuditPromptBuilderTests(unittest.TestCase):
             self.app.button(key="load_pick").click().run()
             self.assertFalse(self.app.error)
             self.assertEqual(self.app.radio(key="mode").value, "Focused")
-            self.assertLess(len(self.prompt().split()), 600)
+            self.assertLess(len(self.prompt().split()), 650)
             self.assertEqual(len(self.app.session_state["checks"]), 4)
-            self.assertNotIn("Weighted score", self.prompt())
+            self.assertEqual(len(self.app.session_state["dims"]), 4)
+            self.assertIn("Matrix scoring summary", self.prompt())
 
     def test_invalid_mode_is_rejected_without_changing_loaded_state(self):
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", dir=ROOT / "tools/inputs") as f:

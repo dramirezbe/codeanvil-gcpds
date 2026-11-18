@@ -21,44 +21,28 @@
   "scale": 5,
   "dimensions": [
     {
-      "name": "Technical feasibility",
-      "weight": 3.0,
-      "definition": "Can this be built with known methods, available parts, and the stated budget and schedule?",
-      "low": "Depends on unproven physics or technology.",
-      "mid": "Feasible with known methods, but significant risks remain unresolved.",
-      "high": "Proven methods, parts available, risks identified and bounded."
+      "name": "Alignment",
+      "weight": 1,
+      "definition": "Fulfills its stated purpose and applicable requirements.",
+      "low": "0: not satisfied",
+      "mid": "3: partly satisfied",
+      "high": "5: fully satisfied"
     },
     {
-      "name": "Novelty",
-      "weight": 2.0,
-      "definition": "How different is this from existing solutions? Judge only after the prior-art check.",
-      "low": "Already exists, or differs trivially.",
-      "mid": "Known combination with a meaningful twist.",
-      "high": "Clear, verified difference with a defensible advantage."
-    },
-    {
-      "name": "Impact",
-      "weight": 2.0,
-      "definition": "Size and importance of the problem solved, and for whom.",
-      "low": "Marginal benefit; few users affected.",
-      "mid": "Clear benefit for a defined group.",
-      "high": "Large, measurable benefit addressing a critical need."
-    },
-    {
-      "name": "Groundedness",
-      "weight": 2.0,
-      "definition": "Are the claims traceable to evidence, measurements, or named prior work?",
-      "low": "Claims are unsupported.",
-      "mid": "Some claims sourced; key assumptions untested.",
-      "high": "Core claims traced to specific sources or measurements."
+      "name": "Consistency",
+      "weight": 1,
+      "definition": "Claims, terminology, rules, and examples agree.",
+      "low": "0: not satisfied",
+      "mid": "3: partly satisfied",
+      "high": "5: fully satisfied"
     },
     {
       "name": "Clarity",
-      "weight": 1.0,
-      "definition": "Is the idea specified precisely enough to build or test as written?",
-      "low": "Vague; cannot be built or tested as written.",
-      "mid": "Mostly specified; some interfaces undefined.",
-      "high": "Precise and testable, with defined interfaces and success criteria."
+      "weight": 1,
+      "definition": "Important decisions are clear and justified.",
+      "low": "0: not satisfied",
+      "mid": "3: partly satisfied",
+      "high": "5: fully satisfied"
     }
   ],
   "audit": {

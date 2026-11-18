@@ -5,11 +5,44 @@
     "Decomposition": false,
     "Novelty and prior-art check": false,
     "Gap matrix": false,
-    "Matrix scoring": false,
+    "Matrix scoring": true,
     "Failure-mode analysis": false,
     "Recommendation": false
   },
-  "dimensions": [],
+  "dimensions": [
+    {
+      "name": "Purpose and principles",
+      "weight": 1,
+      "definition": "do the instructions preserve the stated philosophy and the skill’s role?",
+      "low": "0: not satisfied",
+      "mid": "3: partly satisfied",
+      "high": "5: fully satisfied"
+    },
+    {
+      "name": "Consistency",
+      "weight": 1,
+      "definition": "can applicable rules be followed together? Check terminology, conditions, exceptions, and examples.",
+      "low": "0: not satisfied",
+      "mid": "3: partly satisfied",
+      "high": "5: fully satisfied"
+    },
+    {
+      "name": "Requirements",
+      "weight": 1,
+      "definition": "identify applicable requirements omitted or changed, and obligations added without justification. Do not require one skill to cover the entire methodology.",
+      "low": "0: not satisfied",
+      "mid": "3: partly satisfied",
+      "high": "5: fully satisfied"
+    },
+    {
+      "name": "Clarity",
+      "weight": 1,
+      "definition": "flag ambiguities or missing information that could change an important decision. Separate proven defects, missing context, and optional improvements.",
+      "low": "0: not satisfied",
+      "mid": "3: partly satisfied",
+      "high": "5: fully satisfied"
+    }
+  ],
   "rules": {
     "two_pass": false,
     "evidence": true,
@@ -20,7 +53,7 @@
     "domain": "Methodology, philosophy, and requirements",
     "problem": "",
     "idea": "Refine the skill by checking its coherence with its purpose and philosophy, and its consistency with applicable requirements.",
-    "constraints": "Review concepts and requirements, not software development. Preserve the author's intent. Use the authority and scope stated in the supplied documents; ask when precedence is unclear. Propose local corrections, not a full rewrite. Do not require code, tests, numerical metrics, or empirical proof of philosophical commitments.",
+    "constraints": "Review concepts and requirements, not software development. Preserve the author's intent. Use the authority and scope stated in the supplied documents; ask when precedence is unclear. Propose local corrections, not a full rewrite. Do not require code, tests, empirical performance metrics, or empirical proof of philosophical commitments.",
     "assumptions": "",
     "prior": ""
   },
@@ -37,5 +70,6 @@
   "output": {
     "format": "Markdown",
     "language": "English"
-  }
+  },
+  "scale": 5
 }

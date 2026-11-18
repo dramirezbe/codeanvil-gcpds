@@ -241,25 +241,41 @@ def build_focused_prompt(cfg):
     if checks:
         out.append("\n# CRITERIA")
         out.extend(f"- {check}" for check in checks)
+    scoring = cfg["stages"].get("Matrix scoring", False)
+    if scoring:
+        out.append(f"\n# SCORING\nScore each named dimension from 0 to {cfg['scale']} against its anchors.")
+        for d in cfg["dims"]:
+            if d["name"].strip():
+                out.append(f"- {d['name']} (weight {d['weight']:g}): {d['definition']} "
+                           f"Low: {d['low'] or 'unsupported'}. Mid: {d['mid'] or 'partly satisfied'}. "
+                           f"High: {d['high'] or 'fully satisfied'}.")
+        out.append("Final score (%) = 100 × sum(score × weight) / "
+                   f"({cfg['scale']} × sum of assessed weights). Mark unassessable dimensions N/A "
+                   "and exclude them from the calculation; if no positive assessed weight remains, "
+                   "report N/A. Note incomplete coverage on the final score line. A high average "
+                   "does not cancel a critical finding. Calculate once; do not show intermediate arithmetic.")
     out.extend([
         "\n# RESPONSE",
-        "Aim for at most 600 words and the five most consequential distinct findings, ordered by impact. "
-        "Report every CRITICAL issue even if this exceeds those guidelines. If other material issues "
-        "remain, flag their scope for follow-up. Do not manufacture findings to fill a quota.",
-        "For each finding give severity (CRITICAL: defeats the purpose; MAJOR: changes a relevant "
-        "decision; MINOR: local effect), location and brief evidence, why it matters, and the smallest "
-        "correction. For a contradiction, cite both incompatible passages. Distinguish defects from "
-        "optional preferences; ask the author when a fix would change the intended meaning.",
-        "Finish with a short verdict (PROCEED, REVISE, STOP, or NOT ASSESSABLE), its basis, "
-        "coverage limitations, and only the questions needed to resolve material uncertainty. "
-        "Give concise justifications, without scoring tables, repeated reviews, or a reasoning transcript.",
+        "Return only the requested results, aiming for at most 350 words. Include up to five "
+        "consequential distinct findings, ordered by impact; report all CRITICAL findings even if "
+        "this exceeds those guidelines. Do not invent findings to fill a quota.",
+        "Each finding: severity (CRITICAL: defeats the purpose; MAJOR: changes an important decision; "
+        "MINOR: local effect), location and brief evidence, then one short correction. "
+        "Cite both passages for a contradiction. Preserve the intended meaning; if unclear, "
+        "make the suggested correction conditional on the author's decision.",
+        "No introduction, verdict, risk list, questions section, reasoning transcript, or closing summary. "
+        "If material is missing, state that briefly within the requested results.",
     ])
     if cfg["fmt"] == "JSON":
-        out.append('Return one JSON object with keys "verdict", "basis", "findings" '
-                   '(array of objects with "severity", "location", "evidence", "impact", "fix"), '
-                   '"limitations" (array), and "questions" (array).')
+        fields = ('"final_score" (object with percent or null and a brief coverage note), "matrix_summary" '
+                  '(array of dimension, score or null, weight, and brief basis), ') if scoring else ""
+        out.append('Return one JSON object with only ' + fields + '"findings" '
+                   '(array of severity, location, evidence, and correction).')
     else:
-        out.append("Use Markdown with a short findings list and conclusion.")
+        sections = ("1. Final score: one line.\n"
+                    "2. Matrix scoring summary: a compact table (dimension | score | weight | "
+                    "brief basis or finding ID).\n3. Findings and corrections: short bullets.") if scoring else "Findings and corrections: short bullets."
+        out.append("Use Markdown with only:\n" + sections)
     out.append(f"Respond in {cfg['lang']}.")
     if cfg["audit_on"] and cfg["docs"].strip():
         out.extend(["\n# DOCUMENTS", "<documents>", cfg["docs"].strip(), "</documents>"])
@@ -405,7 +421,7 @@ with st.sidebar:
 
 cfg = {}
 cfg["mode"] = st.radio("Review style", MODES, key="mode", horizontal=True)
-st.caption("Focused: one review with evidence and corrections. Detailed: optional stages and scoring.")
+st.caption("Focused: score, matrix summary, findings and brief corrections. Detailed: optional extra analysis.")
 
 # ---- 1. Context ------------------------------------------------------------
 st.header("1. Context")
@@ -433,12 +449,14 @@ with st.expander("Optional background"):
         help="Existing solutions, past failures, or literature you already know. This stops the model from rediscovering what you know.")
 
 # ---- 2. Stages -------------------------------------------------------------
-with st.expander("Detailed review: stages and scoring"):
-    st.caption("These settings apply only to Detailed mode.")
+cfg["stages"] = {"Matrix scoring": st.checkbox("Include scoring summary", key="stage_3")}
+with st.expander("Review stages and scoring dimensions"):
+    st.caption("Extra stages apply to Detailed mode; scoring dimensions apply to both styles.")
     st.header("2. Validation stages")
     st.caption("Untick any stage you do not want the model to run.")
-    cfg["stages"] = {}
     for i, (label, desc) in enumerate(STAGES):
+        if label == "Matrix scoring":
+            continue
         cfg["stages"][label] = st.checkbox(label, key=f"stage_{i}", help=desc)
         st.caption(desc)
 
