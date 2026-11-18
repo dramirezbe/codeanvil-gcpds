@@ -32,3 +32,12 @@ snapshot and legacy individual-file layouts. A subprocess checks the actual CLI 
 Focused S3/question/scaffold/custody/backup checks: **66 passed** (0.87 s).
 Fresh model-driven S3 evaluation is separate from static skill/scaffold checks; never claim
 that a textual assertion proves the model obeys the pause schedule.
+
+Full `.venv/bin/python -m pytest -q`: **794 passed, 40 skipped, 1 existing FastAPI/httpx
+deprecation warning** (12.63 s). Fresh model-driven S3 execution is **not run**.
+Work units: `5aaf080` (directory backups), `7c7ce2f` (S3 checkpoint contract).
+
+`uv lock --check` and `uv build --wheel` succeeded for 0.9.5. An isolated installed-wheel
+probe outside the checkout invoked the real backup CLI on two nested PLAN.md files, verified
+their distinct saved paths and repeated-backup idempotence, and checked generated S3 revision
+1.5/reference and AGENTS checkpoint guidance. No methodology gate or model run was executed.
