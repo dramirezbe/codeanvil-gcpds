@@ -68,6 +68,8 @@ class ReportState(NamedTuple):
     verdict: str | None = None
     accepted_deltas: tuple[str, ...] = ()
     sync_only: bool = False
+    rework_from: tuple[str, int] | None = None
+    outputs: tuple[tuple[str, str], ...] = ()
 
 
 class ReportIteration(NamedTuple):
@@ -111,6 +113,7 @@ def _state_from_content(content: str, number: int | None) -> ReportState:
     superseded = _SUPERSEDED_RE.search(latest)
     scope = _SCOPE_RE.search(latest)
     verdict = re.search(r"^Verdict: ([^\n]+)", latest, re.MULTILINE)
+    rework = re.search(r"^Rework from: (\S+) iteration (\d+)\s*$", latest, re.MULTILINE)
     return ReportState(
         number, _verdict(content),
         (based_on.group(1), int(based_on.group(2))) if based_on else None,
@@ -119,6 +122,8 @@ def _state_from_content(content: str, number: int | None) -> ReportState:
         verdict.group(1).strip() if verdict else None,
         tuple(re.findall(r"^Delta accepted: (D-[A-Za-z0-9_-]+)\b", latest, re.MULTILINE)),
         bool(re.search(r"^Sync-only: yes\s*$", latest, re.MULTILINE)),
+        (rework.group(1), int(rework.group(2))) if rework else None,
+        tuple(_OUTPUT_RE.findall(latest)),
     )
 
 
@@ -173,6 +178,13 @@ def authorized_advance(
         reachable = expanded
 
 
+def baseline_reason(gate: str, report: ReportState) -> str | None:
+    """A feedback source never replaces S1's upstream GT review baseline."""
+    if gate == "S1" and report.based_on and report.based_on[0] != "G0":
+        return f"invalid-baseline: S1 must be based on G0, found {report.based_on[0]}"
+    return None
+
+
 def stale_reason(
     gate: str, gates: dict[str, ReportState], seen: tuple[str, ...] = (),
     project_root: Path | None = None
@@ -181,13 +193,21 @@ def stale_reason(
     report = gates.get(gate)
     if report is None:
         return None
+    invalid = baseline_reason(gate, report)
+    if invalid:
+        return invalid
     if project_root is not None:
-        from codeanvil.custody import path_sha256
+        from codeanvil.custody import path_sha256, s1_delivery_findings
         deltas = read_deltas(project_root)
         for path, recorded in report.inputs:
             current = path_sha256(project_root / path)
             if recorded != current and not authorized_advance(path, recorded, current, deltas):
                 return f"stale-report: {path} changed since {gate} iteration {report.iteration}"
+        if gate == "S1":
+            pending = s1_delivery_findings(project_root, report)
+            if pending:
+                return (f"undelivered-output: {pending[0].path} changed since S1 iteration "
+                        f"{report.iteration}; complete S1")
     if report.based_on is None:
         return None
     predecessor, number = report.based_on
@@ -284,6 +304,12 @@ def next_step(gates: dict[str, ReportState], project_root: Path | None = None) -
                 and (report.based_on != (order[order.index(gate)-1], previous.iteration)
                      or report.scope != previous.scope)):
             return f"{gate} {previous.scope}" if previous.scope else gate
+        # A newer S1 delivery needs a fresh G1 verdict, even when the old review
+        # was FEEDBACK. The old review stays stale; it cannot invalidate its replacement.
+        if (gate == "G1" and report.verdict != "RFD" and previous
+                and report.based_on is not None and report.based_on[0] == "S1"
+                and previous.iteration is not None and report.based_on[1] < previous.iteration):
+            return "G1"
         if report.hitl == "FEEDBACK":
             if gate == "G3" and report.sync_only and _sync_reviewed(report, rows, gates):
                 return f"S2 {report.scope}" if report.scope else "S2"

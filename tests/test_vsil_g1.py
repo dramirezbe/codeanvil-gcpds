@@ -168,3 +168,14 @@ def test_g1_checklist_has_the_change_impact_row():
     assert "design change set" in row
     assert "impact map" in row
     assert "interface" in row
+
+
+def test_g1_reopens_for_new_delivery_without_inheriting_a_verdict():
+    text = ' '.join(_skill_text('G1_design_review').split())
+    for rule in ("not the previous G1's staleness", 'If S1 is newer, proceed with a fresh review',
+                 'never reuse the old verdict', 'Require the SDD Output line',
+                 'publish the report without another continuation request',
+                 'Never edit design/GT as G1'):
+        assert rule in text
+    row = next(line for line in _checklist_text().splitlines() if line.startswith('| G1.5'))
+    assert 'GT scope' in row and 'graph DATA' in row and 'no module/path requires VL-2' in row

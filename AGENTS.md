@@ -1,6 +1,6 @@
 # CodeAnvil — Agent Architecture
 
-## V-SIL v4 — 0.9.2
+## V-SIL v4 — 0.9.3
 
 The active chain is `S0 → G0 → S1 → G1 → S2 → G2 → S3 → G3`.
 S2 plans one module PLAN.md per topological slice; G2 is the human plan micro-gate.
@@ -14,8 +14,11 @@ v4 scaffold/cycle; archived v3 evidence is not reclassified as a v4 verdict.
 
 `codeanvil ui` is v3-only and incompatible with the v4 chain until its separate follow-up.
 Its non-chain operations remain available. No UI source changes belong to this refactor.
-Release [v0.9.2](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.9.2)
-is merged into main and published by owner authorization.
+Release [v0.9.3](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.9.3)
+fixes S1/G1 rework routing and detects unrecorded changes to the latest S1 delivery.
+S1 keeps G0 as its baseline and records feedback separately; a new delivery requires a new G1 verdict.
+Existing projects must refresh the S1/G1 skills and generated instructions separately from the CLI;
+the release never rewrites project evidence. See [rework and recovery](templates/skills/S1_design_system/references/rework_delivery.md).
 The T0 v4 full-flow execution and human gate acceptance remain pending.
 
 Archived v2/v3 materials, no-tools skills, backups and first_full_flow snapshots remain

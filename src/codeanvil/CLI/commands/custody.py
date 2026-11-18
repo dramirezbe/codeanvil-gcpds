@@ -19,7 +19,7 @@ def cmd_custody(args) -> int:
     if not args.subcommand or args.subcommand == "help":
         print("Usage: codeanvil custody <digest|verify|verify-manifest> [options]")
         print("  digest <path...>          Compute SHA-256; directories end with /")
-        print("  verify [--cycle CYCLE]    Check Input: digests in reports")
+        print("  verify [--cycle CYCLE]    Check inputs and latest S1 delivery integrity")
         print("  verify-manifest <file>    Check golden vector manifest against vectors")
         return 0
     
