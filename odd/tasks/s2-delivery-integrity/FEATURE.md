@@ -42,3 +42,15 @@ Release metadata is independent. No orchestrator, DB schema or UI source changes
 - `methodology/test/execution_continuity.md` adds first-delivery, interruption, real-stop and
   metadata-repair scenarios. A fresh model-driven evaluation is **not run**; static tests
   and instruction copying do not establish model obedience.
+
+## Release validation
+
+- Final full suite: **786 passed, 40 skipped, 1 existing warning** (13.07 s).
+- `uv lock --check` and `uv build --wheel` succeeded for 0.9.4.
+- An isolated installed-wheel probe outside the checkout generated the new S2 reference,
+  reproduced the 62-character error through the real CLI (exit 1), then appended a correct
+  delivery and verified exit 0 while preserving historical bytes. No human gate was run.
+- Work units: `d2555c7` (report integrity), `13fbd2b` (S2 continuity/templates). Each unit is
+  below 400 authored changed lines. Release metadata/docs form a separate rollback unit.
+- Publication uses the existing main CI and annotated-tag release workflow. Existing projects
+  need their S2 instructions refreshed; the CLI release never rewrites evidence automatically.
