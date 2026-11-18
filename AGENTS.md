@@ -1,5 +1,31 @@
 # CodeAnvil — Agent Architecture
 
+## V-SIL v4 development branch (0.9.0)
+
+The active chain is `S0 → G0 → S1 → G1 → S2 → G2 → S3 → G3`.
+S2 plans one module PLAN.md per topological slice; G2 is the human plan micro-gate.
+S3 implements each module in a fresh vsil-implementor context; G3 verifies the slice with
+vsil-verifier. Slice 0 builds bases/kit/stubs; system scope tests contracts, PATH-* and the
+runnable entry point. Only system G3 PASS produces the Verified Prototype.
+Plans live under `.codeanvil/plans/`; implementation evidence in `S3_artifacts/`, verification
+in `G3_artifacts/`. Accepted deltas use S0/S1 delta-sync with custody digests and G0/G1 review.
+RFD originates only from S1, G1 or G3. There is no migration command: v3 projects need a new
+v4 scaffold/cycle; archived v3 evidence is not reclassified as a v4 verdict.
+
+`codeanvil ui` is v3-only and incompatible with the v4 chain until its separate follow-up.
+Its non-chain operations remain available. No UI source changes belong to this refactor.
+The 0.9.0 version is prepared locally; release/tag and final PR await review.
+
+Archived v2/v3 materials, no-tools skills, backups and first_full_flow snapshots remain
+historical, unchanged. References to their S2/G2 stages retain their original meanings.
+
+
+## Inherited v3 reference (historical stage numbering)
+
+The sections below describe the v3 baseline. For active v4 stage numbering, cadence and
+routing use the development profile above and the current skills; S2/G2 implementation and
+verification roles in this baseline now correspond to S3/G3. Linked active skill paths are updated.
+
 ## Context — This is the CodeAnvil source repo, not a user project
 
 You are working on the **tool itself** — the CLI, scaffold logic, methodology templates,
@@ -38,7 +64,7 @@ validation remains separate from that archived run.
 
 ## Overview
 
-CodeAnvil implements the V-SIL v3 flow `S0 → G0 → S1 → G1 → S2 → G2` as a chain of stages and gates, with RFD raisable from any stage. G0 is the only deterministic gate; Gate H, G1 and G2 are human verdicts, and the stages are run by AI coding agents. The harness is **agent-agnostic**: it works with any coding agent runtime (Claude, Codex, OpenCode, Pi, etc.) on **Linux, macOS and Windows**. `src/` scaffolds and tracks state.
+CodeAnvil implements the V-SIL v4 flow `S0 → G0 → S1 → G1 → S2 → G2 → S3 → G3` as a chain of stages and gates, with RFD raisable from any stage. G0 is the only deterministic gate; Gate H, G1 and G2 are human verdicts, and the stages are run by AI coding agents. The harness is **agent-agnostic**: it works with any coding agent runtime (Claude, Codex, OpenCode, Pi, etc.) on **Linux, macOS and Windows**. `src/` scaffolds and tracks state.
 
 **Scope**: software development, testing, and validation on COTS hardware (not necessarily OOTB). Does not design hardware — assumes commercial off-the-shelf devices, validates software against GT constraints.
 
@@ -122,7 +148,7 @@ Pure Python script. No LLM, no AI agent — just `g0_validate.py`.
 
 ### S1 — Design of layered services (agent)
 
-- **Skill**: `templates/skills/S1_design_services/SKILL.md`, with the design template and graph template in `references/` and vis-network in `assets/`.
+- **Skill**: `templates/skills/S1_design_system/SKILL.md`, with the design template and graph template in `references/` and vis-network in `assets/`.
 - **Output**: `.codeanvil/design/SDD.md`, dark `.codeanvil/design/dependency_graph.html` and light `.codeanvil/design/dependency_graph_light.html` (same topology, one spider per service, UI palette). `S1.md` is the only state.
 - **Runnable contract**: design §0.5 names one project-root command, the services and runtime HAL it starts, URL, visible result and clean shutdown. G1 checks this in G1.15.
 - **Execution contract**: Meta `Target(s)` maps services and paths to local or named
@@ -135,11 +161,11 @@ Pure Python script. No LLM, no AI agent — just `g0_validate.py`.
 
 ### S2 — Implement services (agent)
 
-- **Skill**: `templates/skills/S2_implement_services/SKILL.md`, with `references/project_layout.md`
+- **Skill**: `templates/skills/S3_implement_modules/SKILL.md`, with `references/project_layout.md`
   and the locked `references/logger.py` and `references/logger.ts`. `run.sh` starts
   `codeanvil telemetry` on the execution target; the collector is in
   `src/codeanvil/telemetry/`, with psutil in the tool environment.
-- **Output**: the delivered code in `src/<service>/`, the verification kit in `verification/`, the root manifests, `S2.md` and `S2_artifacts/test_run.md` (the two `verification/run.sh vl0|vl1` commands and `Possible infeasibility`). S2 implements §0.5 and a VL-0 smoke test of the actual entry point, including the URL and observed result. Only S2 writes code; a design defect is a `Verdict: design defect` iteration routed to S1.
+- **Output**: the delivered code in `src/<service>/`, the verification kit in `verification/`, the root manifests, `S2.md` and `S3_artifacts/test_run.md` (the two `verification/run.sh vl0|vl1` commands and `Possible infeasibility`). S2 implements §0.5 and a VL-0 smoke test of the actual entry point, including the URL and observed result. Only S2 writes code; a design defect is a `Verdict: design defect` iteration routed to S1.
 - **Hardware preparation**: S2 preserves its configurable Pause Schedule and also
   waits for explicit `continue` before remote update/deployment or local HW tests.
   It deploys a clean, pushed Git candidate through `vsil_hil_mcp`, updates tool and
@@ -148,7 +174,7 @@ Pure Python script. No LLM, no AI agent — just `g0_validate.py`.
 
 ### G2 — Adaptive verification (human verdict)
 
-- **Skill**: `templates/skills/G2_adaptive_verification/SKILL.md` and `references/verified_prototype.md`. G2 declares the levels, delegates the `test_run.md` commands to the `vsil-verifier` subagent, checks the entry-point smoke evidence, presents the results and records the human's PASS, FEEDBACK (`Verdict: module defect` → S2, `Verdict: design defect` → S1) or RFD. On PASS it writes `G2_artifacts/verified_prototype.md` with run instructions.
+- **Skill**: `templates/skills/G3_adaptive_verification/SKILL.md` and `references/verified_prototype.md`. G2 declares the levels, delegates the `test_run.md` commands to the `vsil-verifier` subagent, checks the entry-point smoke evidence, presents the results and records the human's PASS, FEEDBACK (`Verdict: module defect` → S2, `Verdict: design defect` → S1) or RFD. On PASS it writes `G3_artifacts/verified_prototype.md` with run instructions.
 
 ### `vsil-verifier` subagent
 
@@ -209,7 +235,7 @@ G0 remains the deterministic structural gate; its later v2 metrology-content
 rules are not implemented. S1/G1 review the lab prerequisites for the current flow.
 
 Still deferred, and **not** implemented: reader-facing
-`reports/` (`verified_prototype.md` stays in `report/<cycle>/G2_artifacts/`),
+`reports/` (`verified_prototype.md` stays in `report/<cycle>/G3_artifacts/`),
 `validation_levels.md`, optional `GT/SRS.md` and an MCP telemetry facade. Change
 the skills, scaffold, documentation and tests together before treating a
 deferred proposal as implemented.
@@ -319,7 +345,7 @@ myproj/
 │   ├── custody/                     ← empty; left from the retired custody chain, unused
 │   ├── project.yaml                 ← project identity (UUIDv7, name, GT pointers, cycle)
 │   └── report/                      ← per-cycle iterative reports (<cycle>/<id>.md)
-│       └── <cycle>/S2_artifacts/test_run.md, G2_artifacts/verified_prototype.md
+│       └── <cycle>/S3_artifacts/test_run.md, G3_artifacts/verified_prototype.md
 ├── .agents/
 │   ├── skills/                      ← canonical skill store
 │   │   ├── G0_valid_req_and_GT/
@@ -330,10 +356,10 @@ myproj/
 │   │   │   ├── references/RULES.md  ← paths rewritten
 │   │   │   └── scripts/g0_validate.py
 │   │   ├── S0_normalise_build_package/   ← templates/ (StRS.md, SyRS.md blueprints)
-│   │   ├── S1_design_services/           ← references/ (SDD.md, dependency_graph_template.html) + assets/ (vis-network)
+│   │   ├── S1_design_system/           ← references/ (SDD.md, dependency_graph_template.html) + assets/ (vis-network)
 │   │   ├── G1_design_review/             ← references/G1_CHECKLIST.md
-│   │   ├── S2_implement_services/        ← references/ (project_layout.md, logger.py/.ts)
-│   │   ├── G2_adaptive_verification/     ← prototype + measurement schema/reference + validator
+│   │   ├── S3_implement_modules/        ← references/ (project_layout.md, logger.py/.ts)
+│   │   ├── G3_adaptive_verification/     ← prototype + measurement schema/reference + validator
 │   │   ├── RFD_request_for_deviation/
 │   │   └── marconi-*/               ← (if --mcp marconi) 6 RF/SDR skills
 │   │       └── SKILL.md

@@ -851,3 +851,14 @@ The following items are forward-referenced inline throughout the document:
 [19b] C. Koch, "Agentic Agile-V: From Vibe Coding to Verified Engineering in Software and Hardware Development," arXiv:2605.20456, May 2026. — SCOPE-V micro-cycle (Specify, Constrain, Orchestrate, Prove, Evolve, Verify); minimum input artifacts for agentic work.
 [20] GitHub Spec-Kit — Specification-driven development toolkit for stage-gate methodologies.
 [21] OpenSpec Delta Traceability Model — ADDED/MODIFIED/REMOVED/RENAMED annotation convention for living requirements documents with change-level tracking; V-SIL scopes the convention to the module boundary.
+
+
+## CodeAnvil 0.9 implementation profile (2026-11-17)
+
+The implementation batches independent modules by Kahn slice: one G2/G3 iteration per slice,
+one checklist/evidence row and fresh implementation context per module. Plans live under
+`.codeanvil/plans/`, including INFRA-PLAN.md (slice 0) and INTEGRATION-PLAN.md (system).
+A stale prerequisite returns stale-report and records no iteration. G1 re-derives checks;
+module depends_on names producer modules with optional contract version edge annotations.
+G1 checks all execution targets. Accepted GT/design changes use S0/S1 delta-sync, followed by
+G0/G1 review; a contract version change requires structural rework and the stale cascade.

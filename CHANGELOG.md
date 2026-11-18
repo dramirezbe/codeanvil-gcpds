@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.9.0 — unreleased
+
+- Eight-node V-SIL v4 chain with per-module plans, slice cadence and fresh implementation contexts.
+- Plan micro-gate, scoped verification and system-only Verified Prototype.
+- Custody checks report inputs and golden vectors; authorized interface-neutral deltas preserve evidence.
+- Living GT/design delta-sync and source-preserving feedback routes.
+- Breaking methodology change: start a new v4 scaffold/cycle; no migration command.
+- UI remains v3-only until a dedicated follow-up. Release and tag pending review.
+
 ## 0.7.5 — Simple red-button deletion confirmation
 
 Replaces typed-name UI confirmation with a direct question, Cancel and a red Delete button. Keeps explicit file-removal selection and existing identity/path safeguards.
