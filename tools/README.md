@@ -72,6 +72,11 @@ support Markdown and JSON. The displayed word count includes supplied documents.
 This tool only builds text: model latency and review quality depend on the model,
 corpus, and task; a short prompt cannot guarantee a completion time.
 
+For conceptual reviews, load `inputs/methodological-skill-coherence-audit.en.json`
+(English) or `inputs/auditoria-coherencia-skill-metodologica.json` (Spanish).
+Replace the document placeholders with the skill, its philosophy/methodology,
+and applicable requirements. These profiles use four criteria and no scoring.
+
 The defaults apply clear goals, relevant context, separated source material, and
 explicit output expectations from [OpenAI's reasoning guidance](https://developers.openai.com/api/docs/guides/reasoning-best-practices),
 [Anthropic's September 2025 context guidance](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents),

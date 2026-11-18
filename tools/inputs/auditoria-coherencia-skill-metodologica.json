@@ -1,0 +1,41 @@
+{
+  "$help": "Cargar en audit_prompt_builder.py. Sustituir los marcadores por los documentos antes de usar el prompt.",
+  "mode": "Focused",
+  "stages": {
+    "Decomposition": false,
+    "Novelty and prior-art check": false,
+    "Gap matrix": false,
+    "Matrix scoring": false,
+    "Failure-mode analysis": false,
+    "Recommendation": false
+  },
+  "dimensions": [],
+  "rules": {
+    "two_pass": false,
+    "evidence": true,
+    "disagree": "report both values and flag for human arbitration"
+  },
+  "context": {
+    "title": "Auditoría conceptual de una skill metodológica",
+    "domain": "Metodología, filosofía y requerimientos",
+    "problem": "",
+    "idea": "Refinar la skill revisando su coherencia con su propósito y filosofía, y su consistencia con los requerimientos aplicables.",
+    "constraints": "Revisar conceptos y requerimientos, no desarrollo de software. Preservar la intención del autor. Usar la autoridad y el alcance declarados en los documentos; preguntar si la precedencia es incierta. Proponer correcciones locales, no una reescritura completa. No exigir código, tests, métricas numéricas ni prueba empírica de compromisos filosóficos.",
+    "assumptions": "",
+    "prior": ""
+  },
+  "audit": {
+    "enabled": true,
+    "checks": [
+      "Propósito y principios: ¿las instrucciones conservan la filosofía declarada y el papel de la skill?",
+      "Consistencia: ¿pueden cumplirse juntas las reglas aplicables? Revisar terminología, condiciones, excepciones y ejemplos.",
+      "Requerimientos: identificar requerimientos aplicables omitidos o cambiados y obligaciones añadidas sin justificación. No exigir que una skill cubra toda la metodología.",
+      "Claridad: señalar ambigüedades o información ausente que puedan cambiar una decisión importante. Separar defectos probados, falta de contexto y mejoras opcionales."
+    ],
+    "documents": "[SKILL OBJETIVO | nombre y versión]\n<PEGAR SKILL>\n\n[FILOSOFÍA Y METODOLOGÍA | fuentes aplicables y versiones]\n<PEGAR PRINCIPIOS Y ALCANCE>\n\n[REQUERIMIENTOS | fuente y autoridad]\n<PEGAR REQUERIMIENTOS APLICABLES>"
+  },
+  "output": {
+    "format": "Markdown",
+    "language": "Español"
+  }
+}

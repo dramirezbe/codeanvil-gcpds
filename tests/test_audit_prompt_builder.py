@@ -53,6 +53,17 @@ class AuditPromptBuilderTests(unittest.TestCase):
         self.assertIn('"limitations" (array)', text)
         self.assertNotIn('"weighted_percent"', text)
 
+    def test_conceptual_profiles_are_short_and_focus_on_requirements(self):
+        for name in ["auditoria-coherencia-skill-metodologica.json",
+                     "methodological-skill-coherence-audit.en.json"]:
+            self.app.selectbox(key="pick").set_value(name).run()
+            self.app.button(key="load_pick").click().run()
+            self.assertFalse(self.app.error)
+            self.assertEqual(self.app.radio(key="mode").value, "Focused")
+            self.assertLess(len(self.prompt().split()), 600)
+            self.assertEqual(len(self.app.session_state["checks"]), 4)
+            self.assertNotIn("Weighted score", self.prompt())
+
     def test_invalid_mode_is_rejected_without_changing_loaded_state(self):
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", dir=ROOT / "tools/inputs") as f:
             json.dump({"mode": "invalid", "context": {"title": "must not load"}}, f)
