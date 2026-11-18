@@ -1,6 +1,6 @@
 # CodeAnvil
 
-## V-SIL v4 — 0.9.0
+## V-SIL v4 — 0.9.1
 
 The active chain is `S0 → G0 → S1 → G1 → S2 → G2 → S3 → G3`.
 S2 plans one module PLAN.md per topological slice; G2 is the human plan micro-gate.
@@ -14,7 +14,7 @@ v4 scaffold/cycle; archived v3 evidence is not reclassified as a v4 verdict.
 
 `codeanvil ui` is v3-only and incompatible with the v4 chain until its separate follow-up.
 Its non-chain operations remain available. No UI source changes belong to this refactor.
-Release [v0.9.0](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.9.0)
+Release [v0.9.1](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.9.1)
 is merged into main and published before the full-flow trial by owner authorization.
 The T0 v4 full-flow execution and human gate acceptance remain pending.
 

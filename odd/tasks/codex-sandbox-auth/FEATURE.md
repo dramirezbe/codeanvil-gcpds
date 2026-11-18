@@ -1,7 +1,7 @@
 # Codex sandbox authentication cache
 
 Branch: `fix/codex-sandbox-auth`, based on released v0.9.0 / main.
-Status: fixed, locally installed as 0.9.1; publication not performed.
+Status: fixed; publication of v0.9.1 and merge to main authorized by owner.
 
 User report: “El sandbox de codex me pide iniciar sesión. Revisa dónde se guardan las
 credenciales para copiarlas o algo así cuando se ejecute codex en sandbox”.
@@ -44,3 +44,14 @@ One work unit: sandbox.py, the Codex recipe, authentication regression tests, 0.
 and README/changelog. Revert this unit to restore the old recipe and copy behavior.
 The local install can independently return to the published v0.9.0 tag through uv tool install;
 that also restores the reported authentication bug. No PR, push, merge or release tag was made.
+
+
+## Publication — 2026-11-17
+
+User: “publica 0.9.1 en main y hacemos bien la prueba”. This authorizes the direct merge,
+annotated v0.9.1 tag and GitHub release. The implementation is d02df3f; the release commit
+updates current release pointers and the changelog, with no runtime changes.
+After publication install from the immutable v0.9.1 tag, replacing the earlier local-path build,
+and repeat the installed Codex login-status check. No T0 stage is run as part of publication.
+Prior targeted validation remains 47 passed. No new broad test run is necessary for release
+metadata. Publication evidence is the main merge/tag and successful release workflow.
