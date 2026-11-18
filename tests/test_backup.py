@@ -1,6 +1,8 @@
 """`codeanvil backup <stage>` — producer resolution, idempotency, MANIFEST."""
 
 import hashlib
+import subprocess
+import sys
 
 import pytest
 import yaml
@@ -262,3 +264,81 @@ def test_backup_entries_never_mix_iteration_and_timestamp_orders(tmp_path):
 
     assert entries["unknown"] == [("S1", None, "unknown/S1_2026-11-06_14-10-00-123")]
     assert entries["01_run"] == [("S1", 2, "01_run/S1_iter2")]
+
+
+def test_s2_backups_preserve_distinct_nested_plan_paths(tmp_path, monkeypatch, capsys):
+    project = _make_project(tmp_path)
+    monkeypatch.chdir(project)
+    _write_report(project, '01_run', 'S2', [(6, 'PASS')])
+    contents = {
+        '.codeanvil/plans/BACKLOG.md': 'backlog',
+        '.codeanvil/plans/INFRA-PLAN.md': 'infra',
+        '.codeanvil/plans/DELTAS.md': 'deltas',
+        '.codeanvil/plans/SUB-001/capture/PLAN.md': 'capture plan',
+        '.codeanvil/plans/SUB-002/receive/PLAN.md': 'receive plan',
+    }
+    for name, content in contents.items():
+        path = project / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content)
+    cmd_backup('S2')
+    assert 'Backed up S2 iteration 6' in capsys.readouterr().out
+    folder = project / PROJECT_BACKUPS / '01_run/S2_iter6'
+    manifest = _manifest(folder)
+    assert {entry['source'] for entry in manifest['files']} == set(contents)
+    for entry in manifest['files']:
+        assert entry['backup_path'] == entry['source']
+        saved = folder / entry['backup_path']
+        assert saved.read_text() == contents[entry['source']]
+        assert entry['sha256'] == hashlib.sha256(saved.read_bytes()).hexdigest()
+    original = {p.relative_to(folder): p.read_bytes() for p in folder.rglob('*') if p.is_file()}
+    (project / '.codeanvil/plans/SUB-001/capture/PLAN.md').write_text('partial rework')
+    cmd_backup('S2')
+    assert 'resuming an interrupted pass' in capsys.readouterr().out
+    assert original == {p.relative_to(folder): p.read_bytes() for p in folder.rglob('*') if p.is_file()}
+
+
+@pytest.mark.parametrize('exists', [False, True])
+def test_missing_or_empty_s2_plan_directory_is_success(tmp_path, monkeypatch, capsys, exists):
+    project = _make_project(tmp_path)
+    monkeypatch.chdir(project)
+    if exists:
+        (project / '.codeanvil/plans').mkdir()
+    cmd_backup('S2')
+    assert capsys.readouterr().out.strip() == 'nothing to back up'
+    assert not (project / PROJECT_BACKUPS).exists()
+
+
+def test_failed_directory_copy_never_publishes_a_completed_backup(tmp_path, monkeypatch):
+    project = _make_project(tmp_path)
+    monkeypatch.chdir(project)
+    _write_report(project, '01_run', 'S2', [(1, 'PASS')])
+    path = project / '.codeanvil/plans/SUB-001/a/PLAN.md'
+    path.parent.mkdir(parents=True)
+    path.write_text('original')
+    def fail(*args, **kwargs):
+        raise OSError('simulated full disk')
+    monkeypatch.setattr('codeanvil.CLI.commands.backup.shutil.copy2', fail)
+    with pytest.raises(SystemExit) as exc:
+        cmd_backup('S2')
+    assert exc.value.code == 1
+    assert not (project / PROJECT_BACKUPS / '01_run/S2_iter1').exists()
+    assert path.read_text() == 'original'
+
+
+def test_backup_cli_copies_the_s2_directory_tree(tmp_path):
+    project = _make_project(tmp_path)
+    _write_report(project, '01_run', 'S2', [(1, 'PASS')])
+    for module in ['a', 'b']:
+        plan = project / f'.codeanvil/plans/SUB-001/{module}/PLAN.md'
+        plan.parent.mkdir(parents=True)
+        plan.write_text(module)
+    result = subprocess.run(
+        [sys.executable, '-c', 'from codeanvil.CLI.main import main; main()', 'backup', 'S2'],
+        cwd=project, capture_output=True, text=True,
+    )
+    assert result.returncode == 0
+    assert 'Backed up S2 iteration 1' in result.stdout
+    folder = project / PROJECT_BACKUPS / '01_run/S2_iter1'
+    for module in ['a', 'b']:
+        assert (folder / f'.codeanvil/plans/SUB-001/{module}/PLAN.md').read_text() == module
