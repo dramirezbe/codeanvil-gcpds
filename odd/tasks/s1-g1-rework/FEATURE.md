@@ -55,5 +55,22 @@ Keep these units independently reviewable; no final PR is created. The CLI remai
 stateless and does not execute methodology stages or decide human gates. Automated
 fixtures prove state transitions, not model obedience or a real Verified Prototype.
 
-Work-unit commits: `edcf70c` (state/routing), `6ba2466` (delivery integrity);
-later units recorded at release preparation.
+Work-unit commits: `edcf70c` (state/routing), `6ba2466` (delivery integrity),
+`e93fe36` (skills/scaffold). Each unit is below 400 authored changed lines;
+publication uses the owner's direct merge/release authorization, with no final PR.
+
+## Release preparation and existing projects
+
+Package and lock metadata are 0.9.3; the existing tag-triggered workflow publishes the release.
+The CLI update does not rewrite scaffolded instructions or reports. Refresh S1/G1 and their
+references plus generated AGENTS instructions separately before resuming an existing project.
+A project with the incorrect S1 predecessor still needs a checked corrective delivery; do not
+silently reinterpret or remove its historical evidence. This task leaves the live T0 untouched.
+Release metadata/docs rollback independently from the three behavior units above.
+
+Package validation: `uv lock --check` succeeded; `uv build --wheel` produced
+`dist/codeanvil-0.9.3-py3-none-any.whl`. Archive metadata and S1/G1 skill revisions/reference
+were checked. `uvx --from ./dist/codeanvil-0.9.3-py3-none-any.whl codeanvil --version`
+reported 0.9.3. An isolated wheel environment outside the source checkout generated a
+disposable scaffold with the new skills/reference and routed an older G1 FEEDBACK plus
+new S1 delivery to G1. No user reports, GT, design or identity were changed by these probes.
