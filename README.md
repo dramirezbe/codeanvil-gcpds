@@ -189,6 +189,14 @@ evidence, not a new G2 verdict.
 | `codeanvil credential-setup -u <user> -i <host>` | Discover hardware MACs over SSH, install this PC's keys into `codeanvil-agent`; reuses existing keys across projects (HIL/PIL only) |
 | `codeanvil upgrade` | Reinstall codeanvil from the latest main branch (detects OS, uses uv) |
 
+Codex sandbox sessions copy only `auth.json` and `installation_id` from the original
+`CODEX_HOME` (default `~/.codex`) into the private temporary home. Global settings, instructions,
+skills, MCP configuration and session history are not copied. The snapshot is removed on exit;
+changes to that temporary auth cache do not overwrite the original credentials. This supports
+file-backed authentication; keyring-only credentials are not exported. See
+[Codex authentication](https://learn.chatgpt.com/docs/auth#credential-storage).
+
+
 In a project workspace, **Terminal** runs installed local CLIs (Claude Code,
 Codex and other configured terminal launchers) inside Linux/WSL. Leave
 **Sandbox mode** unchecked for your normal configuration, or check it to reuse
