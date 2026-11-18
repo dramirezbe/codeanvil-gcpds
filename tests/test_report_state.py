@@ -56,7 +56,7 @@ def test_missing_future_and_cyclic_baselines_do_not_invent_staleness():
     gates = {
         "S0": ReportState(1, "PASS", ("G0", 1)),
         "G0": ReportState(1, "PASS", ("S0", 2)),
-        "S1": ReportState(1, "PASS", ("missing", 1)),
+        "S2": ReportState(1, "PASS", ("missing", 1)),
     }
     assert all(stale_reason(stage, gates) is None for stage in gates)
 
