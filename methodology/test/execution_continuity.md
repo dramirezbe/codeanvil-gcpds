@@ -77,6 +77,30 @@ New model-driven execution of revision 1.1 is **not run**. Automated source/CLI/
 evidence lives in `odd/tasks/s2-delivery-integrity/FEATURE.md`; it does not demonstrate agent
 obedience or final prototype acceptance.
 
+## S3 scope checkpoints — v0.9.5
+
+In the live v4 T0 run, after the human chose Per module for slice 0, S3 ended without code,
+then claimed that this schedule was incompatible with infrastructure scope. S3 revision 1.4
+already required same-turn execution and a pause after infrastructure: the agent violated
+that rule. A later invalid-report stop was a separate, valid custody boundary. The run also
+exposed S2 directory backups returning nothing despite existing plans, now covered by CLI tests.
+
+Evaluate S3 revision 1.5 on disposable copies with current valid S2/G2 custody:
+
+| Case | Expected boundary |
+|------|-------------------|
+| slice 0, Per module | Parent builds bases/kit/stubs/placeholder integration and runs scoped VL-0 before the infrastructure checkpoint; no module delegation or schedule re-selection. |
+| slice 0 resume after chosen schedule | Keep the actual prior answer, finish missing work and checks; no reading-only exit without a concrete blocker. |
+| slice 0, Per slice | Complete infrastructure/checks and pause once, with no future PATH checkpoint. |
+| module slice, Per module | Fresh implementor per admitted module; pause after checked module work, then continue only within that slice. |
+| system | Preserve the integration-to-PATH checkpoint; Per slice additionally pauses at completed system scope. |
+| invalid S2/G2 | Stop implementation, use the authorized owning skill for recovery, and require the human gate procedure; no upstream PASS written by S3. |
+| final checkpoint continue | Publish existing valid evidence/report without restarting or adding another publication confirmation. |
+| explicit stop or actual operational failure | Preserve drafts; report the real boundary and no completed iteration. |
+
+Record actual transcript, code diff, commands, results, chosen schedule and checkpoint. Fresh
+model-driven evaluation is **not run**; passing skill assertions do not prove agent compliance.
+
 The S2/G2 scenarios below retain their historical v3 numbering (v4 S3/G3).
 
 ## Observed failure

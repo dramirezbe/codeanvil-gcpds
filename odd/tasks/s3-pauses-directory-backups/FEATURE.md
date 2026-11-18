@@ -29,5 +29,6 @@ Backup regressions cover distinct nested PLAN.md files, manifest digests and res
 idempotent interrupted-pass reuse, empty/missing plans, copy failure without a published
 snapshot and legacy individual-file layouts. A subprocess checks the actual CLI boundary.
 `.venv/bin/python -m pytest -q tests/test_backup.py`: **17 passed** (0.22 s).
+Focused S3/question/scaffold/custody/backup checks: **66 passed** (0.87 s).
 Fresh model-driven S3 evaluation is separate from static skill/scaffold checks; never claim
 that a textual assertion proves the model obeys the pause schedule.
