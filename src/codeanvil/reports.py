@@ -69,6 +69,7 @@ class ReportState(NamedTuple):
     accepted_deltas: tuple[str, ...] = ()
     sync_only: bool = False
     rework_from: tuple[str, int] | None = None
+    outputs: tuple[tuple[str, str], ...] = ()
 
 
 class ReportIteration(NamedTuple):
@@ -122,6 +123,7 @@ def _state_from_content(content: str, number: int | None) -> ReportState:
         tuple(re.findall(r"^Delta accepted: (D-[A-Za-z0-9_-]+)\b", latest, re.MULTILINE)),
         bool(re.search(r"^Sync-only: yes\s*$", latest, re.MULTILINE)),
         (rework.group(1), int(rework.group(2))) if rework else None,
+        tuple(_OUTPUT_RE.findall(latest)),
     )
 
 
@@ -195,12 +197,17 @@ def stale_reason(
     if invalid:
         return invalid
     if project_root is not None:
-        from codeanvil.custody import path_sha256
+        from codeanvil.custody import path_sha256, s1_delivery_findings
         deltas = read_deltas(project_root)
         for path, recorded in report.inputs:
             current = path_sha256(project_root / path)
             if recorded != current and not authorized_advance(path, recorded, current, deltas):
                 return f"stale-report: {path} changed since {gate} iteration {report.iteration}"
+        if gate == "S1":
+            pending = s1_delivery_findings(project_root, report)
+            if pending:
+                return (f"undelivered-output: {pending[0].path} changed since S1 iteration "
+                        f"{report.iteration}; complete S1")
     if report.based_on is None:
         return None
     predecessor, number = report.based_on

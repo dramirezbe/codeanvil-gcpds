@@ -185,7 +185,7 @@ def build_parser() -> argparse.ArgumentParser:
     digest_p.add_argument("paths", nargs="+", help="Paths to hash (directories end with /); outputs ready-to-paste Input: lines")
     digest_p.add_argument("--raw", action="store_true", help="Print only the hex digest, not the Input: line")
     
-    verify_p = custody_sub.add_parser("verify", help="Check Input: digests in cycle reports")
+    verify_p = custody_sub.add_parser("verify", help="Check inputs and latest S1 delivery integrity")
     verify_p.add_argument("--cycle", default=None, help="Cycle to check (default: most recent)")
     
     verify_p.add_argument("--gate", help="Check only this prerequisite report")

@@ -10,16 +10,19 @@ from `codeanvil custody digest` and is checked via `custody verify` or
 import hashlib
 import subprocess
 from pathlib import Path
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 from codeanvil.config.logger import get_logger
 
 log = get_logger(__name__)
 
+if TYPE_CHECKING:
+    from codeanvil.reports import ReportState
+
 
 class Finding(NamedTuple):
-    """A manifest or input digest finding."""
-    kind: str  # "stale-report", "manifest-mismatch", "backup-mismatch"
+    """A manifest, baseline or delivery integrity finding."""
+    kind: str
     path: str
     recorded: str | None
     current: str
@@ -79,14 +82,26 @@ def path_sha256(path: Path) -> str:
     return tree_sha256(path) if path.is_dir() else file_sha256(path) if path.is_file() else "missing"
 
 
+def s1_delivery_findings(project_root: Path, report: "ReportState") -> list[Finding]:
+    """Only the latest S1 delivery owns the working design; older outputs may change."""
+    if report.hitl != "PASS":
+        return []
+    findings = []
+    for path, recorded in report.outputs:
+        current = path_sha256(project_root / path)
+        if recorded != current:
+            findings.append(Finding("undelivered-output", path, recorded, current))
+    return findings
+
+
 def verify(project_root: Path, cycle: str | None = None, gate: str | None = None) -> list[Finding]:
-    """Check the latest iteration's consumed inputs; outputs are gate baselines.
+    """Check latest consumed inputs and S1's latest recorded delivery outputs.
 
     Historical iterations deliberately remain immutable. An output may have been
-    replaced by a later authorized stage, so only consumers drive staleness.
+    replaced by a later authorized stage; do not check historical outputs or S3 trees.
     """
     import yaml
-    from codeanvil.reports import authorized_advance, read_deltas, report_state
+    from codeanvil.reports import authorized_advance, baseline_reason, read_deltas, report_state
     report_dir = project_root / ".codeanvil/report"
     if cycle is None:
         manifest = project_root / ".codeanvil/project.yaml"
@@ -99,7 +114,14 @@ def verify(project_root: Path, cycle: str | None = None, gate: str | None = None
     for report in sorted((report_dir / cycle).glob("*.md")):
         if gate is not None and report.stem != gate:
             continue
-        for path, recorded in report_state(report).inputs:
+        state = report_state(report)
+        invalid = baseline_reason(report.stem, state)
+        if invalid:
+            findings.append(Finding("invalid-baseline", report.relative_to(project_root).as_posix(),
+                                    "Based on: G0 iteration <N>", invalid))
+        if report.stem == "S1":
+            findings.extend(s1_delivery_findings(project_root, state))
+        for path, recorded in state.inputs:
             current = path_sha256(project_root / path)
             if recorded != current and not authorized_advance(path, recorded, current, deltas):
                 findings.append(Finding("stale-report", path, recorded, current))

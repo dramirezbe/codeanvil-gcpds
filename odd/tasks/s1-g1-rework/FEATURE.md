@@ -27,10 +27,21 @@ the old G1 remains historical and stale. RFD, GT drift and incomplete deliveries
    yields `Next: G1` (previously `Next: S1`). Synthetic repeated FEEDBACK/rework tests
    preserve historical bytes and require fresh human gate fixtures.
    Rollback: revert the report parser/routing changes and their accompanying tests.
-2. Latest S1 delivery integrity, with custody/status/CLI regression coverage.
+2. Latest S1 delivery integrity, with custody/status/CLI regression coverage:
+   `custody verify --gate S1` and `status` share output comparison for the latest S1
+   delivery. A changed/missing design is `undelivered-output`, and an invalid predecessor
+   is diagnosed without following a backward edge. Other stages' overwritten outputs
+   and historical S1 outputs are not checked. Reports lacking recorded outputs retain
+   legacy parsing; the G1 skill still requires the SDD Output baseline before review.
+   Focused command above plus `tests/test_create.py`: **116 passed** (1.55 s).
+   Runtime boundaries: subprocess custody verification exits 1 for an edited/deleted
+   design, and isolated-DB status changes from `Next: S1` to `Next: G1` after delivery.
+   Rollback: remove the shared S1 output comparison, CLI help changes and associated tests.
 3. S1/G1 completion and re-review instructions, generated reference alignment,
    recovery procedure, manual agent evaluation scenarios and release metadata.
 
 Keep these units independently reviewable; no final PR is created. The CLI remains
 stateless and does not execute methodology stages or decide human gates. Automated
 fixtures prove state transitions, not model obedience or a real Verified Prototype.
+
+Work-unit commits: `edcf70c` (state/routing); later units recorded at release preparation.
