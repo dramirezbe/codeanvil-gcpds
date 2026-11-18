@@ -91,6 +91,12 @@ def cmd_status(name: str | None = None) -> None:
             log.error("could not resolve project")
             sys.exit(1)
 
+        skills = project_dir / ".agents/skills"
+        if skills.is_dir() and any(not (skills / stage / "SKILL.md").is_file() for stage in
+                                   ("S2_plan_modules", "G2_plan_review", "S3_implement_modules", "G3_adaptive_verification")):
+            log.error("not a V-SIL v4 scaffold; create a new v4 project/cycle (no migration)")
+            sys.exit(1)
+
         print(f"Project: {identity['name']} ({identity['id']})")
         print(f"Path:    {project_dir.resolve()}")
 
@@ -126,7 +132,7 @@ def cmd_status(name: str | None = None) -> None:
                         state += f" (iteration {report.iteration})"
                     if report.scope:
                         state += f" [{report.scope}]"
-                    stale = _stale_reason(gate, gates)
+                    stale = _stale_reason(gate, gates, project_root=project_dir)
                     if stale:
                         state += f" [stale: {stale}]"
                     print(f"    {gate}: {state}")
@@ -136,7 +142,7 @@ def cmd_status(name: str | None = None) -> None:
                 
                 # Show next step in the chain for the active cycle
                 if cycle == active_cycle:
-                    next_skill = next_step(gates)
+                    next_skill = next_step(gates, project_root=project_dir)
                     if next_skill:
                         print(f"  Next: {next_skill}")
 

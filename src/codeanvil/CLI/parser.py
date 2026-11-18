@@ -188,6 +188,8 @@ def build_parser() -> argparse.ArgumentParser:
     verify_p = custody_sub.add_parser("verify", help="Check Input: digests in cycle reports")
     verify_p.add_argument("--cycle", default=None, help="Cycle to check (default: most recent)")
     
+    verify_p.add_argument("--gate", help="Check only this prerequisite report")
+
     verify_manifest_p = custody_sub.add_parser("verify-manifest", help="Check golden vector manifest against vectors")
     verify_manifest_p.add_argument("manifest", help="Path to manifest.md file")
 

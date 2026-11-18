@@ -1,6 +1,7 @@
 """Subcommand dispatch and console-script entry point."""
 
 import argparse
+import sys
 
 from codeanvil.CLI.commands import (
     cmd_backup,
@@ -44,7 +45,7 @@ def choose_option(args: argparse.Namespace) -> None:
         case "status":
             cmd_status(args.name)
         case "custody":
-            cmd_custody(args)
+            sys.exit(cmd_custody(args))
         case "backup":
             cmd_backup(args.stage)
         case "runtime":

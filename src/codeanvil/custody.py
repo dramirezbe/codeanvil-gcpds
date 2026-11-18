@@ -48,93 +48,98 @@ def tree_sha256(directory: Path) -> str:
     the canonical file list. Outside Git, uses rglob minus standard ignores.
     Returns SHA-256 of sorted (relpath, filehash) pairs.
     """
-    h = hashlib.sha256()
-    files = []
-    
-    # Try git first
+    directory = directory.resolve()
+    result = None
     try:
         result = subprocess.run(
-            ["git", "ls-files", "-co", "--exclude-standard", "--", str(directory)],
-            cwd=directory,
-            capture_output=True,
-            text=True,
-            timeout=10,
+            ["git", "ls-files", "-z", "-co", "--exclude-standard", "--", "."],
+            cwd=directory, capture_output=True, timeout=10,
         )
-        if result.returncode == 0:
-            files = result.stdout.strip().split("\n") if result.stdout.strip() else []
     except (subprocess.TimeoutExpired, FileNotFoundError):
         pass
-    
-    # Fallback: rglob with standard ignores
-    if not files:
-        ignore_patterns = {".git", "__pycache__", ".venv", "node_modules", "dist",
-                          "verification/telemetry"}
-        for file_path in sorted(directory.rglob("*")):
-            if not file_path.is_file():
-                continue
-            rel = file_path.relative_to(directory)
-            if any(part in ignore_patterns or part.startswith(".") for part in rel.parts):
-                continue
-            files.append(str(rel))
-    
-    # Hash sorted (relpath, filehash) pairs
-    for rel_str in sorted(set(files)):
-        file_path = directory / rel_str
-        if not file_path.is_file():
-            continue
-        file_hash = file_sha256(file_path)
-        h.update(f"{rel_str}\0{file_hash}\n".encode())
-    
+    if result is not None and result.returncode == 0:
+        files = {p for p in result.stdout.decode().split("\0") if p}
+    else:
+        ignored = {".git", "__pycache__", ".venv", "node_modules", "dist"}
+        files = {p.relative_to(directory).as_posix() for p in directory.rglob("*")
+                 if p.is_file() and not ignored.intersection(p.relative_to(directory).parts)
+                 and "verification/telemetry/" not in p.as_posix()}
+    h = hashlib.sha256()
+    for rel in sorted(files):
+        file = directory / rel
+        if file.is_file():
+            digest = file_sha256(file)
+            if not digest:
+                return ""
+            h.update(f"{rel}\0{digest}\n".encode())
     return h.hexdigest()
 
 
-def verify(project_root: Path, cycle: str | None = None) -> list[Finding]:
-    """Verify Input:/Output: digests in all chain reports of the cycle.
-    
-    Returns one Finding per mismatch (stale-report, manifest-mismatch, etc.).
-    If cycle is None, checks the most recent cycle.
+def path_sha256(path: Path) -> str:
+    return tree_sha256(path) if path.is_dir() else file_sha256(path) if path.is_file() else "missing"
+
+
+def verify(project_root: Path, cycle: str | None = None, gate: str | None = None) -> list[Finding]:
+    """Check the latest iteration's consumed inputs; outputs are gate baselines.
+
+    Historical iterations deliberately remain immutable. An output may have been
+    replaced by a later authorized stage, so only consumers drive staleness.
     """
+    import yaml
+    from codeanvil.reports import authorized_advance, read_deltas, report_state
+    report_dir = project_root / ".codeanvil/report"
+    if cycle is None:
+        manifest = project_root / ".codeanvil/project.yaml"
+        if manifest.is_file():
+            cycle = (yaml.safe_load(manifest.read_text(encoding="utf-8")) or {}).get("cycle")
+    if not cycle or not (report_dir / cycle).is_dir():
+        return []
+    deltas = read_deltas(project_root)
     findings = []
-    report_dir = project_root / ".codeanvil" / "report"
-    
-    if not report_dir.is_dir():
-        return findings
-    
-    # Find cycles
-    cycles = sorted([d for d in report_dir.iterdir() if d.is_dir()])
-    if not cycles:
-        return findings
-    
-    if cycle:
-        target = report_dir / cycle
-        if not target.is_dir():
-            return findings
-        cycles = [target]
-    else:
-        cycles = [cycles[-1]]
-    
-    for cycle_dir in cycles:
-        # Check all .md files in the cycle
-        for report_file in cycle_dir.glob("*.md"):
-            # TODO (Phase H): Parse Input: lines, recompute digests, compare
-            # For now, custody verify on v3 projects finds only manifest/backup mismatches
-            pass
-    
+    for report in sorted((report_dir / cycle).glob("*.md")):
+        if gate is not None and report.stem != gate:
+            continue
+        for path, recorded in report_state(report).inputs:
+            current = path_sha256(project_root / path)
+            if recorded != current and not authorized_advance(path, recorded, current, deltas):
+                findings.append(Finding("stale-report", path, recorded, current))
     return findings
 
 
 def verify_manifest(manifest_path: Path) -> list[Finding]:
-    """Verify a golden vector manifest against its vectors.
-    
-    Parses the locked table and compares each row with its file.
-    Returns findings for mismatches, missing files, and unlisted files.
-    """
-    findings = []
+    """Check the locked vector table; paths are relative to its directory."""
+    import re
+    from codeanvil.reports import unfenced_text
     if not manifest_path.is_file():
-        return findings
-    
-    # TODO (Phase H): Parse manifest table, check vectors
-    # Manifest format: | Vector ID | SHA-256 | File | ... |
-    # For now, Phase A3 provides the structure; validation is deferred.
-    
+        return [Finding("manifest-mismatch", str(manifest_path), None, "missing")]
+    headers = None
+    listed = set()
+    findings = []
+    for line in unfenced_text(manifest_path.read_text(encoding="utf-8")).splitlines():
+        if not line.startswith("|"):
+            continue
+        cells = [c.strip().strip("`") for c in line.strip().strip("|").split("|")]
+        if "SHA-256" in cells and "File" in cells:
+            headers = cells
+            continue
+        if not headers or all(re.fullmatch(r"[: -]+", c) for c in cells):
+            continue
+        if len(cells) != len(headers):
+            findings.append(Finding("manifest-mismatch", str(manifest_path), None, "malformed row"))
+            continue
+        row = dict(zip(headers, cells))
+        path = manifest_path.parent / row["File"]
+        resolved = path.resolve()
+        if not resolved.is_relative_to(manifest_path.parent.resolve()) or resolved in listed:
+            findings.append(Finding("manifest-mismatch", row["File"], row["SHA-256"], "unsafe or duplicate path"))
+            continue
+        listed.add(resolved)
+        current = path_sha256(path)
+        if not re.fullmatch(r"[0-9a-f]{64}", row["SHA-256"]) or current != row["SHA-256"]:
+            findings.append(Finding("manifest-mismatch", row["File"], row["SHA-256"], current))
+    if headers is None:
+        findings.append(Finding("manifest-mismatch", str(manifest_path), None, "missing table"))
+    for path in sorted(manifest_path.parent.rglob("*")):
+        if path.is_file() and path.resolve() != manifest_path.resolve() and path.resolve() not in listed:
+            findings.append(Finding("manifest-mismatch", str(path), None, "unlisted"))
     return findings

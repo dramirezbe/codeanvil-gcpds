@@ -69,9 +69,7 @@ def cmd_digest(args) -> int:
 
 def cmd_verify(args) -> int:
     """Verify report digests: `codeanvil custody verify [--cycle CYCLE]`"""
-    # TODO (Phase H): Implement full digest verification
-    # For now, v3 reports carry no Input: lines, so verify returns nothing
-    findings = verify(Path.cwd(), args.cycle)
+    findings = verify(Path.cwd(), args.cycle, getattr(args, "gate", None))
     
     if not findings:
         return 0
