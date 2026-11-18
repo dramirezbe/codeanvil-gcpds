@@ -23,14 +23,18 @@ def test_generated_eight_node_flow_and_scoped_inputs(tmp_path):
     source = project / 'baseline.txt'
     source.write_text('test fixture input')
     digest = file_sha256(source)
+    for name in ['.codeanvil/design/SDD.md', '.codeanvil/GT/SyRS.md']:
+        (project / name).write_bytes(source.read_bytes())
     reports = project / '.codeanvil/report/probe'
     reports.mkdir()
     for index, gate in enumerate(order):
         baseline = f'Based on: {order[index-1]} iteration 1\n' if index else ''
         scope = 'Scope: slice 0\n' if gate in order[4:] else ''
+        required = (f'Input: .codeanvil/design/SDD.md sha256:{digest}\n'
+                    f'Input: .codeanvil/GT/SyRS.md sha256:{digest}\n') if gate == 'S2' else ''
         (reports / f'{gate}.md').write_text(
             f'# Synthetic fixture {gate}\n## Iteration 1\n| HITL | PASS |\n### Description\n'
-            f'{baseline}{scope}Input: baseline.txt sha256:{digest}\n')
+            f'{baseline}{scope}Input: baseline.txt sha256:{digest}\n{required}')
         assert verify(project, 'probe') == []
     assert next_step(cycle_reports(project / '.codeanvil/report')['probe']).startswith('S2 slice 1')
     source.write_text('unapproved edit')
