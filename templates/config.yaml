@@ -9,6 +9,8 @@ skills:
   # id of the predecessor: the AGENTS.md table renders it and each skill
   # enforces it on load. null marks the entry point. RFD is not listed on
   # purpose: it can be raised from any stage, so its table cell renders "-".
+  # `loop_after` marks an entry that re-enters when its successor passes
+  # (cadence gating: S2 loops after G3 completes each slice).
   S0_normalise_build_package:
     project_dir: ".agents/skills/S0_normalise_build_package"
     prerequisite: null
@@ -21,18 +23,25 @@ skills:
   G1_design_review:
     project_dir: ".agents/skills/G1_design_review"
     prerequisite: "S1"
-  S2_implement_subsystems:
-    project_dir: ".agents/skills/S2_implement_subsystems"
+  S2_plan_modules:
+    project_dir: ".agents/skills/S2_plan_modules"
     prerequisite: "G1"
-  G2_adaptive_verification:
-    project_dir: ".agents/skills/G2_adaptive_verification"
+    loop_after: "G3"
+  G2_plan_review:
+    project_dir: ".agents/skills/G2_plan_review"
     prerequisite: "S2"
+  S3_implement_modules:
+    project_dir: ".agents/skills/S3_implement_modules"
+    prerequisite: "G2"
+  G3_adaptive_verification:
+    project_dir: ".agents/skills/G3_adaptive_verification"
+    prerequisite: "S3"
 
 # Flow order of the chain reports, used by `codeanvil status` to print gates
 # in order. Any other report id (RFD, old CC) follows alphabetically.
-report_order: ["S0", "G0", "S1", "G1", "S2", "G2"]
+report_order: ["S0", "G0", "S1", "G1", "S2", "G2", "S3", "G3"]
 # Stages finish in one pass: their PASS means "delivered", not a human verdict.
-stage_reports: ["S0", "S1", "S2"]
+stage_reports: ["S0", "S1", "S2", "S3"]
 
 # Files `codeanvil backup <stage>` copies before a skill overwrites them.
 # Project-root-relative; {cycle} expands to the active cycle. The command is
@@ -40,8 +49,10 @@ stage_reports: ["S0", "S1", "S2"]
 backup_targets:
   S0: [".codeanvil/GT/StRS.md", ".codeanvil/GT/SyRS.md"]
   S1: [".codeanvil/design/SDD.md", ".codeanvil/design/dependency_graph.html", ".codeanvil/design/dependency_graph_light.html"]
-  S2: [".codeanvil/report/{cycle}/S2_artifacts/test_run.md"]
-  G2: [".codeanvil/report/{cycle}/G2_artifacts/verified_prototype.md"]
+  S2: [".codeanvil/plans/"]
+  G2: []
+  S3: [".codeanvil/report/{cycle}/S3_artifacts/test_run.md"]
+  G3: [".codeanvil/report/{cycle}/G3_artifacts/verified_prototype.md"]
 
 # Global methodology runtime: one uv venv under ~/.codeanvil-config/<dir>/,
 # shared by every project, built from templates/runtime/ plus user additions
@@ -97,14 +108,45 @@ agents_template: "templates/AGENTS/TEMPLATE_AGENT.md"
 
 # Subagents shipped with every project: one shared body, one header per
 # runtime. Only runtimes with documented project-scoped subagents are listed;
-# Copilot and Pi get no file and G2 falls back to a fresh session.
-# Codex (developers.openai.com/codex/subagents): name, description and
-# developer_instructions are required; sandbox_mode in an agent file does not
-# override the parent session, so read-only rests on the body's Never list.
+# Copilot and Pi get no file; G3 and S3 without subagent support fall back to
+# a fresh session. Codex (developers.openai.com/codex/subagents): name,
+# description and developer_instructions are required; sandbox_mode in an
+# agent file does not override the parent session, so read-only rests on the
+# body's Never list.
 subagents:
+  vsil-implementor:
+    body: "templates/agents/vsil-implementor.md"
+    description: "V-SIL S3 implementor: writes one module's implementation from its PLAN.md and context set. Use only from the S3 skill."
+    targets:
+      claude:
+        path: ".claude/agents/vsil-implementor.md"
+        format: "markdown"
+        frontmatter:
+          name: "vsil-implementor"
+          tools: "Read, Grep, Glob, Edit, Write, Bash"
+      opencode:
+        path: ".opencode/agents/vsil-implementor.md"
+        format: "markdown"
+        frontmatter:
+          mode: "subagent"
+          permission:
+            edit: "allow"
+            webfetch: "deny"
+            bash: "allow"
+            vsil_hil_mcp_probe_target: "deny"
+            vsil_hil_mcp_ssh_exec_cmd: "deny"
+            vsil_hil_mcp_fetch_evidence: "deny"
+            vsil_hil_mcp_code_sync: "deny"
+            vsil_hil_mcp_init_codeanvil: "deny"
+            vsil_hil_mcp_ssh_exec_cmd_trusted: "deny"
+      codex:
+        path: ".codex/agents/vsil-implementor.toml"
+        format: "toml"
+        fields: {name: "vsil-implementor"}
+
   vsil-verifier:
     body: "templates/agents/vsil-verifier.md"
-    description: "V-SIL G2 verifier: runs the S2 test commands in a fresh, read-only context and returns a results table. Use only from the G2 skill."
+    description: "V-SIL G3 verifier: runs the S3 test commands in a fresh, read-only context and returns a results table. Use only from the G3 skill."
     targets:
       claude:
         path: ".claude/agents/vsil-verifier.md"
@@ -150,8 +192,8 @@ gt_reference_templates:
 # Paths are relative to the producer/consumer skill; copied Markdown is rebound
 # to its consumer before the normal repo-root -> project-root rewrite.
 shared_skill_assets:
-  G2_adaptive_verification:
-    S2_implement_subsystems:
+  G3_adaptive_verification:
+    S3_implement_modules:
       - "references/measurement.schema.json"
       - "scripts/validate_measurement.py"
       - "references/machine_evidence.md"

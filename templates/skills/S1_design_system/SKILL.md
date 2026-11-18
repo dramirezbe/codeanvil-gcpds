@@ -2,7 +2,7 @@
 name: s1-design-system
 description: "Trigger: S1, design subsystems, architecture, subsystem topology, contracts, stubs, dependency graph. From a passed G0 pair, write the S1 design document (layered subsystems, contracts with stubs, traceability, decisions, risks) and its dependency graph."
 license: Apache-2.0
-compatibility: "No network access, no scripts. Reads .codeanvil/GT/StRS.md, .codeanvil/GT/SyRS.md and .codeanvil/project.yaml. Writes .codeanvil/design/SDD.md, .codeanvil/design/dependency_graph.html (dark), .codeanvil/design/dependency_graph_light.html and .codeanvil/report/<cycle-name>/S1.md."
+compatibility: "No network access, no scripts. Reads .codeanvil/GT/StRS.md, .codeanvil/GT/SyRS.md, .codeanvil/project.yaml, and .codeanvil/design/SDD.md (from G1 rework). Writes .codeanvil/design/SDD.md, .codeanvil/design/dependency_graph.html (dark), dependency_graph_light.html, and .codeanvil/report/<cycle-name>/S1.md. Report includes Scope: system and Input: sha256 lines for all read GT files."
 metadata:
   author: "gcpds"
   version: "1.0"
@@ -71,7 +71,7 @@ Working files live in `.codeanvil/design/`, outside the cycle report folder.
   absent from GT is a risk to resolve, not a reason to block unrelated functional measurements.
   Design device identity/driver/capability observation, a guard rejecting unsupported settings
   before configuration, and safe stop/disconnect. Record the agent's measurement scripts in the
-  kit contract; real hardware runs require the pre-HW review checkpoint in S2/G2.
+  kit contract; real hardware runs require the pre-HW review checkpoint in S3/G3.
 - The Mock HAL (§1.6) and the Telemetry companion (§1.7) are always designed. The Telemetry
   companion lives in `verification/telemetry/`: it is never a module and never under `src/`.
 - **Target(s)** (Meta) is **design intent**: it maps every subsystem and verification path to
@@ -79,16 +79,16 @@ Working files live in `.codeanvil/design/`, outside the cycle report folder.
   `.codeanvil/project.yaml` `targets:` entry. When several devices could apply, resolve the
   selection from GT or ask the user; never pick the first silently. S1 never enrolls a target and
   never writes or asks for credentials, IP or MAC: the concrete `project.yaml` target entry is
-  created later, at G2, by `credential-setup`, and only if the design requires VL-2. In §1.6 name
+  created later, at G3, by `credential-setup`, and only if the design requires VL-2. In §1.6 name
   where each level runs and in §1.7 give an operating envelope per target, sourced from its COTS
   constraints. Missing target intent or limits are design risks to resolve, never guessed values.
 - Verification ladder: VL-0 and VL-1 run **locally with no hardware** (Mock HAL, and in `mock+real`
-  the Real HW HAL against a fake device API). VL-2 is real SIL/HIL on the actual hardware at G2.
-  Remote PIL at S2 is out of scope: do not design a remote deployment for VL-0/VL-1. Do not ask
+  the Real HW HAL against a fake device API). VL-2 is real SIL/HIL on the actual hardware at G3.
+  Remote PIL at S3 is out of scope: do not design a remote deployment for VL-0/VL-1. Do not ask
   the user to invent a target alias or put local private key paths in shared project metadata.
 - Execution location and HAL mode are separate axes. VL-0/VL-1 with Mock HAL inputs run locally
   and remain **VERIFIED**; they do not establish VL-2 or real-RF validation. Real-hardware
-  execution happens at G2 through `vsil_hil_mcp`; local execution uses the runtime's normal tools.
+  execution happens at G3 through `vsil_hil_mcp`; local execution uses the runtime's normal tools.
 - **Toolchain** (Meta) names, per subsystem, `SUB-xxx: <package> · <language> · <package manager> ·
   <test runner>`, using only `Python · uv · pytest` or `TypeScript · pnpm · vitest`. `<package>`
   is a valid identifier and names `src/<package>/`. Derive it from §1.3.1 and the deployment
@@ -107,9 +107,9 @@ Working files live in `.codeanvil/design/`, outside the cycle report folder.
    nonzero, stop and show its message; write no iteration. Cite the printed backup path in the
    iteration's Description. Backups never cover `src/` or `verification/`: code recovery relies
    on git.
-2. Copy the template to `.codeanvil/design/SDD.md`. Record the GT digests in the Meta
-   "G0 approved" row (information only, never a block), computed with:
-   `python -c "import hashlib,sys;[print(hashlib.sha256(open(p,'rb').read()).hexdigest(),p) for p in sys.argv[1:]]" .codeanvil/GT/StRS.md .codeanvil/GT/SyRS.md`
+2. Copy the template to `.codeanvil/design/SDD.md`. Obtain GT digests using
+   `codeanvil custody digest .codeanvil/GT/StRS.md .codeanvil/GT/SyRS.md` and record the
+   returned Input lines in S1.md. Do not add retired approval fields to the SDD Meta.
 3. Allocate `SYS-*` to subsystems and paths: §0.4, §1.1, §4.1.
 4. Fill the COTS envelope from the `HWC-*` blocks: §0.1–0.3. In §0.5, define
    one project-root command that starts the complete runnable system, its HAL
@@ -141,7 +141,7 @@ review its impact instead of re-reading the whole design:
    and whether the interface changed. A graph-only change is marked `no code impact`.
 2. Keep the IDs of unchanged elements stable. Renumbering hides the impact from G1.
 3. Record the SHA-256 of the final `SDD.md`:
-   `python -c "import hashlib,sys;print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" .codeanvil/design/SDD.md`
+   Run `codeanvil custody digest .codeanvil/design/SDD.md --raw`
 
 ## Infeasibility
 
@@ -210,3 +210,21 @@ Write exactly one file: `.codeanvil/report/<cycle-name>/S1.md`, append-only.
 
 Return the design path, both graph paths, the report path with the iteration number, and the
 next step (`S1 complete. Run the G1 skill.`).
+
+**Report structure:**
+
+The report includes:
+- `Scope: system` — this design covers the whole system
+- `Input: .codeanvil/GT/StRS.md sha256:‹hash›` — hash of the input StRS (use `codeanvil custody digest`)
+- `Input: .codeanvil/GT/SyRS.md sha256:‹hash›` — hash of the input SyRS
+- `Output: .codeanvil/design/SDD.md sha256:‹hash›` — delivered design digest from custody; do not record the overwritten previous SDD as an Input against the same path.
+
+## Delta-sync
+
+For accepted `design-sync` rows in `.codeanvil/plans/DELTAS.md`, run `codeanvil backup S1`,
+verify Before digests using `codeanvil custody digest` and apply only the named minor design edits.
+Never bump a contract version or change stubs in this mode; structural changes use normal S1/G1
+rework with the full stale cascade. Record before/after digests, Status applied and Applied in
+with this S1 iteration. Append `Scope: delta-sync` with delta IDs and an explicit empty interface
+impact map, new SDD Output digest and G0 baseline. G1 bounded rework must confirm that map.
+Rework may also originate from S2/G2/S3/G3 `Verdict: design defect`; preserve unaffected modules.

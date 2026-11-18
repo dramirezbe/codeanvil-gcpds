@@ -3,7 +3,7 @@
 The server carries SSH execution, deployment and evidence retrieval to a declared
 Linux compute unit. The agent prepares the machine and runs the complete kit.
 Before a stage updates, deploys or tests hardware, it must show the candidate and
-wait for the user's explicit `continue`. Existing S2 HITL schedules still apply.
+wait for the user's explicit `continue`. Existing S3 HITL schedules still apply.
 Local devices use the normal host tools and the same pre-hardware checkpoint.
 
 ## Enroll access once per client and device
@@ -82,14 +82,14 @@ code deployment inputs.
 
 ## Stage workflow
 
-1. S2 builds and tests according to its existing pause schedule.
+1. S3 builds and tests according to its existing pause schedule.
 2. The agent checks clean Git status and the published upstream candidate. It shows
    the code/kit, device and planned operations, then stops for review.
 3. After `continue`, the parent prepares tool/project dependencies and clocks before
    measuring. It uses an explicit published tool ref for `init_codeanvil`; equal
    numeric versions alone do not identify an unreleased candidate.
 4. The agent deploys and runs approved tests, captures real outputs and retrieves
-   evidence. G2 uses a fresh verifier that can operate hardware but never edits the
+   evidence. G3 uses a fresh verifier that can operate hardware but never edits the
    DUT, asks the human or decides the gate verdict; its parent handles trusted work.
 5. Report outcomes and failures with their technical cause and existing rework route.
 

@@ -8,7 +8,7 @@ from codeanvil.CLI.commands.create import cmd_create
 GATES = {
     "G0_valid_req_and_GT": ("`PASS`", "`FEEDBACK`"),
     "G1_design_review": ("`PASS`", "`FEEDBACK`", "`RFD`"),
-    "G2_adaptive_verification": ("`PASS`", "`FEEDBACK`", "`RFD`"),
+    "G3_adaptive_verification": ("`PASS`", "`FEEDBACK`", "`RFD`"),
 }
 
 
@@ -60,8 +60,8 @@ def test_scaffolded_gates_carry_the_question_rule(tmp_path, db_path):
 
 
 def test_s2_asks_the_pause_schedule_with_the_native_question_tool():
-    text = " ".join(_skill_text("S2_implement_subsystems").split())
+    text = " ".join(_skill_text("S3_implement_modules").split())
 
     assert "`AskUserQuestion`" in text
-    assert "Per layer (recommended)" in text
+    assert "Per slice (recommended)" in text
     assert "If the runtime has no question tool" in text

@@ -13,7 +13,7 @@ from codeanvil.config.paths import (
 from codeanvil.db.projects import get_project_by_id, get_project_by_name, sync_project
 from codeanvil.db.schema import db_exists
 from codeanvil.db.utils import connect_db
-from codeanvil.reports import UNKNOWN_PRODUCER, backup_entries, cycle_reports
+from codeanvil.reports import UNKNOWN_PRODUCER, backup_entries, cycle_reports, next_step
 from codeanvil.reports import stale_reason as _stale_reason
 
 log = get_logger(__name__)
@@ -91,6 +91,12 @@ def cmd_status(name: str | None = None) -> None:
             log.error("could not resolve project")
             sys.exit(1)
 
+        skills = project_dir / ".agents/skills"
+        if skills.is_dir() and any(not (skills / stage / "SKILL.md").is_file() for stage in
+                                   ("S2_plan_modules", "G2_plan_review", "S3_implement_modules", "G3_adaptive_verification")):
+            log.error("not a V-SIL v4 scaffold; create a new v4 project/cycle (no migration)")
+            sys.exit(1)
+
         print(f"Project: {identity['name']} ({identity['id']})")
         print(f"Path:    {project_dir.resolve()}")
 
@@ -124,13 +130,21 @@ def cmd_status(name: str | None = None) -> None:
                         state = "delivered"
                     if report.iteration is not None:
                         state += f" (iteration {report.iteration})"
-                    stale = _stale_reason(gate, gates)
+                    if report.scope:
+                        state += f" [{report.scope}]"
+                    stale = _stale_reason(gate, gates, project_root=project_dir)
                     if stale:
                         state += f" [stale: {stale}]"
                     print(f"    {gate}: {state}")
                 for stage, iteration, folder in backups.get(cycle, []):
                     label = f"{stage} iteration {iteration}" if iteration is not None else stage
                     print(f"  Backups: {label} → {backups_prefix}/{folder}/")
+                
+                # Show next step in the chain for the active cycle
+                if cycle == active_cycle:
+                    next_skill = next_step(gates, project_root=project_dir)
+                    if next_skill:
+                        print(f"  Next: {next_skill}")
 
         unknown = backups.get(UNKNOWN_PRODUCER)
         if unknown:

@@ -490,13 +490,14 @@ The HAL is the only point that touches the receiver. The Mock HAL and the Real H
 
 | Field            | Value |
 |------------------|-------|
-| subsystem_id       | `SUB-001` |
-| Functional layer | HAL |
-| Responsibility   | Schedule and execute the three-step scan, configure the receiver, capture 39 frames per step, count overflows and dropped frames, flag clipping and publish IQ blocks with capture metadata. |
+| module_id        | `acq` |
+| subsystem_id     | `SUB-001` |
+| layer            | HAL |
 | depends_on       | `HW-IQ-001`, `SW-HACKRF-001`, `time_status.v1`, `config_status.v1` |
-| provides         | `INT-IQ-001` (`capture_block`) and `INT-ACQ-001` (`acquisition_counters`) |
+| provides         | `INT-IQ-001` (`capture_block`), `INT-ACQ-001` (`acquisition_counters`) |
 | hw_dependency    | true |
 | required_vl      | VL-2 |
+| traced_reqs      | `SYS-ACQ-001` |
 
 **Rationale for the required VL:** The correctness of this module depends on the real HackRF: 10 Msps sustained over USB 2.0, the fixed gain steps, the 8 MHz usable bandwidth, saturation at full scale, and the overflow/dropped-frame behaviour. A Mock HAL proves the scheduling and counters, but only HIL at VL-2 proves that the real receiver sustains the scan without loss.
 
@@ -504,13 +505,14 @@ The HAL is the only point that touches the receiver. The Mock HAL and the Real H
 
 | Field            | Value |
 |------------------|-------|
-| subsystem_id       | `SUB-001` |
-| Functional layer | DSP |
-| Responsibility   | Convert each IQ block into 199 channel powers in dBFS and an 819-point spectrum using a 4 096-point Hann FFT, 50 % overlap, 2 495 segments and DC-spike replacement. |
+| module_id        | `estimator` |
+| subsystem_id     | `SUB-001` |
+| layer            | DSP |
 | depends_on       | `INT-IQ-001`, `INT-CTRL-001` (frequency correction and reference state) |
 | provides         | `INT-PWR-001` |
 | hw_dependency    | false |
 | required_vl      | VL-1 |
+| traced_reqs      | `SYS-EST-001` |
 
 **Rationale for the required VL:** The algorithm is deterministic: the same IQ block must produce the same channel powers and spectrum. Golden vectors at VL-1 prove the FFT, window, DC replacement, 105-bin integration and 3.4648 kHz mapping bound. The real-hardware timing (2.5 s per scan) is a PATH-001 VL-2 measurement, not an algorithm property.
 

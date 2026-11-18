@@ -14,7 +14,6 @@
 | Cycle          | {{cycle name}}                                              |
 | Date           | {{YYYY-MM-DD}}                                              |
 | Author         | {{name / role}}                                             |
-| G0 approved    | {{SHA-256 of StRS.md and SyRS.md; information only}}  |
 | Gate H         | {{date + who authorised, copied from G0.md}}                |
 | Subsystems       | {{subsystem IDs; a single subsystem is valid}}                  |
 | Target(s)      | {{local, or the intended device deduced from the HWC-* blocks; one target per subsystem}} |
@@ -212,13 +211,14 @@ flowchart LR
 
 | Field            | Value |
 |------------------|-------|
-| subsystem_id       | <!-- owning SUB-xxx; use SUB-xxx/module_id in traces --> |
-| Functional layer | <!-- HAL / DSP / Decision / Output / Control / other --> |
-| Responsibility   | <!-- ONE sentence --> |
-| depends_on       | <!-- contracts it consumes --> |
-| provides         | <!-- contracts it produces --> |
-| hw_dependency    | <!-- true / false --> |
+| module_id        | <!-- unique within subsystem; e.g., rx_decoder --> |
+| subsystem_id     | <!-- owning SUB-xxx; use SUB-xxx/module_id in traces --> |
+| layer            | <!-- HAL / DSP / Decision / Output / Control / other --> |
+| depends_on       | <!-- qualified module IDs of producers; optional (contract.vN) edge annotation --> |
+| provides         | <!-- list of contracts this module produces --> |
+| hw_dependency    | <!-- true / false; true → required_vl must be VL-2 --> |
 | required_vl      | <!-- VL-0 / VL-1 / VL-2 --> |
+| traced_reqs      | <!-- SYS-nnn requirements this module realizes --> |
 
 **Rationale for the required VL:**
 

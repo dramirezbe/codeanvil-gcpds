@@ -1,8 +1,36 @@
 # CodeAnvil
 
+## V-SIL v4 — 0.9.0
+
+The active chain is `S0 → G0 → S1 → G1 → S2 → G2 → S3 → G3`.
+S2 plans one module PLAN.md per topological slice; G2 is the human plan micro-gate.
+S3 implements each module in a fresh vsil-implementor context; G3 verifies the slice with
+vsil-verifier. Slice 0 builds bases/kit/stubs; system scope tests contracts, PATH-* and the
+runnable entry point. Only system G3 PASS produces the Verified Prototype.
+Plans live under `.codeanvil/plans/`; implementation evidence in `S3_artifacts/`, verification
+in `G3_artifacts/`. Accepted deltas use S0/S1 delta-sync with custody digests and G0/G1 review.
+RFD originates only from S1, G1 or G3. There is no migration command: v3 projects need a new
+v4 scaffold/cycle; archived v3 evidence is not reclassified as a v4 verdict.
+
+`codeanvil ui` is v3-only and incompatible with the v4 chain until its separate follow-up.
+Its non-chain operations remain available. No UI source changes belong to this refactor.
+Release [v0.9.0](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.9.0)
+is merged into main and published before the full-flow trial by owner authorization.
+The T0 v4 full-flow execution and human gate acceptance remain pending.
+
+Archived v2/v3 materials, no-tools skills, backups and first_full_flow snapshots remain
+historical, unchanged. References to their S2/G2 stages retain their original meanings.
+
+
 [![CI](https://github.com/dramirezbe/codeanvil-gcpds/actions/workflows/ci.yml/badge.svg)](https://github.com/dramirezbe/codeanvil-gcpds/actions/workflows/ci.yml)
 
-Agent-agnostic project scaffolding, templates, and agent definitions for the **V-SIL methodology** (V-model at the SIL tier, made continuous). Develops, tests, and validates software on COTS hardware — informed by Ground Truth documents — through the V-SIL v3 flow `S0 → G0 → S1 → G1 → S2 → G2`: agent-driven stages, one deterministic gate (G0) and human review gates, ending in a Verified Prototype.
+## Inherited v3 reference (historical stage numbering)
+
+The sections below describe the v3 baseline. For active v4 stage numbering, cadence and
+routing use the development profile above and the current skills; S2/G2 implementation and
+verification roles in this baseline now correspond to S3/G3. Linked active skill paths are updated.
+
+Agent-agnostic project scaffolding, templates, and agent definitions for the **V-SIL methodology** (V-model at the SIL tier, made continuous). Develops, tests, and validates software on COTS hardware — informed by Ground Truth documents — through the V-SIL v4 flow `S0 → G0 → S1 → G1 → S2 → G2 → S3 → G3`: agent-driven stages, one deterministic gate (G0) and human review gates, ending in a Verified Prototype.
 
 Works with any AI coding agent: Claude, Codex, OpenCode, Pi, or others. Runs on **Linux, macOS and Windows**.
 
@@ -257,7 +285,7 @@ scripts and package commands run directly; destructive actions use trusted.
 The G2 parent prepares the target and its fresh verifier runs the actual tests.
 
 The [server guide](templates/mcp/vsil_hil_mcp/README.md) covers setup and observed
-target probes. [Measurement v2](templates/skills/G2_adaptive_verification/references/machine_evidence.md)
+target probes. [Measurement v2](templates/skills/G3_adaptive_verification/references/machine_evidence.md)
 records functional or metrological criteria without deployment hashes. Calibration
 is needed when GT/the conclusion requires it. Missing telemetry is investigated
 to decide which measures need repeating; it is never replaced with zeros. Real
@@ -292,10 +320,10 @@ codeanvil create [<name> | --name <label> [--folder <dir>]] [-p <path>] [--mcp m
        │    │    │    ├── references/RULES.md
        │    │    │    └── scripts/g0_validate.py
        │    │    ├── S0_normalise_build_package/   ← own blueprints in templates/
-       │    │    ├── S1_design_services/           ← references/ + assets/ (vis-network)
+       │    │    ├── S1_design_system/           ← references/ + assets/ (vis-network)
        │    │    ├── G1_design_review/
-       │    │    ├── S2_implement_services/        ← references/ (project layout, loggers)
-       │    │    ├── G2_adaptive_verification/     ← references/verified_prototype.md
+       │    │    ├── S3_implement_modules/        ← references/ (project layout, loggers)
+       │    │    ├── G3_adaptive_verification/     ← references/verified_prototype.md
        │    │    ├── RFD_request_for_deviation/
        │    │    └── marconi-*/SKILL.md     ← (if --mcp marconi) 6 RF/SDR skills
        │    └── mcp.yaml            ← (if --mcp) agent-agnostic MCP manifest
@@ -419,7 +447,7 @@ GT reference templates are **locked** inside the skills that use them (`.agents/
 The S1 design lives in `.codeanvil/design/`: `SDD.md`, dark `dependency_graph.html`
 and light `dependency_graph_light.html`. Both graphs share the same topology,
 use the UI palette, and are working copies overwritten together on rework.
-G2's Verified Prototype stays under `.codeanvil/report/<cycle>/G2_artifacts/`. Before S0, S1, S2 or G2 overwrites
+G2's Verified Prototype stays under `.codeanvil/report/<cycle>/G3_artifacts/`. Before S0, S1, S2 or G2 overwrites
 its outputs, it runs `codeanvil backup <stage>`. Code under `src/` and `verification/` is not backed up; use git for it.
 Projects scaffolded before v0.5.0 keep their old paths for the cycle they are in; there is no migration.
 Reader-facing `reports/`, `validation_levels.md` and an optional `SRS.md` are not implemented.
@@ -485,10 +513,10 @@ codeanvil-gcpds/
 │   └── skills/              # Stage and gate skills (self-contained)
 │       ├── S0_normalise_build_package/
 │       ├── G0_valid_req_and_GT/      # + deterministic g0_validate.py and RULES.md
-│       ├── S1_design_services/     # + references/ and assets/ (vis-network)
+│       ├── S1_design_system/     # + references/ and assets/ (vis-network)
 │       ├── G1_design_review/       # + references/G1_CHECKLIST.md
-│       ├── S2_implement_services/  # + project layout and logger references
-│       ├── G2_adaptive_verification/  # + Verified Prototype reference
+│       ├── S3_implement_modules/  # + project layout and logger references
+│       ├── G3_adaptive_verification/  # + Verified Prototype reference
 │       └── RFD_request_for_deviation/
 │
 ├── odd/tasks/               # Archived plans and task logs (grouped by milestone)

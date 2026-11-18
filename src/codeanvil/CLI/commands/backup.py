@@ -15,6 +15,7 @@ import yaml
 from codeanvil.config.logger import get_logger
 from codeanvil.config.paths import CONFIG, PROJECT_BACKUPS, PROJECT_REPORT, find_manifest
 from codeanvil.config.time import format_timestamp, format_timestamp_machine
+from codeanvil.custody import file_sha256
 from codeanvil.reports import UNKNOWN_PRODUCER, ReportState, cycle_reports
 
 log = get_logger(__name__)
@@ -24,11 +25,8 @@ class BackupError(Exception):
 
 
 def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(65536), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
+    """Use custody for consistent hashing."""
+    return file_sha256(path)
 
 
 def _producer(
@@ -98,16 +96,20 @@ def _manifest_digests(folder: Path) -> dict[str, str]:
 
 
 def _write_backup(
-    folder: Path, project_dir: Path, sources: list[Path], manifest: dict
+    folder: Path, project_dir: Path, file_entries: list[tuple[Path, Path]], manifest: dict
 ) -> None:
-    """Copy into a staging folder, then rename: no half-written backup is ever
-    mistaken for an existing one."""
+    """Copy into a staging folder flat (no directory nesting), then rename: no half-written
+    backup is ever mistaken for an existing one. Source paths are stored in MANIFEST."""
     staging = folder.with_name(f"{folder.name}.tmp")
     if staging.exists():
         shutil.rmtree(staging)
     staging.mkdir(parents=True)
-    for source in sources:
-        shutil.copy2(project_dir / source, staging / source.name)
+    
+    # Copy files flat (just filename, no nested dirs) in the backup folder
+    for rel_path, abs_path in file_entries:
+        dest = staging / abs_path.name
+        shutil.copy2(abs_path, dest)
+    
     (staging / "MANIFEST.yaml").write_text(
         yaml.safe_dump(manifest, sort_keys=False), encoding="utf-8"
     )
@@ -134,8 +136,24 @@ def _run(stage: str) -> None:
         )
 
     targets = _targets(stage, active)
-    sources = [target for target in targets if (project_dir / target).is_file()]
-    if not sources:
+    
+    # Gather files: both standalone files and files from directory targets
+    file_entries = []  # (project_relative_path, absolute_path)
+    for target in targets:
+        target_abs = project_dir / target
+        if target.as_posix().endswith("/"):
+            # Directory target: recursively gather files, preserve project-relative paths
+            if target_abs.is_dir():
+                for file_path in sorted(target_abs.rglob("*")):
+                    if file_path.is_file():
+                        rel_path = file_path.relative_to(project_dir)
+                        file_entries.append((rel_path, file_path))
+        else:
+            # File target
+            if target_abs.is_file():
+                file_entries.append((target, target_abs))
+    
+    if not file_entries:
         print("nothing to back up")
         return
 
@@ -148,8 +166,8 @@ def _run(stage: str) -> None:
         folder = backups_dir / producer[0] / f"{stage}_iter{producer[1]}"
 
     files = [
-        {"source": source.as_posix(), "sha256": _sha256(project_dir / source)}
-        for source in sources
+        {"source": rel_path.as_posix(), "sha256": _sha256(abs_path)}
+        for rel_path, abs_path in file_entries
     ]
 
     if folder.exists():
@@ -177,7 +195,7 @@ def _run(stage: str) -> None:
         "files": files,
     }
     try:
-        _write_backup(folder, project_dir, sources, manifest)
+        _write_backup(folder, project_dir, file_entries, manifest)
     except OSError as exc:
         raise BackupError(f"cannot write {_relative(folder, project_dir)}: {exc}") from exc
 

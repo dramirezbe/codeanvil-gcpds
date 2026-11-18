@@ -1,14 +1,14 @@
 # Project Instructions
 
-This project follows the **V-SIL v3 methodology** (V-model at the SIL tier), whose chain
-is S0 → G0 → S1 → G1 → S2 → G2, with RFD outside it. This file is a **reference** — it
+This project follows the **V-SIL v4 methodology** (V-model at the SIL tier), whose chain
+is S0 → G0 → S1 → G1 → S2 → G2 → S3 → G3, with RFD outside it. This file is a **reference** — it
 describes the project, its skills, and its conventions. It does not orchestrate stages or
 gates: each skill enforces its own prerequisite report, so the chain lives in the skills.
 All instructions below are binding.
 
 ## Rules
 
-- You **MUST** run stages and gates in sequential order (S0, G0, S1, G1, S2, G2). A step
+- You **MUST** run stages and gates in sequential order (S0, G0, S1, G1, S2, G2, S3, G3). A step
   **SHALL NOT** execute until its predecessor passes.
 - You **MUST** load the skill file (`.agents/skills/<skill>/SKILL.md`) before executing any step.
 - You **SHALL NOT** skip, reorder, or combine stages and gates.
@@ -17,7 +17,7 @@ All instructions below are binding.
 - You **SHALL** report the gate verdict exactly as the skill's output contract specifies.
 - You **MUST NOT** re-implement gate logic in prose — run the scripts and tools the skill prescribes.
 - You **SHALL** treat errors as blocking and warnings as advisory unless a skill says otherwise.
-- Only S2 writes code under `src/` and `verification/`, reworks included; G2 and the
+- Only S3 writes code under `src/` and `verification/`, reworks included; G3 and the
   `vsil-verifier` subagent **MUST NOT** edit code.
 - Delivered code under `src/` **MUST NOT** import or call `codeanvil` or depend on `verification/`.
 - **Legacy terminology:** in pre-rename artifacts (archived runs, the `v0.7.0-example-artifacts`,
@@ -95,20 +95,20 @@ skill checks its prerequisite report itself:
 This is a **chain, not orchestration**: nothing in this file sequences stages or
 gates, and you must not sequence them from it either.
 
-A rework is routed by a verdict line in the report: `Verdict: design defect` (from S2 or G2)
-returns to S1; `Verdict: module defect` (from G2) returns to S2.
+A rework is routed by a verdict line in the report: `Verdict: design defect` (from S3 or G3)
+returns to S1; `Verdict: module defect` (from G3) returns to S3.
 
 The `RFD_request_for_deviation` skill is outside the chain: it can be raised from S1, G1 or any
-sub-gate of G2 when requirements are infeasible on the declared COTS platform (S2 only records
-`Possible infeasibility` for G2), and it suspends the cycle until the Build Package author
+sub-gate of G3 when requirements are infeasible on the declared COTS platform (S3 only records
+`Possible infeasibility` for G3), and it suspends the cycle until the Build Package author
 decides. An accepted deviation closes the cycle: the flow is redone in a **new cycle with a new
 name**, starting at S0 with an updated Build Package. The chain skills refuse to run in a closed cycle.
 
 ## Subagents
 
 `vsil-verifier` is generated in `.claude/agents/`, `.opencode/agents/` and `.codex/agents/`. Only the
-G2 skill uses it, to run the verification commands in a fresh, read-only context; in a runtime without
-subagents, run G2 in a fresh session. Never use it for anything else or edit its files (regenerated).
+G3 skill uses it, to run the verification commands in a fresh, read-only context; in a runtime without
+subagents, run G3 in a fresh session. Never use it for anything else or edit its files (regenerated).
 
 ## MCP Servers
 
@@ -128,12 +128,12 @@ remote deploy/run/fetch and read-only target probes. Credentials stay in its
 custody; host runtime permissions govern its trusted command tool.
 
 The stage skills require explicit pre-HW `continue` (or an affirmative alias accepted by the
-G2 skill, such as `y`, `yes`, `ok` or `run`, case-insensitively) before updates, deployment or
-local device tests. After review, S2 or the G2 parent prepares tool/dependencies,
-clocks and the clean, pushed Git candidate. The fresh G2 verifier runs the reviewed
+G3 skill, such as `y`, `yes`, `ok` or `run`, case-insensitively) before updates, deployment or
+local device tests. After review, S3 or the G3 parent prepares tool/dependencies,
+clocks and the clean, pushed Git candidate. The fresh G3 verifier runs the reviewed
 tests without editing product/test code or asking the human. Ordinary commands
 and sudo run directly; destructive actions use trusted. VL-0/VL-1 with Mock HAL
-inputs remain VERIFIED (PIL). The G2 skill defines measurement v2, methods suited
+inputs remain VERIFIED (PIL). The G3 skill defines measurement v2, methods suited
 to GT tolerances and diagnosis of missing telemetry. Calibration applies when
 the requirement/conclusion needs it. Only the human sets the gate verdict.
 
@@ -143,12 +143,12 @@ Hardware-related work is split by time, so nothing hardware-related is written b
 
 1. **Hardware description** (device, limits) belongs in the Ground Truth: the `HWC-*` blocks
    of `.codeanvil/GT/StRS.md`, at the methodology entry.
-2. **MCP provisioning** happens once, at a pre-S2 analysis inside the S2 skill. The agent reads
+2. **MCP provisioning** happens once, at a pre-S3 analysis inside the S3 skill. The agent reads
    the approved design and proposes `codeanvil mcp add <name>` for each MCP it needs (`marconi`
    for RF/DSP, `vsil_hil_mcp` for VL-2). You authorize each add, then **restart the agent
-   manually** so its tools load. Re-running S2 after the restart finds the MCP present and continues.
+   manually** so its tools load. Re-running S3 after the restart finds the MCP present and continues.
 3. **Hardware enrollment** (credentials, IP, MAC) via `codeanvil credential-setup` happens
-   **only at G2**, and only if the design requires VL-2. Nothing hardware-related is written before G2.
+   **only at G3**, and only if the design requires VL-2. Nothing hardware-related is written before G3.
 
 ## Ground Truth (GT)
 
@@ -171,12 +171,12 @@ These files are **inputs**. You **MUST NOT** modify them to make a gate pass.
 ## Report Format
 
 Every stage and gate writes **one** report file: `.codeanvil/report/<cycle-name>/<id>.md`
-(for example `S0.md`, `G0.md`, `S1.md`, `G1.md`, `S2.md`, `G2.md`, `RFD.md`). Iterations are
+(for example `S2.md`, `G2.md`, `S0.md`, `G0.md`, `S1.md`, `G1.md`, `S3.md`, `G3.md`, `RFD.md`). Iterations are
 appended sections in that file — never separate files. S1 writes its working design to
 `.codeanvil/design/` (`SDD.md`, dark `dependency_graph.html` and
-light `dependency_graph_light.html`). S2, G2 and RFD also write
-working files to `.codeanvil/report/<cycle-name>/<ID>_artifacts/` (`S2_artifacts/` with
-`test_run.md`, `G2_artifacts/` with `verified_prototype.md`, the cycle's terminal output,
+light `dependency_graph_light.html`). S3, G3 and RFD also write
+working files to `.codeanvil/report/<cycle-name>/<ID>_artifacts/` (`S3_artifacts/` with
+`test_run.md`, `G3_artifacts/` with `verified_prototype.md`, the cycle's terminal output,
 and `RFD_artifacts/`), overwritten on rework and not report iterations.
 
 ```markdown
@@ -210,9 +210,9 @@ Rules:
 
 - Iterations start at `1` and increment on each run.
 - `HITL: PASS` means the step is done. `HITL: FEEDBACK` means iterate. On a stage
-  (S0, S1, S2), PASS means the output was delivered; the human verdict belongs to
+  (S0, S1, S3), PASS means the output was delivered; the human verdict belongs to
   the next gate.
-- Every iteration of G0, S1, G1, S2 and G2 starts its Description with the exact
+- Every iteration of G0, S1, G1, S2, G2, S3 and G3 starts its Description with the exact
   line `Based on: <predecessor id> iteration <N>`, where `N` is the predecessor's latest
   iteration when the work starts. S0 and RFD have no such line. `codeanvil status` uses
   it to mark a report `stale` when its predecessor was reworked.
@@ -237,12 +237,13 @@ Rules:
 |------|---------------|
 | `.codeanvil/GT/` | Human-authored Ground Truth. Read-only during gates unless the author approves an edit. |
 | `.codeanvil/design/` | S1's working design: `SDD.md`, dark `dependency_graph.html` and light `dependency_graph_light.html`. Both graphs share the same topology. Overwritten on rework. |
+| `.codeanvil/plans/` | S2 plans: BACKLOG.md, INFRA-PLAN.md, INTEGRATION-PLAN.md, DELTAS.md and module PLAN.md; approved plans are immutable until rework. |
 | `.codeanvil/backups/` | Stage artifacts saved by `codeanvil backup <stage>`. |
 | `.codeanvil/project.yaml` | Project identity (`id`, `name`, GT pointers) plus the active `cycle`. |
 | `.codeanvil/report/<cycle-name>/` | One iterative report per gate, scoped to the cycle. |
 | `.codeanvil/report/<cycle-name>/RFD_artifacts/` | RFD decision documents. Overwritten on rework. |
-| `.codeanvil/report/<cycle-name>/S2_artifacts/` | S2's `test_run.md`: the verification commands and `Possible infeasibility` entries. |
-| `.codeanvil/report/<cycle-name>/G2_artifacts/` | `verified_prototype.md`, written on G2 PASS. |
+| `.codeanvil/report/<cycle-name>/S3_artifacts/` | S3's `test_run.md`: the verification commands and `Possible infeasibility` entries. |
+| `.codeanvil/report/<cycle-name>/G3_artifacts/` | `verified_prototype.md`, written only on system G3 PASS. |
 | `.agents/skills/` | Canonical skill store — every agent runtime links here. |
 | `.claude/agents/`, `.opencode/agents/`, `.codex/agents/` | The generated `vsil-verifier` subagent, one file per runtime. |
 
@@ -252,10 +253,11 @@ Rules:
     .codeanvil/            <- methodology tree (GT, design, reports, backups, identity)
     │   GT                 <- ground truth documents (human-authored): .codeanvil/GT/
     │   design/            <- S1 working design: SDD.md + dependency_graph.html (dark) + dependency_graph_light.html
+    │   plans/             <- S2 backlog, infrastructure/integration plans, module plans and delta log
     │   project.yaml       <- project identity (id, name, GT pointers, cycle)
     │   report/            <- per-cycle gate reports (<cycle-name>/<gate>.md)
-    │                          <cycle-name>/S2_artifacts/  <- test_run.md
-    │                          <cycle-name>/G2_artifacts/  <- verified_prototype.md
+    │                          <cycle-name>/S3_artifacts/  <- test_run.md
+    │                          <cycle-name>/G3_artifacts/  <- verified_prototype.md
     │   backups/           <- stage artifacts saved by `codeanvil backup <stage>`
     .agents/skills/        <- canonical skill store (all gate skills)
     .claude/agents/        <- vsil-verifier (also .opencode/agents/, .codex/agents/)
@@ -271,3 +273,54 @@ project configuration and custom agents. Use `/skills` and `/mcp` to inspect
 skills and connected servers. `vsil-verifier` is discovered from
 `.codex/agents/vsil-verifier.toml`; it inherits the parent session's permissions
 and MCP servers. Its no-edit instructions do not create a separate OS sandbox.
+
+## V-SIL v4 cadence and routing
+
+The complete chain is S0 → G0 → S1 → G1 → S2 → G2 → S3 → G3.
+S2_plan_modules plans, G2_plan_review reviews; both are required before implementation.
+After G1 run S2(k) → G2(k) → S3(k) → G3(k) for slice 0 (infrastructure), each Kahn module
+slice, then system (integration). S2 is the writer of `.codeanvil/plans/`: BACKLOG.md,
+INFRA-PLAN.md, INTEGRATION-PLAN.md, DELTAS.md and <SUB-xxx>/<module_id>/PLAN.md.
+Each module uses one fresh vsil-implementor context with its plan and Context set only;
+runtimes without subagents require a fresh session per module. G3 uses vsil-verifier or a
+separate fresh session. Only the human decides G0 Gate H, G1, G2 and G3.
+
+| Feedback source | Verdict | Route |
+|-----------------|---------|-------|
+| G2 | plan defect + Modules | S2 |
+| G2 | design defect | S1 |
+| G2 | GT defect | S0 triage |
+| S3 | plan defect / design defect | S2 / S1 |
+| G3 | module defect | S3 |
+| G3 | plan defect + Modules | S2 |
+| G3 | design defect | S1 |
+| G3 | operational | repair environment, rerun G3 |
+| S1, G1, G3 | RFD | RFD skill |
+
+Reports record Scope (slice k/system/delta-sync), Based on and Input lines; stages add Output
+lines. Every digest comes from `codeanvil custody digest`, pasted verbatim, never computed or
+typed by the agent. Check with `codeanvil custody verify`; golden manifests use verify-manifest.
+Accepted interface-neutral deltas are applied by S0/S1 delta-sync before the next S2; G0/G1
+still review those deliveries. Only G3 system PASS writes G3_artifacts/verified_prototype.md.
+The tool CLI does not orchestrate the chain. codeanvil ui remains v3-only until its follow-up.
+
+### Scope and re-entry boundaries
+
+G2-approved plans are immutable until S2 rework and a new G2 review. S3 writes implementation
+notes in S3.md. Slice 0 proves base/stub startup and placeholder handshakes; module slices prove
+built-module regression and their declared VL tests. Only system requires final PATH-* and the
+§0.5 root-command smoke. Future modules are never silently counted as verified.
+
+Use `codeanvil custody verify --cycle <cycle> --gate <predecessor>` at stage/gate boundaries.
+Full-cycle verify is diagnostic: previous G3 tree baselines may differ after a later slice's
+implementation. This is not permission to change the current approved plan or candidate.
+Keep historical evidence and compare current outputs against the current delivery baseline.
+
+S2 advance requires the previous slice's latest scoped G3 PASS; rework instead follows the
+FEEDBACK scope and named modules. Never require PASS of the scope being repaired.
+Before routing accepted GT/design deltas, S2 delta-intake copies the explicit G3 acceptance into
+DELTAS.md, even on G3 FEEDBACK, without a new S2 iteration or a G3 PASS prerequisite.
+S0/G0 or S1/G1 then applies and reviews the delta. G0/G1 must issue new human verdicts;
+authorized digest advances do not carry their own prior PASS across a new stage delivery.
+System PASS requires all accepted deltas applied and reviewed. Sync-only feedback resumes
+S2(system) → G2 → S3 → G3 after that review; no prototype is written on the feedback iteration.

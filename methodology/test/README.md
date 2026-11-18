@@ -1,5 +1,27 @@
 # V-SIL Test Cases (T#) and End-to-End Manual Test
 
+## V-SIL v4 — 0.9.0
+
+The active chain is `S0 → G0 → S1 → G1 → S2 → G2 → S3 → G3`.
+S2 plans one module PLAN.md per topological slice; G2 is the human plan micro-gate.
+S3 implements each module in a fresh vsil-implementor context; G3 verifies the slice with
+vsil-verifier. Slice 0 builds bases/kit/stubs; system scope tests contracts, PATH-* and the
+runnable entry point. Only system G3 PASS produces the Verified Prototype.
+Plans live under `.codeanvil/plans/`; implementation evidence in `S3_artifacts/`, verification
+in `G3_artifacts/`. Accepted deltas use S0/S1 delta-sync with custody digests and G0/G1 review.
+RFD originates only from S1, G1 or G3. There is no migration command: v3 projects need a new
+v4 scaffold/cycle; archived v3 evidence is not reclassified as a v4 verdict.
+
+`codeanvil ui` is v3-only and incompatible with the v4 chain until its separate follow-up.
+Its non-chain operations remain available. No UI source changes belong to this refactor.
+Release [v0.9.0](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.9.0)
+is merged into main and published before the full-flow trial by owner authorization.
+The T0 v4 full-flow execution and human gate acceptance remain pending.
+
+Archived v2/v3 materials, no-tools skills, backups and first_full_flow snapshots remain
+historical, unchanged. References to their S2/G2 stages retain their original meanings.
+
+
 ## Catalog
 
 | Case | Input | Execution scope |

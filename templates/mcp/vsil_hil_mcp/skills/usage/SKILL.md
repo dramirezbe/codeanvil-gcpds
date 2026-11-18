@@ -7,7 +7,7 @@ description: Deploy a published V-SIL project to enrolled Linux equipment, run P
 
 Use `vsil_hil_mcp` to prepare and test enrolled equipment. Normal commands, scripts,
 packages and `sudo` run directly. Clearly destructive operations use trusted.
-Follow the current S2/G2 skill: it owns the pre-HW pause, tests and report contract.
+Follow the current S3/G3 skill: it owns the pre-HW pause, tests and report contract.
 The MCP is a command proxy, with credentials kept in local storage, not an orchestrator.
 Never read private keys or start a separate direct SSH/rsync session.
 
@@ -27,7 +27,7 @@ project workspace exists and is writable. Return the equipment/endpoint/workspac
 and access result; diagnose failures before continuing remote work. Missing target
 CodeAnvil is preparation for after the pre-HW review, not an enrollment failure.
 Access readiness does not authorize deployment, tool updates or device tests;
-the S2/G2 pre-HW checkpoint still applies.
+the S3/G3 pre-HW checkpoint still applies.
 
 ## Access and equipment
 
@@ -71,7 +71,7 @@ through `init_codeanvil` require existing access and do not enroll a machine.
    and intended preparation/test scope. **Stop and wait for explicit `continue`**
    before updates, deployment or local HW tests, even in full-access mode. Inventory
    probes may precede review. Silence/timeouts are not consent. A changed candidate,
-   target, scope or iteration renews the pause. Follow S2's unchanged Pause Schedule;
+   target, scope or iteration renews the pause. Follow S3's unchanged Pause Schedule;
    record the completed checkpoint in its normal narrative, never a partial report.
 3. After review, update tool/app/dependencies from their respective published refs.
    Use an actual published CodeAnvil ref with `init_codeanvil`, not a tag guessed
@@ -82,12 +82,12 @@ through `init_codeanvil` require existing access and do not enroll a machine.
    telemetry, secrets and databases. Persistent destination state survives overwrite
    and `--delete`. If a test must change protected state, do so explicitly via trusted.
 5. Run the kit from the equipment's workspace, such as
-   `cd <workspace> && verification/run.sh vl0`. S2 writes required tests and metric
-   scripts; the fresh G2 verifier runs recorded commands plus auxiliary diagnostics
-   within reviewed scope, without changing product/test code. The G2 parent owns
+   `cd <workspace> && verification/run.sh vl0`. S3 writes required tests and metric
+   scripts; the fresh G3 verifier runs recorded commands plus auxiliary diagnostics
+   within reviewed scope, without changing product/test code. The G3 parent owns
    preparation, expanded scope and trusted operations; the verifier never asks the human.
 6. Name attempts `<cycle>_<iteration>_<codeanvil now --machine>` using the current
-   S2/G2 iteration. Keep named JSONL telemetry, `measurement.json` v2 and script/capture
+   S3/G3 iteration. Keep named JSONL telemetry, `measurement.json` v2 and script/capture
    outputs in `verification/telemetry/<run_id>/`; retry with a new timestamp.
    Fetch and read only this attempt's files inside returned `local_path`, which may
    also contain older remote logs. Local attempts use their local output directory.
@@ -116,12 +116,12 @@ PIL runs Mock HAL tests on the real processor and remains VERIFIED. A real hardw
 claim needs the actual device test against GT criteria. Choose suitable tools/scripts
 and justify measurement resolution against the tolerance. Calibration/corrections
 are required only when the GT or conclusion needs them; never widen GT or fabricate
-readings. The G2 machine-evidence guide defines measurement v2's small structural
+readings. The G3 machine-evidence guide defines measurement v2's small structural
 record. No per-file deployment manifest, capture request or universal oracle is needed.
 
-G2 feedback explains observed/expected result, command/equipment, evidence, cause or
+G3 feedback explains observed/expected result, command/equipment, evidence, cause or
 pending hypothesis, affected requirement/module/path and next action. Module/kit
-rework goes to S2; design rework goes through S1 → G1 → S2 in the same cycle;
+rework goes to S3; design rework goes through S1 → G1 → S3 in the same cycle;
 infeasibility goes to RFD. Operational faults remain operational. Preserve normal
 `Based on`, append-only iterations, HITL and stale handling. A valid JSON record is
 not a passing test or a human gate verdict.

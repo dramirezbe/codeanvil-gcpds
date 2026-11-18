@@ -149,3 +149,11 @@ Return all five:
 - `scripts/g0_validate.py` — the deterministic validator (Python 3.9+, stdlib only).
 - `templates/GT/StRS.md`, `templates/GT/SyRS.md` — the authoritative structure
   definitions (repository-root relative).
+
+## V4 input integrity
+
+Before validating run `codeanvil custody verify --cycle <cycle> --gate S0` for the prerequisite S0 inputs;
+report a stale predecessor without writing an iteration. Compare S0 Output lines with the
+current GT and mark edits as open findings. Record Input lines for StRS.md and SyRS.md via
+`codeanvil custody digest`, pasted verbatim; never compute or type hashes. If S0 is delta-sync,
+record Scope delta-sync; structural validation and the human Gate H still run normally.

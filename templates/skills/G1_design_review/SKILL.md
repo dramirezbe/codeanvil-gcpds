@@ -2,7 +2,7 @@
 name: g1-design-review
 description: "Trigger: G1, design review, review the S1 design, are design choices resolved. Prepare a design review of the S1 document for a human, with a filled checklist and a recommendation, and record the human's PASS, FEEDBACK or RFD answer."
 license: Apache-2.0
-compatibility: "No scripts. Read-only toolchain/version probes on the named execution targets, through vsil_hil_mcp when remote. S2/G2 prepare target tools after the pre-HW review. Writes only .codeanvil/report/<cycle-name>/G1.md."
+compatibility: "No scripts. Read-only toolchain/version probes on the named execution targets, through vsil_hil_mcp when remote. S3/G3 prepare target tools after the pre-HW review. Writes only .codeanvil/report/<cycle-name>/G1.md."
 metadata:
   author: "gcpds"
   version: "1.0"
@@ -70,7 +70,7 @@ Otherwise check, in this order, writing **no iteration** when you stop:
   contract field by field. Never trust the design's own summaries (§2.2 order, §4 tables)
   without checking them against the source sections.
 - Tools are checked on the named execution targets (G1.14), locally only when the design says
-  local. G1 identifies capabilities and needed preparation; S2/G2 automatically install
+  local. G1 identifies capabilities and needed preparation; S3/G3 automatically install
   necessary tools and project dependencies after the pre-HW review. Missing installable
   dependencies do not demand that S2 start before G1 passes.
 
@@ -78,18 +78,16 @@ Otherwise check, in this order, writing **no iteration** when you stop:
 
 1. Give the human both graph paths from `S1.md` (dark and light): their spiders support the topology and
    runtime-loop review (G1.9); the build order is reviewed in the design's §2 (G1.1).
-2. Fill the checklist, including G1.11–G1.16 and the kit row.
+2. Fill the checklist, including G1.11–G1.18 and the kit row.
 3. **Validate the toolchain (G1.14).** Observe the runtime/package manager versions and
    capabilities needed on each execution target (`ssh_exec_cmd`/`probe_target` when remote).
-   Record tools present and the automatic preparation needed from S2/G2 after the pre-HW review.
+   Record tools present and the automatic preparation needed from S3/G3 after the pre-HW review.
    Version differences alone are not defects; assess whether the required commands work. Keep
    tool and delivered-project repositories/refs separate. Missing installable tools do not block
    G1 when the design includes a viable setup; an impossible tool/capability is an open finding.
-4. Recompute the GT digests with the system's hash command (`sha256sum .codeanvil/GT/StRS.md
-   .codeanvil/GT/SyRS.md`; `shasum -a 256` on macOS, `Get-FileHash` in PowerShell) and show the human
-   whether they match the design's Meta row. Information only: it never blocks. Compute the
-   `SDD.md` digest the same way and record it in the iteration: S2 and G2 use it to detect a design
-   changed after this review.
+4. Run `codeanvil custody verify --cycle <cycle> --gate S1` and compare S1's Output digest with the
+   current SDD. An input mismatch is an open finding: design was written against different GT.
+   Record Input digests for StRS, SyRS and SDD from `codeanvil custody digest`, pasted verbatim.
 5. Present the findings, `open` first, and a recommendation. **If any finding is `open`, enter
    draft** — write the `DRAFT` marker ([references/TRIAGE.md](references/TRIAGE.md) §2) — and run
    Triage on each: a plain-language problem with reconciliation options. **The human decides every
@@ -113,8 +111,8 @@ design again:
 
 1. Trace each changed contract to its producers, consumers, stubs and tests along the §2.2 DAG. An
    interface change reaches every caller; a changed field reaches every stub, fake peer and vector.
-2. Produce an **impact map** in the iteration's Description: the files S2 must edit, and the
-   `PATH-*` and VL-1 tests it must retest only.
+2. Produce an **impact map** in the iteration's Description: the plans S2 must revise,
+   the source/kit files S3 must edit after G2, and the `PATH-*` and VL-1 tests to retest only.
 3. An impact the change set does not explain is an `open` finding (row G1.16). An empty impact map
    on a changed interface is always `open`.
 
@@ -138,3 +136,15 @@ Write exactly one file: `.codeanvil/report/<cycle-name>/G1.md`, append-only.
 
 Return the findings (`open` first), the recommendation, the human's answer, the report path with
 the iteration number, and the route.
+
+**Report structure:**
+
+The report includes:
+- `Input: .codeanvil/design/SDD.md sha256:‹hash›` — hash of the input SDD (use `codeanvil custody digest`)
+
+## Delta-sync review
+
+When S1 Scope is delta-sync, perform bounded rework review of each accepted design-sync row.
+Confirm the impact map is empty: no changed contract version, interface or stub; otherwise mark
+an open finding and route to normal S1 rework. Record Scope delta-sync and exact reviewed Input
+lines. Compare S1 Output digests with current inputs before reviewing; edits are open findings.

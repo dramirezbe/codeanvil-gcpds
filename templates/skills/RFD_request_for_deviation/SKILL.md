@@ -17,18 +17,18 @@ suspends. The agent writes a decision document; the Build Package author decides
 re-enters at S0 in a **new cycle** with the updated Build Package.
 
 RFD is outside the chain: it has no prerequisite and can be raised from S1, G1 or any
-sub-gate of G2.
+sub-gate of G3.
 
 ## Prerequisite and Cycle
 
 1. Resolve the active cycle from `.codeanvil/project.yaml`. If it is missing, ask the user.
 2. A raising stage and its evidence are required (the design's risk section, a G1
-   recommendation, or a G2 report). Without them, stop and say so.
+   recommendation, or a G3 report). Without them, stop and say so.
 
 ## Defect Test First
 
 - A **defect** means V-SIL can fix it internally: the implementation or the design is wrong,
-  but the requirements are achievable. **Do not raise an RFD.** Route to S1 (or S2) and write
+  but the requirements are achievable. **Do not raise an RFD.** Route to S1 (or S3) and write
   no `RFD-NNN.md`.
 - An **RFD** means the Build Package requirements are **infeasible on the declared COTS
   platform**.
@@ -86,7 +86,7 @@ iteration (not Withdrawn):
 3. Add these exact lines to the Description: `Superseded by cycle: <name>` and
    `Build Package digest: <sha256 of .codeanvil/GT/build_package.md, or none when there is no Build Package>`
    (compute it with
-   `python -c "import hashlib,sys;print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" .codeanvil/GT/build_package.md`).
+      Run `codeanvil custody digest .codeanvil/GT/build_package.md --raw` to get the hash
    `codeanvil status` then shows the old cycle as closed. It stays read-only, and the chain skills
    refuse to run in it.
 4. Return: "Update `.codeanvil/GT/build_package.md`, then run the S0 skill in cycle `<name>`." The S0 skill
@@ -96,3 +96,12 @@ iteration (not Withdrawn):
 
 Return the RFD path, the options with the recommendation, the report path and iteration, and
 the next step: the author's decision, or the S0 re-entry.
+
+**Report structure:**
+
+The report includes:
+- `Input: .codeanvil/GT/build_package.md sha256:‹hash›` — hash of the input Build Package (use `codeanvil custody digest`)
+- `Input: .codeanvil/GT/StRS.md sha256:‹hash›` — hash of the SyRS if available
+- `Input: .codeanvil/report/<cycle>/<raising-stage>.md sha256:‹hash›` — hash of the report from the stage that raised the RFD (S1, G1, or S3/G3)
+
+RFD may be raised only from S1, G1 or G3. S2/G2 record risks and route defects; they never raise RFD.

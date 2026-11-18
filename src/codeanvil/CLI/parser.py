@@ -40,12 +40,13 @@ def build_parser() -> argparse.ArgumentParser:
             "  StRS.md              Stakeholder Requirements Specification (IEEE 29148 §9.4)\n"
             "  SyRS.md              System Requirements Specification (IEEE 29148 §9.5)\n"
             "\n"
-            "Flow (RFD can be raised from any stage):\n"
-            "  S0 -> G0 -> S1 -> G1 -> S2 -> G2\n"
+            "Flow (RFD can be raised from S1, G1, or G3):\n"
+            "  S0 -> G0 -> S1 -> G1 -> S2 -> G2 -> S3 -> G3\n"
             "  S0  Normalise the Build Package into the GT pair\n"
             "  G0  Deterministic structural validation of the GT pair + human Gate H\n"
-            "  S1  Design of layered subsystems    G1  Human design review\n"
-            "  S2, G2  Implementation and verification (not available yet)\n"
+            "  S1  Design of layered modules      G1  Human design review\n"
+            "  S2  Plan modules per slice         G2  Human plan review\n"
+            "  S3  Implement modules (per-slice)  G3  Adaptive verification (per-slice)\n"
             "\n"
             "Config and DB stored at ~/.codeanvil-config/ — projects live anywhere."
         )
@@ -164,6 +165,33 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     status.add_argument("name", nargs="?", default=None, help="Name of the project to inspect (default: current directory)")
+
+    custody = sub.add_parser(
+        "custody",
+        help="File and directory hashing, integrity verification",
+        description=(
+            "Custody is the single producer and checker of digests in the methodology.\n"
+            "Every file/directory hash comes from 'codeanvil custody digest' and is\n"
+            "verified with 'codeanvil custody verify' or 'verify-manifest'.\n"
+            "\n"
+            "State lives only in project files under Git; custody never reads or\n"
+            "writes the SQLite DB."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    custody_sub = custody.add_subparsers(dest="subcommand", required=False, title="actions")
+    
+    digest_p = custody_sub.add_parser("digest", help="Compute SHA-256 of files or directory trees")
+    digest_p.add_argument("paths", nargs="+", help="Paths to hash (directories end with /); outputs ready-to-paste Input: lines")
+    digest_p.add_argument("--raw", action="store_true", help="Print only the hex digest, not the Input: line")
+    
+    verify_p = custody_sub.add_parser("verify", help="Check Input: digests in cycle reports")
+    verify_p.add_argument("--cycle", default=None, help="Cycle to check (default: most recent)")
+    
+    verify_p.add_argument("--gate", help="Check only this prerequisite report")
+
+    verify_manifest_p = custody_sub.add_parser("verify-manifest", help="Check golden vector manifest against vectors")
+    verify_manifest_p.add_argument("manifest", help="Path to manifest.md file")
 
     backup = sub.add_parser(
         "backup",
