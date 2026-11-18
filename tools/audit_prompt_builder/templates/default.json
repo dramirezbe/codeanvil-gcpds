@@ -1,0 +1,68 @@
+{
+  "$help": "Copy to profiles/<name>.json, fill the fields, and load it in app.py. See docs/input-format.md.",
+  "mode": "Focused",
+  "context": {
+    "title": "",
+    "domain": "",
+    "problem": "",
+    "idea": "",
+    "constraints": "",
+    "assumptions": "",
+    "prior": ""
+  },
+  "stages": {
+    "Decomposition": false,
+    "Novelty and prior-art check": false,
+    "Gap matrix": false,
+    "Matrix scoring": true,
+    "Failure-mode analysis": false,
+    "Recommendation": false
+  },
+  "scale": 5,
+  "dimensions": [
+    {
+      "name": "Alignment",
+      "weight": 1,
+      "definition": "Fulfills its stated purpose and applicable requirements.",
+      "low": "0: not satisfied",
+      "mid": "3: partly satisfied",
+      "high": "5: fully satisfied"
+    },
+    {
+      "name": "Consistency",
+      "weight": 1,
+      "definition": "Claims, terminology, rules, and examples agree.",
+      "low": "0: not satisfied",
+      "mid": "3: partly satisfied",
+      "high": "5: fully satisfied"
+    },
+    {
+      "name": "Clarity",
+      "weight": 1,
+      "definition": "Important decisions are clear and justified.",
+      "low": "0: not satisfied",
+      "mid": "3: partly satisfied",
+      "high": "5: fully satisfied"
+    }
+  ],
+  "audit": {
+    "enabled": true,
+    "checks": [
+      "Alignment: the material fulfills its stated purpose and applicable requirements.",
+      "Consistency: claims, terminology, rules, and examples agree within and across supplied documents.",
+      "Clarity: important decisions have enough information and justification; flag consequential gaps."
+    ],
+    "documents": ""
+  },
+  "rules": {
+    "two_pass": false,
+    "evidence": true,
+    "disagree": "report both values and flag for human arbitration"
+  },
+  "output": {
+    "format": "Markdown",
+    "language": "English",
+    "max_words": 350,
+    "max_findings": 5
+  }
+}
