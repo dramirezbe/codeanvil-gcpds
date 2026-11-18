@@ -55,6 +55,28 @@ Evaluate S1 revision 1.2 and G1 revision 1.1 on disposable copies:
 `odd/tasks/s1-g1-rework/FEATURE.md`. New-model execution of these scenarios is **not run**;
 the full-flow project and human verdicts remain untouched by the tool fix.
 
+## S2 planning regression — v0.9.4
+
+The live v4 T0 first S2 attempt stopped after a successful `nothing to back up` and printed
+Kahn rows, treating missing plans as a blocker instead of creating its outputs. A later delivery
+copied a 62-character SDD digest; the parser ignored that malformed Input line and custody
+reported success without checking SDD. Both failures are evidence, not agent acceptance of
+the corrected skill. Evaluate revision 1.1 on a disposable current-G1 project:
+
+| Case | Expected result |
+|------|-----------------|
+| First delivery, backup exits 0 with nothing to back up | Create populated BACKLOG, INFRA-PLAN, empty DELTAS and S2 report; check custody; hand off to G2. |
+| Plans directory absent / listing exits nonzero | Create the output directory; a listing failure alone is not an upstream blocker. |
+| Interrupted after classifier or partial plan | Resume the same scope, preserve valid drafts/backup, finish report without another authorization prompt. |
+| Backup exits nonzero | Report exact command/error and stop before delivery; no invented PASS. |
+| Malformed, duplicate or absent required digest field | Custody exits 1; status diagnoses invalid-report and does not advance S2. |
+| Metadata-only correction | Append the next checked delivery; preserve previous bytes and unresolved G2 findings; no human verdict is inferred. |
+| Explicit stop, negative continuation or genuine design conflict | Respect the boundary and existing rework route; do not widen scope or implement code. |
+
+New model-driven execution of revision 1.1 is **not run**. Automated source/CLI/scaffold
+evidence lives in `odd/tasks/s2-delivery-integrity/FEATURE.md`; it does not demonstrate agent
+obedience or final prototype acceptance.
+
 The S2/G2 scenarios below retain their historical v3 numbering (v4 S3/G3).
 
 ## Observed failure

@@ -33,3 +33,12 @@ Release metadata is independent. No orchestrator, DB schema or UI source changes
 - Synthetic subprocess regression covers the same 62-character failure; correction by
   append reopens G2 while preserving bad historical bytes. Fixtures now use real v4
   canonical S2 inputs. This does not prove a model follows the skill or accept a gate.
+- S2 revision 1.1 and its delivery reference distinguish exit-0 empty backup from failure,
+  resume without redundant authorization, require scoped artifacts and report publication,
+  and preserve G2's human boundary. Only DELTAS starts empty; BACKLOG contains Kahn rows.
+  The infrastructure reference requests exact handshake data and ordered creation tasks.
+- Skill/scaffold/report/backup focused tests after path-compatibility coverage:
+  **113 passed**. Required-input presence accepts `./` paths and native Windows separators.
+- `methodology/test/execution_continuity.md` adds first-delivery, interruption, real-stop and
+  metadata-repair scenarios. A fresh model-driven evaluation is **not run**; static tests
+  and instruction copying do not establish model obedience.

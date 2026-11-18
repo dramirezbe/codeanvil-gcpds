@@ -4,6 +4,8 @@ description: "Trigger: S2. Plan the next topological slice, one self-contained P
 license: Apache-2.0
 runtime: "codeanvil CLI on PATH"
 metadata:
+  author: "gcpds"
+  version: "1.1"
   gate: "S2"
   pipeline: "V-SIL"
 ---
@@ -60,14 +62,29 @@ Never edit GT, SDD, `src/` or `verification/`. Risks remain in the plan; S2 neve
 Structural design changes produce `HITL: FEEDBACK` and `Verdict: design defect` → S1.
 Minor changes with no contract version bump or stub impact are proposed `design-sync` deltas.
 
+## Execution continuity
+
+Once authorized and admitted to a scope, continue through artifact creation, report publication
+and custody checks in the same turn, or identify a concrete blocker. Status, backup, reading
+templates and printing Kahn levels are preparation, not delivery. Follow
+[S2 delivery and recovery](references/delivery.md). Resume existing drafts without repeating
+successful backup or unchanged authorization; never create an internal human checkpoint.
+Missing first-run plans are outputs to create, not missing prerequisites. Do not stop merely
+because no plans exist yet, a directory listing reports absence, or the work is estimated large.
+Respect explicit stop, real permission/tool/input failures, GT/design defects and scope gates.
+PASS means delivered plans; only the human decides G2. Do not implement code or advance a slice.
+
 ## Steps
 
-1. Run `codeanvil backup S2`; on failure stop without an iteration.
+1. Run `codeanvil backup S2`; on failure (nonzero exit code) stop without an iteration.
+   Exit 0 with `nothing to back up` or `already backed up` is success: continue planning.
 2. First run: execute `codeanvil python templates/skills/S2_plan_modules/scripts/slice_backlog.py
    .codeanvil/design/SDD.md`. Kahn levels group independent modules; dependencies name modules,
    including cross-subsystem qualified IDs. Never put a producer and its consumer in one slice.
    HAL dependencies naturally come first; DSP and Decision share a slice only when independent.
-   Write BACKLOG.md, INFRA-PLAN.md and DELTAS.md with the empty locked table (no invented rows).
+   The script prints the module table; it does not write plans. Create the plans directory if
+   absent. Write BACKLOG.md with those Kahn rows and INFRA-PLAN.md from its reference template.
+   Only DELTAS.md starts with the empty locked table (no invented rows).
    Scope is `slice 0`; INFRA-PLAN covers bases, kit, stubs and top-down placeholder integration.
 3. On later runs complete delta-intake first.
    Pending accepted GT/design-sync deltas stop planning with
@@ -80,7 +97,9 @@ Minor changes with no contract version bump or stub impact are proposed `design-
    contract tests, PATH-* tests, §0.5 root command, URL, smoke and clean shutdown.
 6. Update BACKLOG states from recorded S3/G3 evidence (planned, implemented, verified),
    using scoped history: a new feedback reopens its affected rows, not unrelated verified modules.
-   Deliver the report and return `S2 complete. Run the G2 skill.`
+   Complete the [delivery checks](references/delivery.md), publish the report, then run
+   `codeanvil custody verify --cycle <cycle> --gate S2` and `codeanvil status`.
+   Resolve delivery errors before claiming completion. Return `S2 complete. Run the G2 skill.`
 
 ## Report Contract
 
@@ -91,5 +110,8 @@ Description starts `Based on: G1 iteration <N>` then `Scope: slice <k>` or `Scop
 Record Input lines for SDD and SyRS; cite prior G3 iteration/scope without hashing its
 append-only report (later iterations change that file). Record Output lines for every plan written.
 Every hash is produced by `codeanvil custody digest`, pasted verbatim; replace Input prefix with
-Output for delivered artifacts. Never compute or type a digest. Check with `codeanvil custody verify`.
+Output for delivered artifacts. Never compute or type a digest, concatenate digests or shorten them.
+Missing SDD/SyRS Input lines and malformed Input/Output declarations invalidate delivery.
+Correct an existing report by appending a checked iteration, never rewriting historical bytes
+or treating the correction as G2 approval. Check with `codeanvil custody verify`.
 Return scope, modules, plan paths, risks and report iteration.
