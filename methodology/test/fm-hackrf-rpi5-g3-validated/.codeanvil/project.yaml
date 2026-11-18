@@ -1,0 +1,20 @@
+id: 01a1f06c-0d8c-7000-8d04-1c2674199aae
+name: FM HackRF RPI5
+cycle: 01_fm_hackrf_rpi5_mvp
+gt:
+  strs: .codeanvil/GT/StRS.md
+  syrs: .codeanvil/GT/SyRS.md
+targets:
+- name: mac_2ccf670032ca
+  device_id: mac_2ccf670032ca
+  mac_addresses:
+  - 2c:cf:67:00:32:ca
+  - 2c:cf:67:00:32:cb
+  bootstrap_user: ane11
+  host: 10.171.152.95
+  port: 22
+  user: codeanvil-agent
+  workspace: /home/codeanvil-agent/projects/01a1f06c-0d8c-7000-8d04-1c2674199aae
+  deploy_root: /home/codeanvil-agent/projects
+  os: linux
+  hil_policy: trusted
