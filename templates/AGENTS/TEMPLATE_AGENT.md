@@ -237,12 +237,13 @@ Rules:
 |------|---------------|
 | `.codeanvil/GT/` | Human-authored Ground Truth. Read-only during gates unless the author approves an edit. |
 | `.codeanvil/design/` | S1's working design: `SDD.md`, dark `dependency_graph.html` and light `dependency_graph_light.html`. Both graphs share the same topology. Overwritten on rework. |
+| `.codeanvil/plans/` | S2 plans: BACKLOG.md, INFRA-PLAN.md, INTEGRATION-PLAN.md, DELTAS.md and module PLAN.md; approved plans are immutable until rework. |
 | `.codeanvil/backups/` | Stage artifacts saved by `codeanvil backup <stage>`. |
 | `.codeanvil/project.yaml` | Project identity (`id`, `name`, GT pointers) plus the active `cycle`. |
 | `.codeanvil/report/<cycle-name>/` | One iterative report per gate, scoped to the cycle. |
 | `.codeanvil/report/<cycle-name>/RFD_artifacts/` | RFD decision documents. Overwritten on rework. |
 | `.codeanvil/report/<cycle-name>/S3_artifacts/` | S3's `test_run.md`: the verification commands and `Possible infeasibility` entries. |
-| `.codeanvil/report/<cycle-name>/G3_artifacts/` | `verified_prototype.md`, written on G3 PASS. |
+| `.codeanvil/report/<cycle-name>/G3_artifacts/` | `verified_prototype.md`, written only on system G3 PASS. |
 | `.agents/skills/` | Canonical skill store — every agent runtime links here. |
 | `.claude/agents/`, `.opencode/agents/`, `.codex/agents/` | The generated `vsil-verifier` subagent, one file per runtime. |
 
@@ -252,6 +253,7 @@ Rules:
     .codeanvil/            <- methodology tree (GT, design, reports, backups, identity)
     │   GT                 <- ground truth documents (human-authored): .codeanvil/GT/
     │   design/            <- S1 working design: SDD.md + dependency_graph.html (dark) + dependency_graph_light.html
+    │   plans/             <- S2 backlog, infrastructure/integration plans, module plans and delta log
     │   project.yaml       <- project identity (id, name, GT pointers, cycle)
     │   report/            <- per-cycle gate reports (<cycle-name>/<gate>.md)
     │                          <cycle-name>/S3_artifacts/  <- test_run.md
@@ -301,3 +303,24 @@ typed by the agent. Check with `codeanvil custody verify`; golden manifests use 
 Accepted interface-neutral deltas are applied by S0/S1 delta-sync before the next S2; G0/G1
 still review those deliveries. Only G3 system PASS writes G3_artifacts/verified_prototype.md.
 The tool CLI does not orchestrate the chain. codeanvil ui remains v3-only until its follow-up.
+
+### Scope and re-entry boundaries
+
+G2-approved plans are immutable until S2 rework and a new G2 review. S3 writes implementation
+notes in S3.md. Slice 0 proves base/stub startup and placeholder handshakes; module slices prove
+built-module regression and their declared VL tests. Only system requires final PATH-* and the
+§0.5 root-command smoke. Future modules are never silently counted as verified.
+
+Use `codeanvil custody verify --cycle <cycle> --gate <predecessor>` at stage/gate boundaries.
+Full-cycle verify is diagnostic: previous G3 tree baselines may differ after a later slice's
+implementation. This is not permission to change the current approved plan or candidate.
+Keep historical evidence and compare current outputs against the current delivery baseline.
+
+S2 advance requires the previous slice's latest scoped G3 PASS; rework instead follows the
+FEEDBACK scope and named modules. Never require PASS of the scope being repaired.
+Before routing accepted GT/design deltas, S2 delta-intake copies the explicit G3 acceptance into
+DELTAS.md, even on G3 FEEDBACK, without a new S2 iteration or a G3 PASS prerequisite.
+S0/G0 or S1/G1 then applies and reviews the delta. G0/G1 must issue new human verdicts;
+authorized digest advances do not carry their own prior PASS across a new stage delivery.
+System PASS requires all accepted deltas applied and reviewed. Sync-only feedback resumes
+S2(system) → G2 → S3 → G3 after that review; no prototype is written on the feedback iteration.

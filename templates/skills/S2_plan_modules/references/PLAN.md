@@ -27,7 +27,8 @@ Do not load the full SDD, full GT or other module source into the implementor.}}
 
 ## Ordered tasks
 
-{{Unit, bottom-up and sandwich tests; replace own stub only after checks pass.
+{{Unit, bottom-up, sandwich and required VL-1 tests in this module slice; prepare VL-2
+scripts against the fake device API when required. Replace own stub only after checks pass.
 Each task names input, action, expected outcome and file scope.}}
 
 ## Test strategy
@@ -43,6 +44,8 @@ HW target/prerequisites for VL-2, telemetry envelope. No real HW during S3.}}
 
 {{Unresolved risks, no invented prerequisites or requirement values.}}
 
-## Implementation notes
+## Approval boundary
 
-{{S3 parent fills from implementor return after G2; module agents do not edit this plan.}}
+This entire PLAN.md is immutable after G2 approval, including comments and formatting.
+S3 records implementation notes in its report, never here. Any needed plan change goes to
+S2 rework and a new G2 review; preserve the prior plan in the S2 backup.

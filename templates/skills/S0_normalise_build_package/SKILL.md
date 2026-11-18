@@ -58,6 +58,9 @@ history row. Obtain before/after digests via custody, update the rows to `applie
 to this S0 iteration and preserve authority and Interface impact. Output the new GT digests.
 Append S0 PASS delivery with Scope and exact delta IDs, then run G0 normally, including Gate H.
 Contract version changes are structural: never mark them interface-neutral advances.
+If G0 returns FEEDBACK on this delta-sync delivery, repair the named delta output against its
+accepted payload. Do not re-normalise the whole Build Package and silently discard applied GT
+changes. Any changed payload needs author acceptance and a new delta row; preserve applied history.
 
 ## Inputs
 
@@ -168,3 +171,7 @@ and the report path with the iteration number.
 
 The report includes:
 - `Input: .codeanvil/GT/build_package.md sha256:‹hash›` — hash of the input Build Package (use `codeanvil custody digest`)
+
+For every recorded delivery (normalisation, supplied-pair no-op or delta-sync), add Output
+lines for the current StRS.md and SyRS.md from `codeanvil custody digest` so G0 can compare
+its exact input pair with S0's delivery. A no-op records the supplied pair without rewriting it.

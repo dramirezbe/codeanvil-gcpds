@@ -39,3 +39,11 @@ Its synthetic PASS rows are test fixtures; they are not human decisions.
 
 Release/tag and final PR wait for the owner's review. Do not mark Phase K accepted from unit
 or scaffold tests alone.
+
+## Follow-up conceptual corrections
+
+The candidate subsequently received scope, plan-immutability, custody-boundary and delta-review
+corrections. Automated validation: 742 passed, 40 skipped (12.26 s). Transition fixtures exercise
+slice advance, plan tampering, scoped FEEDBACK and system sync/review/replan; they are not T0
+execution. See `odd/tasks/vsilv4-refactor/2026-11-17_flow_contract_corrections.md` for the ledger.
+The full human-operated acceptance procedure above remains pending.

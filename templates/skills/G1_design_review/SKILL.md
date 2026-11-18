@@ -111,8 +111,8 @@ design again:
 
 1. Trace each changed contract to its producers, consumers, stubs and tests along the §2.2 DAG. An
    interface change reaches every caller; a changed field reaches every stub, fake peer and vector.
-2. Produce an **impact map** in the iteration's Description: the files S2 must edit, and the
-   `PATH-*` and VL-1 tests it must retest only.
+2. Produce an **impact map** in the iteration's Description: the plans S2 must revise,
+   the source/kit files S3 must edit after G2, and the `PATH-*` and VL-1 tests to retest only.
 3. An impact the change set does not explain is an `open` finding (row G1.16). An empty impact map
    on a changed interface is always `open`.
 

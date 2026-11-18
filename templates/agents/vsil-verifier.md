@@ -25,8 +25,10 @@ and project UUID workspace, with `probe_target`, `ssh_exec_cmd` and `fetch_evide
 intended equipment when several exist; never substitute the host silently. Versions are observed
 for diagnosis; no exact-SemVer or per-file manifest check is required.
 
-1. **G3.0, always:** execute `verification/run.sh vl0` exactly as recorded, with telemetry and
-   the real entry-point smoke test.
+1. **G3.0, always:** execute `verification/run.sh vl0` exactly as recorded, with telemetry:
+   slice 0 checks bases/stubs and placeholder handshakes; module slices regress built modules.
+   Only system scope requires the real §0.5 entry-point smoke test. Never demand future modules
+   or final paths from an earlier slice, and never claim they were verified.
 2. **G3.1, when declared:** execute `verification/run.sh vl1`; missing required tests are
    `missing test` and return to S3, never an invented passing replacement.
 3. **G3.2, when declared in mock+real:** execute the approved real HW command/scripts yourself
@@ -81,5 +83,7 @@ Receive `Scope: slice <k>` or `Scope: system` and its module list. G3.0 runs the
 VL-0 regression floor; scope VL-1/VL-2 commands remain exactly as recorded in test_run.md.
 Check `codeanvil custody verify-manifest verification/golden/manifest.md`; mismatch is a kit
 defect → S3. Every digest comes from `codeanvil custody digest`, pasted verbatim; use
-`codeanvil custody verify` to check inputs. Return unchanged-source regression evidence to the
+`codeanvil custody verify --cycle <cycle> --gate S3` to check the current prerequisite inputs.
+Full-cycle verify may flag superseded slice trees; report those as historical baseline differences,
+not as a substitute for checking the current candidate against S3 Output digests. Return unchanged-source regression evidence to the
 parent for self-diagnosis; never decide the human verdict or edit the candidate.

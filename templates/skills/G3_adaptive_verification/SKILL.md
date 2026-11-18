@@ -14,8 +14,8 @@ metadata:
 
 G3 answers one question: **does the delivered software meet its requirements at the declared
 levels?** **The human answers it.** The agent runs the evidence, never writes or edits a test, and
-drafts the honesty declaration; only the human's answer sets the verdict. On PASS, G3 writes the
-cycle's terminal output: the Verified Prototype.
+drafts the honesty declaration; only the human's answer sets the verdict. Slice PASS enables
+the next slice. Only system-scope PASS writes the cycle's terminal Verified Prototype.
 
 ## Prerequisite and Cycle
 
@@ -51,11 +51,16 @@ Check, in this order, writing **no iteration** when you stop:
 - The agent recommends; **only the human's answer sets `HITL`**. Never write `PASS` without it.
 - Run the required commands of `test_run.md`; approved auxiliary diagnostics can explain failures,
   never replace a missing required test. Never write, edit or fix the DUT, required tests or design.
-  A declared VL-1 module or path with no VL-1 test is a **plan defect** (re-plan at S2), **module defect** routed to S3.
-- The VL-0 run must include a smoke test of the runnable system entry point from design §0.5:
-  the real processes start, exchange one valid update and shut down cleanly. A missing or failing
-  entry-point smoke test is a module defect routed to S3, even when other tests pass.
-- Never reuse S3's results: always re-run.
+  For this scope, a required test omitted by S3 despite a complete plan is a module/kit defect
+  routed to S3. An absent or infeasible test strategy in the plan is a plan defect routed to S2.
+- G3.0 always reruns the full built-module VL-0 floor. Slice 0 requires base/stub startup and
+  placeholder handshakes; module slices require regression of built modules only. Future
+  modules and final PATH-* are not acceptance criteria for these scopes.
+- Only `system` must smoke the actual §0.5 root command: the real processes start, exchange one
+  valid update and shut down cleanly. A missing or failing system entry-point smoke test is a
+  module defect routed to S3, even when other tests pass.
+- Never reuse S3's results as G3 evidence: rerun the required checks. System may carry forward
+  earlier G3 VL-1/VL-2 module evidence under the unchanged-digest rule below.
 - Levels by HAL mode: `mock-only` caps every claim at VL-1, so refuse a VL-2 declaration and state
   that no claim uses real device inputs. PIL may use the actual processor with Mock HAL inputs
   and stays VERIFIED. `mock+real` allows VL-2 per module or path; a Real HW HAL
@@ -219,7 +224,8 @@ commands — then re-run G3, rather than giving up or mislabeling it an S3 defec
    the level for this cycle (default VL-0).
 2. **G3.0, always.** Resolve local/remote execution; parent completes any required pre-HW review
    and preparation above. Fresh run of `verification/run.sh vl0` with telemetry on that target.
-   Check its §0.5 entry-point smoke result and the exact command recorded in `test_run.md`.
+   Check the scope-specific smoke/regression recorded in `test_run.md`; §0.5 entry-point smoke
+   is required only at system scope. Declare levels for current scope modules/paths, not future ones.
 3. **G3.1, when VL-1 is declared.** Run `verification/run.sh vl1`: Mock HAL synthetic inputs per
    §1.6, metrics against the `SYS-*` thresholds.
 4. **G3.2, when VL-2 is declared in `mock+real`.** After the parent's checkpoint and preparation,
@@ -316,10 +322,22 @@ Show each S3 proposed delta for explicit human acceptance with authority (Build 
 for GT, design review G3 iteration <N> for design-sync). Record `Delta accepted: D-xxx` with
 Type, Target, Document, Before/After, Reason, Authority and Interface impact. S2 writes the log;
 S0/S1 apply it in delta-sync before continuing. Never infer acceptance from G3 PASS alone.
-System PASS requires zero pending design-sync deltas and supported evidence for every criterion;
-otherwise FEEDBACK `Verdict: design defect` (sync). Only system PASS writes Verified Prototype.
+System PASS requires zero unrecorded acceptances or pending accepted deltas (GT and design),
+completed G0/G1 delta-sync review, and supported evidence for every criterion. If the human
+accepts a new delta during system review, record a completed FEEDBACK iteration, not a partial
+PASS: design-only sync uses `Verdict: design defect` and `Sync-only: yes`; a GT delta requiring
+plan refresh uses `Verdict: plan defect` plus `Modules:` (or `Modules: system`). State the actual
+reason for feedback and obtain the human's answer; never fabricate it from pending work.
 
-Append Scope after Based on S3, Input lines for plans, src/ and verification/, and
+Before routing any such feedback, S2 delta-intake materializes the accepted rows without requiring
+G3 PASS or writing a stage iteration. Then S0/G0 or S1/G1 performs delta-sync. Design-only
+sync feedback resumes at S2 for the same scope after its G1 review, not repeatedly at S1;
+S2 revalidates plans → G2 reviews → S3 redelivers → G3 verifies the updated baseline.
+If G0/G1 rejects the sync, resolve that feedback first; applied rows alone are not approval.
+Only system PASS writes Verified Prototype.
+
+Append Scope after Based on S3, Input lines for plans, src/, verification/, SDD, SyRS and
+`.codeanvil/report/<cycle>/S3_artifacts/test_run.md`, and
 `Module digest: <SUB/module> sha256:<hex>` for each built module. Every digest comes from
 `codeanvil custody digest`, pasted verbatim, checked with `codeanvil custody verify`.
 The report includes per-module evidence origin and verifier context, human answer and Decided by.

@@ -1,6 +1,6 @@
 # Verified Prototype — <cycle-name>
 
-<!-- Locked template. G3 fills it on PASS and writes it to
+<!-- Locked template. G3 fills it only on system-scope PASS and writes it to
 .codeanvil/report/<cycle-name>/G3_artifacts/verified_prototype.md. Replace every <placeholder>;
 delete no section. -->
 
@@ -115,7 +115,7 @@ Plans and verification kit are development evidence, not shipped product artifac
 ## Delta traceability log
 
 Link `.codeanvil/plans/DELTAS.md`; counts per ADDED/MODIFIED/REMOVED/RENAMED/design-sync,
-with authority, applied iteration and remaining work. No pending design-sync at system PASS.
+with authority, applied iteration and remaining work. No pending accepted GT or design-sync deltas at system PASS; all required G0/G1 reviews completed.
 
 ## Verifier context
 

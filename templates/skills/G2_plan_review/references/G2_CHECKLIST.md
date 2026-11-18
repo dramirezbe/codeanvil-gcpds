@@ -8,8 +8,8 @@ Scope: {{slice k / system}}
 | G2.2 Traceability | Each traced SYS exists in current SyRS, copied text and GT version match; each delta has a valid authority. |
 | G2.3 Contract consistency | Consumes provided by earlier slice/base; provided contracts match SDD verbatim, including types and versions. |
 | G2.4 Task ordering | Tasks respect module and base dependencies; no producer/consumer pair in the same slice. |
-| G2.5 Verification feasibility | Data sources, vectors, oracle, declared HAL and target prerequisites support every required VL and tolerance. |
-| G2.6 Fresh-context sufficiency | Every type, value and path resolves to PLAN.md or its Context set without full GT/SDD or other module source. |
+| G2.5 Verification feasibility | Data sources, vectors, oracle, declared HAL and target prerequisites support this scope's VL/tolerance; module VL-1 tests are delivered in their own slice. |
+| G2.6 Fresh-context sufficiency | For a module, every type/value/path resolves to PLAN.md or its Context set without full GT/SDD or other module source. For infra/system, the shared parent Context set explicitly names design/GT inputs and shared artifacts; module isolation does not apply to parent-owned integration. |
 
 | Module or infra/system | Check | Evidence (path/section) | State | Finding |
 |------------------------|-------|-------------------------|-------|---------|

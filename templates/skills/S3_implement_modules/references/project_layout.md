@@ -204,3 +204,11 @@ verification/
 File paths are relative to this manifest's directory. S3 parent obtains each SHA-256 with
 `codeanvil custody digest --raw <file>` and pastes it verbatim. Empty table is valid for a
 VL-0-only kit with no vectors. Every vector must be listed; never include logs in golden/.
+
+### Scope selectors
+
+VL-0 always runs the full built-module regression floor, including infrastructure stubs.
+VL-1/VL-2 commands in test_run.md must identify the current scope's module/path tests using
+explicit runner selectors documented by the scope plan. run.sh forwards those selectors to
+the appropriate Python/TypeScript runner; it must not run future modules or final paths in
+an earlier slice. The system scope runs contract/PATH tests and the real entry-point smoke.

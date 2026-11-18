@@ -77,7 +77,7 @@ def test_g1_ml_readiness_keeps_its_content():
 
     assert "Only if §1.5 exists" in row
     assert "deterministic fake response" in row
-    assert "Supplied metrics are not judged as G2 evidence" in row
+    assert "Supplied metrics are not judged as G3 evidence" in row
 
 
 def test_scaffolded_g1_checklist_carries_the_new_rows(tmp_path, db_path):  # noqa: F811
@@ -156,7 +156,7 @@ def test_g1_reviews_the_s1_change_set_and_produces_an_impact_map():
 
     assert "design change set" in text
     assert "impact map" in text
-    assert "files S2 must edit" in text
+    assert "source/kit files S3 must edit" in text
     assert "retest only" in text
     assert "row G1.16" in text
 

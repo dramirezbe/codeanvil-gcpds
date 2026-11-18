@@ -2,6 +2,8 @@
 
 ## 0.9.0 — unreleased
 
+- Close scope-specific verification, immutable plan, rework and mandatory delta-review contracts.
+
 - Eight-node V-SIL v4 chain with per-module plans, slice cadence and fresh implementation contexts.
 - Plan micro-gate, scoped verification and system-only Verified Prototype.
 - Custody checks report inputs and golden vectors; authorized interface-neutral deltas preserve evidence.

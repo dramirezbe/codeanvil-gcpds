@@ -16,4 +16,13 @@
 {{Bases call stubs; cross-subsystem placeholder contracts; expected VL-0 results.}}
 
 ## Acceptance
-{{verification/run.sh vl0; all placeholders load before any module implementation.}}
+{{verification/run.sh vl0; all placeholders load before any module implementation.
+Base/stub startup and placeholder handshakes are the slice-0 smoke; no final root-command
+smoke, future module criteria or final PATH-* acceptance is claimed here.}}
+
+## Parent Context set
+
+{{Exact design/GT sections or files, base APIs, kit and shared artifacts needed for this scope.
+The S3 parent may read full SDD/GT for infrastructure/integration; this does not expand any
+module implementor's isolated Context set. Include inputs, commands and expected outcomes
+for every shared task so G2 can review completeness and execution sufficiency.}}

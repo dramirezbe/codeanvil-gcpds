@@ -1,6 +1,6 @@
 ---
 name: s3-implement-modules
-description: "Trigger: S3, implement subsystems, build the code, verification kit, VL-0. From a G1-passed design, build the subsystems and the verification kit, prove the VL-0 floor and write the VL-1 tests."
+description: "Trigger: S3, implement subsystems, build the code, verification kit, VL-0. From G2-approved scope plans, build the subsystems and the verification kit, prove the VL-0 floor and write the VL-1 tests."
 license: Apache-2.0
 compatibility: "Telemetry is collected by the `codeanvil telemetry` subcommand, part of CodeAnvil itself (not a skill script). Reads the S1 design, .codeanvil/GT/SyRS.md and .codeanvil/project.yaml. Writes src/, verification/, root manifests, .codeanvil/report/<cycle-name>/S3.md and S3_artifacts/."
 metadata:
@@ -13,7 +13,7 @@ metadata:
 
 # S3 — Implement the Subsystems and the Verification Kit
 
-Turn the G1-approved design into running code plus the verification kit, prove the VL-0 floor and
+Implement the G2-approved scope plans as running code plus the verification kit, prove its VL-0 floor and
 leave the VL-1 tests ready for G3. The Mock HAL and the kit let the agent test without real device
 inputs. S3 runs locally; the real-hardware stage (VL-2) and any remote deployment belong to G3. A human judges at G3.
 
@@ -62,6 +62,8 @@ there is no default list.
 |------|------|
 | `.codeanvil/design/SDD.md` | Read-only: Meta `Target(s)`, `HAL mode` and `Toolchain`, §1.3.4 kit, §1.5, §1.6 HAL ladder, §1.7 telemetry per target, §2.2 order, §3 contracts and vectors, §4 traceability |
 | `.codeanvil/project.yaml` | Read-only: the active cycle. No `targets:` exist yet — the remote target and its credentials are created later, at G3, by `credential-setup` |
+| `.codeanvil/plans/<SUB-xxx>/<module_id>/PLAN.md` | G2-approved immutable module plan and exact Context set |
+| `.codeanvil/plans/INFRA-PLAN.md`, `INTEGRATION-PLAN.md` | Parent-owned slice 0/system plans, selected by Scope |
 | `.codeanvil/GT/SyRS.md` | Read-only: `SYS-*` thresholds for the VL-1 tests |
 | `.codeanvil/report/<cycle-name>/G3.md` | Rework only: latest iteration with `Verdict: module defect`; its `### Description` change list is the exact instruction |
 | `.codeanvil/report/<cycle-name>/G1.md` | Rework only: the latest PASS iteration's impact map (files to edit vs paths to retest only) |
@@ -89,10 +91,12 @@ there is no default list.
   Python dependencies go only in the dev group, so `uv sync --frozen --no-dev` starts every
   subsystem without them; no subsystem `package.json` lists a kit package. The telemetry collector is
   mandatory in every test run and never lives under `src/`.
-- Implement design §0.5 as a real system entry point. Every subsystem's package entry point starts
-  its runtime loop, and a multi-subsystem launcher starts the complete system and stops its children.
-  In `mock-only`, ship a runtime Mock HAL or explicit demo bundle; the only working entry point
-  must not import the non-shipped verification kit. A command that only logs instructions fails S3.
+- On `system`, implement design §0.5 as a real system entry point: package runtime loops,
+  multi-subsystem launcher and clean child shutdown. In `mock-only`, ship a runtime Mock HAL
+  or explicit demo bundle independent of the non-shipped verification kit. A command that only
+  logs instructions fails S3. Earlier slices prove their own scope, not the final system.
+- Treat G2-approved plans as immutable inputs. Only S2 may change a plan during authorized
+  rework, followed by a new G2 review. Record implementation notes in S3.md, never in PLAN.md.
 - Expected values come from the design's §3 vectors and `verification/golden/manifest.md`, never
   computed by the agent. Changing a vector invalidates the evidence that used it.
 - In `mock+real`, the Real HW HAL's VL-0 tests use the fake device API; S3 never needs the hardware.
@@ -227,14 +231,17 @@ Collect changed paths, exact commands, exit codes, criteria and blockers per mod
   placeholder integration). Run steps 1–2 and the scope's VL-0 checks; do not implement modules.
 - `slice k`: delegate only the modules named in BACKLOG for k; run step 3 for each in fresh
   context, inspect write scope, then full `verification/run.sh vl0`. Do not implement future slices.
+  Within step 3 also write and exercise the current module's VL-1 tests (when required) and
+  prepare its VL-2 scripts using the fake device API. Do not defer these to system scope;
+  development runs only check executability, and G3 supplies independent evidence.
 - `system`: parent implements INTEGRATION-PLAN.md, cross-subsystem contract tests, PATH-* tests,
   root entry point and smoke, VL-1 paths (steps 4–5). Keep the pause before PATH-*.
 - All scopes back up S3 artifacts, update test_run.md for the current scope and record only
   actual execution evidence. A missing/incoherent plan is `Verdict: plan defect` → S2;
   missing interfaces/contracts are `Verdict: design defect` → S1.
-- S3 never changes accepted plan semantics, GT or SDD. Record
-  `Proposed delta: <type> <target> — <reason>` for G3. The parent may fill the PLAN's
-  Implementation notes from returned results without changing its reviewed scope.
+- S3 never changes a reviewed plan, GT or SDD. Record
+  `Proposed delta: <type> <target> — <reason>` for G3. The parent writes returned implementation
+  notes in S3.md (module ID, changed paths, commands/results and deviations), outside the plan.
 
 ## Steps
 
@@ -266,10 +273,10 @@ Execute only the steps selected by Scope execution above. Before work, ask the p
    command locally with the Mock HAL and runtime dependencies only (`uv sync --frozen --no-dev`
    for Python). Keep the command, URL and observed result for `test_run.md`; do not touch
    `test_run.md` before step 6 has backed up the previous one.
-5. **VL-1 tests, written, not claimed.** For every module and `PATH-*` with `required_vl` VL-1 or
-   higher, write a test fed by the Mock HAL synthetic generator that measures the metric against
-   its `SYS-*` threshold, with the telemetry collector attached. Run them only to check they
-   execute; never report their result as evidence. The VL-1 claim belongs to G3.
+5. **System VL-1 tests, written, not claimed.** Write the contract and `PATH-*` tests required
+   by INTEGRATION-PLAN.md, measuring each declared `SYS-*` threshold with telemetry.
+   Module-level VL-1 tests were already delivered in their module slices under step 3.
+   Run these development checks only to prove executability; the VL-1 claim belongs to G3.
 6. **Back up the last test run before overwriting it.** Run `codeanvil backup S3` from the project
    root. If it exits nonzero, stop and show its message; write no iteration. Cite the printed
    backup path in the iteration's Description. Backups never cover `src/` or `verification/`:
@@ -300,12 +307,17 @@ in `S3.md` the changed IDs, files, commands, results and the G3 iteration it ans
 
 Write `.codeanvil/report/<cycle-name>/S3_artifacts/test_run.md`, overwritten on every pass:
 
-- exact `verification/run.sh vl0` and `verification/run.sh vl1` commands and, in `mock+real`, the
-  `verification/run.sh vl2` command/scripts and structural-record checker that G3 will run;
+- Scope and built module list; exact `verification/run.sh vl0` command for the full built floor;
+- Exact `verification/run.sh vl1` and (when declared) `verification/run.sh vl2` commands,
+  module selectors, criteria and expected results only for levels declared
+  for this scope; earlier module evidence is linked by G3 iteration. Do not require future paths
+  or unimplemented modules. In `mock+real`, include reviewed HW scripts/structural checker;
 - the local host OS, architecture and tool versions; the intended device (from the `HWC-*` blocks)
   and the capabilities the G3 real-hardware run will need;
 - last VL-0 command, exit code and passed/failed/skipped counts per subsystem;
-- §0.5 entry point, smoke command/result, URL and visible behaviour;
+- `slice 0`: base/stub startup and contract-handshake smoke, with no claim of a complete system;
+  `slice k`: built-module regression and its module acceptance tests, no future PATH-* requirement;
+  `system`: §0.5 entry point, smoke command/result, URL, visible behaviour and clean shutdown;
 - actual run IDs, times and telemetry/script output paths;
 - telemetry summary, any missing signals, investigated cause, affected claims and repeat/continue
   decision. A collector exit 0 does not certify full coverage; never use missing readings as zero.
@@ -339,9 +351,14 @@ defect and `Run the S1 skill.`
 ## Scope evidence additions
 
 Description starts with Based on G2, then `Scope: slice <k>` or `Scope: system`.
-Record Input lines for each scope plan, Output lines for delivered source/kit,
+Record Input lines for each immutable scope plan, Output lines for delivered source/kit
+and `.codeanvil/report/<cycle>/S3_artifacts/test_run.md`,
 and `Implementor: <SUB/module> — <subagent | fresh session>` per module.
 `test_run.md` includes Scope and per-module command/criteria rows, plus Possible infeasibility.
 All digests and golden manifest cells come from `codeanvil custody digest`, pasted verbatim.
-Run `codeanvil custody verify` and have run.sh execute
+Before and after this delivery run `codeanvil custody verify --cycle <cycle> --gate G2`.
+Do not use full-cycle verify as a delivery gate: the previous G3's source/kit inputs describe
+an earlier slice and legitimately differ after implementation. Global verify remains a diagnostic;
+it must still disclose those mismatches. G3 compares this delivery's Output lines to current files.
+Have run.sh execute
 `codeanvil custody verify-manifest verification/golden/manifest.md` before every test level.

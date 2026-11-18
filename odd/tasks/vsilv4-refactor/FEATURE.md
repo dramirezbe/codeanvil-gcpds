@@ -229,3 +229,26 @@ Each unit was covered by the final suite and generated scaffold/console probe. R
 skills and their slicer/scaffold tests; `243669e` owns the remaining methodology templates,
 generated-agent contract, HIL docs and renamed stage tests. These are review boundaries; revert
 dependent units in reverse order. No actual prototype validation or publication is implied.
+
+## Conceptual review correction — 2026-11-17
+
+User: “Revisa el flujo final conceptualmente. Entradas, salidas, etc. Sí se puede completar el
+full flow sin ejecutarlo todavía?” Follow-up authorization: “Corrige todo”.
+
+Resolved all findings in [the correction ledger](2026-11-17_flow_contract_corrections.md),
+including the additional requirement that applied deltas must receive fresh G0/G1 human review.
+`eeccc02` contains the report transitions and functional regression fixtures; the following
+contract commit carries the matching skill/template instructions and documentation.
+
+Validation superseding the previous candidate: **742 passed, 40 skipped, 1 warning** with
+`.venv/bin/python -m pytest -q` (12.26 s). The final split leaves the same test content in
+separate transition and contract modules. Focused transitions: **32 passed** (0.26 s).
+
+Focused scope/skill command (**109 passed**, 1.07 s):
+
+```bash
+.venv/bin/python -m pytest -q tests/test_v4_scope_contracts.py tests/test_vsil_g1.py tests/test_vsil_s0.py tests/test_vsil_s1.py tests/test_vsil_s2.py tests/test_vsil_s3.py tests/test_vsil_g2.py tests/test_vsil_g3.py tests/test_vsil_agents_md.py tests/test_vsil_subagents.py tests/test_custody_rule.py tests/test_gate_questions.py tests/test_v4_scaffold_flow.py
+```
+
+Runtime and rollback boundaries are recorded in the ledger. T0 and real human gate acceptance
+remain pending; no PR or release is authorized before owner review.

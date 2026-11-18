@@ -107,9 +107,9 @@ Working files live in `.codeanvil/design/`, outside the cycle report folder.
    nonzero, stop and show its message; write no iteration. Cite the printed backup path in the
    iteration's Description. Backups never cover `src/` or `verification/`: code recovery relies
    on git.
-2. Copy the template to `.codeanvil/design/SDD.md`. Record the GT digests in the Meta
-   "G0 approved" row (information only, never a block), computed with:
-      Run `codeanvil custody digest .codeanvil/GT/StRS.md .codeanvil/GT/SyRS.md` to get the hashes
+2. Copy the template to `.codeanvil/design/SDD.md`. Obtain GT digests using
+   `codeanvil custody digest .codeanvil/GT/StRS.md .codeanvil/GT/SyRS.md` and record the
+   returned Input lines in S1.md. Do not add retired approval fields to the SDD Meta.
 3. Allocate `SYS-*` to subsystems and paths: §0.4, §1.1, §4.1.
 4. Fill the COTS envelope from the `HWC-*` blocks: §0.1–0.3. In §0.5, define
    one project-root command that starts the complete runnable system, its HAL
