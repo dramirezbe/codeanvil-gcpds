@@ -6,7 +6,7 @@ lives here once: a command module never imports from another command module.
 """
 
 import re
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import NamedTuple
 
 from codeanvil.config.logger import get_logger
@@ -70,6 +70,7 @@ class ReportState(NamedTuple):
     sync_only: bool = False
     rework_from: tuple[str, int] | None = None
     outputs: tuple[tuple[str, str], ...] = ()
+    format_errors: tuple[str, ...] = ()
 
 
 class ReportIteration(NamedTuple):
@@ -104,26 +105,55 @@ def report_state(report_file: Path) -> ReportState:
         return ReportState(None, None)
     sections = parse_report_iterations(text)
     return _state_from_content(sections[-1].content if sections else text,
-                               sections[-1].number if sections else None)
+                               sections[-1].number if sections else None, report_file.stem)
 
 
-def _state_from_content(content: str, number: int | None) -> ReportState:
+def _digest_errors(latest: str) -> list[str]:
+    """Do not silently discard a declared digest, including malformed or duplicate fields."""
+    errors = []
+    seen = set()
+    for number, line in enumerate(latest.splitlines(), 1):
+        candidate = re.match(r"\s*(Input|Output)\s*:", line, re.IGNORECASE)
+        if not candidate:
+            continue
+        kind = candidate.group(1).capitalize()
+        match = (_INPUT_RE if kind == "Input" else _OUTPUT_RE).fullmatch(line)
+        if not match:
+            errors.append(f"malformed-{kind.lower()}: line {number}; expected {kind}: "
+                          "<path> sha256:<64 lowercase hexadecimal characters>")
+        elif (kind, match.group(1)) in seen:
+            errors.append(f"duplicate-{kind.lower()}: {match.group(1)}")
+        else:
+            seen.add((kind, match.group(1)))
+    return errors
+
+
+def _state_from_content(content: str, number: int | None, gate: str = "") -> ReportState:
     latest = unfenced_text(content)
     based_on = _BASED_ON_RE.search(latest)
     superseded = _SUPERSEDED_RE.search(latest)
     scope = _SCOPE_RE.search(latest)
     verdict = re.search(r"^Verdict: ([^\n]+)", latest, re.MULTILINE)
     rework = re.search(r"^Rework from: (\S+) iteration (\d+)\s*$", latest, re.MULTILINE)
+    errors = _digest_errors(latest)
+    inputs = tuple(_INPUT_RE.findall(latest))
+    # Scope identifies v4 deliveries; preserve unscoped legacy report semantics.
+    if gate == "S2" and scope and _verdict(content) == "PASS":
+        paths = {PurePosixPath(p.replace("\\", "/")).as_posix() for p, _ in inputs}
+        for path in (".codeanvil/design/SDD.md", ".codeanvil/GT/SyRS.md"):
+            if path not in paths:
+                errors.append(f"missing-input: {path}")
     return ReportState(
         number, _verdict(content),
         (based_on.group(1), int(based_on.group(2))) if based_on else None,
         superseded.group(1) if superseded else None,
-        scope.group(1) if scope else None, tuple(_INPUT_RE.findall(latest)),
+        scope.group(1) if scope else None, inputs,
         verdict.group(1).strip() if verdict else None,
         tuple(re.findall(r"^Delta accepted: (D-[A-Za-z0-9_-]+)\b", latest, re.MULTILINE)),
         bool(re.search(r"^Sync-only: yes\s*$", latest, re.MULTILINE)),
         (rework.group(1), int(rework.group(2))) if rework else None,
         tuple(_OUTPUT_RE.findall(latest)),
+        tuple(errors),
     )
 
 
@@ -134,7 +164,7 @@ def scoped_report_state(report_file: Path, scope: str) -> ReportState:
     except OSError:
         return ReportState(None, None)
     for section in reversed(sections):
-        state = _state_from_content(section.content, section.number)
+        state = _state_from_content(section.content, section.number, report_file.stem)
         if state.scope == scope:
             return state
     return ReportState(None, None)
@@ -193,6 +223,8 @@ def stale_reason(
     report = gates.get(gate)
     if report is None:
         return None
+    if report.format_errors:
+        return f"invalid-report: {gate} iteration {report.iteration}: {report.format_errors[0]}"
     invalid = baseline_reason(gate, report)
     if invalid:
         return invalid

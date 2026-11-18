@@ -115,6 +115,9 @@ def verify(project_root: Path, cycle: str | None = None, gate: str | None = None
         if gate is not None and report.stem != gate:
             continue
         state = report_state(report)
+        for error in state.format_errors:
+            findings.append(Finding("invalid-report", report.relative_to(project_root).as_posix(),
+                                    None, error))
         invalid = baseline_reason(report.stem, state)
         if invalid:
             findings.append(Finding("invalid-baseline", report.relative_to(project_root).as_posix(),
