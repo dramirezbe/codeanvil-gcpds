@@ -1,6 +1,7 @@
 # feedback-tutor-v2/ — Second tutor review
 
-Audit workspace for the current V-SIL v4 skills on `fix/tutor-feedback-v2`.
+Audit workspace for the current V-SIL v4 skills and generated AGENTS instructions
+on `fix/tutor-feedback-v2`.
 Baseline: `93420664ca0b2d4c51d305e35dd592ec006d4718`.
 The [first round](../feedback-tutor/README.md) remains historical and unchanged.
 See [REVIEW.md](REVIEW.md) for the skill index and progress.
@@ -11,10 +12,12 @@ This round keeps the first round's names: `EXPLAIN.md`, `corrected/PATCHES.md`,
 and `corrected/ANALYSIS.md`. Each stage/gate has its own directory:
 `S0/`, `G0/`, `S1/`, `G1/`, `S2/`, `G2/`, `S3/`, `G3/`, and `RFD/`.
 Every directory already contains `corrected/`; `.gitkeep` preserves empty folders.
+The cross-cutting [AGENTS/](AGENTS/README.md) review follows the same procedure;
+it is not a stage or gate. Its original audit and SVGs live in `AGENTS/raw/`.
 
 | File | Contents | Created when |
 |------|----------|--------------|
-| `REVIEW.md` | Per-skill status, raw issues, correction plan and correction log. | Now; all reviews are pending. |
+| `REVIEW.md` | Per-item status, raw issues, correction plan and correction log. | Updated as reviews arrive. |
 | `<ID>/EXPLAIN.md` | Findings, explanation in Spanish, viability and proposed/applied correction. | Tutor findings arrive. |
 | `<ID>/corrected/PATCHES.md` | Original tutor correction output, saved verbatim. | Tutor patches arrive. |
 | `<ID>/corrected/ANALYSIS.md` | Patch-by-patch accept/reject reasoning and summary. | Patches are analysed. |
