@@ -1,15 +1,17 @@
 # Changelog
 
-## 0.9.0 — unreleased
+## 0.9.0 — 2026-11-17
 
 - Close scope-specific verification, immutable plan, rework and mandatory delta-review contracts.
-
 - Eight-node V-SIL v4 chain with per-module plans, slice cadence and fresh implementation contexts.
 - Plan micro-gate, scoped verification and system-only Verified Prototype.
 - Custody checks report inputs and golden vectors; authorized interface-neutral deltas preserve evidence.
 - Living GT/design delta-sync and source-preserving feedback routes.
 - Breaking methodology change: start a new v4 scaffold/cycle; no migration command.
-- UI remains v3-only until a dedicated follow-up. Release and tag pending review.
+- UI remains v3-only until a dedicated follow-up. Published before T0 full-flow acceptance by owner authorization.
+
+Validation before release: 742 automated tests passed, 40 skipped; full T0 v4 execution and
+human gate acceptance remain pending.
 
 ## 0.7.5 — Simple red-button deletion confirmation
 

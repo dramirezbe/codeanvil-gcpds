@@ -147,7 +147,7 @@ Acceptance: 8-node chain with correct G2 checks per §9.1 and per-module PLAN.md
 
 | ID | Spec | Route | Status | Commits |
 |---|---|---|---|---|
-| **L1** | `pyproject.toml` → 0.9.0, changelog, tag, `CLAUDE.md` | Inline | ✅ PREPARED; publication pending review |
+| **L1** | `pyproject.toml` → 0.9.0, changelog, tag, `CLAUDE.md` | Inline | ✅ RELEASE AUTHORIZED before full-flow acceptance |
 
 ---
 
@@ -172,7 +172,7 @@ Acceptance: 8-node chain with correct G2 checks per §9.1 and per-module PLAN.md
 - Review found D and E NOT properly fixed: per-module PLAN.md missing (still per-slice), no INFRA/INTEGRATION templates, no slice_backlog tests, G2 checks still invented (not §9.1). D-fix and E-fix items added above as PENDING.
 - Branch pushed to `origin/feat/vsil-v4`.
 
-**Next:** Owner review of the implementation candidate; then execute Phase K with actual human gate verdicts. No final PR or release tag before review.
+**Next:** Phase K full-flow trial with actual human gate verdicts. The owner subsequently authorized merge to main and v0.9.0 before that trial; see the release log below.
 
 
 ## Implementation candidate — 2026-11-17
@@ -252,3 +252,21 @@ Focused scope/skill command (**109 passed**, 1.07 s):
 
 Runtime and rollback boundaries are recorded in the ledger. T0 and real human gate acceptance
 remain pending; no PR or release is authorized before owner review.
+
+
+## Release authorization — 2026-11-17
+
+User instruction: “Haz 0.9.0 con merge a main antes de probarlo”. This supersedes the earlier
+publication hold: merge feat/vsil-v4 into main and publish v0.9.0 before Phase K. No final PR
+is needed for this explicitly authorized direct merge. The package and lockfile remain 0.9.0.
+The release includes tutor-feedback and the flow-contract corrections eeccc02/0755e34.
+
+No new full-flow or hardware run is performed for publication. Prior automated evidence remains
+742 passed / 40 skipped. Phase K and its actual human gate verdicts remain pending; release
+publication is not methodology acceptance. codeanvil ui remains v3-only and incompatible with
+the v4 chain, as disclosed in the release notes and README.
+
+Release unit: changelog and current release pointers only. Runtime checks: N/A, documentation
+metadata for an already validated implementation; no runtime behavior changed. Rollback boundary:
+this release-documentation commit, independently of the previous implementation corrections.
+Publication evidence: annotated v0.9.0 tag on the main merge and GitHub release workflow result.
