@@ -7,6 +7,7 @@ import argparse
 import re
 
 from codeanvil.CLI.parser import build_parser
+from codeanvil.config.paths import CONFIG
 
 from test_create import _agents_md, db_path  # noqa: F401  (db_path is a fixture)
 
@@ -108,3 +109,40 @@ def test_agents_md_report_format_covers_s2_and_g2(tmp_path, db_path):  # noqa: F
     assert "`S2.md`" in section
     assert "`G2.md`" in section
     assert "Every iteration of G0, S1, G1, S2, G2, S3 and G3" in section
+
+
+def test_admission_summary_preserves_scoped_rework_and_delta_intake(tmp_path, db_path):  # noqa: F811
+    text = _agents_md(tmp_path, db_path)
+    rules = _section(text, "Rules")
+    assert "nominal forward order" in rules
+    assert "Rework, delta-intake and delta-sync" in rules
+    assert "owning skill's explicit admission" in rules
+    assert "latest applicable scoped iteration" in _section(text, "Available Skills")
+    assert "even on G3 FEEDBACK" in text
+    assert "without a new S2 iteration or a G3 PASS prerequisite" in text
+
+
+def test_cycle_selection_refreshes_next_and_excludes_closed_cycles(tmp_path, db_path):  # noqa: F811
+    cycle = _section(_agents_md(tmp_path, db_path), "Cycle")
+    assert "existing **open** cycles" in cycle
+    assert "If the user names\n  a closed cycle" in cycle
+    assert "do not reopen it or change the active cycle to it" in cycle
+    assert cycle.index("Record the selected cycle") < cycle.index("rerun `codeanvil status`")
+    assert "never reuse the result from before cycle selection" in cycle
+    assert "no `Next:` line, start at S0" in cycle
+
+
+def test_stage_delivery_semantics_include_all_configured_stages(tmp_path, db_path):  # noqa: F811
+    report = _section(_agents_md(tmp_path, db_path), "Report Format")
+    match = re.search(r"On a stage\s*\(([^)]+)\), PASS means the output was delivered", report)
+    assert match
+    assert set(match.group(1).split(", ")) == set(CONFIG["stage_reports"])
+
+
+def test_hardware_timing_and_gt_authority_do_not_conflict(tmp_path, db_path):  # noqa: F811
+    text = _agents_md(tmp_path, db_path)
+    assert "Nothing hardware-related is written before G3" not in text
+    assert "Creating new target-enrollment" in text
+    assert "earlier COTS descriptions, MCP configuration" in text
+    assert "GT delta requires explicit acceptance by the Build Package\nauthor" in text
+    assert "different reviewer's approval alone is not" in text

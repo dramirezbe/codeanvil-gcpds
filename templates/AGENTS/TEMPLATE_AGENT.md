@@ -49,10 +49,13 @@ cadence/routing reference below.
 
 ## Rules
 
-- You **MUST** run stages and gates in sequential order (S0, G0, S1, G1, S2, G2, S3, G3). A step
-  **SHALL NOT** execute until its predecessor passes.
+- You **MUST** follow the nominal forward order (S0, G0, S1, G1, S2, G2, S3, G3).
+  Forward delivery requires the applicable predecessor PASS for the admitted scope.
+  Rework, delta-intake and delta-sync follow their owning skill's explicit admission
+  conditions; FEEDBACK alone never grants an exception or authorises implementation.
 - You **MUST** load the skill file (`.agents/skills/<skill>/SKILL.md`) before executing any step.
-- You **SHALL NOT** skip, reorder, or combine stages and gates.
+- You **SHALL NOT** skip, reorder, or combine nominal stages and gates; re-entry uses
+  only the documented rework and synchronisation routes.
 - You **MUST NOT** edit Ground Truth files in `.codeanvil/GT/` without explicit author confirmation.
   The one exception: the S0 skill writes `StRS.md` and `SyRS.md` from `build_package.md`.
 - You **SHALL** report the gate verdict exactly as the skill's output contract specifies.
@@ -127,12 +130,10 @@ mechanism (`AskUserQuestion` in Claude Code, the equivalent in other runtimes).
 This is mandatory — do not defer it to a "start" command. If `codeanvil status`
 already shows an active cycle, offer it as the default choice.
 
-- Offer the cycles that already exist under `.codeanvil/report/` as choices,
-  plus the option of a new name.
-- If the user selects an existing cycle, resume the `Next:` step shown by `codeanvil status`.
-  Load that skill and check its prerequisites. Historical FEEDBACK/staleness can remain after
-  a replacement stage delivery; do not restart S1 just because its previous G1 is stale.
-  A cycle `codeanvil status` shows as closed is not resumed.
+- Offer existing **open** cycles under `.codeanvil/report/`, plus a new name.
+  Closed cycles are historical references, not resumable choices. If the user names
+  a closed cycle, explain its closure and ask for an open cycle or a new name;
+  do not reopen it or change the active cycle to it.
 - If the user gives a new name, normalize it to a directory-safe slug:
   1. lowercase;
   2. spaces become `_`;
@@ -144,22 +145,33 @@ already shows an active cycle, offer it as the default choice.
   the next cycle `"Websocket Refactor"` → `02_websocket_refactor`.
 - Record the selected cycle in `.codeanvil/project.yaml` as `cycle: <name>`.
   Update only that key — never rewrite the rest of the manifest.
+- **After recording the choice, rerun `codeanvil status`.** Use only the selected
+  cycle's fresh `Next:` result; never reuse the result from before cycle selection.
+  For an existing open cycle, load that skill and check its scoped prerequisites.
+  Historical FEEDBACK/staleness can remain after a replacement delivery; do not
+  restart S1 merely because its previous G1 is stale. If a new cycle has no reports
+  and therefore no `Next:` line, start at S0. If the refreshed status reports closure,
+  return to cycle selection without loading a methodology skill.
 - Scope every gate report to `.codeanvil/report/<cycle-name>/<gate>.md`.
 
-Previous cycles are preserved and read-only. To run the methodology again (for
+Closed cycles are preserved and read-only; an existing open cycle can be explicitly
+selected and resumed. To run the methodology again (for
 example after a major refactor), start a new cycle: it writes a fresh set of
 reports while the old cycles stay untouched.
 
 ## Available Skills
 
+The table summarises nominal forward admission. The owning skill defines the
+applicable scope and any distinct rework, delta-intake or delta-sync admission.
+
 {skill_table}
 
 Load a skill when the user asks for its stage or gate or when its trigger applies. The
-skill checks its prerequisite report itself:
+skill checks its prerequisite report itself. For nominal forward admission:
 
-- prerequisite report missing, or its latest iteration is `HITL: FEEDBACK` →
+- applicable prerequisite report missing, or its latest applicable scoped iteration is `HITL: FEEDBACK` →
   the skill stops and tells you which skill to run first;
-- prerequisite report's latest iteration is `HITL: PASS` → the skill runs and
+- prerequisite report's latest applicable scoped iteration is `HITL: PASS` → the skill runs and
   appends its own iteration.
 
 This is a **chain, not orchestration**: nothing in this file sequences stages or
@@ -217,7 +229,7 @@ the requirement/conclusion needs it. Only the human sets the gate verdict.
 
 ### Hardware and MCP flow
 
-Hardware-related work is split by time, so nothing hardware-related is written before it is needed:
+Hardware constraints, MCP provisioning and target enrollment have separate timing:
 
 1. **Hardware description** (device, limits) belongs in the Ground Truth: the `HWC-*` blocks
    of `.codeanvil/GT/StRS.md`, at the methodology entry.
@@ -226,7 +238,9 @@ Hardware-related work is split by time, so nothing hardware-related is written b
    for RF/DSP, `vsil_hil_mcp` for VL-2). You authorize each add, then **restart the agent
    manually** so its tools load. Re-running S3 after the restart finds the MCP present and continues.
 3. **Hardware enrollment** (credentials, IP, MAC) via `codeanvil credential-setup` happens
-   **only at G3**, and only if the design requires VL-2. Nothing hardware-related is written before G3.
+   **only at G3**, and only if the design requires VL-2. Creating new target-enrollment
+   records belongs here; this does not prohibit earlier COTS descriptions, MCP configuration
+   or use of existing target declarations.
 
 ## Ground Truth (GT)
 
@@ -288,7 +302,7 @@ Rules:
 
 - Iterations start at `1` and increment on each run.
 - `HITL: PASS` means the step is done. `HITL: FEEDBACK` means iterate. On a stage
-  (S0, S1, S3), PASS means the output was delivered; the human verdict belongs to
+  (S0, S1, S2, S3), PASS means the output was delivered; the human verdict belongs to
   the next gate.
 - Every iteration of G0, S1, G1, S2, G2, S3 and G3 starts its Description with the exact
   line `Based on: <predecessor id> iteration <N>`, where `N` is the predecessor's latest
@@ -302,6 +316,11 @@ Rules:
 - For G0 (deterministic), the Description carries the full script report, and
   script errors force `HITL: FEEDBACK`.
 - A gate is complete only when its latest iteration is `HITL: PASS`.
+
+Reports and digests preserve history and artifact identity, not the artifact bytes.
+Run the skill-prescribed backup before overwriting working artifacts; recovery of
+`src/` and `verification/` relies on Git. Keep the corresponding backups and Git
+candidate reference when historical reconstruction is needed.
 
 ## Timestamps
 
@@ -382,7 +401,10 @@ Reports record Scope (slice k/system/delta-sync), Based on and Input lines; stag
 lines. Every digest comes from `codeanvil custody digest`, pasted verbatim, never computed or
 typed by the agent. Check with `codeanvil custody verify`; golden manifests use verify-manifest.
 Accepted interface-neutral deltas are applied by S0/S1 delta-sync before the next S2; G0/G1
-still review those deliveries. Only G3 system PASS writes G3_artifacts/verified_prototype.md.
+still review those deliveries. A GT delta requires explicit acceptance by the Build Package
+author, recorded as its Authority; G3 PASS or a different reviewer's approval alone is not
+authorisation to edit GT. S0 applies only the accepted payload, then G0 includes a fresh Gate H.
+Only G3 system PASS writes G3_artifacts/verified_prototype.md.
 The tool CLI does not orchestrate the chain. codeanvil ui remains v3-only until its follow-up.
 
 ### Scope and re-entry boundaries
