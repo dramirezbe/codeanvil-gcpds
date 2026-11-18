@@ -5,7 +5,7 @@ license: Apache-2.0
 compatibility: "No network access, no scripts. Reads .codeanvil/GT/StRS.md, .codeanvil/GT/SyRS.md, .codeanvil/project.yaml, and .codeanvil/design/SDD.md (from G1 rework). Writes .codeanvil/design/SDD.md, .codeanvil/design/dependency_graph.html (dark), dependency_graph_light.html, and .codeanvil/report/<cycle-name>/S1.md. Report includes Scope: system and Input: sha256 lines for all read GT files."
 metadata:
   author: "gcpds"
-  version: "1.0"
+  version: "1.1"
   gate: "S1"
   pipeline: "V-SIL"
 ---
@@ -100,6 +100,49 @@ Working files live in `.codeanvil/design/`, outside the cycle report folder.
   training source: Mock HAL (a software signal generator behind the HAL port) data plus labelling or,
   failing that, real-hardware HAL data plus labelling.
 - Ask the user only when a choice cannot be derived from the GT.
+
+## Execution Continuity
+
+Once the user requests S1 and its prerequisites pass, execute the authorized design work
+**in the same turn** until the output is delivered or a concrete blocker requires a stop.
+S1 has no scheduled internal human checkpoint. Reading the templates, checking G0, taking
+a backup or collecting timestamps/digests is preparation, not a completed stage. Progress
+updates and status questions do not end the authorized work.
+
+- **Resume, do not restart.** Continue the same in-progress iteration from any existing SDD
+  and graphs. Preserve valid sections and stable IDs; finish missing work and apply the bounded
+  rework rules where needed. Do not repeat an already successful backup or ask again for
+  unchanged authorization. An exit-0 `nothing to back up` result is not a blocker.
+- Derive package identifiers, toolchain and the root command from GT and the design rules;
+  document the rationale for G1. Ask only for a required choice that cannot be derived.
+  Write the design incrementally instead of postponing every artifact until all reasoning
+  is finished. Never invent requirements or edit GT to avoid a question.
+- Do not return only a reading summary, a promise, `S1 is still pending` or
+  `I cannot complete S1 in this turn` while an authorized next action remains. The estimated
+  size of the design or an assumed turn budget is not a blocker. For an actual runtime or
+  context interruption, preserve existing work and name the actual limit/boundary reached.
+- Completion requires all four outputs: `.codeanvil/design/SDD.md`,
+  `.codeanvil/design/dependency_graph.html`, `.codeanvil/design/dependency_graph_light.html`
+  and `.codeanvil/report/<cycle-name>/S1.md`. Record PASS only after the design and both
+  graphs are complete and the prescribed reread and digest/report checks succeed;
+  templates, placeholders and promises are not delivery evidence. S1 PASS means
+  delivered, never G1 approval. Do not invent a PASS to make the chain advance.
+
+| Boundary | Required action |
+|----------|-----------------|
+| S1 delivered | Finish the design, both graphs and the completed iteration; return `S1 complete. Run the G1 skill.` Never assume G1's human verdict. |
+| Missing required input or unresolved GT choice | Name the exact file, section, field or choice, affected deliverables and the specific question needed; complete unaffected work first. Preserve drafts and write no completed iteration. |
+| Permission, tool, custody or backup failure | Show the failed command/error and affected scope; resolve within existing authorization or request the specific missing permission. Resume after resolution; preserve the predecessor/backup stop rules. |
+| Demonstrated infeasibility | Follow the existing Infeasibility/RFD contract with concrete evidence; do not substitute a generic inability-to-finish message. |
+| Explicit human stop or actual runtime interruption | Preserve partial artifacts, identify completed/pending scope and the concrete resume action; write no fabricated completed iteration. |
+
+### Continuation responses
+
+After trimming whitespace, the whole replies `continue`, `run`, `y`, `yes` and `ok`
+(case-insensitive, including `RUN`) resume the already authorized S1 scope. Do not ask for
+another continuation or treat resumption as a new iteration. These replies never waive a
+prerequisite, expand scope or decide G1. Respect negations and conditions such as `do not run`
+or `yes, but stop before the report`; clarify only when the requested scope remains ambiguous.
 
 ## Steps (one pass)
 

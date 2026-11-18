@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.9.2 — 2026-11-17
+
+- Require S1 to continue authorized design work through all artifacts and its report, or identify a concrete blocker.
+- Resume drafts without restarting or repeatedly requesting unchanged authorization; keep real stop conditions and G1 human review.
+- Ship the continuity rule in scaffolded S1 skills and add a manual model-evaluation regression.
+
+Validation: 15 focused contract/scaffold checks passed; complete suite 748 passed, 40 skipped.
+The updated S1 rule still requires observation in an actual agent run; no new gate verdict is claimed.
+
 ## 0.9.1 — 2026-11-17
 
 - Seed Codex sandbox login from auth.json as well as installation_id, honoring an inherited CODEX_HOME.

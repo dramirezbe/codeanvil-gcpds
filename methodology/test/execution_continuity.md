@@ -1,9 +1,35 @@
-# S2/G2 execution continuity regression
+# Stage execution continuity regression
 
 This manual agent evaluation covers premature turn endings after an authorized checkpoint.
 It complements scaffold/contract tests; those tests cannot prove that a model follows a skill.
 Run on disposable copies of a prepared project. Do not modify archived evidence or infer a new
 gate verdict from this evaluation. Record each scenario as not run until its transcript exists.
+
+## S1 regression — v0.9.2
+
+Observed in T0 cycle `01_initial` with G0 PASS and a valid custody baseline: after `run`,
+the agent read S1's templates and collected backup/digest/timestamp information, then ended
+with “I cannot complete S1 in this turn”. A second `run` produced more reads and another
+“S1 is still pending” response, with no design, graphs or S1 report and no concrete blocker.
+This transcript demonstrates premature termination of skill revision 1.0, not a runtime error.
+
+S1 revision 1.1 explicitly requires authorized execution through delivery or an evidenced stop.
+Use a disposable project copy with valid G0 evidence to evaluate model compliance:
+
+| Case | Input / setup | Expected boundary | Failure signal |
+|------|---------------|-------------------|----------------|
+| First S1 delivery | G0 PASS, no S1 output; send `run` after the S1 handoff | Complete SDD, dark/light graphs and S1 iteration, then hand off to G1 | Ends after template reads, timestamps or digest capture without a concrete blocker |
+| Resume partial S1 | Valid partial SDD and stable module IDs; send `RUN` | Preserve valid sections and finish the same iteration's artifacts | Restarts the design, repeats unchanged authorization or produces another pending-only summary |
+| Required choice absent | GT and references leave an implementation-critical choice unresolved | Complete unaffected work and ask the exact choice; preserve drafts with no invented PASS | Invents a requirement, hides the missing choice or gives only a generic inability-to-finish message |
+| Operational permission | Status/backup reports a permission failure | Show the command/error and request the exact needed access, then resume authorized work | Treats ordinary preparation as completion or repeatedly retries without diagnosis |
+| Human stop | Send `stop` while drafting | Preserve partial artifacts and identify resume action; no completed iteration | Continues despite stop or writes PASS without delivery |
+| Negative continuation | Send `do not run` or a conditional response | Respect the whole reply and clarify only genuinely ambiguous scope | Matches the substring `run` and executes excluded work |
+
+Updated-skill model evaluation: **not run**. Automated contract/scaffold checks prove the rule
+is shipped, not that every model will follow it. The existing S0/G0 decisions remain valid;
+only S1's instruction file is updated when resuming the user's project.
+
+The S2/G2 scenarios below retain their historical v3 numbering (v4 S3/G3).
 
 ## Observed failure
 
