@@ -1,5 +1,6 @@
 {
   "$help": "Copy this file into tools/inputs/, fill it, then load it in the app sidebar. Every field is described in tools/README.md.",
+  "mode": "Focused",
   "context": {
     "title": "",
     "domain": "",
@@ -10,12 +11,12 @@
     "prior": ""
   },
   "stages": {
-    "Decomposition": true,
-    "Novelty and prior-art check": true,
-    "Gap matrix": true,
+    "Decomposition": false,
+    "Novelty and prior-art check": false,
+    "Gap matrix": false,
     "Matrix scoring": true,
-    "Failure-mode analysis": true,
-    "Recommendation": true
+    "Failure-mode analysis": false,
+    "Recommendation": false
   },
   "scale": 5,
   "dimensions": [
@@ -63,16 +64,14 @@
   "audit": {
     "enabled": true,
     "checks": [
-      "Structural: required sections are present and the template is followed.",
-      "Internal consistency: numbers in the text match tables and figures; claims do not contradict each other.",
-      "Cross-document: the spec aligns with the requirements, test plan and design-review notes.",
-      "Terminology: terms and acronyms are defined once and used uniformly.",
-      "Traceability: every requirement maps to a test; every design decision has a stated rationale."
+      "Alignment: the material fulfills its stated purpose and applicable requirements.",
+      "Consistency: claims, terminology, rules, and examples agree within and across supplied documents.",
+      "Clarity: important decisions have enough information and justification; flag consequential gaps."
     ],
     "documents": ""
   },
   "rules": {
-    "two_pass": true,
+    "two_pass": false,
     "evidence": true,
     "disagree": "report both values and flag for human arbitration"
   },

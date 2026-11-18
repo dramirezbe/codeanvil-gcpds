@@ -4,9 +4,9 @@ Standalone helpers for working on CodeAnvil. They are not part of the `codeanvil
 
 ## LLM Validation Prompt Builder
 
-`audit_prompt_builder.py` is a Streamlit app that builds a structured review prompt
-for an LLM: context, validation stages, a weighted scoring matrix, an optional
-document audit, and an output format. You fill it in by hand, by loading a JSON
+`audit_prompt_builder.py` builds a focused review prompt: a goal, criteria,
+evidence, and actionable corrections. Detailed stages and scoring are optional.
+You fill it in by hand, by loading a JSON
 inputs file (which an agent can write), or both.
 
 | Path                          | What it is                                                       |
@@ -46,7 +46,7 @@ timestamp in the same `YYYY-MM-DD_HH-MM-SS` format.
    **Load selected file**, or upload any JSON file. A summary of errors is shown
    if the file is invalid, and nothing on the page changes.
 3. **Adjust** — every field stays editable after loading.
-4. **Export** — in section 6:
+4. **Export** — in section 4:
    - copy the prompt from the code box,
    - **Download prompt (.md)**,
    - **Save prompt to tools/prompts (.txt)** — writes
@@ -56,6 +56,35 @@ timestamp in the same `YYYY-MM-DD_HH-MM-SS` format.
 
 **Reset to template defaults** (sidebar) restores the template content.
 
+### Review styles
+
+**Focused** is the default, including for old JSON files without `mode`. Supply
+the goal, a few distinct criteria, and the relevant documents. The prompt requests
+one review, aiming for 600 words and five consequential findings. All critical
+issues must still be reported. Each finding needs evidence, impact, and a minimal
+correction; missing context must be disclosed. No scores or repeated reviews are
+requested. Context and checks are preserved verbatim, so keep those concise too.
+
+**Detailed** enables the stages, matrix, and scoring rules in the collapsed
+settings. Scores are included only when **Matrix scoring** is selected. A second
+scoring pass is an optional self-check, not independent evidence. Both styles
+support Markdown and JSON. The displayed word count includes supplied documents.
+This tool only builds text: model latency and review quality depend on the model,
+corpus, and task; a short prompt cannot guarantee a completion time.
+
+The defaults apply clear goals, relevant context, separated source material, and
+explicit output expectations from [OpenAI's reasoning guidance](https://developers.openai.com/api/docs/guides/reasoning-best-practices),
+[Anthropic's September 2025 context guidance](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents),
+and [Google's prompt design guidance](https://ai.google.dev/gemini-api/docs/prompting-strategies),
+consulted on 2026-11-18. The 600-word/five-finding targets are product defaults,
+not claims from those guides. No external model evaluation is bundled.
+
+Check this standalone tool with its requirements installed:
+`python -m unittest discover -s tests -p test_audit_prompt_builder.py -v`.
+The tests exercise loading legacy inputs, mode selection, optional scoring, and
+JSON output. Rollback: restore the builder, template, and this guide together and
+remove its standalone tests; the CLI and methodology templates are unaffected.
+
 ### Inputs file format
 
 `prompt_inputs.template.json` shows every field with its default value. A filled
@@ -64,8 +93,9 @@ with `$` (such as `$help`) are ignored.
 
 | Field                 | Type                  | Allowed values / meaning                                                       |
 |-----------------------|-----------------------|--------------------------------------------------------------------------------|
+| `mode`                | string                | `"Focused"` (default) or `"Detailed"`; stages, anchors, weights and scoring rules apply only to Detailed |
 | `context.title`       | string                | Short name of the idea or project                                              |
-| `context.domain`      | string                | Engineering field, e.g. `"RF hardware"`                                        |
+| `context.domain`      | string                | Subject area, e.g. `"Methodology and philosophy"`                              |
 | `context.problem`     | string                | What goes wrong today, and for whom                                            |
 | `context.idea`        | string                | The proposal: components, interfaces, how it works                             |
 | `context.constraints` | string                | Budget, schedule, power, size, regulation, team, hardware                      |
@@ -80,7 +110,7 @@ with `$` (such as `$help`) are ignored.
 | `audit.enabled`       | `true` / `false`      | Include the document audit section                                             |
 | `audit.checks`        | list of strings       | One audit rule per item; replaces the default list                             |
 | `audit.documents`     | string                | Documents to audit, labelled, e.g. `"[SPEC v2.1] ...\n[TEST PLAN r3] ..."`     |
-| `rules.two_pass`      | `true` / `false`      | Ask for two independent scoring passes                                         |
+| `rules.two_pass`      | `true` / `false`      | Optional second scoring self-check in Detailed mode                             |
 | `rules.evidence`      | `true` / `false`      | Require evidence (or `ASSUMED`) for every score                                |
 | `rules.disagree`      | string                | `"report both values and flag for human arbitration"`, `"use the lower score and note the gap"`, `"use the average and report the spread"` |
 | `output.format`       | string                | `"Markdown"` or `"JSON"`                                                       |
