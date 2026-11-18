@@ -127,6 +127,15 @@ Write exactly one file: `.codeanvil/report/<cycle-name>/G0.md`.
 
 ## Output Contract
 
+**Feedback handoff.** For a completed recorded FEEDBACK, put the reasons, evidence,
+block IDs and concrete correction suggestions in that iteration's `### Description`.
+Keep human reasons verbatim; label agent suggestions separately and never invent missing
+requirements. The same parent agent then loads S0, reads this Description and resumes
+the bounded rework under S0's triage/author rules. Do not stop after naming the route
+or ask the user to repeat the feedback. Missing author input, explicit stop or a
+real blocker still stops affected work. Preserve draft/no-iteration rules and obtain
+a fresh Gate H decision when the corrected delivery is reviewed.
+
 Return all five:
 
 1. **Verdict** — `G0: PASS` (script and Gate H) or `G0: FEEDBACK (N errors, M warnings)`.

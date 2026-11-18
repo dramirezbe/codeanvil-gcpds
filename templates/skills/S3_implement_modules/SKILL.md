@@ -309,6 +309,11 @@ as **Pause Schedule** says above; retain an already answered choice on resume.
    with the decision and last real run.
 8. Write the iteration and return `S3 complete. Run the G3 skill.`
 
+The same parent agent resumes S3 using the recorded reasons, evidence and correction
+suggestions in the source feedback's `### Description`; it is the rework input, not
+a request for the user to restate the task. Preserve fresh per-module implementation
+contexts and the approved plan/allowed-path boundaries.
+
 Rework, module defect: read the change list in the latest `G3.md` iteration's `### Description`
 (the enumerated items after its `Based on:` line) and apply exactly those changes — only the
 subsystems/modules/files it names — then re-run the affected tests. Do not ask the human and do not

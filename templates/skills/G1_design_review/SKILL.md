@@ -83,8 +83,9 @@ Otherwise check, in this order, writing **no iteration** when you stop:
 Once authorized and the current S1 prerequisite passes, complete the review through the required
 human decision question or a concrete blocker. Reading, status and custody are preparation.
 After the human's answer and decision maker are known, publish the report without another
-continuation request. On FEEDBACK, finish recording the decision before handing off to S1;
-if the user already authorized that rework, load S1 and continue within its ownership rules.
+continuation request. On FEEDBACK, finish recording the decision and bounded correction
+instructions in the report before the same parent agent loads S1 and resumes that rework.
+Use S1's admission/ownership rules; ask only for genuinely missing authority or input.
 Never edit design/GT as G1, assume a verdict, or treat prototype scope acceptance as G3 PASS.
 
 ## Steps
@@ -146,6 +147,12 @@ Write exactly one file: `.codeanvil/report/<cycle-name>/G1.md`, append-only.
   S1 iteration when the review starts, followed by the filled checklist form and the SHA-256 of the
   `SDD.md` it reviewed. On rework it also carries the impact map.
 - G1 is a **gate**: its `PASS` is the human's verdict.
+- On FEEDBACK, `### Description` is the handoff: human reasons verbatim, evidence,
+  named sections, scope and concrete correction suggestions, with agent suggestions
+  distinguished from the human's words. The same parent agent reads it under S1;
+  do not stop after naming the route or ask the user to repeat recorded feedback.
+  S1 publishes a new delivery before a new human G1 verdict; RFD, explicit stop and
+  genuine blockers retain their existing rules. G1 itself never edits the design.
 
 ## Output Contract
 

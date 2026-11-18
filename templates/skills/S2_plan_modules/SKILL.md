@@ -24,6 +24,10 @@ Planning itself requires latest G1 `HITL: PASS`, else
 `codeanvil custody verify --cycle <cycle> --gate G1` and `codeanvil status`;
 a stale prerequisite returns its reason and writes no iteration.
 
+For rework, the same parent agent reads the source G2/G3 iteration's `### Description`
+for reasons, evidence and correction suggestions, then replans its named scope/modules.
+Do not ask the user to repeat recorded feedback; missing authority/input still blocks.
+
 Choose exactly one route:
 
 | Route | Admission and scope |

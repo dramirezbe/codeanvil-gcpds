@@ -46,6 +46,13 @@ prerrequisitos de planificación. Intake no publica S2 ni autoriza implementar.
 rework/intake/sync a la admisión explícita de su skill. Calificar igualmente la
 tabla y las reglas de Available Skills por scope. FEEDBACK solo no autoriza nada.
 
+**Aclaración posterior del autor:** una vez publicado el FEEDBACK con razones y
+sugerencias en el `### Description` de la iteración, el mismo agente padre carga
+la skill de la etapa responsable y ejecuta el rework acotado leyendo ese reporte.
+No se limita a anunciar la ruta ni pide repetir el feedback. Se mantienen la
+autoridad sobre GT, los bloqueos reales, los contextos frescos y el nuevo veredicto
+humano de la compuerta. No se crea un canal de correcciones adicional al reporte.
+
 ## N-02 — Estado consultado antes de elegir el ciclo
 
 **Raw:** “The project-state discovery operation is not explicitly rebound to the selected cycle.”

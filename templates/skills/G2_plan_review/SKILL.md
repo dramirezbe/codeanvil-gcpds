@@ -52,6 +52,13 @@ Append `.codeanvil/report/<cycle>/G2.md` with header Gate/Cycle/Document/Created
 `| HITL | PASS |` or `| HITL | FEEDBACK |` row. Description begins
 `Based on: S2 iteration <N>`, then S2's `Scope:` and Input lines for SDD, BACKLOG and scope plans.
 Include checklist, `Verdict:` on FEEDBACK, Modules, human answer and decider.
+On completed FEEDBACK, put the reasons, evidence, scope, named modules/sections and
+concrete correction suggestions in `### Description`, preserving human reasons verbatim
+and labelling agent suggestions. The same parent agent loads the routed S2, S1 or S0
+skill, reads this Description and resumes the bounded rework under that skill's rules.
+Do not stop after naming the route or ask the user to repeat recorded feedback; missing
+authority/input, explicit stop and real blockers still stop the affected work. A corrected
+plan delivery needs a new human G2 verdict before implementation.
 Every digest comes from `codeanvil custody digest`, pasted verbatim, checked with
 `codeanvil custody verify`; never compute or type a hash.
 Return findings, answer, report iteration and route. PASS: `G2 passed. Run the S3 skill.`

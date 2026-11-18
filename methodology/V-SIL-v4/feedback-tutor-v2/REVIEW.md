@@ -49,6 +49,10 @@ Applied to the source template in `e44d7c000b69ebe807b0f42653ebff53d5437fc5`.
 Focused verification: 135 tests passed; synthetic two-cycle probe confirms N-02.
 No human gate or hardware validation occurred. Await actual tutor patches before
 creating `corrected/PATCHES.md` and its patch-by-patch `ANALYSIS.md`.
+Author clarification: FEEDBACK reasons and correction suggestions live in the
+iteration's Description. The same parent agent reads that report and resumes the
+routed stage under its skill; the template and all four stage/gate pairs now make
+this handoff explicit, preserving fresh subcontexts and human review boundaries.
 
 ## S0_normalise_build_package
 

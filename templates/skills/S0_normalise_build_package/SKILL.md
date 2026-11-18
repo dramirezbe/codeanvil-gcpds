@@ -134,6 +134,11 @@ changes. Any changed payload needs author acceptance and a new delta row; preser
 
 ## Re-entry
 
+The same parent agent resumes S0 by reading the latest applicable source gate's
+`### Description`: reasons, evidence and correction suggestions are the rework input.
+Use the recorded scope and route; do not ask the user to repeat that feedback.
+Triage and missing Build Package content still require their existing author decisions.
+
 When the latest `G2.md` is FEEDBACK with `Verdict: GT defect`, run Triage on the named conflict
 in the same cycle before re-normalisation. Draft mode remains S0/G0/G1 only.
 When the latest `G0.md` iteration is `FEEDBACK`, run Triage

@@ -184,6 +184,11 @@ or `yes, but stop before the report`; clarify only when the requested scope rema
 
 ## Rework (bounded)
 
+The same parent agent resumes S1 by reading the source feedback iteration's
+`### Description`, including its reasons, evidence and correction suggestions.
+Use that bounded instruction without asking the user to repeat the feedback;
+missing authority/input and actual design decisions still follow this skill's rules.
+
 On rework, the old baseline is the folder printed by `codeanvil backup S1` and cited in the
 iteration's Description. Change only what the feedback names, and record the change so G1 can
 review its impact instead of re-reading the whole design:

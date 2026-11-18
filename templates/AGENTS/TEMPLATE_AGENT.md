@@ -180,6 +180,18 @@ gates, and you must not sequence them from it either.
 A rework is routed by a verdict line in the report: `Verdict: design defect` (from S3 or G3)
 returns to S1; `Verdict: module defect` (from G3) returns to S3.
 
+**Feedback-driven rework.** First publish the completed FEEDBACK iteration. Its
+`### Description` is the handoff: preserve the human's answer and reasons verbatim,
+then record evidence, affected scope/files/modules, concrete correction suggestions
+and the routed stage. Distinguish agent suggestions from the human's words.
+The same parent agent then loads the routed stage's skill, reads that Description
+and executes the bounded rework; do not stop merely after naming the next skill or
+ask the user to repeat the recorded feedback. Missing authority/input, an explicit
+stop or a real blocker still stops the affected work. The stage records its changes
+in a new iteration; the gate reviews the new delivery and obtains a new human verdict.
+Keep fresh implementation/verifier contexts where prescribed. The report is the
+persistent feedback channel, including when a session must resume later.
+
 The `RFD_request_for_deviation` skill is outside the chain: it can be raised from S1, G1 or any
 sub-gate of G3 when requirements are infeasible on the declared COTS platform (S3 only records
 `Possible infeasibility` for G3), and it suspends the cycle until the Build Package author
@@ -313,6 +325,9 @@ Rules:
   A complete newer S1 requires a new G1 review and never inherits the previous human verdict.
 - There is **no DENIED** state — a rejected result is `FEEDBACK` with the
   user's comments, and the gate re-runs.
+- A completed FEEDBACK iteration puts the reasons, evidence, bounded correction
+  suggestions, scope and route in `### Description`. The routed stage reads it as
+  its rework input; a route named only in chat is not a complete handoff.
 - For G0 (deterministic), the Description carries the full script report, and
   script errors force `HITL: FEEDBACK`.
 - A gate is complete only when its latest iteration is `HITL: PASS`.
