@@ -1,4 +1,4 @@
-"""Check measurement v2 structure; specific criteria and the G2 verdict need review.
+"""Check measurement v2 structure; specific criteria and the G3 verdict need review.
 
 Stdlib only. Does not hash files, attest a deployment, require an oracle or
 evaluate a measurement criterion. Historical v1 evidence is left unchanged.
@@ -49,8 +49,8 @@ def validate(path):
     _finite(record)
     for key in ("cycle", "run_id", "target", "command", "started_at", "finished_at"):
         _text(record, key)
-    if record.get("stage") not in ("S2", "G2"):
-        raise EvidenceError("stage must be S2 or G2")
+    if record.get("stage") not in ("S3", "G3"):
+        raise EvidenceError("stage must be S3 or G3")
     if type(record.get("iteration")) is not int or record["iteration"] < 1:
         raise EvidenceError("iteration must be a positive integer")
     if type(record.get("exit_code")) is not int:

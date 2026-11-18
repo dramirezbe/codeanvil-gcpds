@@ -6,7 +6,7 @@ workspace. Después, el agente podrá preparar y probar el hardware cuando revis
 código y respondas `continue` en la pausa previa al despliegue.
 
 Esta guía es para un equipo Linux remoto, como una Raspberry Pi. Si el dispositivo
-está conectado directamente a tu PC, usa el flujo local de S2/G2; no necesita SSH
+está conectado directamente a tu PC, usa el flujo local de S3/G3; no necesita SSH
 ni este alta. Los comandos manuales de esta guía los ejecutas tú en tu terminal.
 
 ## 1. Deja listo el equipo y tu PC
@@ -89,8 +89,8 @@ se resuelve en esa preparación; no significa que tus claves SSH estén mal.
 
 Antes de actualizar, desplegar o ejecutar pruebas físicas, el agente te mostrará
 candidato, equipo y operaciones y esperará tu `continue`. Configurar el acceso no
-sustituye esa revisión. Las pausas configurables de S2 y los veredictos humanos de
-G2 siguen vigentes.
+sustituye esa revisión. Las pausas configurables de S3 y los veredictos humanos de
+G3 siguen vigentes.
 
 ## Si algo falla
 

@@ -1,25 +1,19 @@
-# vsil-implementor — V-SIL S3 module implementor
+# vsil-implementor — one module in fresh context
 
-Implement one module from its plan in a fresh context that did not write the product. S3's parent presents the module plan, design context and integration points; you implement the module code, verification fixtures and VL-0 tests from that scope only.
+Receive one `.codeanvil/plans/<SUB-xxx>/<module_id>/PLAN.md`, cycle, S3 iteration,
+and only the files/sections in its Context set: relevant base APIs, verification kit and stubs.
+Do not load full SDD, full GT, other module source or the parent's conversation.
 
-## Input and reads
+Implement the reviewed tasks, unit tests, bottom-up and sandwich tests; replace only the
+module's own stub after its checks pass. Read and write only the declared allowed paths.
+Shared bases, root manifests, integration and golden manifests belong to the parent.
+Use locked loggers and the declared toolchain. Run the plan's local Mock HAL commands.
+Return changed paths, exact commands/exit codes, expected/observed criteria, blockers,
+and implementation notes. The parent records these and validates write scope.
 
-Receive only the cycle, the S3 iteration number, the module ID, its PLAN.md slice, the design/dependency data, GT/SyRS.md requirements and the parent's reviewed scope (approved commands, remote targets if applicable).
-
-Use that supplied iteration for all evidence and log IDs in this attempt; it is ordinary context, not a new counter.
-
-## Output
-
-**Writes**: `src/<module_id>/` and integration into `verification/` and root manifests.
-
-**Returns**: `.codeanvil/report/<cycle>/S3_artifacts/<module_id>_<iteration>.md` with the VL-0 test run (`verification/run.sh vl0 <module_id>`), entry point verification, test names and exit codes, and the proposed next slice based on dependency constraints.
-
-## Never
-
-- Edit or rewrite existing code outside the module scope (shared integration points are written by the parent after all slices)
-- Ask the human to judge, decide or approve (S3 is implementation; decisions belong to S2 and G2)
-- Run long processes without an explicit pre-HW pause; stopping at Pause Schedule is normal
-
-## Deferred to Phase F
-
-This body is a placeholder. Full implementation in Phase F.
+Never edit plans, GT, design, shared files, reports or golden manifests; never compute or type
+hashes. If a digest is needed request the parent to run `codeanvil custody digest` and check
+`codeanvil custody verify`. Never ask the human, decide HITL, deploy, access real hardware,
+run remote/trusted actions or expand the allowed scope. Missing plan detail returns
+`plan defect`; missing interface returns `design defect`, with exact evidence.
+Stop only when assigned work is complete or a concrete blocker is returned.

@@ -1,6 +1,6 @@
 ---
 name: s3-implement-modules
-description: "Trigger: S2, implement subsystems, build the code, verification kit, VL-0. From a G1-passed design, build the subsystems and the verification kit, prove the VL-0 floor and write the VL-1 tests."
+description: "Trigger: S3, implement subsystems, build the code, verification kit, VL-0. From a G1-passed design, build the subsystems and the verification kit, prove the VL-0 floor and write the VL-1 tests."
 license: Apache-2.0
 compatibility: "Telemetry is collected by the `codeanvil telemetry` subcommand, part of CodeAnvil itself (not a skill script). Reads the S1 design, .codeanvil/GT/SyRS.md and .codeanvil/project.yaml. Writes src/, verification/, root manifests, .codeanvil/report/<cycle-name>/S3.md and S3_artifacts/."
 metadata:
@@ -11,11 +11,11 @@ metadata:
   pipeline: "V-SIL"
 ---
 
-# S2 — Implement the Subsystems and the Verification Kit
+# S3 — Implement the Subsystems and the Verification Kit
 
 Turn the G1-approved design into running code plus the verification kit, prove the VL-0 floor and
-leave the VL-1 tests ready for G2. The Mock HAL and the kit let the agent test without real device
-inputs. S2 runs locally; the real-hardware stage (VL-2) and any remote deployment belong to G2. A human judges at G2.
+leave the VL-1 tests ready for G3. The Mock HAL and the kit let the agent test without real device
+inputs. S3 runs locally; the real-hardware stage (VL-2) and any remote deployment belong to G3. A human judges at G3.
 
 ## Prerequisite and Cycle
 
@@ -25,33 +25,30 @@ If the latest iteration of `.codeanvil/report/<cycle-name>/RFD.md` holds a line
 `Cycle closed by RFD. Continue in cycle <name>.` and write nothing. Otherwise check, in this order,
 writing **no iteration** when you stop:
 
-1. `.codeanvil/report/<cycle-name>/G1.md` is missing, its latest iteration is not `HITL: PASS`, or
-   `codeanvil status` marks `G1` or any earlier report of the cycle `stale`: return exactly
-   `G1 must pass first. Run the G1 skill.`
-2. S2's own latest iteration is `FEEDBACK` with `Verdict: design defect` and its `Based on` line
-   names the current latest G1 iteration: the design was not reworked. Return exactly
-   `S1 must rework first. Run the S1 skill.`
-3. The latest `G2.md` iteration is `FEEDBACK` with `Verdict: RFD`: return exactly
-   `Cycle suspended by RFD. Run the RFD skill.`, unless the latest `RFD.md` iteration states
-   `Outcome: Withdrawn`.
+1. Require latest G2 PASS for the selected S2 scope, else return exactly
+   `G2 must pass first. Run the G2 skill.` Run `codeanvil custody verify --cycle <cycle> --gate G2`;
+   stale inputs stop without an iteration. Compare G2 inputs to S2 outputs.
+2. Own latest FEEDBACK with `Verdict: plan defect` requires a newer S2/G2 delivery.
+   A design defect requires S1/G1 rework then S2/G2. Return the named prerequisite when missing.
+3. Latest G3 `Verdict: RFD` returns `Cycle suspended by RFD. Run the RFD skill.` unless RFD was withdrawn.
 
-## Pre-S2 MCP Capability Analysis
+## Pre-S3 MCP Capability Analysis
 
-Run once, after the prerequisites pass and before the pause schedule or any code. Read the approved
+Run once on the first `slice 0`, after the prerequisites pass and before the pause schedule or any code. Read the approved
 `.codeanvil/design/SDD.md` and decide which MCP servers the project needs. This is design-driven:
 there is no default list.
 
 | The SDD shows | Propose | Used for |
 |---------------|---------|----------|
-| RF / DSP / SDR design: measurands, methods, GNU Radio flows | `codeanvil mcp add marconi` | In S2 only (never in S1): generate a GNU Radio flowgraph `.grc` and its generated `.py` with few tokens, then adapt that output into the general `src/` code |
-| VL-2 and an embedded-Linux `HWC-*` (Raspberry Pi, Jetson, other SBC) | `codeanvil mcp add vsil_hil_mcp` | At G2, for the real-hardware stage |
+| RF / DSP / SDR design: measurands, methods, GNU Radio flows | `codeanvil mcp add marconi` | In S3 only (never in S1): generate a GNU Radio flowgraph `.grc` and its generated `.py` with few tokens, then adapt that output into the general `src/` code |
+| VL-2 and an embedded-Linux `HWC-*` (Raspberry Pi, Jetson, other SBC) | `codeanvil mcp add vsil_hil_mcp` | At G3, for the real-hardware stage |
 
 - Check which of these are already present (`codeanvil mcp list`). Present MCPs are skipped, so the
   step is idempotent; projects created with `--mcp` already have them. If none is needed or missing,
   continue to the pause schedule.
 - Each `codeanvil mcp add` needs the user's **explicit authorization**; ask before running it.
 - MCP tools load only when the agent session starts. After adding any MCP, tell the user to
-  **restart the agent manually** and run the S2 skill again; stop without writing an iteration. The
+  **restart the agent manually** and run the S3 skill again; stop without writing an iteration. The
   re-run finds the MCP present and proceeds. This is safe because `codeanvil status` is
   report-driven and stateless: the restart causes no error.
 - If a needed MCP's system dependency is **missing** (for example gnuradio for `marconi`), help the
@@ -64,13 +61,13 @@ there is no default list.
 | Path | Role |
 |------|------|
 | `.codeanvil/design/SDD.md` | Read-only: Meta `Target(s)`, `HAL mode` and `Toolchain`, §1.3.4 kit, §1.5, §1.6 HAL ladder, §1.7 telemetry per target, §2.2 order, §3 contracts and vectors, §4 traceability |
-| `.codeanvil/project.yaml` | Read-only: the active cycle. No `targets:` exist yet — the remote target and its credentials are created later, at G2, by `credential-setup` |
+| `.codeanvil/project.yaml` | Read-only: the active cycle. No `targets:` exist yet — the remote target and its credentials are created later, at G3, by `credential-setup` |
 | `.codeanvil/GT/SyRS.md` | Read-only: `SYS-*` thresholds for the VL-1 tests |
-| `.codeanvil/report/<cycle-name>/G2.md` | Rework only: latest iteration with `Verdict: module defect`; its `### Description` change list is the exact instruction |
+| `.codeanvil/report/<cycle-name>/G3.md` | Rework only: latest iteration with `Verdict: module defect`; its `### Description` change list is the exact instruction |
 | `.codeanvil/report/<cycle-name>/G1.md` | Rework only: the latest PASS iteration's impact map (files to edit vs paths to retest only) |
-| `templates/skills/S2_implement_subsystems/references/project_layout.md` | Locked trees: Python, TypeScript, root manifests, kit |
-| `templates/skills/S2_implement_subsystems/references/logger.py` | Locked Python logger, copied unchanged |
-| `templates/skills/S2_implement_subsystems/references/logger.ts` | Locked TypeScript logger, copied unchanged |
+| `templates/skills/S3_implement_modules/references/project_layout.md` | Locked trees: Python, TypeScript, root manifests, kit |
+| `templates/skills/S3_implement_modules/references/logger.py` | Locked Python logger, copied unchanged |
+| `templates/skills/S3_implement_modules/references/logger.ts` | Locked TypeScript logger, copied unchanged |
 | `codeanvil telemetry` | Telemetry collector shipped with CodeAnvil, started by `verification/run.sh`; verification kit, never delivered |
 
 ## Hard Rules
@@ -95,17 +92,17 @@ there is no default list.
 - Implement design §0.5 as a real system entry point. Every subsystem's package entry point starts
   its runtime loop, and a multi-subsystem launcher starts the complete system and stops its children.
   In `mock-only`, ship a runtime Mock HAL or explicit demo bundle; the only working entry point
-  must not import the non-shipped verification kit. A command that only logs instructions fails S2.
+  must not import the non-shipped verification kit. A command that only logs instructions fails S3.
 - Expected values come from the design's §3 vectors and `verification/golden/manifest.md`, never
   computed by the agent. Changing a vector invalidates the evidence that used it.
-- In `mock+real`, the Real HW HAL's VL-0 tests use the fake device API; S2 never needs the hardware.
-- S2 runs locally. `Target(s)` is design intent (the device deduced from the `HWC-*` blocks, or
+- In `mock+real`, the Real HW HAL's VL-0 tests use the fake device API; S3 never needs the hardware.
+- S3 runs locally. `Target(s)` is design intent (the device deduced from the `HWC-*` blocks, or
   `local`); a missing or ambiguous target intent, missing target envelope or contradictory subsystem
   placement is a **design defect**; stop rather than guess. Diagnose tool/environment faults as
   operational problems within scope; if they prevent testing, explain and pause rather than
   inventing a product defect. Different versions alone do not block delivery.
 - Report only results of runs that actually happened, with their command.
-- **Infeasibility is reported through G2.** S2 never runs the RFD skill. When a requirement looks
+- **Infeasibility is reported through G3.** S3 never runs the RFD skill. When a requirement looks
   unreachable on the declared COTS platform, record it in `test_run.md` under
   `Possible infeasibility` with the requirement IDs and the run that shows it, and finish the pass.
 - **Resume, do not restart.** On a re-run, continue from what already exists in `src/` and
@@ -121,7 +118,7 @@ of files read or "implementation is not finished" while an authorized next actio
 
 - Resume the same in-progress iteration with its selected schedule and answered checkpoints;
   do not ask for the same answer again or treat resumption as a new iteration. With **Per
-  subsystem**, implement and check all remaining modules of that subsystem before pausing.
+  slice**, implement and check the authorized slice before pausing.
   The module-defect rework route still asks no pause-schedule question.
 - Read the approved contract and its explicitly referenced normative schemas/annexes before
   declaring a design defect. Existing code that differs from an available, consistent contract
@@ -132,8 +129,8 @@ of files read or "implementation is not finished" while an authorized next actio
 
 | Boundary | Required action |
 |----------|-----------------|
-| Scheduled checkpoint or explicit human stop | Show completed scope and actual checks, preserve pending work and follow Pause Schedule. `continue` authorizes work to the next checkpoint, not HW or G2 acceptance. |
-| S2 complete | Finish the floor run, backup and report contracts; only then return the completion message. |
+| Scheduled checkpoint or explicit human stop | Show completed scope and actual checks, preserve pending work and follow Pause Schedule. `continue` authorizes work to the next checkpoint, not HW or G3 acceptance. |
+| S3 complete | Finish the floor run, backup and report contracts; only then return the completion message. |
 | Missing or contradictory design contract | Name exact files, sections, fields and affected modules; append the design-defect FEEDBACK and route to S1 under Hard Rules. |
 | Operational blocker, required permission/input/restart or runtime limit | Show the failed command/error or exact missing input, attempts made, affected scope and concrete action needed to resume. Apply the existing prerequisite/MCP/ML/backup rules where applicable; preserve work without a fabricated iteration or verdict. |
 
@@ -144,7 +141,7 @@ case sensitivity: `continue`, `y`, `yes`, `ok` and `run` all mean `continue` (in
 `RUN`). Execute the already presented scope without asking for the literal word again. Record
 the canonical `continue` checkpoint and preserve the original reply verbatim in its note.
 Do not match substrings or treat a negated/conditional reply as unconditional authorization.
-These replies do not select a pause schedule, waive a prerequisite or authorize HW/G2 acceptance.
+These replies do not select a pause schedule, waive a prerequisite or authorize HW/G3 acceptance.
 
 For a blocker, offer one recommended concrete way forward and up to two useful alternatives,
 with each option's action, scope and check for success. Repair an operational issue within
@@ -156,22 +153,22 @@ action is authorized and the blocker resolved, resume to the next scheduled boun
 
 ## Execution (local)
 
-S2 runs **locally**, through the runtime's normal tools: there is no remote deployment, enrollment
-or real-hardware test at S2. `project.yaml` has no `targets:` yet — the remote target and its
-credentials are created at G2 (`credential-setup`), and only if the design declares VL-2. In
+S3 runs **locally**, through the runtime's normal tools: there is no remote deployment, enrollment
+or real-hardware test at S3. `project.yaml` has no `targets:` yet — the remote target and its
+credentials are created at G3 (`credential-setup`), and only if the design declares VL-2. In
 `mock+real` the Real HW HAL is exercised only through its fake device API at VL-0; the actual
-device, deployment and the pre-HW review belong to G2.
+device, deployment and the pre-HW review belong to G3.
 
-## Real HW HAL and VL-2 scripts (implemented at S2, run at G2)
+## Real HW HAL and VL-2 scripts (implemented at S3, run at G3)
 
 In `mock+real`, **implement** the declared Real HW HAL — device/driver/capability observation,
 unsupported-configuration checks and safe disconnect — and exercise its failure paths with the fake
-device API at VL-0. S2 builds the code, never the measurement, and never touches the real device.
+device API at VL-0. S3 builds the code, never the measurement, and never touches the real device.
 Never label synthetic or failed-device data as a real measurement.
 
 **Write** `verification/run.sh vl2` and the measurement scripts that measure the GT metric — choose
 tools and justify resolution against its tolerance — and record their arguments in `test_run.md`
-for G2 to run. Functional HW tests need no universal oracle or calibration; when the requirement or
+for G3 to run. Functional HW tests need no universal oracle or calibration; when the requirement or
 conclusion needs calibration/corrections, the script obtains those inputs or marks the affected
 result inconclusive — never widen tolerances or invent readings. Preserve design vectors and golden
 manifest governance. The vl2 script uses run ID `<cycle>_<iteration>_<codeanvil now --machine>` and
@@ -189,16 +186,12 @@ no option preselected.
 
 | Option | Pauses |
 |--------|--------|
-| Per layer and module | Per subsystem: after the kit and its base, after each module and its tests, after integration |
-| Per layer (recommended) | Per subsystem: after the kit and its base, once after all its modules, after integration |
-| Per subsystem | Once after each completed subsystem |
+| Per module | Pause after infrastructure, each completed module and integration |
+| Per slice (recommended) | Pause after the completed slice |
 
-Recommend **Per layer** in one line: it pauses where a wrong contract is cheapest to catch, without
-one stop per module. In the Steps below, the kit and its base end step 2, the modules end step 3, and
-the integration is the producer and consumer contract tests at the start of step 4. If the runtime
-has no question tool, ask the same question in chat and wait for the reply; never assume or default
-an answer. A rework asks again, **except** the G2 module-defect rework route below, which applies
-the fixed change list from the G2 Description and asks no pause-schedule question.
+Ask using the native question tool, or chat if unavailable; wait for an actual answer.
+A module-defect rework follows G3's fixed change list without asking a new schedule.
+If the runtime has no question tool, ask in chat and wait for the reply.
 
 Every schedule adds one pause after cross-subsystem integration and before the `PATH-*` tests. At each
 pause the human answers `continue`, `rework` or `stop`, through the same question tool or in chat
@@ -208,26 +201,44 @@ when it is unavailable.
 - `rework`: fix what the human names in the current layer or module, re-run its tests, then pause
   again.
 - `stop`: write no iteration and return
-  `S2 stopped at the human's request. Run the S2 skill to resume.`
+  `S3 stopped at the human's request. Run the S3 skill to resume.`
 
 Record every answer as a checkpoint line in the iteration's Description, never as a gate verdict:
 `Checkpoint: <pause point> — <continue|rework|stop> — <note>`. A `stop` writes no `S3.md`; the next
 run resumes from `src/` under **Resume, do not restart**.
 
-## Module Subagents
+## Module Subagents — mandatory fresh context
 
-S2 works without subagents. When the runtime has them, the parent may delegate one module at a time;
-it keeps the kit, the bases, the contracts, the integration and the pause schedule.
+For each module invoke `vsil-implementor` with only its PLAN.md and the exact Context set.
+Never pass full GT, full SDD, other module source or S3 conversation history.
+Without subagents, stop at a context handoff: run one fresh session per module and record
+`Implementor: fresh session`. The current parent must not implement the module itself.
+The parent owns bases, kit, manifests, integration, golden manifest and human checkpoints.
+The implementor edits only the plan's declared module source, own tests and own stub.
+Snapshot the working diff before delegation and inspect `git diff --name-only` plus untracked
+files afterwards. Compare the incremental changed paths to the allowed set; out-of-scope
+writes must be resolved before accepting the result. Never discard unrelated human edits.
+Default concurrency is 1; parallel work is allowed only within a slice with disjoint files.
+Collect changed paths, exact commands, exit codes, criteria and blockers per module.
 
-- One subagent gets one module, its contract and its vectors. It implements the module, runs its
-  unit, bottom-up and sandwich tests, and edits no file outside that module.
-- It returns the changed files, every command it ran and pass/fail per test.
-- Run modules in parallel only when their §2.2 dependencies are ready and their files do not
-  overlap. Default concurrency is 1.
+## Scope execution
+
+- `slice 0`: parent implements INFRA-PLAN.md (bases, kit, loggers, stubs and top-down
+  placeholder integration). Run steps 1–2 and the scope's VL-0 checks; do not implement modules.
+- `slice k`: delegate only the modules named in BACKLOG for k; run step 3 for each in fresh
+  context, inspect write scope, then full `verification/run.sh vl0`. Do not implement future slices.
+- `system`: parent implements INTEGRATION-PLAN.md, cross-subsystem contract tests, PATH-* tests,
+  root entry point and smoke, VL-1 paths (steps 4–5). Keep the pause before PATH-*.
+- All scopes back up S3 artifacts, update test_run.md for the current scope and record only
+  actual execution evidence. A missing/incoherent plan is `Verdict: plan defect` → S2;
+  missing interfaces/contracts are `Verdict: design defect` → S1.
+- S3 never changes accepted plan semantics, GT or SDD. Record
+  `Proposed delta: <type> <target> — <reason>` for G3. The parent may fill the PLAN's
+  Implementation notes from returned results without changing its reviewed scope.
 
 ## Steps
 
-Before step 1 of every iteration, ask the pause schedule as **Pause Schedule** says above.
+Execute only the steps selected by Scope execution above. Before work, ask the pause schedule as **Pause Schedule** says above.
 
 1. **ML (future work).** If design §1.5 exists, stop before any code with exactly
    `ML integration is future work. Remove design §1.5 for this round.` and write no iteration.
@@ -258,8 +269,8 @@ Before step 1 of every iteration, ask the pause schedule as **Pause Schedule** s
 5. **VL-1 tests, written, not claimed.** For every module and `PATH-*` with `required_vl` VL-1 or
    higher, write a test fed by the Mock HAL synthetic generator that measures the metric against
    its `SYS-*` threshold, with the telemetry collector attached. Run them only to check they
-   execute; never report their result as evidence. The VL-1 claim belongs to G2.
-6. **Back up the last test run before overwriting it.** Run `codeanvil backup S2` from the project
+   execute; never report their result as evidence. The VL-1 claim belongs to G3.
+6. **Back up the last test run before overwriting it.** Run `codeanvil backup S3` from the project
    root. If it exits nonzero, stop and show its message; write no iteration. Cite the printed
    backup path in the iteration's Description. Backups never cover `src/` or `verification/`:
    code recovery relies on git.
@@ -267,32 +278,32 @@ Before step 1 of every iteration, ask the pause schedule as **Pause Schedule** s
    captured. Fix failures (step 3) and rerun. Investigate missing telemetry and decide whether
    affected measures need repetition; unaffected evidence may remain usable. Write `test_run.md`
    with the decision and last real run.
-8. Write the iteration and return `S2 complete. Run the G2 skill.`
+8. Write the iteration and return `S3 complete. Run the G3 skill.`
 
-Rework, module defect: read the change list in the latest `G2.md` iteration's `### Description`
+Rework, module defect: read the change list in the latest `G3.md` iteration's `### Description`
 (the enumerated items after its `Based on:` line) and apply exactly those changes — only the
 subsystems/modules/files it names — then re-run the affected tests. Do not ask the human and do not
-redesign; the G2 report Description is the instruction. The listed modules are the ones to fix,
+redesign; the G3 report Description is the instruction. The listed modules are the ones to fix,
 including a missing VL-1 test: redo step 3 (unit, bottom-up and sandwich) or 5 for them, then
-steps 6 and 7. This route does **not** ask the Pause Schedule — the change set is fixed by the G2
+steps 6 and 7. This route does **not** ask the Pause Schedule — the change set is fixed by the G3
 Description, so there is nothing to interrogate.
 
-Rework, design defect: a G2 iteration with `Verdict: design defect` routes through S1 and G1; S2
-runs again only after G1 passes. Work from the latest G1 PASS iteration's impact map and go
+Rework, design defect: a G3 iteration with `Verdict: design defect` routes through S1 and G1; S3
+runs again only after G1 and the reworked S2/G2 pass. Work from the latest G1 PASS iteration's impact map and go
 bottom-up: revise the affected contract and its stub first, then the owning module (unit,
 bottom-up, sandwich), then replace the stub. Preserve every module the impact map does not name.
 Rerun the affected `PATH-*` and the changed VL-1 tests, then back up and run the full VL-0 floor
 (steps 6 and 7). Record
-in `S3.md` the changed IDs, files, commands, results and the G2 iteration it answers.
+in `S3.md` the changed IDs, files, commands, results and the G3 iteration it answers.
 
 ## Test Run Contract
 
 Write `.codeanvil/report/<cycle-name>/S3_artifacts/test_run.md`, overwritten on every pass:
 
 - exact `verification/run.sh vl0` and `verification/run.sh vl1` commands and, in `mock+real`, the
-  `verification/run.sh vl2` command/scripts and structural-record checker that G2 will run;
+  `verification/run.sh vl2` command/scripts and structural-record checker that G3 will run;
 - the local host OS, architecture and tool versions; the intended device (from the `HWC-*` blocks)
-  and the capabilities the G2 real-hardware run will need;
+  and the capabilities the G3 real-hardware run will need;
 - last VL-0 command, exit code and passed/failed/skipped counts per subsystem;
 - §0.5 entry point, smoke command/result, URL and visible behaviour;
 - actual run IDs, times and telemetry/script output paths;
@@ -306,21 +317,31 @@ Write `.codeanvil/report/<cycle-name>/S3_artifacts/test_run.md`, overwritten on 
 Write exactly one file: `.codeanvil/report/<cycle-name>/S3.md`, append-only.
 
 - First run: header plus `## Iteration 1`; later runs append `## Iteration <N>`.
-- Header: a `| Field | Value |` table with `Gate` = `S2`, `Cycle`, `Document` (the `test_run.md`
+- Header: a `| Field | Value |` table with `Gate` = `S3`, `Cycle`, `Document` (the `test_run.md`
   path) and `Created` = `codeanvil now`.
 - Iteration: a `| Field | Value |` table with `Date` = `codeanvil now`, `Timestamp` =
   `codeanvil now --machine`, `Iteration`, `Cycle`, and exactly one row written as
   `| HITL | PASS |` or `| HITL | FEEDBACK |` (never both in one row, which `codeanvil status`
   reads as `UNKNOWN`). Then `### Description`.
-- The Description starts with the exact line `Based on: G1 iteration <N>`, where `N` is the latest
-  G1 iteration when the work starts, followed by the subsystems built, the `test_run.md` path and,
-  on rework, the G2 iteration it answers. A design defect adds the line `Verdict: design defect`
+- The Description starts with the exact line `Based on: G2 iteration <N>`, where `N` is the latest
+  G2 iteration when the work starts, followed by the subsystems built, the `test_run.md` path and,
+  on rework, the G3 iteration it answers. A design defect adds the line `Verdict: design defect`
   and the S1 sections to rework.
-- S2 is a **stage**: `PASS` means "delivered with VL-0 evidence" and needs a last
-  `verification/run.sh vl0` that exited 0. The human verdict belongs to G2.
+- S3 is a **stage**: `PASS` means "delivered with VL-0 evidence" and needs a last
+  `verification/run.sh vl0` that exited 0. The human verdict belongs to G3.
 
 ## Output Contract
 
 Return the subsystems built, the last VL-0 run counts, any `Possible infeasibility`, the report path
-with the iteration number, and the next step (`S2 complete. Run the G2 skill.`), or the design
+with the iteration number, and the next step (`S3 complete. Run the G3 skill.`), or the design
 defect and `Run the S1 skill.`
+
+## Scope evidence additions
+
+Description starts with Based on G2, then `Scope: slice <k>` or `Scope: system`.
+Record Input lines for each scope plan, Output lines for delivered source/kit,
+and `Implementor: <SUB/module> — <subagent | fresh session>` per module.
+`test_run.md` includes Scope and per-module command/criteria rows, plus Possible infeasibility.
+All digests and golden manifest cells come from `codeanvil custody digest`, pasted verbatim.
+Run `codeanvil custody verify` and have run.sh execute
+`codeanvil custody verify-manifest verification/golden/manifest.md` before every test level.

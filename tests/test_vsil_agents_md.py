@@ -20,12 +20,12 @@ def _section(text: str, heading: str) -> str:
 def test_agents_md_describes_the_full_flow(tmp_path, db_path):  # noqa: F811
     text = _agents_md(tmp_path, db_path)
 
-    for needle in ("S2_artifacts/", "G2_artifacts/", "verified_prototype.md", "vsil-verifier",
+    for needle in ("S3_artifacts/", "G3_artifacts/", "verified_prototype.md", "vsil-verifier",
                    "fresh session", "Verdict: design defect", "Verdict: module defect",
                    "Not applicable: no lab inputs in the Build Package."):
         assert needle in text, needle
     assert "S0 → G0 → S1 → G1 → S2 → G2" in text
-    assert "(S0, G0, S1, G1, S2, G2)" in text
+    assert "(S0, G0, S1, G1, S2, G2, S3, G3)" in text
 
 
 def test_agents_md_drops_the_repository_context_and_software_section(tmp_path, db_path):  # noqa: F811
@@ -52,7 +52,7 @@ def test_agents_md_names_the_verifier_subagent_without_orchestrating(tmp_path, d
     for folder in (".claude/agents/", ".opencode/agents/", ".codex/agents/"):
         assert folder in section, folder
         assert (tmp_path / "proj" / folder).is_dir(), folder
-    assert "G2" in section
+    assert "G3" in section
     assert "fresh session" in section
 
 
@@ -61,7 +61,7 @@ def test_agents_md_layout_lists_only_what_scaffold_and_reports_create(tmp_path, 
 
     for heading in ("Folder Reference", "Project Layout"):
         section = _section(text, heading)
-        for needle in ("S2_artifacts/", "G2_artifacts/", ".claude/agents/"):
+        for needle in ("S3_artifacts/", "G3_artifacts/", ".claude/agents/"):
             assert needle in section, (heading, needle)
         for banned in ("src/", "verification/", "package.json", "uv.lock", "cmd/", "daemon/"):
             assert banned not in section, (heading, banned)
@@ -72,4 +72,4 @@ def test_agents_md_report_format_covers_s2_and_g2(tmp_path, db_path):  # noqa: F
 
     assert "`S2.md`" in section
     assert "`G2.md`" in section
-    assert "Every iteration of G0, S1, G1, S2 and G2" in section
+    assert "Every iteration of G0, S1, G1, S2, G2, S3 and G3" in section

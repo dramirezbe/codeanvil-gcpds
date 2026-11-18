@@ -7,7 +7,7 @@
   "properties": {
     "schema_version": {"const": 2},
     "cycle": {"type": "string", "minLength": 1},
-    "stage": {"enum": ["S2", "G2"]},
+    "stage": {"enum": ["S3", "G3"]},
     "iteration": {"type": "integer", "minimum": 1},
     "run_id": {"type": "string", "minLength": 1},
     "target": {"type": "string", "minLength": 1},

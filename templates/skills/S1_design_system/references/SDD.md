@@ -214,7 +214,7 @@ flowchart LR
 | module_id        | <!-- unique within subsystem; e.g., rx_decoder --> |
 | subsystem_id     | <!-- owning SUB-xxx; use SUB-xxx/module_id in traces --> |
 | layer            | <!-- HAL / DSP / Decision / Output / Control / other --> |
-| depends_on       | <!-- list of contracts this module consumes --> |
+| depends_on       | <!-- qualified module IDs of producers; optional (contract.vN) edge annotation --> |
 | provides         | <!-- list of contracts this module produces --> |
 | hw_dependency    | <!-- true / false; true → required_vl must be VL-2 --> |
 | required_vl      | <!-- VL-0 / VL-1 / VL-2 --> |

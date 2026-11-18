@@ -1,4 +1,4 @@
-# Project layout — locked reference for S2
+# Project layout — locked reference for S3
 
 Build exactly these trees in the project root, outside `.codeanvil/`. One rule for every language:
 **each subsystem is `src/<package>/`**, where `<package>` is the package name of its design
@@ -129,6 +129,9 @@ Set `export PATH="$HOME/.local/bin:$PATH"` inside `run.sh` before starting the c
 package-manager command. Non-login SSH does not load shell startup files, so set the target's
 PATH explicitly rather than relying on the host's environment.
 
+0. runs `codeanvil custody verify-manifest verification/golden/manifest.md` before every level;
+   a mismatch fails the run. Manifest File paths are relative to verification/golden/,
+   never project-root paths.
 1. starts the telemetry collector in the background:
    `codeanvil telemetry --pid $$ --output verification/telemetry/<run_id>/<run_id>.jsonl &`,
    with the design §1.7 `--interval`, and `--counters` when the HAL or subsystems expose counters;
@@ -138,7 +141,7 @@ PATH explicitly rather than relying on the host's environment.
 4. stops the companion and attaches its readings to the run output;
 5. exits non-zero if any run failed.
 
-The run ID is `<cycle>_<iteration>_<codeanvil now --machine>`: the current S2/G2 iteration,
+The run ID is `<cycle>_<iteration>_<codeanvil now --machine>`: the current S3/G3 iteration,
 not a new HIL counter. A retry gets another timestamp. Use fresh outputs without overwriting.
 The companion degrades on disk failure; exit 0 does not certify telemetry coverage. Investigate
 missing/partial telemetry, notify the parent and decide whether affected measures need repeating
@@ -161,7 +164,7 @@ send ignored host source. Read-only inventory may precede review, actual device 
 
 `fetch_evidence` returns `local_path`, a fresh host snapshot of remote telemetry. Select this
 run's files within it; older remote runs may also be present. Local runs read their local output.
-The existing S2 pause schedule, `Checkpoint:` narrative and append-only report format remain;
+The existing S3 pause schedule, `Checkpoint:` narrative and append-only report format remain;
 no partial iteration or extra HITL state represents an operational stop.
 
 Never shipped: no subsystem imports or depends on anything under `verification/`. Python kit
@@ -192,3 +195,12 @@ verification/
 ├── fm_edge/       mock_hal/ stubs/ fakes/ drivers/ test/
 └── dashboard/     package.json mock_hal/ stubs/ fakes/ drivers/ test/
 ```
+
+### Locked golden manifest
+
+| Vector ID | SHA-256 | File | Generation parameters | Simulated condition | Expected output |
+|-----------|---------|------|-----------------------|---------------------|-----------------|
+
+File paths are relative to this manifest's directory. S3 parent obtains each SHA-256 with
+`codeanvil custody digest --raw <file>` and pastes it verbatim. Empty table is valid for a
+VL-0-only kit with no vectors. Every vector must be listed; never include logs in golden/.

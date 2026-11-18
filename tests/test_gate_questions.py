@@ -63,5 +63,5 @@ def test_s2_asks_the_pause_schedule_with_the_native_question_tool():
     text = " ".join(_skill_text("S3_implement_modules").split())
 
     assert "`AskUserQuestion`" in text
-    assert "Per layer (recommended)" in text
+    assert "Per slice (recommended)" in text
     assert "If the runtime has no question tool" in text

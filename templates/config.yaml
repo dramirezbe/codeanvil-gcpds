@@ -133,6 +133,12 @@ subagents:
             edit: "allow"
             webfetch: "deny"
             bash: "allow"
+            vsil_hil_mcp_probe_target: "deny"
+            vsil_hil_mcp_ssh_exec_cmd: "deny"
+            vsil_hil_mcp_fetch_evidence: "deny"
+            vsil_hil_mcp_code_sync: "deny"
+            vsil_hil_mcp_init_codeanvil: "deny"
+            vsil_hil_mcp_ssh_exec_cmd_trusted: "deny"
       codex:
         path: ".codex/agents/vsil-implementor.toml"
         format: "toml"

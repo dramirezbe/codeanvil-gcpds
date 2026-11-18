@@ -66,7 +66,7 @@ def test_g1_reviews_the_kit_and_the_toolchain():
 def test_g1_skill_fills_the_new_rows_and_routes_a_pass_to_s2():
     text = _skill_text("G1_design_review")
 
-    assert "Fill the checklist, including G1.11–G1.16 and the kit row." in text
+    assert "Fill the checklist, including G1.11–G1.18 and the kit row." in text
     assert "G1 passed. Run the S2 skill." in text
     assert "S2 is not available in this release" not in text
 
@@ -139,7 +139,7 @@ def test_g1_frontmatter_allows_read_only_remote_observation():
     text = _skill_text("G1_design_review")
     assert "No network access" not in text
     assert "No scripts." in text
-    assert "S2/G2 prepare target tools after the pre-HW review" in text
+    assert "S3/G3 prepare target tools after the pre-HW review" in text
 
 
 def test_mock_plus_real_needs_metrology_only_when_the_requirement_needs_it():

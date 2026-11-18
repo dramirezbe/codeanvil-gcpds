@@ -1,4 +1,4 @@
-"""T6 — S2 implements the subsystems, builds the verification kit and ships the loggers (D2, D8, D10)."""
+"""T6 — S3 implements the subsystems, builds the verification kit and ships the loggers (D2, D8, D10)."""
 
 import logging
 import os
@@ -26,9 +26,9 @@ def test_s2_skill_checks_its_prerequisites():
 
     assert "Cycle closed by RFD. Continue in cycle" in text
     assert "Cycle suspended by RFD. Run the RFD skill." in text
-    assert "G1 must pass first. Run the G1 skill." in text
-    assert "S1 must rework first. Run the S1 skill." in text
-    assert "Based on: G1 iteration" in text
+    assert "G2 must pass first. Run the G2 skill." in text
+    assert "design defect requires S1/G1 rework" in text
+    assert "Based on: G2 iteration" in text
     assert 'gate: "S3"' in text
 
 
@@ -47,7 +47,7 @@ def test_s2_skill_builds_the_kit_and_proves_the_vl0_floor():
     assert "verification/run.sh vl1" in text
     assert "verification/golden/manifest.md" in text
     assert "VL-1" in text
-    assert "S2 complete. Run the G2 skill." in text
+    assert "S3 complete. Run the G3 skill." in text
 
 
 def test_s2_skill_routes_defects_and_infeasibility():
@@ -66,7 +66,7 @@ def test_s2_skill_never_runs_the_rfd_skill():
     assert "never runs the rfd skill" in text
     for line in text.splitlines():
         if "run the rfd skill" in line:
-            # Only the returned prerequisite line may name it; S2 itself never runs RFD.
+            # Only the returned prerequisite line may name it; S3 itself never runs RFD.
             assert "cycle suspended by rfd. run the rfd skill." in line or "never" in line
 
 
@@ -241,7 +241,7 @@ def test_layout_tsconfig_declares_the_console_types():
 def test_s2_skill_backs_up_before_overwriting_the_test_run():
     text = " ".join(_skill_text("S3_implement_modules").split())
 
-    assert "codeanvil backup S2" in text
+    assert "codeanvil backup S3" in text
     assert "If it exits nonzero, stop and show its message; write no iteration." in text
 
 
@@ -257,13 +257,13 @@ def test_s2_skill_uses_the_g1_impact_map_for_design_defect_rework():
 
 
 def test_s2_skill_module_defect_rework_applies_the_g2_description_change_list():
-    """HIL-1: a G2 module-defect FEEDBACK carries the exact change list in its
-    report Description; S2 applies it verbatim, with no AskUser and no redesign."""
+    """HIL-1: a G3 module-defect FEEDBACK carries the exact change list in its
+    report Description; S3 applies it verbatim, with no AskUser and no redesign."""
     text = " ".join(_skill_text("S3_implement_modules").split())
 
-    assert "read the change list in the latest `G2.md` iteration's `### Description`" in text
+    assert "read the change list in the latest `G3.md` iteration's `### Description`" in text
     assert "apply exactly those changes" in text
-    assert "Do not ask the human and do not redesign; the G2 report Description is the instruction." in text
+    assert "Do not ask the human and do not redesign; the G3 report Description is the instruction." in text
     assert "does **not** ask the Pause Schedule" in text
 
 
@@ -279,9 +279,8 @@ def _section(title: str) -> str:
 def test_s2_pause_schedule_offers_the_three_options_and_the_extra_pause():
     section = _section("Pause Schedule")
 
-    assert "Per layer and module" in section
-    assert "Per layer (recommended)" in section
-    assert "Per subsystem" in section
+    assert "Per module" in section
+    assert "Per slice (recommended)" in section
     assert "one pause after cross-subsystem integration and before the `PATH-*` tests" in section
 
 
@@ -291,8 +290,8 @@ def test_s2_pause_schedule_asks_every_iteration_with_the_native_question_tool():
     assert "`AskUserQuestion`" in section
     assert "native question tool" in section
     assert "start of **every** iteration" in section
-    assert "ask the same question in chat and wait for the reply" in section
-    assert "never assume or default an answer" in section
+    assert "chat if unavailable; wait for an actual answer" in section
+    assert "no option preselected" in section
 
 
 def test_s2_pause_schedule_records_checkpoints_not_verdicts():
@@ -309,11 +308,11 @@ def test_s2_pause_schedule_records_checkpoints_not_verdicts():
 def test_s2_module_subagents_are_optional_and_bounded():
     section = _section("Module Subagents")
 
-    assert "S2 works without subagents" in section
-    assert "one module at a time" in section
-    assert "unit, bottom-up and sandwich tests" in section
+    assert "mandatory fresh context" in section and "fresh session" in section
+    assert "only its PLAN.md and the exact Context set" in section
+    assert "plan's declared module source, own tests and own stub" in section
     assert "Default concurrency is 1" in section
-    assert "their files do not overlap" in section
+    assert "disjoint files" in section
 
 
 # --- locked telemetry collector on the runtime (WU-L6, WU-RT7) -------------
@@ -339,12 +338,12 @@ def test_layout_starts_the_collector_through_the_runtime():
 
 def test_s2_is_local_only_and_defers_hardware_to_g2():
     text = " ".join(_skill_text(SKILL).split())
-    assert "S2 runs **locally**" in text
-    assert "no remote deployment, enrollment or real-hardware test at S2" in text
-    assert "the remote target and its credentials are created at G2" in text
-    assert "the actual device, deployment and the pre-HW review belong to G2" in text
+    assert "S3 runs **locally**" in text
+    assert "no remote deployment, enrollment or real-hardware test at S3" in text
+    assert "the remote target and its credentials are created at G3" in text
+    assert "the actual device, deployment and the pre-HW review belong to G3" in text
     assert "`stop`: write no iteration" in text
-    # the remote / real-HW machinery moved to G2 and must not remain in S2
+    # the remote / real-HW machinery moved to G3 and must not remain in S3
     assert "code_sync" not in text
     assert "fetch_evidence" not in text
     assert "init_codeanvil" not in text
@@ -355,7 +354,7 @@ def test_s2_writes_hw_scripts_for_g2_with_small_records_and_conditional_metrolog
     layout = " ".join(_layout_text().split())
     assert "**Write** `verification/run.sh vl2`" in skill
     assert "G3 runs these scripts on the enrolled target" in skill
-    assert "S2 builds the code, never the measurement" in skill
+    assert "S3 builds the code, never the measurement" in skill
     assert "Functional HW tests need no universal oracle or calibration" in skill
     assert "inconclusive" in skill
     assert "<cycle>_<iteration>_<codeanvil now --machine>" in skill
@@ -373,9 +372,9 @@ def test_scaffolded_local_hw_uses_checkpoint_and_keeps_existing_report_state(tmp
     skill = " ".join(_scaffold_skill(tmp_path, SKILL, "SKILL.md").read_text().split())
     layout = " ".join(_scaffold_skill(tmp_path, SKILL, "references", "project_layout.md").read_text().split())
     guide = " ".join(_scaffold_skill(tmp_path, SKILL, "references", "machine_evidence.md").read_text().split())
-    assert "no remote deployment, enrollment or real-hardware test at S2" in skill
+    assert "no remote deployment, enrollment or real-hardware test at S3" in skill
     assert "`stop`: write no iteration" in skill
-    assert "Based on: G1 iteration <N>" in skill
+    assert "Based on: G2 iteration <N>" in skill
     assert "Checkpoint:" in layout
     assert "waits for explicit `continue`" in guide
     assert "not a new gate or state" in guide

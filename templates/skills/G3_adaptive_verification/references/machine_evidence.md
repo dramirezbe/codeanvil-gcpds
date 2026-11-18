@@ -1,7 +1,7 @@
 # Laboratory measurements, version 2
 
 The agent runs functional or metrological tests appropriate to the GT and records what actually
-happened. `measurement.json` captures results; it does not decide the human G2 verdict. A real
+happened. `measurement.json` captures results; it does not decide the human G3 verdict. A real
 hardware test does not universally require a calibrated source or formal oracle: justify why
 the method and resolution support the requested tolerance. Satisfy calibration/correction
 requirements when the GT or the conclusion requires them, or report `inconclusive`.
@@ -10,10 +10,10 @@ requirements when the GT or the conclusion requires them, or report `inconclusiv
 
 The parent agent presents the published code/kit, target/device and planned update/deploy/test
 operations, then **stops and waits for explicit `continue`** or an affirmative alias accepted by
-G2's Continuation responses rule. Preserve the original reply in the checkpoint note. This checkpoint applies to remote
+G3's Continuation responses rule. Preserve the original reply in the checkpoint note. This checkpoint applies to remote
 updates/deployment and local hardware tests, even with full host access. It is the existing
-narrative `Checkpoint:` line in the completed stage report, not a new gate or state. A fresh G2
-verifier never asks the human: the G2 parent owns the pause, preparation and trusted operations.
+narrative `Checkpoint:` line in the completed stage report, not a new gate or state. A fresh G3
+verifier never asks the human: the G3 parent owns the pause, preparation and trusted operations.
 
 Code and kit must be clean and committed; pushed to the upstream when the branch tracks a remote, otherwise deployed as a local-only (unpublished) commit. After the review, the agent updates tool/application and
 dependencies from their respective published references, synchronizes clocks before measuring
@@ -22,13 +22,13 @@ Normal tests run through the authorized runtime; clearly destructive operations 
 
 ## Capture and read the record
 
-Use `<cycle>_<iteration>_<codeanvil now --machine>` as the run ID. `iteration` is the existing S2
-or G2 iteration being performed; no HIL counter is added. A retry uses a new timestamp. Keep
+Use `<cycle>_<iteration>_<codeanvil now --machine>` as the run ID. `iteration` is the existing S3
+or G3 iteration being performed; no HIL counter is added. A retry uses a new timestamp. Keep
 telemetry and script outputs together under `verification/telemetry/<run_id>/`, including
 `<cycle>_<iteration>_<timestamp>.jsonl` and `measurement.json`. Create new outputs without
 overwriting an earlier attempt. Old v1 records and historic reports remain unchanged.
 
-The required record fields are `schema_version: 2`, `cycle`, `stage` (`S2` or `G2`), `iteration`,
+The required record fields are `schema_version: 2`, `cycle`, `stage` (`S3` or `G3`), `iteration`,
 `run_id`, `target`, `command`, `started_at`, `finished_at`, `exit_code` and `measurements`.
 Each measurement gives `requirement_id`, `metric`, `value` (number, text or boolean), `criterion`
 and `result` (`pass`, `fail`, `inconclusive`); add `unit` where relevant. A failure before any
@@ -40,7 +40,7 @@ is required.
 For remote evidence, `fetch_evidence` returns `local_path`, a new host snapshot. Select this
 run's files within that path; snapshots can also contain older remote logs. Read local evidence
 directly from its run directory. Record the actual target, command, times and results in the
-existing report; do not relabel an old S2 measurement as a fresh G2 test.
+existing report; do not relabel an old S3 measurement as a fresh G3 test.
 
 Run the copied structural checker locally through the methodology runtime:
 
@@ -58,7 +58,7 @@ process, disk or sensors. Decide whether to repeat or continue with unaffected e
 the cause and scope, and never replace missing readings with zeros. A collector exit 0 does not
 prove complete coverage.
 
-G2 feedback identifies command/target, observed and expected result, relevant evidence, technical
+G3 feedback identifies command/target, observed and expected result, relevant evidence, technical
 cause or unconfirmed hypothesis, affected requirement/module/path, next action and the existing
 rework route. Operational faults are diagnosed as such, not invented product defects. Only the
-human's final G2 answer sets `HITL`.
+human's final G3 answer sets `HITL`.

@@ -17,18 +17,18 @@ suspends. The agent writes a decision document; the Build Package author decides
 re-enters at S0 in a **new cycle** with the updated Build Package.
 
 RFD is outside the chain: it has no prerequisite and can be raised from S1, G1 or any
-sub-gate of G2.
+sub-gate of G3.
 
 ## Prerequisite and Cycle
 
 1. Resolve the active cycle from `.codeanvil/project.yaml`. If it is missing, ask the user.
 2. A raising stage and its evidence are required (the design's risk section, a G1
-   recommendation, or a G2 report). Without them, stop and say so.
+   recommendation, or a G3 report). Without them, stop and say so.
 
 ## Defect Test First
 
 - A **defect** means V-SIL can fix it internally: the implementation or the design is wrong,
-  but the requirements are achievable. **Do not raise an RFD.** Route to S1 (or S2) and write
+  but the requirements are achievable. **Do not raise an RFD.** Route to S1 (or S3) and write
   no `RFD-NNN.md`.
 - An **RFD** means the Build Package requirements are **infeasible on the declared COTS
   platform**.
@@ -102,4 +102,6 @@ the next step: the author's decision, or the S0 re-entry.
 The report includes:
 - `Input: .codeanvil/GT/build_package.md sha256:‹hash›` — hash of the input Build Package (use `codeanvil custody digest`)
 - `Input: .codeanvil/GT/StRS.md sha256:‹hash›` — hash of the SyRS if available
-- `Input: .codeanvil/report/<cycle>/<raising-stage>.md sha256:‹hash›` — hash of the report from the stage that raised the RFD (S1, G1, or S2/G2)
+- `Input: .codeanvil/report/<cycle>/<raising-stage>.md sha256:‹hash›` — hash of the report from the stage that raised the RFD (S1, G1, or S3/G3)
+
+RFD may be raised only from S1, G1 or G3. S2/G2 record risks and route defects; they never raise RFD.

@@ -3,7 +3,7 @@ name: s0-normalise-build-package
 description: "Trigger: S0, Build Package, normalise, StRS, SyRS. Cast .codeanvil/GT/build_package.md into the two IEEE 29148 blueprints (StRS.md, SyRS.md) in one pass, with no judgement, and write the S0 report."
 license: Apache-2.0
 compatibility: "No network access, no scripts. Writes .codeanvil/GT/StRS.md, .codeanvil/GT/SyRS.md and .codeanvil/report/<cycle-name>/S0.md."
-runtime: "codeanvil CLI MUST be installed and on PATH (codeanvil backup, codeanvil now, codeanvil status)."
+runtime: "codeanvil CLI MUST be installed and on PATH (codeanvil backup, codeanvil now, codeanvil status, codeanvil custody)."
 metadata:
   author: "gcpds"
   version: "1.0"
@@ -26,7 +26,7 @@ S0 has **no prerequisite**: it is the entry point of the V-SIL chain.
    `Superseded by cycle: <name>`, this cycle is **closed** by an RFD and read-only: return exactly
    `Cycle closed by RFD. Continue in cycle <name>.` and write nothing.
 3. Create `.codeanvil/report/<cycle-name>/` when it does not exist.
-4. **After an RFD:** if another cycle's latest `RFD.md` iteration holds
+4. **After an RFD:** list every report cycle and read its latest `RFD.md` iteration. If one holds
    `Superseded by cycle: <this cycle>`, this is the re-entry cycle. Before re-normalising, evaluate
    if the Build Package has changed. Run `codeanvil custody digest .codeanvil/GT/build_package.md --raw`
    to get the SHA-256.
@@ -46,6 +46,19 @@ before overwriting a hand-written pair). When the human says "commit the draft" 
 the Build Package (TRIAGE.md §2), then write the recorded S0 iteration per the Report Contract
 below. If the `DRAFT` file still exists, delete it after writing the iteration.
 
+## Delta-sync (before normalisation)
+
+When accepted GT deltas are pending, use `Scope: delta-sync`. Apply only their exact Before/After
+changes to the named StRS/SyRS documents; do not re-normalise unrelated content. Authority must
+be the Build Package author; absent authority stops the operation. Run `codeanvil backup S0`.
+Read `.codeanvil/plans/DELTAS.md` and check Before digest through `codeanvil custody digest`.
+A mismatch stops for reconciliation, never overwrite divergent content. Bump each changed GT
+Version once per batch: MINOR for ADDED/MODIFIED/REMOVED, PATCH for RENAMED-only; add a revision
+history row. Obtain before/after digests via custody, update the rows to `applied`, set Applied in
+to this S0 iteration and preserve authority and Interface impact. Output the new GT digests.
+Append S0 PASS delivery with Scope and exact delta IDs, then run G0 normally, including Gate H.
+Contract version changes are structural: never mark them interface-neutral advances.
+
 ## Inputs
 
 | Path | Role |
@@ -60,7 +73,7 @@ below. If the `DRAFT` file still exists, delete it after writing the iteration.
 | Situation | Action |
 |-----------|--------|
 | `.codeanvil/GT/build_package.md` present, no GT pair | Normalise |
-| Build Package present, GT pair present, an `S0.md` exists in **any** cycle | Re-normalise: execute the **Re-entry** procedure to apply the latest G0 feedback before filling the blueprints. |
+| Build Package present, GT pair present, an `S0.md` exists in **any** cycle | Re-normalise: execute the **Re-entry** procedure to apply the latest G0 feedback or G2 GT-defect feedback before filling the blueprints. |
 | Build Package present, GT pair present, no `S0.md` in any cycle | Hand-written pair: ask once before overwriting it |
 | No Build Package, GT pair present | No-op iteration: "pair supplied as normalised input". Write nothing to `.codeanvil/GT/` |
 | Neither | Stop and ask the user for `.codeanvil/GT/build_package.md` |
@@ -118,6 +131,8 @@ below. If the `DRAFT` file still exists, delete it after writing the iteration.
 
 ## Re-entry
 
+When the latest `G2.md` is FEEDBACK with `Verdict: GT defect`, run Triage on the named conflict
+in the same cycle before re-normalisation. Draft mode remains S0/G0/G1 only.
 When the latest `G0.md` iteration is `FEEDBACK`, run Triage
 ([references/TRIAGE.md](references/TRIAGE.md)) on each reason first: present the real problem and
 reconciliation options, and let the human choose. Then match each reason to its Build Package

@@ -42,7 +42,7 @@ def test_s1_separates_execution_targets_from_hal_and_levels():
     assert "deduced from the `HWC-*` blocks" in text
     assert "never pick the first silently" in text
     assert "VL-0 and VL-1 run **locally with no hardware**" in text
-    assert "Remote PIL at S2 is out of scope" in text
+    assert "Remote PIL at S3 is out of scope" in text
     assert "run locally and remain **VERIFIED**" in text
     assert "| Target(s)" in design
     assert "**Where each level runs:**" in design

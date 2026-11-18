@@ -1,4 +1,4 @@
-"""T7: G2 runs the S2 evidence through the verifier subagent and writes the Verified Prototype."""
+"""T7: G3 runs the S3 evidence through the verifier subagent and writes the Verified Prototype."""
 
 import json
 import shutil
@@ -34,10 +34,10 @@ def test_g2_prerequisite_messages_match_g1_wording():
 
     assert "Cycle closed by RFD. Continue in cycle" in text
     assert "Cycle suspended by RFD. Run the RFD skill." in text
-    assert "S2 must pass first. Run the S2 skill." in text
-    assert "S2 must rework first. Run the S2 skill." in text
+    assert "S3 must pass first. Run the S3 skill." in text
+    assert "S3 must rework first. Run the S3 skill." in text
     assert "Outcome: Withdrawn" in text
-    assert "Based on: S2 iteration" in text
+    assert "Based on: S3 iteration" in text
 
 
 def test_g2_delegates_runs_to_the_verifier_and_falls_back_to_a_fresh_session():
@@ -84,7 +84,7 @@ def test_scaffold_ships_the_g2_reference(tmp_path, db_path):
 def test_g2_fresh_session_runs_the_steps_itself():
     text = _skill_text("G3_adaptive_verification")
 
-    assert "In a fresh session that did not run S2, G2 runs steps 2–5 itself" in text
+    assert "In a fresh session that did not run S3, G3 runs steps 2–5 itself" in text
     assert "`Verifier` = `fresh session`" in text
 
 
@@ -100,7 +100,8 @@ def test_g2_skill_backs_up_before_overwriting_the_verified_prototype():
 def test_g2_prerequisite_splits_the_rework_route_by_verdict():
     text = " ".join(_skill_text("G3_adaptive_verification").split())
 
-    assert ("return exactly `S2 must rework first. Run the S2 skill.` for `Verdict: module defect`, "
+    assert ("return exactly `S3 must rework first. Run the S3 skill.` for `Verdict: module defect`, "
+            "or `S2 must rework first. Run the S2 skill.` for `Verdict: plan defect`, "
             "or `S1 must rework first. Run the S1 skill.` for `Verdict: design defect`.") in text
 
 
@@ -112,18 +113,18 @@ def test_g2_classifies_operational_problems_as_a_first_class_branch():
 
     assert "operational-fix" in text
     assert "udev" in text and "plugdev" in text
-    assert "must not route to S2 or S1 feedback" in text
-    assert "re-run G2" in text
-    # last-resort: hand the user the commands rather than mislabel it an S2 defect
+    assert "must not route to S3 or S1 feedback" in text
+    assert "re-run G3" in text
+    # last-resort: hand the user the commands rather than mislabel it an S3 defect
     assert "hand the user the exact commands to run by hand on the target" in text
-    assert "mislabeling it an S2 defect" in text
+    assert "mislabeling it an S3 defect" in text
 
 
 def test_g2_module_feedback_carries_the_change_list_in_the_description():
     text = " ".join(_g2_text().split())
 
-    assert "right after the `Based on:` line" in text
-    assert "an explicit, enumerated list of the concrete changes S2 must make" in text
+    assert "after the `Based on:`, `Scope:` and `Input:` lines" in text
+    assert "an explicit, enumerated list of the concrete changes S3 must make" in text
     assert "without re-asking the human" in text
     assert "with no AskUser prompt and no redesign" in text
 
@@ -149,8 +150,8 @@ def test_g2_parent_prepares_but_fresh_verifier_executes_reviewed_hw():
     assert "fresh verifier runs the recorded real HW command" in text
     assert "not an exact-SemVer gate" in text
     assert "actual published tool ref" in text
-    assert "the next G2 iteration number" in text
-    assert "last appended G2 iteration number plus 1" in text
+    assert "the next G3 iteration number" in text
+    assert "last appended G3 iteration number plus 1" in text
     assert "affected measures or proceed with the supported scope" in text
     assert "Execution equipment and preparation" in prototype
     assert "deployment_manifest.json" not in text
@@ -158,7 +159,7 @@ def test_g2_parent_prepares_but_fresh_verifier_executes_reviewed_hw():
 
 
 def test_g2_enrolls_hardware_only_when_vl2_is_declared():
-    """Credentials/IP/MAC are written at G2, only for a mock+real VL-2 design, and block the HW stage."""
+    """Credentials/IP/MAC are written at G3, only for a mock+real VL-2 design, and block the HW stage."""
     text = " ".join(_g2_text().split())
     assert "Hardware credentials, IP and MAC appear only here" in text
     assert "codeanvil credential-setup" in text
@@ -176,7 +177,7 @@ def test_scaffolded_g2_and_verifier_keep_parent_pauses_and_causal_feedback(tmp_p
         assert "monotonic" in text or "synchronizes clocks" in text
         assert "concrete next action" in text
         assert "torn final JSONL line" in text
-        assert "module" in text and "S2" in text and "design" in text and "RFD" in text
+        assert "module" in text and "S3" in text and "design" in text and "RFD" in text
         assert "check_deployment.py" not in text
     assert "never asks the human" in g2
     assert "Ask the human anything" in verifier

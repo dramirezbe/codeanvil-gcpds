@@ -115,3 +115,18 @@ def test_existing_scaffold_links_and_agents_md_still_hold(tmp_path, db_path):
     assert not (project / ".codex" / "skills").is_symlink()
     assert (project / "CLAUDE.md").readlink() == Path("AGENTS.md")
     assert "{skill_table}" not in (project / "AGENTS.md").read_text(encoding="utf-8")
+
+
+def test_implementor_body_and_limits_are_generated_in_all_runtimes(tmp_path):
+    project = _scaffold(tmp_path)
+    body = (TEMPLATES_DIR / 'agents/vsil-implementor.md').read_text()
+    for runtime in ('claude', 'opencode'):
+        meta, text = _split_markdown(project / f'.{runtime}/agents/vsil-implementor.md')
+        assert text == body
+        if runtime == 'claude':
+            assert 'Write' in meta['tools']
+        else:
+            assert meta['permission']['vsil_hil_mcp_ssh_exec_cmd'] == 'deny'
+    config = tomllib.loads((project / '.codex/agents/vsil-implementor.toml').read_text())
+    assert config['developer_instructions'] == body
+    assert 'Context set' in body and 'Never edit plans' in body

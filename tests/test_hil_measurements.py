@@ -18,7 +18,7 @@ VALIDATOR = runpy.run_path(str(SCRIPT))
 @pytest.fixture
 def captured(tmp_path):
     record = {
-        "schema_version": 2, "cycle": "01_lab", "stage": "G2", "iteration": 1,
+        "schema_version": 2, "cycle": "01_lab", "stage": "G3", "iteration": 1,
         "run_id": "01_lab_1_2026-11-11_20-42-40-123", "target": "synthetic-device",
         "command": "verification/run.sh vl2", "started_at": "2026-11-12T01:42:40Z",
         "finished_at": "2026-11-12T01:42:41Z", "exit_code": 0,

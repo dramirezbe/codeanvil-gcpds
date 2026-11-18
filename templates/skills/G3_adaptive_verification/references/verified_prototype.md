@@ -1,7 +1,7 @@
 # Verified Prototype — <cycle-name>
 
-<!-- Locked template. G2 fills it on PASS and writes it to
-.codeanvil/report/<cycle-name>/G2_artifacts/verified_prototype.md. Replace every <placeholder>;
+<!-- Locked template. G3 fills it on PASS and writes it to
+.codeanvil/report/<cycle-name>/G3_artifacts/verified_prototype.md. Replace every <placeholder>;
 delete no section. -->
 
 ## 1. Cycle
@@ -9,9 +9,11 @@ delete no section. -->
 | Field | Value |
 |-------|-------|
 | Cycle | <cycle-name> |
-| Based on | S2 iteration <N>, G2 iteration <M> |
+| Based on | S3 iteration <N>, G3 iteration <M> |
 | Date | <codeanvil now> |
 | Decided by | <name> |
+| GT version at S2 entry | <version> |
+| GT version at G3 exit | <version> |
 
 ## 2. HAL mode
 
@@ -41,9 +43,9 @@ no deployment manifest, per-file digest, version equality or formal capture requ
 
 ## 4. Module evidence
 
-| Module | `required_vl` | Declared level | Environment | Command | Result | Telemetry |
-|--------|---------------|----------------|-------------|---------|--------|-----------|
-| MOD-xxx | <VL-n> | <VL-n> | <Mock HAL / Real HW HAL> | <verification/run.sh vl0 / vl1 / PROTO-*> | <pass> | <in envelope> |
+| Module | Slice | Plan | Evidence from (G3 iteration) | `required_vl` | Declared level | Environment | Command | Result | Telemetry |
+|--------|-------|------|------------------------------|---------------|----------------|-------------|---------|--------|-----------|
+| MOD-xxx | <k> | <plan path> | <iteration> | <VL-n> | <VL-n> | <Mock HAL / Real HW HAL> | <verification/run.sh vl0 / vl1 / PROTO-*> | <pass> | <in envelope> |
 
 ## 5. Path evidence
 
@@ -66,7 +68,7 @@ establish complete coverage. Missing telemetry does not invalidate unrelated tes
 - Not claimed: <what was not verified this cycle and why, including a Real HW HAL declared at VL-0>.
 - No ML evidence: no model is measured this round.
 
-For each real HW claim, cite actual G2 measurement v2/script outputs, the GT criterion and
+For each real HW claim, cite actual G3 measurement v2/script outputs, the GT criterion and
 method/resolution justification. Add calibration, corrections and uncertainty only when the
 requirement or conclusion needs them; absent required inputs make that claim inconclusive.
 A valid JSON record alone is not a metrological verdict. Record human judgment, gaps and causal
@@ -104,3 +106,23 @@ feedback; never invent readings or expand tolerances to obtain PASS.
 
 Give the exact prerequisite install/build commands and then the system entry point. If the
 preview uses the Mock HAL, say so plainly; do not imply real-hardware validation.
+
+## Plans
+
+`.codeanvil/plans/BACKLOG.md`, INFRA-PLAN.md, INTEGRATION-PLAN.md and each module PLAN.md.
+Plans and verification kit are development evidence, not shipped product artifacts.
+
+## Delta traceability log
+
+Link `.codeanvil/plans/DELTAS.md`; counts per ADDED/MODIFIED/REMOVED/RENAMED/design-sync,
+with authority, applied iteration and remaining work. No pending design-sync at system PASS.
+
+## Verifier context
+
+Name vsil-verifier subagent or fresh session, scope, origin evidence iterations and carried-forward
+unchanged module digests. Disclose actual HAL, processor and execution equipment.
+
+## Future work register
+
+FW-001 CI/CD evidence; FW-002 PIL sub-gate; FW-003 VL-2 fault injection;
+FW-004 SIL/HIL correlation; FW-005 MLOps; FW-006 automated planning.
