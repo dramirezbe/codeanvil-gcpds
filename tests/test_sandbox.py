@@ -32,6 +32,7 @@ def fake_home(tmp_path, monkeypatch):
     home = tmp_path / "fake-home"
     home.mkdir()
     monkeypatch.setenv("HOME", str(home))
+    monkeypatch.delenv("CODEX_HOME", raising=False)
     return home
 
 
@@ -191,6 +192,7 @@ def test_sandbox_codex_copies_only_auth_files(project_dir, fake_home, monkeypatc
     codex_dir = fake_home / ".codex"
     codex_dir.mkdir()
     (codex_dir / "installation_id").write_text("inst-123", encoding="utf-8")
+    (codex_dir / "auth.json").write_text('{"tokens": {"access_token": "test-only"}}', encoding="utf-8")
     (codex_dir / "config.toml").write_text("model = 'x'", encoding="utf-8")
     (codex_dir / "AGENTS.md").write_text("# global", encoding="utf-8")
 
@@ -207,7 +209,7 @@ def test_sandbox_codex_copies_only_auth_files(project_dir, fake_home, monkeypatc
     )
     with pytest.raises(SystemExit):
         cmd_sandbox("codex")
-    assert copied["entries"] == ["installation_id"]  # config.toml/AGENTS.md never copied
+    assert copied["entries"] == ["auth.json", "installation_id"]  # settings never copied
 
 
 def test_sandbox_exits_with_agent_exit_code(project_dir, monkeypatch):

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.1 — 2026-11-17
+
+- Seed Codex sandbox login from auth.json as well as installation_id, honoring an inherited CODEX_HOME.
+- Keep the copied authentication files private and temporary while preserving global-settings isolation.
+
+Validation: 47 sandbox/terminal tests passed; real Codex login status succeeded inside the
+isolated home. The T0 v4 full-flow trial and human gate acceptance remain pending.
+
 ## 0.9.0 — 2026-11-17
 
 - Close scope-specific verification, immutable plan, rework and mandatory delta-review contracts.

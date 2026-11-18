@@ -47,19 +47,26 @@ def _build_command(spec: dict, project_dir: Path | None = None) -> list[str]:
 
 
 def _copy_auth_files(spec: dict, sandbox_dir: Path) -> None:
-    """Copy only recipe-approved identity files; never copy global settings."""
-    source_dir = Path(str(spec.get("config_dir", ""))).expanduser()
+    """Snapshot allowlisted auth files from the original home, before redirecting it."""
+    source_home = os.environ.get(spec.get("env_var", "")) if spec.get("strategy") == "env_redirect" else None
+    source_dir = Path(source_home or str(spec.get("config_dir", ""))).expanduser()
     for name in spec.get("auth_files", []):
         source = source_dir / name
         if source.is_file():
-            shutil.copy2(source, sandbox_dir / name)
+            destination = sandbox_dir / name
+            # mkdtemp is private; create the credential file privately as well,
+            # even when the original cache has permissive file modes.
+            with source.open("rb") as incoming:
+                fd = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+                with os.fdopen(fd, "wb") as outgoing:
+                    shutil.copyfileobj(incoming, outgoing)
 
 
 @contextmanager
 def prepare_sandbox(agent: str, project: Path) -> Iterator[SandboxLaunch]:
     """Yield ``argv`` and a complete child ``env`` for a scaffolded project.
 
-    Redirected configuration and identity copies are removed after context exit,
+    Redirected configuration and authentication snapshots are removed after context exit,
     including when preparation or process launch fails. Consumers must stop and
     reap the child before exiting this context.
     """

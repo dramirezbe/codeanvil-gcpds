@@ -248,7 +248,9 @@ sandbox_agents:
     env_var: CODEX_HOME
     config_dir: "~/.codex"
     args: ["--no-daemon"]
-    auth_files: ["installation_id"]
+    # File-backed login cache only. Settings, skills, MCP and history stay isolated.
+    # The inherited CODEX_HOME (when set) is the source before redirection.
+    auth_files: ["installation_id", "auth.json"]
 
 # OS-installed Python packages that pip cannot provide (compiled against one
 # system Python). `probe` runs in the target interpreter: an import, never a
