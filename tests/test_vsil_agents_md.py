@@ -1,9 +1,12 @@
-"""T10 — the generated AGENTS.md follows the full V-SIL v3 flow (S14, S15, S16).
+"""The generated AGENTS.md describes the active v4 flow and supported tools.
 
 Plan: odd/tasks/2026-11-05_AGENTS_template_full_flow.md
 """
 
+import argparse
 import re
+
+from codeanvil.CLI.parser import build_parser
 
 from test_create import _agents_md, db_path  # noqa: F401  (db_path is a fixture)
 
@@ -26,6 +29,34 @@ def test_agents_md_describes_the_full_flow(tmp_path, db_path):  # noqa: F811
         assert needle in text, needle
     assert "S0 → G0 → S1 → G1 → S2 → G2" in text
     assert "(S0, G0, S1, G1, S2, G2, S3, G3)" in text
+
+
+def test_execution_map_distinguishes_slice_progress_from_system_delivery(tmp_path, db_path):  # noqa: F811
+    overview = _section(_agents_md(tmp_path, db_path), "Execution overview")
+    diagram = re.search(r"```mermaid\n(.*?)```", overview, re.S).group(1)
+    # A general PASS must never imply a prototype after an infrastructure/module slice.
+    prototype_edges = [line.strip() for line in diagram.splitlines() if "| VP[" in line]
+    assert prototype_edges == ['G3 -->|"system PASS"| VP["Verified Prototype"]']
+    assert 'G3 -->|"slice PASS: next scope"| S2' in diagram
+    assert set(re.findall(r'(\w+) -\.->\|"infeasible"\| RFD', diagram)) == {"S1", "G1", "G3"}
+    assert "new cycle" in diagram
+    assert "slice 0" in overview and "verification kit" in overview
+    assert "module slices" in overview and "end-to-end paths" in overview
+
+
+def test_cli_catalog_covers_the_actual_parser_without_inventing_commands(tmp_path, db_path):  # noqa: F811
+    catalog = _section(_agents_md(tmp_path, db_path), "CLI capabilities")
+    commands = next(a for a in build_parser()._actions if isinstance(a, argparse._SubParsersAction))
+    documented = set(re.findall(r"\bcodeanvil ([a-z][a-z-]*)", catalog))
+    assert documented == set(commands.choices)
+    for family in ("custody", "runtime", "mcp"):
+        actions = next(a for a in commands.choices[family]._actions if isinstance(a, argparse._SubParsersAction))
+        row = next(line for line in catalog.splitlines() if f"`codeanvil {family} " in line)
+        for action in actions.choices:
+            assert re.search(rf"\b{re.escape(action)}\b", row), (family, action)
+    assert "keeping files by default" in catalog
+    assert "v3-only" in catalog and "incompatible with v4" in catalog
+    assert "does not run stages or decide gates" in catalog
 
 
 def test_agents_md_drops_the_repository_context_and_software_section(tmp_path, db_path):  # noqa: F811
@@ -54,6 +85,10 @@ def test_agents_md_names_the_verifier_subagent_without_orchestrating(tmp_path, d
         assert (tmp_path / "proj" / folder).is_dir(), folder
     assert "G3" in section
     assert "fresh session" in section
+    assert "| `vsil-implementor` | S3 |" in section
+    assert "| `vsil-verifier` | G3 |" in section
+    for runtime, suffix in (("claude", "md"), ("opencode", "md"), ("codex", "toml")):
+        assert (tmp_path / "proj" / f".{runtime}/agents/vsil-implementor.{suffix}").is_file()
 
 
 def test_agents_md_layout_lists_only_what_scaffold_and_reports_create(tmp_path, db_path):  # noqa: F811

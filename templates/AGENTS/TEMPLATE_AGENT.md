@@ -6,6 +6,47 @@ describes the project, its skills, and its conventions. It does not orchestrate 
 gates: each skill enforces its own prerequisite report, so the chain lives in the skills.
 All instructions below are binding.
 
+## Execution overview
+
+This orientation map summarises the V-SIL v4 stage-gate, Agile-V and feedback model.
+Each S2–G3 pass covers one scope: **slice 0** (bases and verification kit), then
+**module slices** in dependency order, then **system** (integration and end-to-end paths).
+Only **G3 system PASS** delivers the Verified Prototype. Skills own the prerequisite
+checks and detailed routing; this map does not execute or authorise any step.
+
+```mermaid
+flowchart TD
+    BP["Build Package"] --> S0["S0: Normalise requirements"]
+    S0 --> G0{"G0: Deterministic structure check"}
+    G0 -->|"PASS + human Gate H"| S1["S1: Design subsystems and modules"]
+    S1 --> G1{"G1: Human design review"}
+    G1 -->|"PASS"| S2
+
+    subgraph SCOPE["Repeat for slice 0, module slices, then system"]
+        S2["S2: Plan the scope"] --> G2{"G2: Human plan review"}
+        G2 -->|"PASS"| S3["S3: Implement / integrate"]
+        S3 --> G3{"G3: Verification + human verdict"}
+    end
+
+    G3 -->|"slice PASS: next scope"| S2
+    G3 -->|"system PASS"| VP["Verified Prototype"]
+    G0 -.->|"FEEDBACK"| S0
+    G1 -.->|"design feedback"| S1
+    G2 -.->|"plan defect"| S2
+    G3 -.->|"module defect"| S3
+    G3 -.->|"plan defect"| S2
+    G3 -.->|"design defect"| S1
+    S1 -.->|"infeasible"| RFD["RFD: Author decision outside the chain"]
+    G1 -.->|"infeasible"| RFD
+    G3 -.->|"infeasible"| RFD
+    RFD -.->|"Author updates Build Package; new cycle"| BP
+```
+
+G0's mechanical check must pass before Gate H; G1, G2 and G3 are agent-prepared,
+human-decided gates. Operational G3 failures require environment repair and a G3
+rerun. Other feedback and delta-sync routes are defined by the skills and the
+cadence/routing reference below.
+
 ## Rules
 
 - You **MUST** run stages and gates in sequential order (S0, G0, S1, G1, S2, G2, S3, G3). A step
@@ -45,6 +86,35 @@ orientation: you do not need to read files or list directories to discover progr
   `codeanvil mcp doctor <name>` and show the human its fix line.
 - How each step works is in its skill under `.agents/skills/`; what the project must do
   is in `.codeanvil/GT/`. Read those to know what to do; run skill scripts from the project root.
+
+## CLI capabilities
+
+Use `codeanvil --help`, `codeanvil <command> --help` or a subcommand's `--help`
+for arguments; `codeanvil --version` prints the installed version.
+
+| Command | Purpose |
+|---------|---------|
+| `codeanvil init` | Initialise the global configuration, database and methodology runtime. |
+| `codeanvil create --name <label> --folder <dir> --path <parent>` | Scaffold and register a project; `--mcp <server>` includes an installed MCP server. |
+| `codeanvil list` | List registered projects. |
+| `codeanvil sync` | Register a cloned project or update its local path from its manifest. |
+| `codeanvil delete [project]` | Unregister a project, keeping files by default; `--remove-files` also removes its folder. |
+| `codeanvil status [project]` | Show the active cycle, progress, stale reports and next step. |
+| `codeanvil backup <stage>` | Save the stage's existing working artifacts before rework. |
+| `codeanvil custody digest / verify / verify-manifest` | Produce file/tree digests, check report inputs/delivery integrity, or verify golden vectors. |
+| `codeanvil runtime sync / add / remove / list / path` | Manage the shared Python runtime and its packages. |
+| `codeanvil python <script> [args]` | Run a skill script in that runtime, checking its declared packages. |
+| `codeanvil mcp list / add / update / remove / doctor / enable / disable / run` | Install, diagnose, wire or launch MCP servers. |
+| `codeanvil credential-setup -u <admin> -i <host>` | Enrol a Linux hardware target and link its workspace to the project UUID. |
+| `codeanvil telemetry` | Collect host/process telemetry; options select PID, output, duration and counters. |
+| `codeanvil sandbox <agent>` | Launch an agent with project-local settings; this is not an OS security sandbox. |
+| `codeanvil now [--machine] [--tz <zone>]` | Produce report timestamps or filename-safe timestamps. |
+| `codeanvil upgrade` | Update the installed CLI from the main branch. |
+| `codeanvil ui` | Open the local workspace UI; its gate-chain view remains v3-only and is incompatible with v4. |
+
+Slashes above separate alternative subcommands, not literal shell syntax. The CLI
+supports the methodology; it does not run stages or decide gates. Each skill
+defines when its commands and any human authorisation are required.
 
 ## Cycle
 
@@ -106,9 +176,17 @@ name**, starting at S0 with an updated Build Package. The chain skills refuse to
 
 ## Subagents
 
-`vsil-verifier` is generated in `.claude/agents/`, `.opencode/agents/` and `.codex/agents/`. Only the
-G3 skill uses it, to run the verification commands in a fresh, read-only context; in a runtime without
-subagents, run G3 in a fresh session. Never use it for anything else or edit its files (regenerated).
+Both subagents are generated in `.claude/agents/`, `.opencode/agents/` and `.codex/agents/`.
+
+| Subagent | Owning skill | Context and responsibility |
+|----------|--------------|----------------------------|
+| `vsil-implementor` | S3 | One fresh context per module: its approved PLAN.md and Context set only. Implements and checks only its allowed paths; returns evidence and blockers. |
+| `vsil-verifier` | G3 | A separate fresh, read-only context. Runs the recorded verification commands and returns evidence without editing product or test code. |
+
+The parent owns reports, shared/integration work and human gate decisions. Neither
+subagent decides HITL or asks the human. Without subagent support, use a fresh session
+per module for S3 and a separate fresh session for G3. Use these agents only through
+their owning skills; their generated files are not hand-edited.
 
 ## MCP Servers
 
@@ -248,7 +326,7 @@ Rules:
 | `.codeanvil/report/<cycle-name>/S3_artifacts/` | S3's `test_run.md`: the verification commands and `Possible infeasibility` entries. |
 | `.codeanvil/report/<cycle-name>/G3_artifacts/` | `verified_prototype.md`, written only on system G3 PASS. |
 | `.agents/skills/` | Canonical skill store — every agent runtime links here. |
-| `.claude/agents/`, `.opencode/agents/`, `.codex/agents/` | The generated `vsil-verifier` subagent, one file per runtime. |
+| `.claude/agents/`, `.opencode/agents/`, `.codex/agents/` | Generated `vsil-implementor` and `vsil-verifier` definitions, one file per agent and runtime. |
 
 ## Project Layout
 
@@ -263,10 +341,10 @@ Rules:
     │                          <cycle-name>/G3_artifacts/  <- verified_prototype.md
     │   backups/           <- stage artifacts saved by `codeanvil backup <stage>`
     .agents/skills/        <- canonical skill store (all gate skills)
-    .claude/agents/        <- vsil-verifier (also .opencode/agents/, .codex/agents/)
+    .claude/agents/        <- vsil-implementor + vsil-verifier (also .opencode/agents/, .codex/agents/)
 
 Skill links in `.claude/`, `.github/` and `.opencode/` point to `.agents/skills/`.
-The generated `vsil-verifier` files live in `.claude/agents/`, `.opencode/agents/`
+The generated `vsil-implementor` and `vsil-verifier` files live in `.claude/agents/`, `.opencode/agents/`
 and `.codex/agents/`.
 
 Codex reads this `AGENTS.md` and `.agents/skills/` natively. When MCP servers are
