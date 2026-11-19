@@ -7,20 +7,30 @@ import './styles/build-package.css'
 const endpoint = 'build-package'
 const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 type Upload = { batch: string; index: number; name: string; archive: string | null; uploaded_at: string }
-type Inventory = { files: Upload[] }
+type Existing = { path: string; name: string; modified_at: string }
+type SourceDocument = Upload | Existing
+type Inventory = { files: SourceDocument[] }
 type Preview =
   | { format: 'markdown' | 'text'; content: string; clipped: boolean }
   | { format: 'table'; rows: string[][]; sheets: string[]; sheet: number; clipped: boolean }
   | { format: 'pdf'; pages: number }
 
-function identity(file: Upload) { return `${file.batch}/${file.index}` }
+function identity(file: SourceDocument) {
+  return 'path' in file ? `existing:${file.path}` : `${file.batch}/${file.index}`
+}
+
+function previewUrl(file: SourceDocument, action: string, projectPath: string, extra: Record<string, string>) {
+  return 'path' in file
+    ? workspaceUrl(`${endpoint}/existing/${action}`, projectPath, { path: file.path, ...extra })
+    : workspaceUrl(`${endpoint}/${identity(file)}/${action}`, projectPath, extra)
+}
 
 export function BuildPackage({ artifact, projectPath, revision }: {
   artifact: Artifact; projectPath: string; revision: number
 }) {
-  const [files, setFiles] = useState<Upload[]>([])
-  const [selected, setSelected] = useState<Upload | null>(null)
-  const [opened, setOpened] = useState<Upload | null>(null)
+  const [files, setFiles] = useState<SourceDocument[]>([])
+  const [selected, setSelected] = useState<SourceDocument | null>(null)
+  const [opened, setOpened] = useState<SourceDocument | null>(null)
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
@@ -73,12 +83,12 @@ export function BuildPackage({ artifact, projectPath, revision }: {
     <div className="build-layout">
       <div className="build-inventory">
         <div className="build-list-toolbar">
-          <b>Uploaded documents</b>
+          <b>Documents</b>
           <button className="secondary-button small" disabled={!selected} onClick={() => setOpened(selected)}>Open preview</button>
         </div>
         {loading ? <p className="build-notice" role="status">Loading documents…</p>
           : !files.length ? <p className="build-notice">Upload documents or an archive to get started.</p>
-            : <div className="build-files" aria-label="Uploaded documents">
+            : <div className="build-files" aria-label="Build Package documents">
               {files.map(file => <button type="button" className="build-file" key={identity(file)}
                 aria-pressed={Boolean(selected && identity(selected) === identity(file))}
                 title={`Double-click to preview ${file.name}`}
@@ -87,37 +97,39 @@ export function BuildPackage({ artifact, projectPath, revision }: {
                 <FileText size={16} />
                 <span>
                   <b>{file.name}</b>
-                  <time dateTime={file.uploaded_at}>{dateFormat.format(new Date(file.uploaded_at))}</time>
-                  {file.archive && <small>From {file.archive}</small>}
+                  {'path' in file
+                    ? <time dateTime={file.modified_at}>Modified · {dateFormat.format(new Date(file.modified_at))}</time>
+                    : <time dateTime={file.uploaded_at}>Uploaded · {dateFormat.format(new Date(file.uploaded_at))}</time>}
+                  {'archive' in file && file.archive && <small>From {file.archive}</small>}
                 </span>
               </button>)}
             </div>}
       </div>
-      {opened ? <UploadedPreview key={identity(opened)} file={opened} projectPath={projectPath} onClose={() => setOpened(null)} />
+      {opened ? <DocumentPreview key={identity(opened)} file={opened} projectPath={projectPath} onClose={() => setOpened(null)} />
         : artifact.exists ? <ArtifactViewer artifact={artifact} projectPath={projectPath} revision={revision} />
-          : <div className="viewer-empty"><h2>Document preview</h2><p>Double-click an uploaded document to open it here.</p></div>}
+          : <div className="viewer-empty"><h2>Document preview</h2><p>Double-click a document to open it here.</p></div>}
     </div>
   </section>
 }
 
-function UploadedPreview({ file, projectPath, onClose }: { file: Upload; projectPath: string; onClose: () => void }) {
+function DocumentPreview({ file, projectPath, onClose }: { file: SourceDocument; projectPath: string; onClose: () => void }) {
   const [preview, setPreview] = useState<Preview | null>(null)
   const [sheet, setSheet] = useState(0)
   const [page, setPage] = useState(1)
   const [pdfError, setPdfError] = useState(false)
   const [error, setError] = useState('')
-  const path = `${endpoint}/${identity(file)}`
+  const url = previewUrl(file, 'preview', projectPath, { sheet: String(sheet) })
 
   useEffect(() => {
     const controller = new AbortController()
     setError('')
-    request<Preview>(workspaceUrl(`${path}/preview`, projectPath, { sheet: String(sheet) }), controller.signal)
+    request<Preview>(url, controller.signal)
       .then(result => { if (!controller.signal.aborted) setPreview(result) })
       .catch(reason => { if (!controller.signal.aborted) setError(reason.message) })
     return () => controller.abort()
-  }, [path, projectPath, sheet])
+  }, [url])
 
-  return <section className="artifact-viewer build-document" aria-label="Uploaded document preview">
+  return <section className="artifact-viewer build-document" aria-label="Document preview">
     <header className="artifact-toolbar">
       <div className="artifact-title"><strong>{file.name}</strong></div>
       <button className="icon-btn" onClick={onClose} title="Close preview" aria-label="Close preview"><X size={16} /></button>
@@ -135,7 +147,7 @@ function UploadedPreview({ file, projectPath, onClose }: { file: Upload; project
           {pdfError && <p className="build-notice error-state" role="alert">Could not render this PDF page.</p>}
           {preview.pages > 0 && !pdfError && <div className="build-pdf">
             <img key={page} alt={`Page ${page} of ${file.name}`}
-              onError={() => setPdfError(true)} src={workspaceUrl(`${path}/pdf-page`, projectPath, { page: String(page) })} />
+              onError={() => setPdfError(true)} src={previewUrl(file, 'pdf-page', projectPath, { page: String(page) })} />
           </div>}
         </> : <>
           {preview.clipped && <p className="build-notice" role="status">Showing the beginning of this document.</p>}

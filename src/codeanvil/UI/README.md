@@ -43,9 +43,14 @@ which can be located with `LIBARCHIVE` on systems where it is installed outside
 the default search paths.
 
 Uploaded documents and extracted members are stored in
-`.codeanvil/GT/build_package_uploads/`.
-Use their content to prepare `.codeanvil/GT/build_package.md`, the Markdown
-source S0 reads. The existing document remains available in the same view.
+`.codeanvil/GT/build_package_uploads/`. Build Package also scans source files
+already in `.codeanvil/GT/` and its subfolders, with the modification date from
+disk. These files use the same embedded preview.
+
+Use the source documents to prepare `.codeanvil/GT/build_package.md` for S0.
+Open **StRS · Stakeholder requirements** or **SyRS · System requirements**
+in Ground truth to read the generated pair. Click **Refresh** after S0
+rebuilds the files or after copying new sources into the project.
 
 ### Use the local terminal (Linux / WSL)
 

@@ -22,7 +22,11 @@ _RUN_ID = re.compile(
 )
 _REPORTS = tuple(CONFIG["report_order"])
 _EVIDENCE_FILE_BYTES = 5 * 1024 * 1024
-_GT = {"build_package.md": "Build Package", "StRS.md": "Stakeholder requirements", "SyRS.md": "System requirements"}
+_GT = {
+    "build_package.md": "Build Package",
+    "StRS.md": "StRS · Stakeholder requirements",
+    "SyRS.md": "SyRS · System requirements",
+}
 _GRAPH_THEMES = {"dependency_graph.html": "dark", "dependency_graph_light.html": "light"}
 _DESIGN = {"SDD.md": "System design", "dependency_graph.html": "Dependency graph",
            "dependency_graph_light.html": "Dependency graph · light"}

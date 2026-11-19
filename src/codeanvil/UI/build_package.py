@@ -26,6 +26,7 @@ _EXPANDED_BYTES = 256 * 1024 * 1024
 _UPLOAD_FILES = 100
 _DOCUMENTS = 500
 _SOURCE_DIRECTORY = PROJECT_GT / "build_package_uploads"
+_GT_PAIR = {"strs.md", "syrs.md"}
 
 
 def _unlinked(path: Path) -> Path:
@@ -65,13 +66,54 @@ def _manifest(folder: Path) -> list[dict]:
         raise HTTPException(404, "Build Package upload is unavailable.") from exc
 
 
-def _list(project: Path) -> list[dict]:
+def _uploaded_files(project: Path) -> list[dict]:
     store = _unlinked(project / _SOURCE_DIRECTORY)
     if not store.is_dir():
         return []
     batches = (_manifest(batch) for batch in store.iterdir() if _BATCH.fullmatch(batch.name) and batch.is_dir())
     return sorted((item for batch in batches for item in batch),
                   key=lambda item: (item["uploaded_at"], item["batch"], -item["index"]), reverse=True)
+
+
+def _existing_file(gt: Path, relative: str) -> Path:
+    if _display_name(relative) != relative or (os.name == "nt" and ":" in relative):
+        raise HTTPException(404, "Ground Truth source not found.")
+    parts = PurePosixPath(relative).parts
+    if (any(part.startswith(".") for part in parts)
+            or parts[0].casefold() == _SOURCE_DIRECTORY.name
+            or relative.casefold() in _GT_PAIR):
+        raise HTTPException(404, "Ground Truth source not found.")
+    file = _unlinked(gt / relative)
+    if not file.is_file():
+        raise HTTPException(404, "Ground Truth source not found.")
+    return file
+
+
+def _existing_files(project: Path) -> list[dict]:
+    gt = _unlinked(project / PROJECT_GT)
+    files = []
+    for parent, directories, filenames in os.walk(gt, followlinks=False):
+        folder = Path(parent)
+        scan = []
+        for name in directories:
+            if name.startswith(".") or (folder == gt and name.casefold() == _SOURCE_DIRECTORY.name):
+                continue
+            try:
+                _unlinked(folder / name)
+            except HTTPException:
+                continue
+            scan.append(name)
+        directories[:] = scan
+        for name in filenames:
+            relative = (folder / name).relative_to(gt).as_posix()
+            try:
+                file = _existing_file(gt, relative)
+                timestamp = datetime.fromtimestamp(file.stat().st_mtime, timezone.utc)
+            except (HTTPException, OSError):
+                continue
+            files.append({"name": relative, "path": relative,
+                          "modified_at": timestamp.isoformat(timespec="milliseconds")})
+    return sorted(files, key=lambda item: (item["modified_at"], item["path"]), reverse=True)
 
 
 def _file(project: Path, batch: str, index: int) -> Path:
@@ -143,7 +185,7 @@ def create_build_package_router(root: Path) -> APIRouter:
     @router.get("")
     def files(project_path: str | None = None):
         project, _ = _project(root, project_path)
-        return {"files": _list(project)}
+        return {"files": [*_uploaded_files(project), *_existing_files(project)]}
 
     @router.post("", status_code=201)
     async def upload(request: Request, project_path: str | None = None):
@@ -176,6 +218,17 @@ def create_build_package_router(root: Path) -> APIRouter:
     def pdf_page(batch: str, index: int, page: int = Query(1, ge=1), project_path: str | None = None):
         project, _ = _project(root, project_path)
         image = render_pdf_page(_file(project, batch, index), page)
+        return Response(image, media_type="image/png", headers={"X-Content-Type-Options": "nosniff"})
+
+    @router.get("/existing/preview")
+    def existing_preview(path: str, sheet: int = Query(0, ge=0), project_path: str | None = None):
+        project, _ = _project(root, project_path)
+        return preview_document(_existing_file(project / PROJECT_GT, path), sheet)
+
+    @router.get("/existing/pdf-page")
+    def existing_pdf_page(path: str, page: int = Query(1, ge=1), project_path: str | None = None):
+        project, _ = _project(root, project_path)
+        image = render_pdf_page(_existing_file(project / PROJECT_GT, path), page)
         return Response(image, media_type="image/png", headers={"X-Content-Type-Options": "nosniff"})
 
     return router

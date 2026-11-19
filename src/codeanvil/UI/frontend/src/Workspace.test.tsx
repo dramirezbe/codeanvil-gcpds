@@ -132,11 +132,13 @@ describe('Workspace', () => {
     const user = userEvent.setup()
     const artifact: Artifact = { path: '.codeanvil/GT/build_package.md', label: 'Build Package', kind: 'gt', exists: false }
     const item = { batch: 'f'.repeat(32), index: 0, name: 'spec.md', archive: 'inputs.zip', uploaded_at: '2026-11-19T12:00:00Z' }
+    const existing = { path: 'annexes/Original terms.md', name: 'annexes/Original terms.md', modified_at: '2026-11-18T12:00:00Z' }
     const fetcher = vi.fn(async (url: string, init?: RequestInit) => {
       if (url.includes('/overview?')) return response({ ...overview, artifacts: [artifact] })
       if (init?.method === 'POST') return response({ files: [item] }, 201)
+      if (url.includes('/existing/preview?')) return response({ format: 'markdown', content: '# Existing project terms', clipped: false })
       if (url.includes('/preview?')) return response({ format: 'markdown', content: '# Uploaded requirements', clipped: false })
-      return response({ files: [] })
+      return response({ files: [existing] })
     })
     vi.stubGlobal('fetch', fetcher)
     const view = render(<Workspace project={project} active="Ground truth" onSetActive={vi.fn()} />)
@@ -150,6 +152,12 @@ describe('Workspace', () => {
     expect(row).toHaveTextContent('From inputs.zip')
     await user.dblClick(row)
     expect(await screen.findByRole('heading', { name: 'Uploaded requirements' })).toBeInTheDocument()
+    const original = screen.getByRole('button', { name: /Original terms\.md/ })
+    expect(original.querySelector('time')).toHaveAttribute('datetime', existing.modified_at)
+    expect(original).toHaveTextContent('Modified')
+    await user.dblClick(original)
+    expect(await screen.findByRole('heading', { name: 'Existing project terms' })).toBeInTheDocument()
+    expect(fetcher.mock.calls.at(-1)?.[0]).toContain('path=annexes%2FOriginal+terms.md')
   })
 })
 
