@@ -21,24 +21,31 @@ cycle and report-iteration browsing, shared stale/delivered states, safe
 Markdown, Design/Verification views and nested artifacts. The five synthetic
 [0.7.0 examples](../../../methodology/test/v0.7.0-example-artifacts/README.md)
 are retained as historical fixtures and are not supported workspace projects.
-The workspace terminal now runs installed
-local CLIs in a Linux/WSL PTY, with a normal/sandbox checkbox. The workspace
+The workspace terminal runs installed local CLIs in a Linux/WSL PTY. The
+project sidebar lists CLI agents and desktop apps from the launcher registry. The workspace
 includes telemetry plots and a VL-2 evidence view. Automatic refresh, a hardware
 gallery and native packaging remain later work.
 
 ### Use the local terminal (Linux / WSL)
 
-Open a project, select **Terminal**, choose an installed **Local CLI**, then
-click **Start terminal**. **Sandbox mode** is unchecked by default. Normal mode
+Open a project, choose an installed agent in **Agents & IDEs** at the
+bottom of the sidebar, then click **Start terminal**. Each supported agent
+has its own **Sandbox mode** checkbox, unchecked by default. Normal mode
 inherits your usual local agent configuration; checked mode uses the same
-project-only configuration recipe as `codeanvil sandbox <agent>`. This isolates
-agent settings, not filesystem access or process permissions. Stop the session
-before changing its CLI or mode.
+project-only configuration recipe as `codeanvil sandbox <agent>`. Filesystem
+access and process permissions follow the launcher environment. Selecting a
+different agent while a terminal runs stops that session before launching the
+replacement. To change the running agent's mode, stop it first.
+
+Idle launcher icons are muted. The selected agent uses full color, and a
+running terminal has a glow that clears on exit or stop. Desktop app buttons
+open the current project and glow for 15 seconds after launch. The sidebar
+labels unavailable tools and tools that need installation.
 
 The panel displays the actual local process, including its prompts, keyboard
-input, Ctrl-C and output. Opening the view never starts a CLI or sends a prompt.
-Navigating away disconnects the browser while the process continues; reopening
-Terminal reconnects to it. **Stop terminal** or shutting down the UI server
+input, Ctrl-C and output. The view attaches to the project's existing session
+when available. Navigating away keeps the process running and the sidebar
+receives its exit status. **Stop terminal** or shutting down the UI server
 terminates its owned process group. Sessions and their bounded replay exist
 only in server memory. There is one running session per project and at most
 eight running sessions per server. No model API or stored transcript is added.
@@ -194,29 +201,15 @@ advanced action adapter still dispatches CLI handlers in-process.
 
 ## 7. Agent & editor sidebar (O3)
 
-A left sidebar lists launchers in two groups, by whether they drive the PTY:
+The bottom of the project sidebar lists configured desktop apps above the
+terminal agents. The default CLI entries are Claude Code, Codex CLI, OpenCode,
+and Pi. Desktop recipes for VS Code and JetBrains open the project folder.
+The bundled Codex Desktop recipe uses macOS app-bundle detection.
 
-- **No terminal (GUI apps)** — open the app on the project path, no PTY:
-  **Claude desktop**, **Codex desktop**, **OpenCode desktop**, **VS Code**,
-  **JetBrains**.
-- **Needs terminal (CLI agents)** — the launch logic **opens a terminal + runs
-  the agent**, both in the selected project path; the session is the PTY the
-  chat panel mirrors: **codex**, **claude**, **opencode**, **pi**.
-
-Behaviour:
-- **Install scan**: at launch (and inside WSL on Windows), scan what is
-  installed; **grey out / make opaque** anything not installed.
-- **Click-to-install**: clicking a greyed item tells the user it will be
-  installed, then installs it **only if the install needs no `sudo`** (the
-  common case). Needs sudo → warn and show the manual command.
-- **Shell refresh**: after an install, `source` the user's shell rc
-  (`~/.bashrc` / `~/.zshrc` / fish equivalent) so a freshly-installed binary is
-  found without restarting.
-- **Chat gating** (constraint §2.5): if no agent session is live, the chat
-  panel shows a clear "launch an agent first" state (with the launch buttons)
-  rather than erroring. Progress/reports/GT/design never gate on this.
-
-All launch and install recipes come from an editable YAML (§9), not hard-coded.
+The sidebar reads the editable YAML (§9) and scans availability when you
+open a project. Unavailable entries show their status. Reopen the project
+after installing a tool to refresh discovery. Recipe-based installation
+and PATH refresh are future work.
 
 ## 8. Verification commands
 
