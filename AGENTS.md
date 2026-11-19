@@ -1,6 +1,6 @@
 # CodeAnvil — Agent Architecture
 
-## V-SIL v4 — 0.9.5
+## V-SIL v4 — 0.9.7
 
 The active chain is `S0 → G0 → S1 → G1 → S2 → G2 → S3 → G3`.
 S2 plans one module PLAN.md per topological slice; G2 is the human plan micro-gate.
