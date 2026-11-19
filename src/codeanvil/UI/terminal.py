@@ -17,9 +17,12 @@ from codeanvil.UI.terminal_process import PtyError
 from codeanvil.UI.terminal_sessions import MAX_SESSIONS, SessionManager
 
 
-class StartTerminal(BaseModel):
+class ProjectLaunch(BaseModel):
     model_config = ConfigDict(extra="forbid")
     project_path: str
+
+
+class StartTerminal(ProjectLaunch):
     launcher_id: str
     sandbox: StrictBool = False
     cols: int = Field(default=100, ge=2, le=500, strict=True)
@@ -44,6 +47,7 @@ def same_origin(headers):
 
 def create_terminal_router(root: Path, manager: SessionManager):
     router = APIRouter(prefix="/api/terminal")
+    desktop = APIRouter(prefix="/api/launchers")
 
     def project(path: str):
         selected = Path(path).expanduser()
@@ -62,10 +66,37 @@ def create_terminal_router(root: Path, manager: SessionManager):
         return session
 
     @router.get("/launchers")
-    async def list_launchers():
-        items = [dict(item, sandbox_supported=item["id"] in SANDBOX_AGENTS)
-                 for item in launchers.scan() if item["kind"] == "terminal"]
-        return {"supported": sys.platform.startswith("linux"), "platform": sys.platform, "launchers": items}
+    def list_launchers():
+        catalog = launcher_catalog()
+        return {**catalog, "launchers": [item for item in catalog["launchers"] if item["kind"] == "terminal"]}
+
+    @desktop.get("")
+    def launcher_catalog():
+        try:
+            items = launchers.scan()
+        except (ValueError, OSError) as exc:
+            raise HTTPException(400, str(exc)) from exc
+        return {
+            "supported": sys.platform.startswith("linux"), "platform": sys.platform,
+            "launchers": [dict(item, sandbox_supported=item["kind"] == "terminal" and item["id"] in SANDBOX_AGENTS)
+                          for item in items],
+        }
+
+    @desktop.post("/{identifier}/launch")
+    def launch_app(identifier: str, body: ProjectLaunch, request: Request):
+        if not same_origin(request.headers):
+            raise HTTPException(403, "A same-origin browser request is required")
+        selected = project(body.project_path)
+        launcher = next((item for item in launcher_catalog()["launchers"] if item["id"] == identifier), None)
+        if launcher is None or launcher["kind"] != "gui":
+            raise HTTPException(400, "Choose a configured desktop app")
+        if not launcher["installed"] or not launcher["available"]:
+            raise HTTPException(409, "This desktop app is not installed or available on this platform")
+        try:
+            launchers.launch(identifier, selected)
+        except (ValueError, OSError) as exc:
+            raise HTTPException(400, str(exc)) from exc
+        return {"launched": True}
 
     @router.get("/sessions")
     async def list_sessions(project_path: str | None = None):
@@ -184,4 +215,7 @@ def create_terminal_router(root: Path, manager: SessionManager):
         finally:
             session.clients.discard(queue)
 
-    return router
+    routes = APIRouter()
+    routes.include_router(router)
+    routes.include_router(desktop)
+    return routes

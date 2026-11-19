@@ -75,13 +75,20 @@ def scan(path: Path | None = None) -> list[dict[str, Any]]:
     result = []
     for key, item in entries.items():
         detect = item.get("detect", [])
+        paths = detect.get("paths", []) if isinstance(detect, dict) else []
+        if not isinstance(paths, list) or not all(isinstance(path, str) for path in paths):
+            raise LauncherError(f"detect.paths must contain a list of paths: {key}")
         if isinstance(detect, dict):
             detect = detect.get("cmd", [])
-        if isinstance(detect, str):
-            detect = [detect]
-        binary = str(detect[0]) if detect else ""
+        binary = detect if isinstance(detect, str) else str(detect[0]) if detect else ""
+        installed = bool(binary and shutil.which(binary)) or any(
+            Path(path).expanduser().exists() for path in paths
+        )
+        if key == "codex-desktop" and binary == "codex" and not paths:
+            # Older editable registries used the terminal executable as a desktop probe.
+            installed = False
         result.append({"id": key, "label": item.get("label", key), "kind": item["kind"],
-                       "icon": item.get("icon"), "installed": bool(binary and shutil.which(binary)),
+                       "icon": item.get("icon"), "installed": installed,
                        "available": os_key in item.get("launch", {}) or "any" in item.get("launch", {})})
     return result
 
@@ -98,8 +105,9 @@ def launch(identifier: str, project: Path, path: Path | None = None) -> dict[str
         raise LauncherError(f"launcher is not installed: {identifier}")
     if item["kind"] == "terminal":
         return {"kind": "terminal", "cwd": str(project.resolve()), "argv": argv}
-    process = subprocess.Popen(argv, cwd=project.resolve(), shell=False,
-                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    detach = {"creationflags": subprocess.DETACHED_PROCESS} if sys.platform == "win32" else {"start_new_session": True}
+    process = subprocess.Popen(argv, cwd=project.resolve(), shell=False, stdin=subprocess.DEVNULL,
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **detach)
     return {"kind": "gui", "pid": process.pid}
 
 

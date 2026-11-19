@@ -51,6 +51,41 @@ def test_launchers_exclude_gui_and_expose_sandbox_support(client):
     assert data["launchers"][0]["sandbox_supported"] is False
 
 
+def test_project_launchers_scan_both_kinds_and_launch_only_configured_gui(client, monkeypatch):
+    http, project = client
+    launched = []
+    monkeypatch.setattr(terminal.launchers, "launch", lambda identifier, root: launched.append((identifier, root)))
+    catalog = http.get("/api/launchers").json()["launchers"]
+    assert [(entry["id"], entry["kind"]) for entry in catalog] == [
+        ("fixture", "terminal"), ("gui", "gui"), ("absent", "terminal"),
+    ]
+    payload = {"project_path": str(project)}
+    assert http.post("/api/launchers/gui/launch", json=payload).status_code == 403
+    assert http.post("/api/launchers/fixture/launch", json=payload, headers=ORIGIN).status_code == 400
+    assert http.post("/api/launchers/gui/launch", json={**payload, "argv": ["sh"]}, headers=ORIGIN).status_code == 422
+    assert http.post("/api/launchers/gui/launch", json=payload, headers=ORIGIN).json() == {"launched": True}
+    assert launched == [("gui", project)]
+
+
+def test_desktop_detection_does_not_use_the_codex_cli(tmp_path, monkeypatch):
+    registry = tmp_path / "launchers.yaml"
+    registry.write_text("""
+launchers:
+  codex-desktop:
+    kind: gui
+    detect: [codex]
+    launch: {any: [codex, "{project}"]}
+  codex:
+    kind: terminal
+    detect: [codex]
+    launch: {any: [codex]}
+""")
+    monkeypatch.setattr(terminal.launchers.shutil, "which", lambda binary: f"/bin/{binary}")
+    desktop, cli = terminal.launchers.scan(registry)
+    assert not desktop["installed"]
+    assert cli["installed"]
+
+
 def test_real_terminal_input_replay_exit_and_reconnect(client):
     http, project = client
     response = start(http, project)
