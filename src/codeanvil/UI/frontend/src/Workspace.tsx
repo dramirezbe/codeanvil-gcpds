@@ -45,20 +45,15 @@ export function Workspace({ project, active, onSetActive, revision = 0, theme = 
 
   const currentCycle = overview?.cycles.find(item => item.name === overview.selected_cycle)
   const stages = overview?.reports.filter(report => report.id !== 'RFD') || []
-  const viewArtifacts = overview?.artifacts.filter(artifact => {
+  const artifacts = overview?.artifacts.filter(artifact => {
     if (active === 'Ground truth') return artifact.kind === 'gt'
-    if (active === 'Design') return artifact.kind === 'design'
+    if (active === 'Design') return artifact.kind === 'design' && artifact.path.endsWith('.md')
     if (active === 'Reports') return artifact.kind === 'report' || artifact.kind === 'deviation'
     if (active === 'Verification') return artifact.kind === 'test_run' || artifact.kind === 'prototype'
     return false
   }) || []
-  const graphs = viewArtifacts.filter(artifact => artifact.graph_theme)
-  const graph = graphs.find(item => item.graph_theme === theme && item.exists)
-    || graphs.find(item => item.exists) || graphs.find(item => item.graph_theme === theme) || graphs[0]
-  const artifacts = viewArtifacts.filter(item => !item.graph_theme || item.path === graph?.path)
-  const selectedGraph = selection?.view === active && graphs.some(item => item.path === selection.path)
   const buildPackage = active === 'Ground truth' && artifacts.find(item => item.path === '.codeanvil/GT/build_package.md')
-  const selectedArtifact = (selectedGraph ? graph : artifacts.find(item => selection?.view === active && item.path === selection.path))
+  const selectedArtifact = artifacts.find(item => selection?.view === active && item.path === selection.path)
     || buildPackage || artifacts.find(item => item.exists) || artifacts[0] || null
 
   function openArtifact(artifact: Artifact) {

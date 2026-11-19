@@ -159,3 +159,9 @@ applies to future UI work after the compatibility release.
 The watchdog is the recommended next slice because it makes report, cycle,
 telemetry, and verification updates visible without manual refresh while keeping
 the existing project files as the source of truth.
+
+### Dependency graph usability
+
+The embedded dependency graph is hidden from **Design** pending usability work.
+Review navigation, zoom and readability on both themes before restoring the
+preview. S1 still generates the two graph artifacts for project use.

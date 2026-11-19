@@ -306,7 +306,7 @@ works.
   professional, restrained register**: legible, calm by default, dramatic only
   where it earns attention (active gate, running agent, PASS/FEEDBACK).
 - **Modern**: responsive, light/dark, keyboard-friendly, accessible contrast.
-- Data viz (progress, telemetry, dependency graph) uses a consistent,
+- Data viz (progress and telemetry) uses a consistent,
   accessible palette — brand tokens defined once, not per chart.
 
 ## 12. Feature surface — everything the UI must expose
@@ -328,11 +328,8 @@ views from planned workflows.
   light and dark themes. Implemented with safe GFM rendering; raw HTML and
   automatic external-image loading are disabled.
 - **GT viewer**: `build_package.md`, `StRS.md`, `SyRS.md`.
-- **Design viewer**: render `SDD.md` and the interactive
-  `dependency_graph.html` (dark) or `dependency_graph_light.html` inline,
-  choosing the available variant that matches the UI theme. A missing variant
-  falls back to the existing graph; opening SDD is unaffected by theme changes.
-  The two-file S1 contract is a branch extension beyond the frozen v0.7.0 tag.
+- **Design viewer**: render `SDD.md` as Markdown. Reopening the dependency
+  graph preview is pending a usability review.
 - **Verification / final result**: open `S3_artifacts/test_run.md` and
   `G3_artifacts/verified_prototype.md` inside the selected cycle; show evidence
   levels and the final template's §12 run/stop instructions. The Telemetry & VL-2
@@ -438,8 +435,7 @@ notice. A completed cycle requires current stage/gate reports plus a prototype
 whose baseline matches the latest S2/G2 iterations; file existence is not
 enough. DRAFT, RFD suspension/withdrawal, closed cycles and transitive staleness
 are shown explicitly. Backups currently list the latest per stage/cycle;
-history and manifest inspection are still pending. The graph runs in a
-sandboxed iframe with its copied library inlined for offline display.
+history and manifest inspection are still pending.
 
 Validation: 606 Python tests passed (one optional test skipped), 30 frontend
 tests passed, and the production frontend built. A real Chromium run covered
