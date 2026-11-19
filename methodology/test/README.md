@@ -29,6 +29,7 @@ historical, unchanged. References to their S2/G2 stages retain their original me
 | T0_FM-RPI-RTL-mock | [Build Package](T0_FM-RPI-RTL-mock/build_package.md) | Archived mock-only S0 → G2 flow. |
 | T1_HackRF-spectrum | [Build Package](T1_HackRF-spectrum/build_package.md) | x86_64 spectrum/control; deliberate triage faults, hardware validation deferred. |
 | T2_RPi5-HackRF-web-spectrum | [Guide and Build Package](T2_RPi5-HackRF-web-spectrum/README.md) | Small RPi5-hosted Vite dashboard and seven HackRF RX controls; explicit functional VL-2 protocol, not yet executed. |
+| 0.9.6-full-flow-hackrf-rpi-mvp | [Project snapshot](0.9.6-full-flow-hackrf-rpi-mvp/README.md) | RPi5 + real HackRF project, G3 evidence, live dBFS screening UI, and systemd installer; see its README for verification boundaries. |
 
 For premature stops after `continue`, resumption, concrete blockers and G2 delegation, use the
 [stage execution continuity regression](execution_continuity.md). It is a manual agent evaluation,
