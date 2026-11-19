@@ -1,0 +1,4 @@
+vis-network 9.1.9 (https://visjs.github.io/vis-network/), vendored unmodified from
+https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.9/dist/vis-network.min.js
+Copyright (c) 2011-2017 Almende B.V, (c) 2017-2019 visjs contributors.
+Dual licensed under the Apache License 2.0 and the MIT License; either may be used.

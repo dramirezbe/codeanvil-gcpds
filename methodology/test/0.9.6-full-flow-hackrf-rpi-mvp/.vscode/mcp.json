@@ -1,0 +1,13 @@
+{
+  "servers": {
+    "vsil_hil_mcp": {
+      "command": "codeanvil",
+      "args": [
+        "mcp",
+        "run",
+        "vsil_hil_mcp"
+      ],
+      "env": {}
+    }
+  }
+}

@@ -53,6 +53,7 @@ it has no `src/` until S2 writes the delivered code there. The user's AGENTS.md 
 
 | Need | Source of truth |
 |------|-----------------|
+| Inspect the full-flow HackRF RPi5 MVP snapshot | [`methodology/test/0.9.6-full-flow-hackrf-rpi-mvp/README.md`](methodology/test/0.9.6-full-flow-hackrf-rpi-mvp/README.md) and its archived project/evidence |
 | Change a stage, gate or artifact contract | The matching `templates/skills/<stage>/SKILL.md` and its `references/`; register scaffold changes in `templates/config.yaml` |
 | Understand the first complete V-SIL v3 run | [`methodology/test/T0_FM-RPI-RTL-mock/FIRST_FULL_FLOW_SNAPSHOT.md`](methodology/test/T0_FM-RPI-RTL-mock/FIRST_FULL_FLOW_SNAPSHOT.md) and [`first_full_flow_2026-11-05/`](methodology/test/T0_FM-RPI-RTL-mock/first_full_flow_2026-11-05/) |
 | Run the archived Mock HAL prototype | [`first_full_flow_2026-11-05/RUN.md`](methodology/test/T0_FM-RPI-RTL-mock/first_full_flow_2026-11-05/RUN.md) (`uv sync --frozen --no-dev`, then `./run-demo SC-2`) |
@@ -128,6 +129,7 @@ checks its predecessor's report before it runs:
 | **T0_FM-RPI-RTL-mock** | FM occupancy, Raspberry Pi + RTL-SDR, mock-only | Build Package | Archived S0 → G2 run, copied project, runnable preview and review holdout |
 | **T1_HackRF-spectrum** | Real-time spectrum + live HackRF One parameter control, x86_64 PC | Build Package | Build Package plus `SEEDED_FAULTS.md`, the oracle for the triage/draft acid test |
 | **T2_RPi5-HackRF-web-spectrum** | Minimal web spectrum and seven RX controls, RPi5 + HackRF | Build Package | Complete functional VL-2 protocol and official HTTP/JSON/COTS sources; hardware run not yet executed |
+| **0.9.6-full-flow-hackrf-rpi-mvp** | FM spectrum monitor, Raspberry Pi 5 + real HackRF One | Existing project snapshot | Captured G3 PASS evidence, dBFS screening, live UI and systemd installer; post-G3 changes have separate verification status |
 
 ## Gate details
 

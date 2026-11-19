@@ -56,6 +56,12 @@ Its [snapshot guide](methodology/test/T0_FM-RPI-RTL-mock/FIRST_FULL_FLOW_SNAPSHO
 and [review holdout](methodology/test/T0_FM-RPI-RTL-mock/S1_G1_review_holdout_2026-11-05.md)
 retain their original evidence and limits.
 
+The real HackRF Raspberry Pi full-flow project snapshot is archived at
+[`methodology/test/0.9.6-full-flow-hackrf-rpi-mvp/`](methodology/test/0.9.6-full-flow-hackrf-rpi-mvp/).
+It includes the captured CodeAnvil project, G3 evidence, dBFS screening implementation,
+RF UI, and the systemd service installer. Its README distinguishes the recorded G3 verdict
+from changes and live service checks made afterward.
+
 > This methodology does not design hardware. It targets software running on Commercial Off-The-Shelf devices (not necessarily out-of-the-box), where the GT defines what constraints that hardware imposes.
 
 ## Install

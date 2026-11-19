@@ -1,0 +1,15 @@
+{
+  "mcp": {
+    "vsil_hil_mcp": {
+      "type": "local",
+      "command": [
+        "codeanvil",
+        "mcp",
+        "run",
+        "vsil_hil_mcp"
+      ],
+      "environment": {}
+    }
+  },
+  "$schema": "https://opencode.ai/config.json"
+}

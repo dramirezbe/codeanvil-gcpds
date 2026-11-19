@@ -1,0 +1,49 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.15, pytest-9.2.0, pluggy-1.7.0 -- /home/javastral-gcpds/GIT/UNAL/fm_hackrf_rpi5_mvp/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /home/javastral-gcpds/GIT/UNAL/fm_hackrf_rpi5_mvp
+configfile: pyproject.toml
+testpaths: verification
+collecting ... collected 117 items / 78 deselected / 39 selected
+
+verification/fm_measure/test/test_base_vl0.py::test_mock_sdr_open_close PASSED [  2%]
+verification/fm_measure/test/test_base_vl0.py::test_mock_sdr_configure_accepts_valid PASSED [  5%]
+verification/fm_measure/test/test_base_vl0.py::test_mock_sdr_rejects_agc PASSED [  7%]
+verification/fm_measure/test/test_base_vl0.py::test_mock_sdr_rejects_out_of_range_sample_rate PASSED [ 10%]
+verification/fm_measure/test/test_base_vl0.py::test_mock_sdr_read_frames_gv001 PASSED [ 12%]
+verification/fm_measure/test/test_base_vl0.py::test_mock_sdr_gv005_first_frame_clipped PASSED [ 15%]
+verification/fm_measure/test/test_base_vl0.py::test_mock_sdr_gv006_dropped_frame PASSED [ 17%]
+verification/fm_measure/test/test_base_vl0.py::test_mock_sdr_read_without_open_raises PASSED [ 20%]
+verification/fm_measure/test/test_base_vl0.py::test_mock_sdr_records_configure_calls PASSED [ 23%]
+verification/fm_measure/test/test_vl0.py::test_mock_sdr_port_opens_and_configures PASSED [ 25%]
+verification/fm_measure/test/test_vl0.py::test_mock_sdr_port_reads_39_frames_gv001 PASSED [ 28%]
+verification/fm_measure/test/test_vl0.py::test_mock_sdr_port_gv005_clips_first_frame PASSED [ 30%]
+verification/fm_measure/test/test_vl0.py::test_mock_sdr_port_gv006_drops_one_frame PASSED [ 33%]
+verification/fm_measure/test/test_vl0.py::test_mock_sdr_port_rejects_invalid_config PASSED [ 35%]
+verification/fm_measure/test/test_vl0.py::test_framing_roundtrip PASSED  [ 38%]
+verification/fm_report/test/test_base_vl0.py::test_framing_roundtrip_report PASSED [ 41%]
+verification/fm_report/test/test_vl0.py::test_mock_store_port_opens_run_and_appends PASSED [ 43%]
+verification/fm_report/test/test_vl0.py::test_mock_store_free_space_positive PASSED [ 46%]
+verification/fm_report/test/test_vl0.py::test_framing_roundtrip PASSED   [ 48%]
+verification/fm_store_alert/test/test_base_vl0.py::test_framing_roundtrip PASSED [ 51%]
+verification/fm_store_alert/test/test_base_vl0.py::test_framing_large_message PASSED [ 53%]
+verification/fm_store_alert/test/test_vl0.py::test_mock_data_port_queues_scan_record PASSED [ 56%]
+verification/fm_store_alert/test/test_vl0.py::test_mock_data_port_timeout_raises PASSED [ 58%]
+verification/fm_store_alert/test/test_vl0.py::test_framing_roundtrip PASSED [ 61%]
+verification/fm_supervisor/test/test_base_vl0.py::test_thermal_sequence PASSED [ 64%]
+verification/fm_supervisor/test/test_base_vl0.py::test_thermal_repeats_after_sequence PASSED [ 66%]
+verification/fm_supervisor/test/test_base_vl0.py::test_thermal_condition_at_71 PASSED [ 69%]
+verification/fm_supervisor/test/test_base_vl0.py::test_watchdog_feeds_recorded PASSED [ 71%]
+verification/fm_supervisor/test/test_base_vl0.py::test_watchdog_no_reset_when_fed PASSED [ 74%]
+verification/fm_supervisor/test/test_vl0.py::test_mock_watchdog_port_opens_and_feeds PASSED [ 76%]
+verification/fm_supervisor/test/test_vl0.py::test_mock_thermal_port_sequence PASSED [ 79%]
+verification/fm_supervisor/test/test_vl0.py::test_mock_resource_port_returns_values PASSED [ 82%]
+verification/fm_supervisor/test/test_vl0.py::test_framing_roundtrip PASSED [ 84%]
+verification/fm_time/test/test_base_vl0.py::test_ntp_mock_sequence PASSED [ 87%]
+verification/fm_time/test/test_base_vl0.py::test_ntp_mock_third_sample_unsynced PASSED [ 89%]
+verification/fm_time/test/test_base_vl0.py::test_ntp_mock_unreachable PASSED [ 92%]
+verification/fm_time/test/test_vl0.py::test_mock_ntp_port_returns_sequence PASSED [ 94%]
+verification/fm_time/test/test_vl0.py::test_mock_ntp_port_returns_unreachable PASSED [ 97%]
+verification/fm_time/test/test_vl0.py::test_framing_roundtrip PASSED     [100%]
+
+====================== 39 passed, 78 deselected in 1.88s =======================
