@@ -1,21 +1,31 @@
-# Align the workspace UI with the v0.9.6 full-flow project
+# Verify and finish V-SIL v4 workspace compatibility for CodeAnvil 0.10.0
 
-The workspace supports the current V-SIL v4 project shape used by CodeAnvil
-0.9.6/0.9.7, with no v3 artifact paths or presentation fallbacks. The saved
-`0.9.6-full-flow-hackrf-rpi-mvp` project is the reference contract. Its manifest
-does not declare a tool version, so support is determined by the v4 structure,
-not a guessed version field.
+The v4 workspace and Telemetry & VL-2 view are already on `main` (`aa3af22`).
+CodeAnvil `0.10.0` verifies UI compatibility with the project format used by
+CodeAnvil `0.9.7`, the active V-SIL v4 skills on `main`, and the artifacts in
+`0.9.6-full-flow-hackrf-rpi-mvp`.
+Use `templates/config.yaml` and the active skills for the report and artifact
+contracts. Use the saved snapshot to check how those contracts appear in an
+actual run and how the UI handles missing evidence. Match projects by v4 structure.
 
-## Quick path
+Reuse the workspace, API, artifact views, and uPlot charts already on `main`.
+For each compatibility gap, identify the skill contract or saved artifact
+that exposes it and make the smallest fix that satisfies it. Close checks
+that already pass using the verification results. Update tests, bundled
+assets, and documentation where a fix calls for it. The watchdog, hardware
+gallery, and other follow-on ideas remain in the backlog for a separate delivery.
 
-1. Read the saved project's manifest, eight cycle reports, and S3/G3 artifacts.
-2. Align the workspace API, artifact inventory, stage strip, and prototype freshness check.
-3. Add a Telemetry & VL-2 view for actual JSONL samples, v2 measurement records,
-   captured test logs, and VL-2 claims recorded by G3.
-4. Use uPlot 1.6.32 for responsive canvas time-series charts with cursor/legend
-   inspection, drag zoom, and reset zoom; keep textual evidence alongside plots.
-5. Update documentation to describe current v4 support and the saved snapshot's
-   actual evidence limits.
+## Delivery sequence
+
+1. Create or update `refactor/ui-vsil-v4` from current `main`. Compare the
+   existing workspace, artifact views, and Telemetry & VL-2 view with the
+   active skills and the saved run.
+2. Fix compatibility gaps on that branch and complete the release acceptance
+   checks below. Update `pyproject.toml` and `uv.lock` to `0.10.0` in the same PR.
+3. Open a PR into `main`, confirm CI passes, and merge. Confirm CI passes on the
+   resulting commit in `main`.
+4. Create and push the annotated tag `v0.10.0` from that commit. Confirm the
+   GitHub release workflow publishes the release and its generated changelog.
 
 ## Findings from the saved full-flow
 
@@ -63,7 +73,7 @@ not a time series; text test logs are not telemetry.
 - `tests/test_ui_workspace.py`: current v4 workspace coverage in place of skipped legacy fixtures.
 - `src/codeanvil/UI/README.md`, `AGENTS.md`, and `README.md`: current workspace contract and evidence limitations.
 
-## Acceptance criteria
+## Baseline implemented on `main`
 
 - [x] The saved full-flow project defines the current eight-report chain and S3/G3 artifacts.
 - [x] The progress strip renders all eight stages in configured order; missing reports remain missing.
@@ -80,12 +90,24 @@ Implementation and production asset build are complete. `pnpm install --frozen-l
 the frontend production build, Python syntax compilation, and `git diff --check` passed.
 The automated test suite was not run.
 
-## Follow-on backlog from the earlier UI plan
+## Release acceptance checks
+
+- [ ] Open the saved full-flow project and check the eight stages, S3 test
+  evidence, G3 prototype, and prototype freshness against the reports.
+- [ ] Verify that the saved run shows its authored VL-2 result and captured
+  test logs, with empty states for missing JSONL samples and v2 measurements.
+- [ ] Use a separate fixture based on the active skills to verify that JSONL
+  samples plot in uPlot, v2 measurements show their recorded results, and
+  changing cycles shows the evidence for the selected cycle.
+- [ ] Confirm frontend tests, frontend and package builds, and required GitHub
+  CI checks pass before tagging the release commit on `main`.
+
+## Follow-on backlog outside 0.10.0
 
 These proposals come from the [2026-11-10 UI plan](../ui/2026-11-10_2036_ui.md),
 the [2026-11-11 artifact audit](../ui/2026-11-11_current_project_ui_audit.md),
-and the [terminal handoff](../ui/2026-11-11_terminal_handoff.md). They are not
-part of the completed v4 alignment above. Prioritize them in this order:
+and the [terminal handoff](../ui/2026-11-11_terminal_handoff.md). The order below
+applies to future UI work after the compatibility release.
 
 | Priority | Carry-forward idea | Remaining work and boundary |
 |----------|--------------------|-----------------------------|
