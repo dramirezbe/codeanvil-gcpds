@@ -8,8 +8,8 @@ vi.mock('./Workspace', () => ({ Workspace: ({ project, active }: { project: { na
   <h1>{project.name} · {active}</h1> }))
 vi.mock('./ActionsPanel', () => ({ ActionsPanel: ({ projectPath }: { projectPath?: string }) =>
   <h1>{projectPath ? 'Project CLI actions' : 'Global CLI actions'}</h1> }))
-vi.mock('./TerminalPanel', () => ({ TerminalPanel: ({ project, theme }: { project: { name: string }; theme: string }) =>
-  <h1>{project.name} terminal · {theme}</h1> }))
+vi.mock('./TerminalPanel', () => ({ TerminalPanel: ({ project, theme, visible }: { project: { name: string }; theme: string; visible: boolean }) =>
+  visible && <h1>{project.name} terminal · {theme}</h1> }))
 
 const project = { id: 'sample', name: 'Sample project', path: '/home/alice/Documents/sample' }
 const localUser = { name: 'alice', home: '/home/alice' }

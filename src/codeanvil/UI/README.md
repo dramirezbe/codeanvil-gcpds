@@ -11,34 +11,67 @@ purpose-built views while reusing their existing Python logic.
 > change CLI behavior, project formats or database schema just to support UI
 > workflows.
 
-The v0.7.0 audit and examples below are historical design inputs only. The
-active workspace contract is the v4 full-flow snapshot at
-`methodology/test/0.9.6-full-flow-hackrf-rpi-mvp/`; no v3 artifact fallback is
-part of the current workspace.
+The active workspace contract comes from `templates/config.yaml` and the
+V-SIL v4 skills. Browser acceptance uses the archived 0.9.6 full flow and an
+independent fixture assembled from those templates. The v0.7.0 audit and
+examples below are historical design inputs.
 
 **Implemented:** project creation/addition,
 cycle and report-iteration browsing, shared stale/delivered states, safe
 Markdown, Design/Verification views and nested artifacts. The five synthetic
 [0.7.0 examples](../../../methodology/test/v0.7.0-example-artifacts/README.md)
 are retained as historical fixtures and are not supported workspace projects.
-The workspace terminal now runs installed
-local CLIs in a Linux/WSL PTY, with a normal/sandbox checkbox. The workspace
+The workspace terminal runs installed local CLIs in a Linux/WSL PTY. The
+project sidebar lists CLI agents and desktop apps from the launcher registry. The workspace
 includes telemetry plots and a VL-2 evidence view. Automatic refresh, a hardware
 gallery and native packaging remain later work.
 
+### Upload Build Package source documents
+
+In **Ground truth → Build Package**, click **Upload Build Package** and select
+one or more files. Expand ZIP, 7z, RAR, TAR and common compressed variants by
+uploading the archive directly. Each extracted document shows its source archive
+and the upload date. Double-click a row to open the embedded preview, or select
+the row and click **Open preview**.
+
+The preview renders Markdown, paginates PDF, and displays CSV, XLS and XLSX
+as tables. Excel files with multiple worksheets have a sheet selector. Other
+files open as plain text. Large text and table previews display their first rows
+or bytes. Keep uploads under 128 MiB per selection and 256 MiB after extraction.
+7z, RAR and other extended archive formats use the system libarchive library,
+which can be located with `LIBARCHIVE` on systems where it is installed outside
+the default search paths.
+
+Uploaded documents and extracted members are stored in
+`.codeanvil/GT/build_package_uploads/`. Build Package also scans source files
+already in `.codeanvil/GT/` and its subfolders, with the modification date from
+disk. These files use the same embedded preview.
+
+Use the source documents to prepare `.codeanvil/GT/build_package.md` for S0.
+Open **StRS · Stakeholder requirements** or **SyRS · System requirements**
+in Ground truth to read the generated pair. Click **Refresh** after S0
+rebuilds the files or after copying new sources into the project.
+
 ### Use the local terminal (Linux / WSL)
 
-Open a project, select **Terminal**, choose an installed **Local CLI**, then
-click **Start terminal**. **Sandbox mode** is unchecked by default. Normal mode
+Open a project, choose an installed agent in **Agents & IDEs** at the
+bottom of the sidebar, then click **Start terminal**. Each supported agent
+has its own **Sandbox mode** checkbox, unchecked by default. Normal mode
 inherits your usual local agent configuration; checked mode uses the same
-project-only configuration recipe as `codeanvil sandbox <agent>`. This isolates
-agent settings, not filesystem access or process permissions. Stop the session
-before changing its CLI or mode.
+project-only configuration recipe as `codeanvil sandbox <agent>`. Filesystem
+access and process permissions follow the launcher environment. Selecting a
+different agent while a terminal runs stops that session before launching the
+replacement. To change the running agent's mode, stop it first.
+
+Idle launcher icons are muted. The selected agent uses full color, and a
+running terminal has a glow that clears on exit or stop. Desktop app buttons
+open the current project and glow for 15 seconds after launch. The sidebar
+labels unavailable tools and tools that need installation.
 
 The panel displays the actual local process, including its prompts, keyboard
-input, Ctrl-C and output. Opening the view never starts a CLI or sends a prompt.
-Navigating away disconnects the browser while the process continues; reopening
-Terminal reconnects to it. **Stop terminal** or shutting down the UI server
+input, Ctrl-C and output. The view attaches to the project's existing session
+when available. Navigating away keeps the process running and the sidebar
+receives its exit status. **Stop terminal** or shutting down the UI server
 terminates its owned process group. Sessions and their bounded replay exist
 only in server memory. There is one running session per project and at most
 eight running sessions per server. No model API or stored transcript is added.
@@ -194,29 +227,15 @@ advanced action adapter still dispatches CLI handlers in-process.
 
 ## 7. Agent & editor sidebar (O3)
 
-A left sidebar lists launchers in two groups, by whether they drive the PTY:
+The bottom of the project sidebar lists configured desktop apps above the
+terminal agents. The default CLI entries are Claude Code, Codex CLI, OpenCode,
+and Pi. Desktop recipes for VS Code and JetBrains open the project folder.
+The bundled Codex Desktop recipe uses macOS app-bundle detection.
 
-- **No terminal (GUI apps)** — open the app on the project path, no PTY:
-  **Claude desktop**, **Codex desktop**, **OpenCode desktop**, **VS Code**,
-  **JetBrains**.
-- **Needs terminal (CLI agents)** — the launch logic **opens a terminal + runs
-  the agent**, both in the selected project path; the session is the PTY the
-  chat panel mirrors: **codex**, **claude**, **opencode**, **pi**.
-
-Behaviour:
-- **Install scan**: at launch (and inside WSL on Windows), scan what is
-  installed; **grey out / make opaque** anything not installed.
-- **Click-to-install**: clicking a greyed item tells the user it will be
-  installed, then installs it **only if the install needs no `sudo`** (the
-  common case). Needs sudo → warn and show the manual command.
-- **Shell refresh**: after an install, `source` the user's shell rc
-  (`~/.bashrc` / `~/.zshrc` / fish equivalent) so a freshly-installed binary is
-  found without restarting.
-- **Chat gating** (constraint §2.5): if no agent session is live, the chat
-  panel shows a clear "launch an agent first" state (with the launch buttons)
-  rather than erroring. Progress/reports/GT/design never gate on this.
-
-All launch and install recipes come from an editable YAML (§9), not hard-coded.
+The sidebar reads the editable YAML (§9) and scans availability when you
+open a project. Unavailable entries show their status. Reopen the project
+after installing a tool to refresh discovery. Recipe-based installation
+and PATH refresh are future work.
 
 ## 8. Verification commands
 
@@ -287,7 +306,7 @@ works.
   professional, restrained register**: legible, calm by default, dramatic only
   where it earns attention (active gate, running agent, PASS/FEEDBACK).
 - **Modern**: responsive, light/dark, keyboard-friendly, accessible contrast.
-- Data viz (progress, telemetry, dependency graph) uses a consistent,
+- Data viz (progress and telemetry) uses a consistent,
   accessible palette — brand tokens defined once, not per chart.
 
 ## 12. Feature surface — everything the UI must expose
@@ -309,11 +328,8 @@ views from planned workflows.
   light and dark themes. Implemented with safe GFM rendering; raw HTML and
   automatic external-image loading are disabled.
 - **GT viewer**: `build_package.md`, `StRS.md`, `SyRS.md`.
-- **Design viewer**: render `SDD.md` and the interactive
-  `dependency_graph.html` (dark) or `dependency_graph_light.html` inline,
-  choosing the available variant that matches the UI theme. A missing variant
-  falls back to the existing graph; opening SDD is unaffected by theme changes.
-  The two-file S1 contract is a branch extension beyond the frozen v0.7.0 tag.
+- **Design viewer**: render `SDD.md` as Markdown. Reopening the dependency
+  graph preview is pending a usability review.
 - **Verification / final result**: open `S3_artifacts/test_run.md` and
   `G3_artifacts/verified_prototype.md` inside the selected cycle; show evidence
   levels and the final template's §12 run/stop instructions. The Telemetry & VL-2
@@ -325,8 +341,10 @@ views from planned workflows.
 - **Backups**: `.codeanvil/backups/<cycle>/` with MANIFEST SHA-256.
 - **Telemetry and VL-2 evidence**: plot numeric process/system/temperature and
   counter samples from `verification/telemetry/**/*.jsonl`; show v2
-  `measurement.json` results and G3's declared VL-2 module/path evidence. Missing
-  or unavailable samples stay explicit. Test-run text logs remain text evidence
+  `measurement.json` results and G3's declared VL-2 module/path evidence. Run
+  directories identify the cycle, including in nested remote snapshots.
+  Unavailable samples appear as gaps in the chart and as empty cursor values.
+  Test-run text logs remain text evidence
   and are never plotted. The archived 0.9.6 project has no JSONL samples or v2
   measurement records, so the view shows its documented gaps and manual idle
   readings without manufacturing a trend.
@@ -417,8 +435,7 @@ notice. A completed cycle requires current stage/gate reports plus a prototype
 whose baseline matches the latest S2/G2 iterations; file existence is not
 enough. DRAFT, RFD suspension/withdrawal, closed cycles and transitive staleness
 are shown explicitly. Backups currently list the latest per stage/cycle;
-history and manifest inspection are still pending. The graph runs in a
-sandboxed iframe with its copied library inlined for offline display.
+history and manifest inspection are still pending.
 
 Validation: 606 Python tests passed (one optional test skipped), 30 frontend
 tests passed, and the production frontend built. A real Chromium run covered

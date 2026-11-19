@@ -5,6 +5,8 @@ import { ArtifactViewer } from './ArtifactViewer'
 import { Workspace } from './Workspace'
 import { type Artifact, type ArtifactDocument, type Overview } from './api'
 
+vi.mock('uplot', () => ({ default: vi.fn() }))
+
 const project = { id: 'sample', name: 'Sample project', path: '/projects/sample' }
 const reportPath = '.codeanvil/report/01_demo/S0.md'
 const reportArtifact: Artifact = { path: reportPath, label: 'S0 report', kind: 'report', cycle: '01_demo', exists: true }
@@ -14,9 +16,9 @@ const overview: Overview = {
   reports: [
     { id: 'S0', iteration: 1, hitl: 'PASS', state: 'delivered' },
     { id: 'G0', iteration: 1, hitl: 'PASS', state: 'PASS', based_on: ['S0', 1] },
-    ...['S1', 'G1', 'S2', 'G2'].map(id => ({ id, iteration: null, hitl: null, state: 'missing' })),
+    ...['S1', 'G1', 'S2', 'G2', 'S3', 'G3'].map(id => ({ id, iteration: null, hitl: null, state: 'missing' })),
   ],
-  completion: { passed: 2, total: 6, complete: false, reason: 'G2 must pass before completion.' },
+  completion: { passed: 2, total: 8, complete: false, reason: 'G3 must pass before completion.' },
   synthetic_fixture: true,
   artifacts: [reportArtifact],
 }
@@ -30,9 +32,9 @@ describe('Workspace', () => {
   const lightGraph: Artifact = { path: '.codeanvil/design/dependency_graph_light.html', label: 'Dependency graph · light', kind: 'design', exists: true, graph_theme: 'light' }
   const design: Artifact = { path: '.codeanvil/design/SDD.md', label: 'System design', kind: 'design', exists: true }
 
-  function mockDesign(lightExists = true) {
+  function mockDesign(designExists = true) {
     const fetcher = vi.fn(async (url: string) => {
-      if (url.includes('/overview?')) return response({ ...overview, artifacts: [design, darkGraph, { ...lightGraph, exists: lightExists }] })
+      if (url.includes('/overview?')) return response({ ...overview, artifacts: [{ ...design, exists: designExists }, darkGraph, lightGraph] })
       const path = new URL(url, 'http://localhost').searchParams.get('path')!
       return response({ path, name: path.split('/').at(-1), iterations: [],
         format: path.endsWith('.html') ? 'html' : 'markdown', content: path.endsWith('.html') ? `<p>${path}</p>` : '# System design document' })
@@ -41,38 +43,23 @@ describe('Workspace', () => {
     return fetcher
   }
 
-  it('chooses the current graph theme and follows theme changes while a graph is open', async () => {
-    const user = userEvent.setup()
-    mockDesign()
-    const view = render(<Workspace project={project} active="Design" theme="light" onSetActive={vi.fn()} />)
-    const graph = await screen.findByRole('button', { name: /Dependency graph · light/ })
-    expect(screen.getAllByRole('button', { name: /Dependency graph/ })).toHaveLength(1)
-    await user.click(graph)
-    await waitFor(() => expect(screen.getByTitle(lightGraph.label)).toHaveAttribute('srcdoc', `<p>${lightGraph.path}</p>`))
-    expect(screen.getByText('Light graph')).toBeInTheDocument()
-    view.rerender(<Workspace project={project} active="Design" theme="dark" onSetActive={vi.fn()} />)
-    await waitFor(() => expect(screen.getByTitle(darkGraph.label)).toHaveAttribute('srcdoc', `<p>${darkGraph.path}</p>`))
-    expect(screen.getByText('Dark graph')).toBeInTheDocument()
-    expect(screen.getByTitle(darkGraph.label)).toHaveAttribute('sandbox', 'allow-scripts')
-  })
-
-  it('keeps a selected design document when the page theme changes', async () => {
-    mockDesign()
+  it('shows the SDD and hides the dependency graph in both themes', async () => {
+    const fetcher = mockDesign()
     const view = render(<Workspace project={project} active="Design" theme="dark" onSetActive={vi.fn()} />)
     expect(await screen.findByRole('heading', { name: 'System design document' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Dependency graph/ })).not.toBeInTheDocument()
     view.rerender(<Workspace project={project} active="Design" theme="light" onSetActive={vi.fn()} />)
     expect(screen.getByRole('heading', { name: 'System design document' })).toBeInTheDocument()
-    expect(screen.queryByTitle(lightGraph.label)).toBeNull()
+    expect(screen.queryByRole('button', { name: /Dependency graph/ })).not.toBeInTheDocument()
+    expect(fetcher.mock.calls.every(([url]) => !url.includes('dependency_graph'))).toBe(true)
   })
 
-  it('uses the existing graph when the matching theme has not been generated', async () => {
-    const user = userEvent.setup()
+  it('shows the missing design state when only the graph artifacts exist', async () => {
     const fetcher = mockDesign(false)
     render(<Workspace project={project} active="Design" theme="light" onSetActive={vi.fn()} />)
-    await user.click(await screen.findByRole('button', { name: /Dependency graph/ }))
-    await waitFor(() => expect(screen.getByTitle(darkGraph.label)).toHaveAttribute('srcdoc', `<p>${darkGraph.path}</p>`))
-    expect(screen.getByText('Dark graph')).toBeInTheDocument()
-    expect(fetcher.mock.calls.every(([url]) => !url.includes(encodeURIComponent(lightGraph.path)))).toBe(true)
+    expect(await screen.findByRole('heading', { name: 'Not produced yet' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Dependency graph/ })).not.toBeInTheDocument()
+    expect(fetcher.mock.calls.every(([url]) => !url.includes('dependency_graph'))).toBe(true)
   })
 
   it('uses server state and keeps synthetic progress distinct from human approval', async () => {
@@ -87,8 +74,8 @@ describe('Workspace', () => {
     expect(screen.getByText('DRAFT')).toBeInTheDocument()
     expect(screen.getByText('Suspended by RFD')).toBeInTheDocument()
     expect(screen.getAllByText('STALE')).toHaveLength(2)
-    expect(screen.getByText('G2 must pass before completion.')).toBeInTheDocument()
-    expect(screen.getAllByText('Not started')).toHaveLength(8)
+    expect(screen.getByText('G3 must pass before completion.')).toBeInTheDocument()
+    expect(screen.getAllByText('Not started')).toHaveLength(12)
   })
 
   it('changes cycles without changing active-cycle identity or retaining the previous document', async () => {
@@ -124,6 +111,38 @@ describe('Workspace', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response({ detail: 'Manifest is malformed' }, 400)))
     render(<Workspace project={project} active="Overview" onSetActive={vi.fn()} />)
     expect(await screen.findByRole('alert')).toHaveTextContent('Manifest is malformed')
+  })
+
+  it('uploads multiple Build Package files and reuses the Markdown viewer on double-click', async () => {
+    const user = userEvent.setup()
+    const artifact: Artifact = { path: '.codeanvil/GT/build_package.md', label: 'Build Package', kind: 'gt', exists: false }
+    const item = { batch: 'f'.repeat(32), index: 0, name: 'spec.md', archive: 'inputs.zip', uploaded_at: '2026-11-19T12:00:00Z' }
+    const existing = { path: 'annexes/Original terms.md', name: 'annexes/Original terms.md', modified_at: '2026-11-18T12:00:00Z' }
+    const fetcher = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.includes('/overview?')) return response({ ...overview, artifacts: [artifact] })
+      if (init?.method === 'POST') return response({ files: [item] }, 201)
+      if (url.includes('/existing/preview?')) return response({ format: 'markdown', content: '# Existing project terms', clipped: false })
+      if (url.includes('/preview?')) return response({ format: 'markdown', content: '# Uploaded requirements', clipped: false })
+      return response({ files: [existing] })
+    })
+    vi.stubGlobal('fetch', fetcher)
+    const view = render(<Workspace project={project} active="Ground truth" onSetActive={vi.fn()} />)
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Upload Build Package' })).toBeEnabled())
+    const input = view.container.querySelector('input[type=file]') as HTMLInputElement
+    await user.upload(input, [new File(['inputs'], 'inputs.zip'), new File(['notes'], 'notes.txt')])
+    const post = fetcher.mock.calls.find(([, init]) => init?.method === 'POST')!
+    expect((post[1]?.body as FormData).getAll('files')).toHaveLength(2)
+    const row = await screen.findByRole('button', { name: /spec\.md/ })
+    expect(row.querySelector('time')).toHaveAttribute('datetime', item.uploaded_at)
+    expect(row).toHaveTextContent('From inputs.zip')
+    await user.dblClick(row)
+    expect(await screen.findByRole('heading', { name: 'Uploaded requirements' })).toBeInTheDocument()
+    const original = screen.getByRole('button', { name: /Original terms\.md/ })
+    expect(original.querySelector('time')).toHaveAttribute('datetime', existing.modified_at)
+    expect(original).toHaveTextContent('Modified')
+    await user.dblClick(original)
+    expect(await screen.findByRole('heading', { name: 'Existing project terms' })).toBeInTheDocument()
+    expect(fetcher.mock.calls.at(-1)?.[0]).toContain('path=annexes%2FOriginal+terms.md')
   })
 })
 

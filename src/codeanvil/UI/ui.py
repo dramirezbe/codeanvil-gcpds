@@ -56,11 +56,13 @@ def create_app(cwd: Path | None = None):
 
     app = FastAPI(title="CodeAnvil", docs_url="/api/docs", lifespan=lifespan)
     from codeanvil.UI.actions import create_actions_router
+    from codeanvil.UI.build_package import create_build_package_router
     from codeanvil.UI.workflows import create_workflows_router
     from codeanvil.UI.workspace import create_workspace_router
     app.include_router(create_actions_router(root))
     app.include_router(create_workflows_router(root))
     app.include_router(create_workspace_router(root))
+    app.include_router(create_build_package_router(root))
     app.include_router(create_terminal_router(root, terminals))
 
     def selected_project(project_path: str | None = None):

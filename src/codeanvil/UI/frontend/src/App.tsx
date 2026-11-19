@@ -55,6 +55,7 @@ export default function App() {
   const [active, setActive] = useState('Overview')
   const [dark, setDark] = useState(true)
   const [mobile, setMobile] = useState(false)
+  const [launcherSlot, setLauncherSlot] = useState<HTMLDivElement | null>(null)
   const [selected, setSelected] = useState<Project | null>(null)
   const [forceLauncher, setForceLauncher] = useState(false)
   const [revision, setRevision] = useState(0)
@@ -134,14 +135,17 @@ export default function App() {
             <Icon size={17} /><span>{label}</span>
           </button>)}
         </div>
-        <div className="rail-bottom"><span className="rail-footnote">PROJECTS · ARTIFACTS · EVIDENCE</span></div>
+        {showWorkspace && <div className="rail-bottom" ref={setLauncherSlot} />}
       </nav>
       <main className="main-area">
         {active === 'CLI actions' ? <ActionsPanel projectPath={project?.path} onComplete={() => setRevision(value => value + 1)} />
           : showWorkspace && project ? active === 'Backups' ? <BackupsView key={project.path} projectPath={project.path} />
-            : active === 'Terminal' ? <TerminalPanel key={project.path} project={project} theme={dark ? 'dark' : 'light'} />
+            : active === 'Terminal' ? null
             : <Workspace key={project.path} project={project} active={active} onSetActive={setActive} revision={revision} theme={dark ? 'dark' : 'light'} />
           : <Launcher projects={data.projects} user={data.user} loading={loading} error={error} onSelect={openProject} onDelete={openDelete} />}
+        {showWorkspace && project && <TerminalPanel key={`terminal:${project.path}`} project={project} theme={dark ? 'dark' : 'light'}
+          visible={active === 'Terminal'} launcherSlot={launcherSlot}
+          onOpenTerminal={() => { setActive('Terminal'); setMobile(false) }} />}
       </main>
     </div>
     <footer className="statusbar"><span><span className="online-dot" /> CODEANVIL {__CODEANVIL_VERSION__}</span><span className="status-path">{project?.path || 'No project selected'}</span>

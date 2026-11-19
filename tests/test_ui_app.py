@@ -12,7 +12,7 @@ from codeanvil.db.schema import create_schema
 from codeanvil.db.utils import connect_db
 from codeanvil.UI.ui import create_app
 
-EXAMPLES = Path(__file__).resolve().parents[1] / "methodology/test/v0.7.0-example-artifacts"
+FULL_FLOW = Path(__file__).resolve().parents[1] / "methodology/test/0.9.6-full-flow-hackrf-rpi-mvp"
 
 
 def test_app_routes_share_project_and_artifact_contract(tmp_path, monkeypatch):
@@ -24,24 +24,26 @@ def test_app_routes_share_project_and_artifact_contract(tmp_path, monkeypatch):
     conn.close()
     monkeypatch.setattr(ui, "DB_PATH", database)
     monkeypatch.setattr(ui, "local_user", lambda: {"name": "Local user", "home": str(tmp_path)})
-    project = EXAMPLES / "panel_prototipo"
 
     async def exercise():
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app=create_app(tmp_path)), base_url="http://localhost") as client:
             landing = await client.get("/api/ui/bootstrap")
             assert landing.json() == {"mode": "launcher", "project": None, "projects": [],
                                       "user": {"name": "Local user", "home": str(tmp_path)}}
-            query = {"project_path": str(project)}
+            query = {"project_path": str(FULL_FLOW)}
             bootstrap = await client.get("/api/ui/bootstrap", params=query)
-            assert bootstrap.json()["project"]["name"] == "Panel de prototipo"
+            assert bootstrap.json()["project"]["name"] == "FM HackRF RPI5"
             overview = await client.get("/api/workspace/overview", params=query)
             assert overview.status_code == 200
-            assert overview.json()["synthetic_fixture"] is True
-            assert overview.json()["completion"]["passed"] == 6
+            assert overview.json()["synthetic_fixture"] is False
+            assert overview.json()["completion"]["passed"] == 8
             prototype = next(item for item in overview.json()["artifacts"] if item["kind"] == "prototype")
             artifact = await client.get("/api/workspace/artifact", params={**query, "path": prototype["path"]})
             assert artifact.status_code == 200
-            assert "SYNTHETIC UI FIXTURE" in artifact.json()["content"]
+            assert artifact.json()["content"].startswith("# Verified Prototype")
+            evidence = await client.get("/api/workspace/evidence", params=query)
+            assert evidence.status_code == 200
+            assert evidence.json()["vl2"]["prototype_current"] is True
             blocked = await client.get("/api/workspace/artifact", params={**query, "path": ".env"})
             assert blocked.status_code == 400
             catalog = await client.get("/api/workflows/mcp")

@@ -2,6 +2,7 @@
 
 import asyncio
 import hashlib
+import json
 from pathlib import Path
 
 import pytest
@@ -11,7 +12,7 @@ pytest.importorskip("fastapi")
 httpx = pytest.importorskip("httpx")
 from fastapi import FastAPI, HTTPException
 
-from codeanvil.UI.workspace import create_workspace_router, read_artifact, read_backups, read_overview
+from codeanvil.UI.workspace import create_workspace_router, read_artifact, read_backups, read_evidence, read_overview
 
 
 FULL_FLOW = Path(__file__).resolve().parents[1] / "methodology/test/0.9.6-full-flow-hackrf-rpi-mvp"
@@ -47,6 +48,63 @@ def test_saved_096_full_flow_uses_current_eight_report_chain():
     assert test_run["exists"] and test_run["path"].endswith("S3_artifacts/test_run.md")
 
 
+def test_saved_full_flow_preserves_evidence_limits():
+    evidence = read_evidence(FULL_FLOW)
+    assert evidence["telemetry"] == []
+    assert evidence["measurements"] == []
+    assert {log["label"] for log in evidence["test_logs"]} == {
+        "pytest_vl0.txt", "pytest_vl1.txt", "vitest_vl0.txt", "vitest_vl1.txt",
+    }
+    vl2 = evidence["vl2"]
+    assert vl2["prototype_current"]
+    assert vl2["statement"].startswith("VL-2: NO EVIDENCE.")
+    assert vl2["manual_telemetry"]
+    assert any(row["id"] == "PATH-006" and row["result"].startswith("BLOCKED") for row in vl2["items"])
+
+
+def test_evidence_uses_selected_cycle_and_current_g3_format(tmp_path):
+    root = project(tmp_path)
+    prototype = root / ".codeanvil/report/01_demo/G3_artifacts/verified_prototype.md"
+    prototype.parent.mkdir(parents=True)
+    prototype.write_text(
+        "## 5. Path evidence\n"
+        "| Path | `required_vl` | Declared level | Result |\n"
+        "|------|---------------|----------------|--------|\n"
+        "| PATH-001 | VL-2 | VL-1 | BLOCKED |\n\n"
+        "## 7. Honesty declaration\n"
+        "- VALIDATED (VL-2, `mock+real`, actual Real HW HAL tests): none.\n"
+    )
+    for cycle in ("01_demo", "01_demo_retry"):
+        run = f"{cycle}_1_2026-11-19_09-30-10-125"
+        folder = root / "verification/telemetry/remote/fetch-abc" / run
+        folder.mkdir(parents=True)
+        (folder / f"{run}.jsonl").write_text('{"process":{"cpu_percent":1}}\n')
+        (folder / "pytest_vl1.txt").write_text(cycle)
+        (folder / "measurement.json").write_text(json.dumps({
+            "schema_version": 2, "cycle": cycle, "stage": "G3", "iteration": 1,
+            "run_id": run, "target": "local", "command": "verification/run.sh vl1",
+            "started_at": "2026-11-19T09:30:10Z", "finished_at": "2026-11-19T09:30:11Z",
+            "exit_code": 0, "measurements": [{
+                "requirement_id": "SYS-001", "metric": "latency", "value": 4, "unit": "ms",
+                "criterion": "at most 3 ms", "result": "fail",
+            }],
+        }))
+
+    evidence = read_evidence(root)
+    assert evidence["vl2"]["statement"].endswith("actual Real HW HAL tests): none.")
+    assert [(row["id"], row["result"]) for row in evidence["vl2"]["items"]] == [("PATH-001", "BLOCKED")]
+    for cycle in ("01_demo", "01_demo_retry"):
+        evidence = read_evidence(root, cycle=cycle)
+        sample, = evidence["telemetry"]
+        assert sample["run_id"].startswith(f"{cycle}_1_")
+        assert sample["sample_count"] == 1
+        log, = evidence["test_logs"]
+        assert read_artifact(root, None, log["path"])["content"] == cycle
+        measurement, = evidence["measurements"]
+        assert measurement["record"]["cycle"] == cycle
+        assert measurement["record"]["measurements"][0]["result"] == "fail"
+
+
 def test_active_cycle_exists_before_its_first_report(tmp_path):
     root = project(tmp_path)
     result = read_overview(root)
@@ -55,6 +113,39 @@ def test_active_cycle_exists_before_its_first_report(tmp_path):
         "superseded_by": None, "draft": False, "suspended": False,
     }]
     assert all(row["state"] == "missing" for row in result["reports"])
+
+
+def test_evidence_limits_apply_after_cycle_selection(tmp_path, monkeypatch):
+    root = project(tmp_path)
+    report(root, "S0")
+    base = root / "verification/telemetry"
+    other = base / "01_demo_retry_1_2026-11-19_09-30-10-125"
+    other.mkdir(parents=True)
+    for number in range(200):
+        (other / f"{number}.jsonl").write_text("{}\n")
+    selected = base / "01_demo_1_2026-11-19_09-30-10-125"
+    selected.mkdir()
+    log = selected / "pytest_vl1.txt"
+    log.write_text("selected")
+    original = Path.rglob
+
+    def ordered_rglob(path, pattern):
+        return iter(sorted(original(path, pattern), key=lambda item: item.parent != other))
+
+    monkeypatch.setattr(Path, "rglob", ordered_rglob)
+    assert [entry["path"] for entry in read_evidence(root)["test_logs"]] == [log.relative_to(root).as_posix()]
+
+
+def test_direct_telemetry_artifact_read_has_same_file_limit(tmp_path):
+    root = project(tmp_path)
+    path = root / "verification/telemetry/01_demo_1_2026-11-19_09-30-10-125/pytest_vl1.txt"
+    path.parent.mkdir(parents=True)
+    with path.open("wb") as stream:
+        stream.truncate(5 * 1024 * 1024 + 1)
+    assert not read_evidence(root)["test_logs"]
+    with pytest.raises(HTTPException) as error:
+        read_artifact(root, None, path.relative_to(root).as_posix())
+    assert error.value.status_code == 413
 
 
 def test_partial_latest_iteration_blocks_completion(tmp_path):

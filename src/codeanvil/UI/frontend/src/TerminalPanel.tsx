@@ -1,21 +1,25 @@
 import { useEffect, useRef, useState } from 'react'
-import { Play, Square, Terminal as TerminalIcon } from 'lucide-react'
+import { createPortal } from 'react-dom'
+import { Square, Terminal as TerminalIcon } from 'lucide-react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { type Project, request } from './api'
+import { type Launcher, LauncherIcon, LauncherSidebar } from './LauncherSidebar'
 import '@xterm/xterm/css/xterm.css'
 import './styles/terminal.css'
 
-type Launcher = {
-  id: string; label: string; installed: boolean; available: boolean
-  kind: 'terminal'; sandbox_supported: boolean
-}
 type Session = {
   id: string; pid: number; project_path: string; launcher_id: string; sandbox: boolean
   state: 'running' | 'exited'; exit_code: number | null; clients: number
 }
 type Launchers = { supported: boolean; platform: string; launchers: Launcher[] }
-type Props = { project: Project; theme: 'dark' | 'light' }
+type Props = {
+  project: Project
+  theme: 'dark' | 'light'
+  visible?: boolean
+  launcherSlot?: HTMLElement | null
+  onOpenTerminal?: () => void
+}
 
 function terminalSize(emulator: Terminal | null) {
   return {
@@ -46,7 +50,7 @@ async function postSession(url: string, body?: object): Promise<Session> {
   return value
 }
 
-export function TerminalPanel({ project, theme }: Props) {
+export function TerminalPanel({ project, theme, visible = true, launcherSlot, onOpenTerminal }: Props) {
   const container = useRef<HTMLDivElement>(null)
   const terminal = useRef<Terminal | null>(null)
   const fit = useRef<FitAddon | null>(null)
@@ -56,7 +60,7 @@ export function TerminalPanel({ project, theme }: Props) {
   const sessionRef = useRef<Session | null>(null)
   const [catalog, setCatalog] = useState<Launchers | null>(null)
   const [launcherId, setLauncherId] = useState('')
-  const [sandbox, setSandbox] = useState(false)
+  const [modes, setModes] = useState<Record<string, boolean>>({})
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
@@ -65,7 +69,8 @@ export function TerminalPanel({ project, theme }: Props) {
   const [error, setError] = useState('')
   const running = session?.state === 'running'
   const selected = catalog?.launchers.find(value => value.id === launcherId)
-  const ready = !loading && catalog?.supported && selected?.installed && selected.available
+  const ready = Boolean(!loading && catalog?.supported && selected?.installed && selected.available)
+  const displayed = catalog?.launchers.find(value => value.id === session?.launcher_id) || selected
   themeRef.current = theme
 
   const acceptSession = (value: Session | null) => {
@@ -106,7 +111,7 @@ export function TerminalPanel({ project, theme }: Props) {
       terminal.current = null
       fit.current = null
     }
-  }, [project.path])
+  }, [project.path, visible])
 
   useEffect(() => {
     if (terminal.current) terminal.current.options.theme = terminalTheme(theme)
@@ -122,18 +127,18 @@ export function TerminalPanel({ project, theme }: Props) {
     setCatalog(null)
     acceptSession(null)
     setLauncherId('')
-    setSandbox(false)
+    setModes({})
     const query = new URLSearchParams({ project_path: project.path })
     Promise.all([
-      request<Launchers>('/api/terminal/launchers', controller.signal),
+      request<Launchers>('/api/launchers', controller.signal),
       request<{ sessions: Session[] }>(`/api/terminal/sessions?${query}`, controller.signal),
     ]).then(([launchers, result]) => {
       if (controller.signal.aborted) return
       setCatalog(launchers)
       const existing = result.sessions.find(value => value.state === 'running' && value.project_path === project.path)
-      const available = launchers.launchers.filter(value => value.installed && value.available)
+      const available = launchers.launchers.filter(value => value.kind === 'terminal' && value.installed && value.available)
       setLauncherId(existing?.launcher_id ?? available.find(value => value.id === 'claude')?.id ?? available[0]?.id ?? '')
-      setSandbox(existing?.sandbox ?? false)
+      if (existing) setModes({ [existing.launcher_id]: existing.sandbox })
       acceptSession(existing ?? null)
     }).catch(reason => {
       if (!controller.signal.aborted) setError(reason.message)
@@ -147,9 +152,9 @@ export function TerminalPanel({ project, theme }: Props) {
   }, [project.path])
 
   useEffect(() => {
-    if (!session?.id || session.project_path !== project.path) return
+    if (!session?.id || session.project_path !== project.path || (!visible && session.state === 'exited')) return
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    terminal.current?.reset()
+    if (visible) terminal.current?.reset()
     const connection = new WebSocket(`${protocol}//${window.location.host}/api/terminal/sessions/${encodeURIComponent(session.id)}/stream`)
     connection.binaryType = 'arraybuffer'
     socket.current = connection
@@ -158,8 +163,10 @@ export function TerminalPanel({ project, theme }: Props) {
     connection.onopen = () => {
       setConnected(true)
       setError('')
-      sendSize()
-      terminal.current?.focus()
+      if (visible) {
+        sendSize()
+        terminal.current?.focus()
+      }
     }
     connection.onmessage = event => {
       if (event.data instanceof ArrayBuffer) {
@@ -194,23 +201,41 @@ export function TerminalPanel({ project, theme }: Props) {
       connection.close()
       if (socket.current === connection) socket.current = null
     }
-  }, [session?.id, connectionAttempt, project.path])
+  }, [session?.id, connectionAttempt, project.path, visible])
 
-  const start = async () => {
-    if (!ready || running || busy) return
+  const start = async (launcher: Launcher | undefined = selected) => {
+    if (!launcher?.installed || !launcher.available || !catalog?.supported || busy) return
+    const current = sessionRef.current
+    if (current?.state === 'running' && current.launcher_id === launcher.id) return
     const expectedGeneration = generation.current
     setBusy(true)
     setError('')
+    onOpenTerminal?.()
     try {
+      if (current?.state === 'running') {
+        const stopped = await postSession(`/api/terminal/sessions/${encodeURIComponent(current.id)}/stop`)
+        if (generation.current !== expectedGeneration) return
+        acceptSession(stopped)
+        if (stopped.state !== 'exited') throw new Error('The current terminal is still running.')
+      }
+      setLauncherId(launcher.id)
       fit.current?.fit()
       const created = await postSession('/api/terminal/sessions', {
-        project_path: project.path, launcher_id: launcherId, sandbox,
+        project_path: project.path, launcher_id: launcher.id, sandbox: launcher.sandbox_supported && !!modes[launcher.id],
         ...terminalSize(terminal.current),
       })
       if (generation.current === expectedGeneration) acceptSession(created)
     } catch (reason) {
       if (generation.current === expectedGeneration) setError(reason instanceof Error ? reason.message : 'Could not start the local CLI.')
     } finally { if (generation.current === expectedGeneration) setBusy(false) }
+  }
+
+  const selectLauncher = (launcher: Launcher) => {
+    if (busy) return
+    if (running) {
+      if (session.launcher_id === launcher.id) onOpenTerminal?.()
+      else void start(launcher)
+    } else setLauncherId(launcher.id)
   }
 
   const stop = async () => {
@@ -229,37 +254,32 @@ export function TerminalPanel({ project, theme }: Props) {
   const stateLabel = running ? (connected ? 'Running' : 'Connecting…')
     : session ? `Exited (${session.exit_code ?? 'unknown'})` : loading ? 'Loading…' : 'Ready to start'
 
-  return <section className="terminal-workspace" aria-label="Project terminal">
-    <header className="terminal-heading">
-      <div><span className="eyebrow"><TerminalIcon size={14} /> LOCAL PROCESS</span><h1>Interactive terminal</h1>
-        <p>Run your installed coding CLI in <strong>{project.name}</strong>.</p></div>
-      <div className="terminal-process" role="status"><span>{stateLabel}</span>{session && <code>PID {session.pid}</code>}</div>
-    </header>
-    <div className="terminal-controls">
-      <label className="terminal-cli">Local CLI<select value={launcherId} disabled={loading || busy || running || !catalog?.supported}
-        onChange={event => {
-          setLauncherId(event.target.value)
-          if (!catalog?.launchers.find(value => value.id === event.target.value)?.sandbox_supported) setSandbox(false)
-        }}>
-        {!launcherId && <option value="">Select a local CLI</option>}
-        {catalog?.launchers.map(value => <option key={value.id} value={value.id} disabled={!value.installed || !value.available}>
-          {value.label}{!value.installed ? ' (not installed)' : !value.available ? ' (unavailable)' : ''}
-        </option>)}
-      </select></label>
-      <label className="terminal-sandbox"><input type="checkbox" checked={sandbox} disabled={loading || busy || running || !catalog?.supported || !selected?.sandbox_supported}
-        onChange={event => setSandbox(event.target.checked)} />Sandbox mode</label>
-      <div className="terminal-buttons">
-        <button className="primary-button" disabled={!ready || running || busy} onClick={start}><Play size={14} />Start terminal</button>
-        <button className="secondary-button" disabled={!running || busy} onClick={stop}><Square size={13} />Stop terminal</button>
-      </div>
-    </div>
-    <p className="terminal-mode-help">Sandbox mode uses CodeAnvil project-only settings and CLI isolation. Normal mode uses your usual local CLI settings. Choose before starting.</p>
-    {!loading && catalog && !catalog.supported && <p className="terminal-notice">Interactive terminals are not supported on this platform. Use Linux or WSL.</p>}
-    {!loading && catalog?.supported && !catalog.launchers.some(value => value.installed && value.available) && <p className="terminal-notice">Install a supported local CLI, then reopen this view.</p>}
-    {!loading && selected && !selected.sandbox_supported && <p className="terminal-notice">Sandbox mode is not available for this CLI.</p>}
-    {error && <div className="terminal-error" role="alert"><span>{error}</span>{running && !connected && <button className="secondary-button"
-      onClick={() => setConnectionAttempt(value => value + 1)}>Reconnect</button>}</div>}
-    <div ref={container} className="terminal-screen" aria-label="Interactive CLI terminal" />
-    <p className="terminal-footnote">{project.path} <span>Switching views keeps the process running. Use Stop terminal to end it.</span></p>
-  </section>
+  const controls = <>
+    <LauncherSidebar items={catalog?.launchers ?? []} projectPath={project.path} theme={theme}
+      supported={!!catalog?.supported} selected={launcherId} running={running ? session.launcher_id : undefined}
+      modes={modes} busy={busy} ready={ready} onSelect={selectLauncher} onStart={() => void start()}
+      onSandbox={(id, checked) => setModes(current => ({ ...current, [id]: checked }))} />
+    {!visible && !catalog && error && <p className="launcher-error" role="alert">{error}</p>}
+  </>
+
+  return <>
+    {launcherSlot ? createPortal(controls, launcherSlot) : launcherSlot === undefined ? controls : null}
+    {visible && <section className="terminal-workspace" aria-label="Project terminal">
+      <header className="terminal-heading">
+        <div className="terminal-title">{displayed ? <LauncherIcon launcher={displayed} theme={theme} /> : <TerminalIcon size={20} />}
+          <h1>{displayed?.label ?? 'Interactive terminal'}</h1>
+        </div>
+        <div className="terminal-buttons">
+          <div className="terminal-process" role="status"><span>{stateLabel}</span>{session && <code>PID {session.pid}</code>}</div>
+          <button className="secondary-button" disabled={!running || busy} onClick={stop}><Square size={13} />Stop terminal</button>
+        </div>
+      </header>
+      {!loading && catalog && !catalog.supported && <p className="terminal-notice">Interactive terminals are not supported on this platform. Use Linux or WSL.</p>}
+      {!loading && catalog?.supported && !ready && !running && <p className="terminal-notice">Install a supported local CLI to start a terminal from the sidebar.</p>}
+      {ready && !session && !error && <p className="terminal-notice">Select an agent and start its terminal from the sidebar.</p>}
+      {error && <div className="terminal-error" role="alert"><span>{error}</span>{running && !connected && <button className="secondary-button"
+        onClick={() => setConnectionAttempt(value => value + 1)}>Reconnect</button>}</div>}
+      <div ref={container} className="terminal-screen" aria-label="Interactive CLI terminal" />
+    </section>}
+  </>
 }

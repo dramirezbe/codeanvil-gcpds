@@ -3,11 +3,10 @@ launchers:
     kind: gui
     label: Codex Desktop
     icon: openai-codex
-    detect: [codex]
+    detect:
+      paths: [/Applications/Codex.app, "~/Applications/Codex.app"]
     launch:
-      linux: [codex, "{project}"]
       darwin: [open, -a, Codex, "{project}"]
-      windows: [codex, "{project}"]
   vscode:
     kind: gui
     label: Visual Studio Code

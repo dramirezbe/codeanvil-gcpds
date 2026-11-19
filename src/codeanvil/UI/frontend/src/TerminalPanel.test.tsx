@@ -1,7 +1,8 @@
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { TerminalPanel } from './TerminalPanel'
+import claudeIcon from './assets/icons/claude.svg'
 
 const emulator = vi.hoisted(() => ({
   instances: [] as Array<{
@@ -51,13 +52,15 @@ class Socket {
 }
 
 const project = { name: 'Sample', path: '/home/alice/Documents/sample' }
-const launcher = { id: 'claude', label: 'Claude Code', installed: true, available: true, kind: 'terminal', sandbox_supported: true }
+const launcher = { id: 'claude', label: 'Claude Code', icon: 'claude', installed: true, available: true, kind: 'terminal', sandbox_supported: true }
+const codex = { ...launcher, id: 'codex', label: 'Codex CLI', icon: 'openai-codex' }
 const session = { id: 'session-1', pid: 2345, project_path: project.path, launcher_id: 'claude', sandbox: false,
   state: 'running', exit_code: null, clients: 0 }
 
 function backend(options: { supported?: boolean; launchers?: object[]; sessions?: object[]; startError?: string } = {}) {
   const fetch = vi.fn(async (url: string, init?: RequestInit) => {
-    if (url === '/api/terminal/launchers') return Response.json({ supported: options.supported ?? true, platform: 'linux', launchers: options.launchers ?? [launcher] })
+    if (url === '/api/launchers') return Response.json({ supported: options.supported ?? true, platform: 'linux', launchers: options.launchers ?? [launcher] })
+    if (url === '/api/launchers/vscode/launch') return Response.json({ launched: true })
     if (url.startsWith('/api/terminal/sessions?')) {
       const path = new URL(url, 'http://localhost').searchParams.get('project_path')
       return Response.json({ sessions: (options.sessions ?? []).filter(value => (value as typeof session).project_path === path) })
@@ -66,7 +69,8 @@ function backend(options: { supported?: boolean; launchers?: object[]; sessions?
     if (url === '/api/terminal/sessions' && init?.method === 'POST') {
       if (options.startError) return Response.json({ detail: options.startError }, { status: 409 })
       const body = JSON.parse(init.body as string)
-      return Response.json({ ...session, sandbox: body.sandbox })
+      return Response.json({ ...session, launcher_id: body.launcher_id, sandbox: body.sandbox,
+        id: body.launcher_id === 'claude' ? session.id : 'session-2' })
     }
     throw new Error(`Unexpected request: ${url}`)
   })
@@ -90,12 +94,17 @@ beforeEach(() => {
 describe('Interactive local terminal', () => {
   it('waits for an explicit start, defaults to Claude and launches normal mode', async () => {
     const user = userEvent.setup()
-    const fetch = backend({ launchers: [{ ...launcher, id: 'codex', label: 'Codex' }, launcher] })
+    const fetch = backend({ launchers: [codex, launcher] })
     render(<TerminalPanel project={project} theme="dark" />)
     const start = await screen.findByRole('button', { name: 'Start terminal' })
     await waitFor(() => expect(start).toBeEnabled())
-    expect(screen.getByRole('combobox', { name: 'Local CLI' })).toHaveValue('claude')
-    expect(screen.getByRole('checkbox', { name: 'Sandbox mode' })).not.toBeChecked()
+    const sidebar = screen.getByRole('region', { name: 'Project launchers' })
+    const claude = within(sidebar).getByRole('button', { name: 'Claude Code' })
+    expect(claude).toHaveAttribute('aria-pressed', 'true')
+    expect(claude).toHaveAccessibleDescription('Selected')
+    expect(claude.querySelector('img')).toHaveAttribute('src', claudeIcon)
+    expect(screen.getByRole('checkbox', { name: 'Sandbox mode for Claude Code' })).not.toBeChecked()
+    expect(within(screen.getByRole('region', { name: 'Project terminal' })).queryByRole('checkbox')).not.toBeInTheDocument()
     expect(Socket.instances).toHaveLength(0)
     expect(fetch.mock.calls.every(([, init]) => init?.method !== 'POST')).toBe(true)
     await user.click(start)
@@ -104,8 +113,9 @@ describe('Interactive local terminal', () => {
       method: 'POST', body: JSON.stringify({ project_path: project.path, launcher_id: 'claude', sandbox: false, cols: 100, rows: 30 }),
     }))
     expect(screen.getByText('PID 2345')).toBeInTheDocument()
-    expect(screen.getByRole('checkbox', { name: 'Sandbox mode' })).toBeDisabled()
-    expect(screen.getByRole('combobox', { name: 'Local CLI' })).toBeDisabled()
+    expect(screen.getByRole('checkbox', { name: 'Sandbox mode for Claude Code' })).toBeDisabled()
+    expect(claude).toHaveAccessibleDescription('Running')
+    expect(claude.closest('.launcher-row')).toHaveAttribute('data-state', 'active')
   })
 
   it('sends the selected sandbox setting only when starting a new process', async () => {
@@ -113,12 +123,58 @@ describe('Interactive local terminal', () => {
     const fetch = backend()
     render(<TerminalPanel project={project} theme="dark" />)
     await waitFor(() => expect(screen.getByRole('button', { name: 'Start terminal' })).toBeEnabled())
-    await user.click(screen.getByRole('checkbox', { name: 'Sandbox mode' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Sandbox mode for Claude Code' }))
     await user.click(screen.getByRole('button', { name: 'Start terminal' }))
     await waitFor(() => expect(Socket.instances).toHaveLength(1))
     const request = fetch.mock.calls.find(([url, init]) => url === '/api/terminal/sessions' && init?.method === 'POST')
     expect(JSON.parse(request![1]!.body as string).sandbox).toBe(true)
-    expect(screen.getByText(/project-only settings/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Claude Code' })).toHaveAccessibleDescription('Running')
+  })
+
+  it('stops the running CLI before starting the selected replacement in its own sandbox mode', async () => {
+    const user = userEvent.setup()
+    const fetch = backend({ launchers: [launcher, codex], sessions: [session] })
+    render(<TerminalPanel project={project} theme="dark" />)
+    await waitFor(() => expect(Socket.instances).toHaveLength(1))
+    await user.click(screen.getByRole('checkbox', { name: 'Sandbox mode for Codex CLI' }))
+    await user.click(screen.getByRole('button', { name: 'Codex CLI' }))
+    await waitFor(() => expect(Socket.instances).toHaveLength(2))
+    const mutations = fetch.mock.calls.filter(([, init]) => init?.method === 'POST')
+    expect(mutations.map(([url]) => url)).toEqual([
+      '/api/terminal/sessions/session-1/stop', '/api/terminal/sessions',
+    ])
+    expect(JSON.parse(mutations[1][1]!.body as string)).toMatchObject({ launcher_id: 'codex', sandbox: true })
+    expect(screen.getByRole('button', { name: 'Codex CLI' })).toHaveAccessibleDescription('Running')
+    expect(screen.getByRole('button', { name: 'Claude Code' })).toHaveAccessibleDescription('Ready')
+  })
+
+  it('clears the background terminal glow on exit', async () => {
+    backend({ sessions: [session] })
+    render(<TerminalPanel project={project} theme="dark" visible={false} />)
+    await waitFor(() => expect(Socket.instances).toHaveLength(1))
+    expect(screen.queryByRole('region', { name: 'Project terminal' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Claude Code' })).toHaveAccessibleDescription('Running')
+    act(() => Socket.instances[0].message({ type: 'exit', code: 0 }))
+    expect(screen.getByRole('button', { name: 'Claude Code' })).toHaveAccessibleDescription('Selected')
+  })
+
+  it('uses a timed glow after a successful desktop launch', async () => {
+    const app = { id: 'vscode', label: 'Visual Studio Code', icon: 'vscode', kind: 'gui', installed: true, available: true }
+    const fetch = backend({ launchers: [app, launcher] })
+    render(<TerminalPanel project={project} theme="dark" />)
+    const editor = await screen.findByRole('button', { name: 'Visual Studio Code' })
+    vi.useFakeTimers()
+    try {
+      await act(async () => { fireEvent.click(editor) })
+      expect(fetch).toHaveBeenCalledWith('/api/launchers/vscode/launch', expect.objectContaining({ method: 'POST' }))
+      expect(editor).toHaveAccessibleDescription('Recently opened')
+      expect(editor.closest('.launcher-row')).toHaveAttribute('data-state', 'active')
+      act(() => vi.advanceTimersByTime(15_000))
+      expect(editor).toHaveAccessibleDescription('Ready')
+      expect(Socket.instances).toHaveLength(0)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('forwards raw keyboard input and binary output, resizes and follows the theme', async () => {
@@ -271,7 +327,6 @@ describe('Interactive local terminal', () => {
     backend({ launchers: [{ ...launcher, sandbox_supported: false }] })
     render(<TerminalPanel project={project} theme="dark" />)
     await waitFor(() => expect(screen.getByRole('button', { name: 'Start terminal' })).toBeEnabled())
-    expect(screen.getByRole('checkbox', { name: 'Sandbox mode' })).toBeDisabled()
-    expect(screen.getByText(/sandbox mode is not available for this cli/i)).toBeInTheDocument()
+    expect(screen.queryByRole('checkbox', { name: 'Sandbox mode for Claude Code' })).not.toBeInTheDocument()
   })
 })

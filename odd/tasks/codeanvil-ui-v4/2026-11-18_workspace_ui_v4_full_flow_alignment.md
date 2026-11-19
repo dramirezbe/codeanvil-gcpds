@@ -1,7 +1,10 @@
-# Verify and finish V-SIL v4 workspace compatibility for CodeAnvil 0.10.0
+# Implement V-SIL v4 workspace compatibility for CodeAnvil 0.10.0
 
-The v4 workspace and Telemetry & VL-2 view are already on `main` (`aa3af22`).
-CodeAnvil `0.10.0` verifies UI compatibility with the project format used by
+Adapt the existing workspace UI in place. The UI originated with the 0.7.8
+project format, and the branch includes preliminary v4 workspace and telemetry
+changes from `aa3af22`. Compatibility remains pending until the implementation
+meets the requirements and acceptance checks below.
+CodeAnvil `0.10.0` delivers UI compatibility with the project format used by
 CodeAnvil `0.9.7`, the active V-SIL v4 skills on `main`, and the artifacts in
 `0.9.6-full-flow-hackrf-rpi-mvp`.
 Use `templates/config.yaml` and the active skills for the report and artifact
@@ -73,34 +76,67 @@ not a time series; text test logs are not telemetry.
 - `tests/test_ui_workspace.py`: current v4 workspace coverage in place of skipped legacy fixtures.
 - `src/codeanvil/UI/README.md`, `AGENTS.md`, and `README.md`: current workspace contract and evidence limitations.
 
-## Baseline implemented on `main`
+## Compatibility implementation checklist
 
-- [x] The saved full-flow project defines the current eight-report chain and S3/G3 artifacts.
-- [x] The progress strip renders all eight stages in configured order; missing reports remain missing.
-- [x] The prototype is current only when its S3/G3 baseline matches the latest selected-cycle reports and G3 remains PASS/current.
-- [x] Retired S2/G2 artifact locations are rejected; no v3 workspace fallback remains.
-- [x] Telemetry JSONL, v2 measurements, and captured text logs are discovered through bounded, project-contained reads.
-- [x] uPlot 1.6.32 is pinned and renders responsive canvas plots with cursor/legend, drag zoom, reset, timestamps/sample indices, and true gaps for unavailable points.
-- [x] Measurement values, units, criteria, source paths, and authored results remain visible beside the plots.
-- [x] G3 VL-2 module/path results and the honesty statement are shown without upgrading blocked/inconclusive/no-evidence results.
-- [x] The 0.9.6 snapshot shows no JSONL or v2 measurement records, keeps its manual readings unplotted, and does not imply VL-2 PASS.
-- [x] Documentation describes v4 workspace support and distinguishes historical fixtures from supported projects.
+- [x] Confirm the progress strip renders all eight stages in configured order and preserves missing reports.
+- [x] Confirm prototype freshness against the latest selected-cycle S3/G3 reports and G3 verdict.
+- [x] Confirm artifact routing accepts current S3/G3 locations and rejects retired S2/G2 locations.
+- [x] Check that telemetry JSONL, v2 measurements, and captured text logs use bounded, project-contained reads and follow the selected cycle.
+- [x] Verify the pinned uPlot chart with responsive sizing, cursor and legend, drag zoom, reset, timestamps or sample indices, and gaps for unavailable points.
+- [x] Verify measurement values, units, criteria, source paths, and authored results beside the plots.
+- [x] Verify G3 VL-2 module and path results and the honesty statement with the active template and saved run.
+- [x] Verify the snapshot displays missing measurements and JSONL samples, manual readings as points, and the recorded VL-2 ceiling.
+- [x] Update documentation to match the verified v4 behavior and distinguish historical fixtures from supported projects.
 
-Implementation and production asset build are complete. `pnpm install --frozen-lockfile`,
-the frontend production build, Python syntax compilation, and `git diff --check` passed.
-The automated test suite was not run.
+## Findings and fixes
+
+| Contract and reproducer | Fix |
+|-------------------------|-----|
+| `templates/config.yaml` defines report order. The API followed it while React maintained a separate ordered list. | Render the API report sequence and use React only for display labels. |
+| The archive uses `VL-2: NO EVIDENCE` and the active G3 prototype template uses `VALIDATED (VL-2, …)`. The template-derived prototype exposed the missing declaration in the API. | Read both declarations from the honesty section. Keep the source wording and derive IDs and status from the selected prototype. |
+| The archive's mixed-level rows and the fixture's `VL-1 PASS; VL-2 BLOCKED` reproduced a green badge for blocked VL-2 in Chromium. | Apply the badge style to the VL-2 clause while showing the full authored result. |
+| The telemetry collector can mark a sample unavailable. Real uPlot passed null to the legend on first render and at the fixture gap, throwing `Cannot read properties of null (reading 'toFixed')`. | Render an empty legend value, keep gaps in the series, and retain the plot across unrelated renders. |
+| The S3/G3 machine evidence contract names runs by cycle and iteration. Two similarly named cycles reproduced ambiguous grouping. A regression test with 200 files in the other cycle reproduced missing selected-cycle logs. | Match the cycle from the run directory before applying limits, check measurement provenance against the record, and resolve selected files inside the project. |
+| The direct artifact endpoint returned a log larger than the evidence limit even though the listing omitted it. | Bound both reads and return 413 for oversized direct reads. |
+| The archive records point observations with an equipment-specific envelope heading. React looked for one named device. | Render the heading from the authored table across projects. Plot only machine samples. |
+
+## Local verification
+
+- `.venv/bin/python -m pytest -q` reported **834 passed, 7 skipped**. API
+  checks include missing reports, report order, stale and current prototypes,
+  retired artifact locations, cycle isolation, and evidence limits.
+- `pnpm test` reported **42 passed**. `pnpm build` compiled TypeScript and
+  produced the bundled frontend. Vite reported the existing chunk size warning.
+- Playwright Chromium reported **archive: PASS** and **fixture: PASS**.
+  The archive showed the eight reports, S3/G3 artifacts, current G3
+  baseline, captured logs, manual point values and the recorded VL-2 evidence
+  limit. The fixture checked timestamp and index axes, responsive canvas,
+  gaps, cursor, legend, drag zoom, reset, measurement source and results,
+  missing reports, and replacement of the evidence on cycle change.
+- `uv build --python /usr/bin/python3 --offline` built the 0.10.0 source
+  archive and wheel. The wheel's bundled assets passed validation and the
+  browser suite ran against the wheel's Python package and static assets.
+
+The [browser harness](acceptance/run.sh) starts two local servers and generates
+the fixture in a temporary directory. From the repo root, run
+`NODE_PATH=<directory containing playwright> bash odd/tasks/codeanvil-ui-v4/acceptance/run.sh`.
+Set `PYTHONPATH` to an extracted wheel to check the distributed UI with the
+same harness. The acceptance fixes and their regression coverage are contained
+in the workspace API, frontend, and bundled assets listed above.
 
 ## Release acceptance checks
 
-- [ ] Open the saved full-flow project and check the eight stages, S3 test
+- [x] Open the saved full-flow project and check the eight stages, S3 test
   evidence, G3 prototype, and prototype freshness against the reports.
-- [ ] Verify that the saved run shows its authored VL-2 result and captured
+- [x] Verify that the saved run shows its authored VL-2 result and captured
   test logs, with empty states for missing JSONL samples and v2 measurements.
-- [ ] Use a separate fixture based on the active skills to verify that JSONL
+- [x] Use a separate fixture based on the active skills to verify that JSONL
   samples plot in uPlot, v2 measurements show their recorded results, and
   changing cycles shows the evidence for the selected cycle.
-- [ ] Confirm frontend tests, frontend and package builds, and required GitHub
-  CI checks pass before tagging the release commit on `main`.
+- [x] Pass the Python and frontend suites, build both distributions, and verify
+  the UI served from the wheel.
+- [ ] Confirm required GitHub CI checks pass on the PR and then on `main`.
+- [ ] Push the annotated tag and confirm the GitHub release and changelog.
 
 ## Follow-on backlog outside 0.10.0
 
@@ -123,3 +159,9 @@ applies to future UI work after the compatibility release.
 The watchdog is the recommended next slice because it makes report, cycle,
 telemetry, and verification updates visible without manual refresh while keeping
 the existing project files as the source of truth.
+
+### Dependency graph usability
+
+The embedded dependency graph is hidden from **Design** pending usability work.
+Review navigation, zoom and readability on both themes before restoring the
+preview. S1 still generates the two graph artifacts for project use.
