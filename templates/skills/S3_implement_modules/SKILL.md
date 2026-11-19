@@ -74,7 +74,7 @@ there is no default list.
 | `templates/skills/S3_implement_modules/references/logger.py` | Locked Python logger, copied unchanged |
 | `templates/skills/S3_implement_modules/references/logger.ts` | Locked TypeScript logger, copied unchanged |
 | `codeanvil telemetry` | Telemetry collector shipped with CodeAnvil, started by `verification/run.sh`; verification kit, never delivered |
-| `templates/skills/ui_rf_reference/` | Optional: visual design guidance for browser UIs that display RF/signal data — palette, canvas patterns, layout, recommended libraries. Read when the SDD has a browser subsystem; ignore otherwise |
+| `ui_rf_reference` skill | Optional visual design guidance for browser UIs that display RF/signal data — palette, canvas patterns, layout and recommended libraries. Read when the SDD has a browser subsystem; ignore otherwise |
 
 ## Hard Rules
 

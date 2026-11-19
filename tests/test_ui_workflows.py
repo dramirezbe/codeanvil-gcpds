@@ -65,7 +65,9 @@ def test_create_scaffolds_identity_and_registry_without_changing_cwd(endpoints, 
     assert project["name"] == "My SDR Lab"
     assert project["cycle"] is None
     assert (root / "AGENTS.md").is_file()
-    assert len(list((root / ".agents/skills").glob("*/SKILL.md"))) == 9
+    skill_files = list((root / ".agents/skills").glob("*/SKILL.md"))
+    assert len(skill_files) == 10
+    assert (root / ".agents/skills/ui_rf_reference/SKILL.md").is_file()
     assert yaml.safe_load((root / ".codeanvil/project.yaml").read_text())["id"] == project["id"]
     assert registered(registry) == [(project["id"], "My SDR Lab", str(root))]
     assert not (root / "src").exists()
