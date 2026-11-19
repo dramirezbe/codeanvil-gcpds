@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import {
-  Anvil, Archive, ArrowDownRight, ArrowLeft, ArrowUpRight, BookOpen,
+  Activity, Anvil, Archive, ArrowDownRight, ArrowLeft, ArrowUpRight, BookOpen,
   Command, FileText, FolderOpen, HardDrive, LayoutDashboard, Menu, Moon,
   ShieldCheck, Sun, Terminal, Trash2,
 } from 'lucide-react'
@@ -47,7 +47,8 @@ function useBootstrap(projectPath: string | undefined, revision: number) {
 
 const navigation = [
   [LayoutDashboard, 'Overview'], [FileText, 'Reports'], [FolderOpen, 'Ground truth'],
-  [BookOpen, 'Design'], [ShieldCheck, 'Verification'], [Archive, 'Backups'], [Terminal, 'Terminal'], [Terminal, 'CLI actions'],
+  [BookOpen, 'Design'], [ShieldCheck, 'Verification'], [Activity, 'Telemetry & VL-2'],
+  [Archive, 'Backups'], [Terminal, 'Terminal'], [Terminal, 'CLI actions'],
 ] as const
 
 export default function App() {
@@ -176,7 +177,7 @@ function Launcher({ projects, user, loading, error, onSelect, onDelete }: {
             onClick={event => onDelete(project, event.currentTarget)}><Trash2 size={15}/></button>
         </article>) : <div className="empty-projects"><div className="empty-icon"><HardDrive size={21} /></div><div><b>No registered projects</b><span>Create a project or add an existing folder to get started.</span></div></div>}
     </div>
-    <details className="upcoming-features"><summary>Coming next</summary><p>Automatic file updates, hardware gallery, telemetry charts and native desktop packaging.</p></details>
+    <details className="upcoming-features"><summary>Coming next</summary><p>Automatic file updates, hardware gallery and native desktop packaging.</p></details>
     <div className="launcher-footer"><span><Command size={13} /> CODEANVIL TOOLCHAIN</span><span>LOCAL WORKSPACE <ArrowDownRight size={12} /></span></div>
   </div>
 }

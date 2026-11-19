@@ -4,27 +4,27 @@ The UI is a bundled graphical companion to the existing CLI. It presents
 CodeAnvil's current project, MCP, runtime and methodology capabilities through
 purpose-built views while reusing their existing Python logic.
 
-> **Status:** implementation in progress. This README is the UI design brief;
-> `odd/tasks/ui/` tracks delivery. Opening the UI is optional; its dependencies
+> **Status:** current workspace supports V-SIL v4 projects used by CodeAnvil
+> 0.9.6/0.9.7. It reads the eight-report chain through S3/G3 and the S3/G3
+> verification artifacts; v3 workspaces are not supported. Opening the UI is optional; its dependencies
 > and built assets ship with the normal global installation. Keep it additive: do not
 > change CLI behavior, project formats or database schema just to support UI
 > workflows.
 
-The [2026-11-11 project-contract audit](../../../odd/tasks/ui/2026-11-11_current_project_ui_audit.md)
-maps paths and artifact producers for **new projects created with release
-`v0.7.0` (`2f08944`)**. Use its expected completed-project tree and acceptance
-criteria when adding views. Earlier-version projects and compatibility are
-outside scope; acceptance uses only the new 0.7.0 example collection. The UI is developed on `feat/ui`;
-the release tag itself has no UI command. Audit §6 identifies post-tag changes
-that must not be presented as released 0.7.0 capabilities.
+The v0.7.0 audit and examples below are historical design inputs only. The
+active workspace contract is the v4 full-flow snapshot at
+`methodology/test/0.9.6-full-flow-hackrf-rpi-mvp/`; no v3 artifact fallback is
+part of the current workspace.
 
-**Implemented on the UI branch (2026-11-11):** project creation/addition,
+**Implemented:** project creation/addition,
 cycle and report-iteration browsing, shared stale/delivered states, safe
 Markdown, Design/Verification views and nested artifacts. The five synthetic
 [0.7.0 examples](../../../methodology/test/v0.7.0-example-artifacts/README.md)
-exercise the empty through G2 states. The workspace terminal now runs installed
-local CLIs in a Linux/WSL PTY, with a normal/sandbox checkbox. Automatic refresh,
-hardware/telemetry surfaces and native packaging remain later work.
+are retained as historical fixtures and are not supported workspace projects.
+The workspace terminal now runs installed
+local CLIs in a Linux/WSL PTY, with a normal/sandbox checkbox. The workspace
+includes telemetry plots and a VL-2 evidence view. Automatic refresh, a hardware
+gallery and native packaging remain later work.
 
 ### Use the local terminal (Linux / WSL)
 
@@ -220,13 +220,11 @@ All launch and install recipes come from an editable YAML (§9), not hard-coded.
 
 ## 8. Verification commands
 
-The active S2/G2 contract names `verification/run.sh vl0` and
-`verification/run.sh vl1`, recorded in
-`.codeanvil/report/<cycle>/S2_artifacts/test_run.md`. Run them through the
-terminal/PTY with the collector companion. Manual reruns show their own
-results; they do not write a G2 verdict. The G2 skill and human own that verdict.
-Remote execution integration into the stage skills is still pending; the HIL
-transport's existence does not establish an automatic remote G2 or `vl2` kit.
+The active S3/G3 contract records verification runs in
+`.codeanvil/report/<cycle>/S3_artifacts/test_run.md` and the final result in
+`.codeanvil/report/<cycle>/G3_artifacts/verified_prototype.md`. The workspace
+displays these artifacts and checks prototype freshness against its S3/G3
+iteration baseline; it does not create or change gate verdicts.
 
 ## 9. Launcher registry — editable YAML (O5)
 
@@ -299,9 +297,9 @@ target UI contract; the current implementation note distinguishes existing
 views from planned workflows.
 
 ### View & understand
-- **Progress board**: `S0 → G0 → S1 → G1 → S2 → G2`, per cycle, with delivered,
+- **Progress board**: `S0 → G0 → S1 → G1 → S2 → G2 → S3 → G3`, per cycle, with delivered,
   human verdict, stale, draft and closed/suspended-cycle states. RFD is raised
-  from S1/G1/G2; S2 records possible infeasibility for G2. Share status semantics;
+  from S1/G1/G3; S3 records implementation evidence for G3. Share status semantics;
   raw `reports.py` output alone does not compute all these states.
 - **Reports & iterations**: browse each cycle's gate reports and select an
   individual iteration. Implemented; cross-cycle diffs remain planned.
@@ -316,16 +314,22 @@ views from planned workflows.
   choosing the available variant that matches the UI theme. A missing variant
   falls back to the existing graph; opening SDD is unaffected by theme changes.
   The two-file S1 contract is a branch extension beyond the frozen v0.7.0 tag.
-- **Verification / final result**: open `S2_artifacts/test_run.md` and
-  `G2_artifacts/verified_prototype.md` inside the selected cycle; show evidence
-  levels and the final template's §12 run/stop instructions. Existing files
-  can be stale after rework; do not label a cycle complete from file existence.
+- **Verification / final result**: open `S3_artifacts/test_run.md` and
+  `G3_artifacts/verified_prototype.md` inside the selected cycle; show evidence
+  levels and the final template's §12 run/stop instructions. The Telemetry & VL-2
+  view plots actual JSONL samples, lists v2 measurements and reported VL-2
+  module/path results, and keeps missing or stale evidence visible. Existing
+  files can be stale after rework; do not label a cycle complete from file existence.
 - **Draft / deviations**: `DRAFT`, `RFD.md` and `RFD_artifacts/RFD-NNN.md`,
   including withdrawn and superseded-cycle outcomes. **(+ new)**
 - **Backups**: `.codeanvil/backups/<cycle>/` with MANIFEST SHA-256.
-- **Telemetry**: chart `verification/telemetry/*.jsonl` (process/system CPU,
-  memory, temperature and available counters); retain unavailable readings and
-  unknown cycle/target associations. **(+ new)**
+- **Telemetry and VL-2 evidence**: plot numeric process/system/temperature and
+  counter samples from `verification/telemetry/**/*.jsonl`; show v2
+  `measurement.json` results and G3's declared VL-2 module/path evidence. Missing
+  or unavailable samples stay explicit. Test-run text logs remain text evidence
+  and are never plotted. The archived 0.9.6 project has no JSONL samples or v2
+  measurement records, so the view shows its documented gaps and manual idle
+  readings without manufacturing a trend.
 - **HIL targets**: `targets:` from `project.yaml` + `.codeanvil/hil/audit.log`.
   **(+ new)**
 - **HW COTS gallery**: a card per hardware component, with its image. **(+ new,
@@ -349,7 +353,7 @@ UI.
 | `backup` | Offer a backup action in the relevant stage/artifact view with its result and manifest. |
 | `runtime` | Runtime settings expose package sync/add/remove/list/path with clear global scope. |
 | `mcp` | The launcher has an MCP catalog (marketplace-style) showing available servers and install state. Users can install a server there; project creation then offers installed servers to activate for that project. Project settings show health and wiring actions. |
-| `telemetry` | Verification and telemetry views display collected data and offer bounded capture controls. |
+| `telemetry` | The workspace plots collected JSONL evidence and summarizes v2 measurements and G3 VL-2 claims; bounded capture remains available through CLI actions. |
 | `credential-setup` (post-tag extension) | Guided HIL setup requires the later tool build; the command is absent from release 0.7.0 and is deferred for the strict release baseline. |
 | `init`, `upgrade` | Global setup/update controls show confirmation, progress and result. |
 | `now` | Use internally for timestamps; it does not need a prominent user action. |

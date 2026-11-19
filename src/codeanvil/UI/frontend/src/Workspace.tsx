@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { ArrowUpRight, FileText, RefreshCw, ShieldCheck } from 'lucide-react'
 import { ArtifactViewer } from './ArtifactViewer'
+import { TelemetryView } from './TelemetryView'
 import { type Artifact, type Overview, type Project, type Report, request, workspaceUrl } from './api'
 
 const stages = [
   ['S0', 'Normalize'], ['G0', 'GT Gate'], ['S1', 'Design'],
-  ['G1', 'Review'], ['S2', 'Implement'], ['G2', 'Verify'],
+  ['G1', 'Review'], ['S2', 'Plan'], ['G2', 'Plan Gate'],
+  ['S3', 'Implement'], ['G3', 'Verify'],
 ]
 
 export function ReportBadge({ report }: { report: Report }) {
@@ -138,7 +140,8 @@ export function Workspace({ project, active, onSetActive, revision = 0, theme = 
               {!overview.selected_cycle && <p className="muted-copy">No cycle artifacts yet.</p>}
             </section>
           </div>
-        </div> : <div className="artifact-layout">
+        </div> : active === 'Telemetry & VL-2' ? <TelemetryView projectPath={project.path}
+          cycle={overview.selected_cycle} revision={refresh + revision} theme={theme} /> : <div className="artifact-layout">
           <nav className="artifact-list" aria-label={`${active} artifacts`}>
             {artifacts.map(artifact => <button key={artifact.path}
               className={`artifact-option ${selectedArtifact?.path === artifact.path ? 'selected' : ''}`}

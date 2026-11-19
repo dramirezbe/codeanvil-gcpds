@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>V-SIL v4 · Stage-gate overview</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #fafaf8; --fg: #1a1a1e; --muted: #6b6b74; --surface: #f0f0ec;
+  --surface-2: #fff; --border: #d8d8d2; --line: #64748b; --hl: #2563eb;
+  --stage-f: #e0f2fe; --stage-s: #0284c7; --stage-t: #0c4a6e;
+  --gate-f: #dcfce7; --gate-s: #16a34a; --gate-t: #14532d;
+  --input-f: #f3f4f6; --input-s: #6b7280; --input-t: #1f2937;
+  --rfd-f: #fee2e2; --rfd-s: #dc2626; --rfd-t: #7f1d1d;
+  --amber-f: #fef3c7; --amber-s: #d97706; --amber-t: #78350f;
+  --proc-f: #ede9fe; --proc-s: #7c3aed; --proc-t: #3b0764;
+  font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { color-scheme: dark;
+    --bg:#111114; --fg:#e4e4e0; --muted:#8f8f99; --surface:#1c1c20;
+    --surface-2:#17171b; --border:#2e2e34; --line:#8592a6; --hl:#60a5fa;
+    --stage-f:#0c2a3e; --stage-s:#38bdf8; --stage-t:#bae6fd;
+    --gate-f:#0b2e1a; --gate-s:#4ade80; --gate-t:#bbf7d0;
+    --input-f:#23232a; --input-s:#8b8b96; --input-t:#e4e4e7;
+    --rfd-f:#3b1010; --rfd-s:#f87171; --rfd-t:#fecaca;
+    --amber-f:#3a2606; --amber-s:#fbbf24; --amber-t:#fde68a;
+    --proc-f:#24133f; --proc-s:#a78bfa; --proc-t:#ddd6fe;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:#111114; --fg:#e4e4e0; --muted:#8f8f99; --surface:#1c1c20;
+  --surface-2:#17171b; --border:#2e2e34; --line:#8592a6; --hl:#60a5fa;
+  --stage-f:#0c2a3e; --stage-s:#38bdf8; --stage-t:#bae6fd;
+  --gate-f:#0b2e1a; --gate-s:#4ade80; --gate-t:#bbf7d0;
+  --input-f:#23232a; --input-s:#8b8b96; --input-t:#e4e4e7;
+  --rfd-f:#3b1010; --rfd-s:#f87171; --rfd-t:#fecaca;
+  --amber-f:#3a2606; --amber-s:#fbbf24; --amber-t:#fde68a;
+  --proc-f:#24133f; --proc-s:#a78bfa; --proc-t:#ddd6fe;
+}
+* { box-sizing: border-box; }
+body { margin: 0; padding: 28px clamp(16px, 4vw, 52px) 48px; background: var(--bg); color: var(--fg); line-height: 1.6; }
+main { max-width: 1500px; margin: auto; }
+header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+h1 { margin: 0; font-size: clamp(1.4rem, 2.5vw, 2rem); line-height: 1.25; }
+h2 { margin: 0 0 .4rem; font-size: 1.3rem; }
+h3 { margin: 1.8rem 0 .5rem; font-size: 1.05rem; }
+p { margin: .5rem 0; }
+.sub, .muted { color: var(--muted); }
+.tag { display: inline-block; padding: .05rem .45rem; border: 1px solid var(--border); border-radius: 999px; color: var(--muted); font-size: .75rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+button { flex: none; padding: .35rem .7rem; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--fg); font: inherit; font-size: .85rem; cursor: pointer; }
+button:hover { border-color: var(--hl); }
+button[aria-pressed="true"] { border-color: var(--hl); }
+figure { margin: .75rem 0 1.5rem; padding: 12px; overflow: hidden; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); }
+.scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+svg { display: block; width: 100%; height: auto; }
+.scroll.wide > svg { min-width: 1000px; }
+.t { font: 500 13px "IBM Plex Sans", system-ui, sans-serif; fill: var(--fg); }
+.tb { font: 600 13.5px "IBM Plex Sans", system-ui, sans-serif; fill: var(--fg); }
+.ts { font: 400 11px "IBM Plex Sans", system-ui, sans-serif; fill: var(--muted); }
+.tl { font: 500 11px "IBM Plex Sans", system-ui, sans-serif; fill: var(--muted); }
+.mid { text-anchor: middle; } .end { text-anchor: end; }
+.s { stroke-width: 1.6; }
+.k-stage .s { fill: var(--stage-f); stroke: var(--stage-s); } .k-stage text { fill: var(--stage-t); }
+.k-gate .s { fill: var(--gate-f); stroke: var(--gate-s); } .k-gate text { fill: var(--gate-t); }
+.k-input .s { fill: var(--input-f); stroke: var(--input-s); } .k-input text { fill: var(--input-t); }
+.k-rfd .s { fill: var(--rfd-f); stroke: var(--rfd-s); } .k-rfd text { fill: var(--rfd-t); }
+.k-proc .s { fill: var(--proc-f); stroke: var(--proc-s); } .k-proc text { fill: var(--proc-t); }
+.k-term .s { stroke-width: 3; }
+.e { fill: none; stroke: var(--line); stroke-width: 1.6; marker-end: url(#m-line); }
+.e.dash { stroke-dasharray: 6 4; }
+.e.red { stroke: var(--rfd-s); marker-end: url(#m-red); }
+.e.green { stroke: var(--gate-s); marker-end: url(#m-green); }
+.e.amber { stroke: var(--amber-s); marker-end: url(#m-amber); }
+.e.proc { stroke: var(--proc-s); marker-end: url(#m-proc); }
+.click { cursor: pointer; }
+.click:focus .s, .click.sel .s { stroke: var(--hl); stroke-width: 3; }
+.card { margin-top: .65rem; padding: .75rem .9rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.card h3 { margin: 0 0 .3rem; font-size: 1rem; }
+.card dl { display: grid; grid-template-columns: max-content 1fr; gap: .2rem .8rem; margin: .3rem 0 0; font-size: .92rem; }
+.card dt { color: var(--muted); } .card dd { margin: 0; }
+@media (max-width: 650px) { body { padding: 18px 10px 32px; } figure { padding: 7px; } .card dl { grid-template-columns: 1fr; gap: 0; } .card dd { margin-bottom: .35rem; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <span class="tag">Visual companion · V-SIL v4 · 4.0</span>
+      <h1>2 · Stage-gate overview</h1>
+      <p class="sub">Four stages do work; four gates decide. S2 and G2 are the agile planning layer. Each gate sends work forward on PASS or back to the stage that can fix it. G3 has five routing classes including plan defect → S2. <b>Click any node</b> to see what it consumes, produces, who decides, and where it routes.</p>
+    </div>
+    <button id="theme" type="button" aria-label="Toggle colour theme">◐ Theme</button>
+  </header>
+
+  <figure>
+    <div class="scroll wide">
+      <svg id="ov" viewBox="0 0 1380 360" role="img" aria-label="Stage-gate overview: Build Package, S0, G0, S1, G1, S2, G2, S3, G3, Verified Prototype, with failure and RFD routes">
+        <defs>
+          <marker id="m-line" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--line)"/></marker>
+          <marker id="m-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--rfd-s)"/></marker>
+          <marker id="m-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--gate-s)"/></marker>
+          <marker id="m-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--amber-s)"/></marker>
+          <marker id="m-proc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--proc-s)"/></marker>
+        </defs>
+        <g class="fb">
+          <path class="e amber dash" d="M270,88 C270,38 170,38 170,100"/><text class="tl mid" x="220" y="41">FAIL</text>
+          <path class="e amber dash" d="M470,88 C470,44 380,44 380,100"/><text class="tl mid" x="425" y="47">FAIL</text>
+          <path class="e amber dash" d="M670,88 C670,50 560,50 560,100"/><text class="tl mid" x="615" y="53">FAIL</text>
+          <path class="e amber dash" d="M950,88 C950,4 370,4 370,100"/><text class="tl mid" x="660" y="17">design defect → S1</text>
+          <path class="e proc dash" d="M940,160 C920,210 620,210 580,160"/><text class="tl mid" x="750" y="208">plan defect → S2</text>
+          <path class="e amber dash" d="M930,151 C910,230 830,230 785,160"/><text class="tl mid" x="870" y="225">module defect → S3</text>
+          <path class="e red dash" d="M385,160 C385,288 500,288 621,288"/><text class="tl" x="397" y="262">infeasible</text>
+          <path class="e red dash" d="M470,172 C470,250 660,250 696,269"/><text class="tl" x="540" y="244">infeasible</text>
+          <path class="e red dash" d="M950,172 C950,288 830,288 779,288"/><text class="tl end" x="938" y="262">infeasible</text>
+          <path class="e red dash" d="M700,313 V340 H50 V160"/><text class="tl mid" x="370" y="334">updated Build Package</text>
+        </g>
+        <path class="e" d="M100,130 H116"/>
+        <path class="e" d="M210,130 H228"/>
+        <path class="e green" d="M310,130 H336"/><text class="tl mid" x="320" y="194">PASS + Gate H</text>
+        <path class="e" d="M430,130 H448"/>
+        <path class="e green" d="M510,130 H536"/><text class="tl mid" x="520" y="194">PASS</text>
+        <path class="e" d="M630,130 H648"/>
+        <path class="e green" d="M710,130 H736"/><text class="tl mid" x="720" y="194">PASS</text>
+        <path class="e" d="M830,130 H906"/>
+        <path class="e green" d="M990,130 H1131"/><text class="tl mid" x="1060" y="122">PASS</text>
+
+        <g class="k-input click" data-node="BP" tabindex="0" role="button"><rect class="s" x="6" y="100" width="94" height="60" rx="8"/><text class="tb mid" x="53" y="126">Build</text><text class="tb mid" x="53" y="143">Package</text></g>
+        <g class="k-stage click" data-node="S0" tabindex="0" role="button"><rect class="s" x="120" y="100" width="90" height="60" rx="8"/><text class="tb mid" x="165" y="124">S0</text><text class="ts mid" x="165" y="142">Normalise + GT</text></g>
+        <g class="k-gate click" data-node="G0" tabindex="0" role="button"><polygon class="s" points="270,88 310,130 270,172 230,130"/><text class="tb mid" x="270" y="135">G0</text></g>
+        <g class="k-stage click" data-node="S1" tabindex="0" role="button"><rect class="s" x="340" y="100" width="90" height="60" rx="8"/><text class="tb mid" x="385" y="124">S1</text><text class="ts mid" x="385" y="142">System design</text></g>
+        <g class="k-gate click" data-node="G1" tabindex="0" role="button"><polygon class="s" points="470,88 510,130 470,172 430,130"/><text class="tb mid" x="470" y="135">G1</text></g>
+        <g class="k-stage click" data-node="S2" tabindex="0" role="button"><rect class="s" x="540" y="100" width="90" height="60" rx="8"/><text class="tb mid" x="585" y="120">S2</text><text class="ts mid" x="585" y="138" style="font-size:9.5px">Module plan</text><text class="ts mid" x="585" y="152" style="font-size:9.5px">(Agile-V)</text></g>
+        <g class="k-gate click" data-node="G2" tabindex="0" role="button"><polygon class="s" points="670,88 710,130 670,172 630,130"/><text class="tb mid" x="670" y="131">G2</text><text class="ts mid" x="670" y="145" style="font-size:8px">μ-gate</text></g>
+        <g class="k-stage click" data-node="S3" tabindex="0" role="button"><rect class="s" x="740" y="100" width="90" height="60" rx="8"/><text class="tb mid" x="785" y="120">S3</text><text class="ts mid" x="785" y="138" style="font-size:9.5px">Implement</text><text class="ts mid" x="785" y="152" style="font-size:9.5px">(per module)</text></g>
+        <g class="k-gate click" data-node="G3" tabindex="0" role="button"><polygon class="s" points="950,88 990,130 950,172 910,130"/><text class="tb mid" x="950" y="131">G3</text><text class="ts mid" x="950" y="145" style="font-size:8px">adaptive</text></g>
+        <g class="k-stage k-term click" data-node="T" tabindex="0" role="button"><rect class="s" x="1135" y="98" width="140" height="64" rx="8"/><text class="tb mid" x="1205" y="124">Verified</text><text class="tb mid" x="1205" y="142">Prototype</text></g>
+        <g class="k-rfd click" data-node="RFD" tabindex="0" role="button"><rect class="s" x="625" y="263" width="150" height="50" rx="8"/><text class="tb mid" x="700" y="284">RFD</text><text class="ts mid" x="700" y="300">Request for Deviation</text></g>
+      </svg>
+    </div>
+    <div class="card" id="ov-card" aria-live="polite"></div>
+  </figure>
+
+</main>
+<script>
+const INFO = {
+  BP: ["Build Package", "Input, owned outside V-SIL", "PRD with measurable constraints, COTS envelope, acceptance criteria, lab procedures, calibration, tolerances.", "—", "Its author", "→ S0. Receives RFDs and returns an updated Build Package."],
+  S0: ["S0 · Normalisation + GT", "Stage", "Build Package", "G0_StRS.md (§9.4) and G0_SyRS.md (§9.5). Report records version/digest of every input.", "Fills IEEE 29148 blueprints; makes no judgement on sufficiency. SDAD Phase 1.", "→ G0"],
+  G0: ["G0 · Structural validation", "Gate (deterministic)", "StRS + SyRS + S0 report", "Exit code 0 or 1. Checks stale detection on S0's report.", "g0_validate.py (stdlib-only, no AI), then human Gate H", "PASS + Gate H → S1 · FAIL → S0"],
+  S1: ["S1 · System design with module decomposition", "Stage", "G0-validated GT", "SDD: subsystems, layered architecture, module identity blocks, DAG, contracts, HAL mode, verification kit spec, telemetry companion, toolchain. Report with input digests.", "Design work (see §5–6)", "→ G1 · infeasible → RFD"],
+  G1: ["G1 · Design review (12 checks + 1 conditional)", "Gate (HITL)", "S1 SDD + GT", "PASS / FAIL / RFD on 12 check families + conditional ML check", "Human design review; agent prepares and recommends", "PASS → S2 · FAIL → S1 · infeasible → RFD"],
+  S2: ["S2 · Module Planning (Agile-V)", "Stage", "G1-validated SDD + topological order", "INFRA-PLAN.md (Slice 0) + PLAN.md per module (Slices 1+). Delta traceability. Report with input digests.", "Per-module mini-V: scope → acceptance → test strategy → PLAN.md", "→ G2 (per module)"],
+  G2: ["G2 · Module Plan Micro-Gate", "Gate (lightweight, per-module)", "PLAN.md for one module", "PASS / FAIL on 6 checks. Stale detection on S2 report.", "Agent-prepared, human-approved", "PASS → S3 · plan defect → S2 · design defect → S1 · GT defect → S0"],
+  S3: ["S3 · Per-module implementation", "Stage", "G2-approved PLAN.md; fresh context (P7)", "Subsystem bases, modules in DAG order, verification kit, tests at all declared VL. S3 writes tests; G3 runs them.", "Fresh context per module. Sandwich integration.", "→ G3"],
+  G3: ["G3 · Adaptive verification", "Gate", "Implemented system + declared VL per module/path", "Per-module and system-path evidence with UC readings. 5 failure classes.", "Sub-gates G3.0 (always), G3.1 (VL-1+), G3.2 (VL-2, enrollment required). Verifier context (P2).", "PASS → Verified Prototype · operational → fix DUT · design → S1 · plan → S2 · module → S3 · infeasible → RFD"],
+  T: ["Verified Prototype", "Terminal output", "G3 PASS", "Delivered src/, plans/, verification/, delta traceability log, honesty declaration, telemetry companion report, optional FW register", "—", "Delivered"],
+  RFD: ["Request for Deviation", "External feedback", "Evidence that requirements are infeasible on declared COTS", "Conflicting reqs, evidence with VL, trade-off options, impact analysis, recommendation (ECSS/MIL-HDBK-61A/NASA NPR 7150.2)", "From S1, G1 or G3. S0/G0 do not emit. S2/G2 do not emit directly.", "→ Build Package author → updated Build Package → S0"],
+};
+const card = document.getElementById("ov-card");
+function showNode(id) {
+  const [title, kind, input, output, decider, routes] = INFO[id];
+  document.querySelectorAll("#ov [data-node]").forEach(node => node.classList.toggle("sel", node.dataset.node === id));
+  card.innerHTML = `<h3>${title} <span class="tag">${kind}</span></h3><dl><dt>Consumes</dt><dd>${input}</dd><dt>Produces</dt><dd>${output}</dd><dt>Who decides</dt><dd>${decider}</dd><dt>Routes</dt><dd>${routes}</dd></dl>`;
+}
+document.querySelectorAll("#ov [data-node]").forEach(node => {
+  const activate = () => showNode(node.dataset.node);
+  node.addEventListener("click", activate);
+  node.addEventListener("keydown", event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); activate(); } });
+});
+showNode("G3");
+document.getElementById("theme").addEventListener("click", () => {
+  const root = document.documentElement;
+  const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  root.dataset.theme = dark ? "light" : "dark";
+});
+</script>
+</body>
+</html>

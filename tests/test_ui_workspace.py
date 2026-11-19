@@ -1,4 +1,4 @@
-"""Exercise read-only artifact/state views against 0.7.0 fixtures and live edits."""
+"""Exercise read-only workspace views for the current V-SIL v4 project format."""
 
 import asyncio
 import hashlib
@@ -14,11 +14,8 @@ from fastapi import FastAPI, HTTPException
 from codeanvil.UI.workspace import create_workspace_router, read_artifact, read_backups, read_overview
 
 
-EXAMPLES = Path(__file__).resolve().parents[1] / "methodology/test/v0.7.0-example-artifacts"
-ORDER = ["S0", "G0", "S1", "G1", "S2", "G2"]
-
-# UI is v3-only until Phase L+ (follow-up refactor); skip for v4 builds
-pytestmark = pytest.mark.skip(reason="UI incompatible with v4 chain until separate refactor")
+FULL_FLOW = Path(__file__).resolve().parents[1] / "methodology/test/0.9.6-full-flow-hackrf-rpi-mvp"
+ORDER = ["S0", "G0", "S1", "G1", "S2", "G2", "S3", "G3"]
 
 
 def project(tmp_path, cycle="01_demo"):
@@ -38,20 +35,16 @@ def report(root, stage, text=None):
     return path
 
 
-@pytest.mark.parametrize("directory,passed,complete", [
-    ("laboratorio_espectro_rf", 0, False),
-    ("monitor_ocupacion_fm", 2, False),
-    ("banco_telemetria_cots", 4, False),
-    ("api_procesamiento_senales", 5, False),
-    ("panel_prototipo", 6, True),
-])
-def test_all_five_archived_states(directory, passed, complete):
-    result = read_overview(EXAMPLES / directory)
-    assert result["completion"]["passed"] == passed
-    assert result["completion"]["complete"] is complete
-    assert len(result["reports"]) == 6
-    assert result["synthetic_fixture"] is (passed > 0)
-    assert result["selected_cycle"] == ("01_ui_demo" if passed else None)
+def test_saved_096_full_flow_uses_current_eight_report_chain():
+    result = read_overview(FULL_FLOW)
+    assert [row["id"] for row in result["reports"]] == ORDER
+    assert result["selected_cycle"] == "01_fm_hackrf_rpi5_mvp"
+    assert result["completion"]["total"] == 8
+    assert next(row for row in result["reports"] if row["id"] == "G3")["hitl"] == "PASS"
+    prototype = next(item for item in result["artifacts"] if item["kind"] == "prototype")
+    test_run = next(item for item in result["artifacts"] if item["kind"] == "test_run")
+    assert prototype["exists"] and prototype["path"].endswith("G3_artifacts/verified_prototype.md")
+    assert test_run["exists"] and test_run["path"].endswith("S3_artifacts/test_run.md")
 
 
 def test_active_cycle_exists_before_its_first_report(tmp_path):
@@ -68,13 +61,13 @@ def test_partial_latest_iteration_blocks_completion(tmp_path):
     root = project(tmp_path)
     for stage in ORDER:
         report(root, stage)
-    report(root, "G2", "## Iteration 1\n| HITL | PASS |\n## Iteration 2\nBased on: S2 iteration 1\n")
-    artifact = root / ".codeanvil/report/01_demo/G2_artifacts/verified_prototype.md"
+    report(root, "G3", "## Iteration 1\n| HITL | PASS |\n## Iteration 2\nBased on: S3 iteration 1\n")
+    artifact = root / ".codeanvil/report/01_demo/G3_artifacts/verified_prototype.md"
     artifact.parent.mkdir()
     artifact.write_text("# Previous prototype")
     result = read_overview(root)
     assert result["reports"][-1]["state"] == "UNKNOWN"
-    assert result["completion"]["passed"] == 5
+    assert result["completion"]["passed"] == 7
     assert not result["completion"]["complete"]
 
 
@@ -125,7 +118,7 @@ def test_full_pass_chain_cannot_override_cycle_blockers(tmp_path, blocker):
     root = project(tmp_path)
     for stage in ORDER:
         report(root, stage)
-    prototype = root / ".codeanvil/report/01_demo/G2_artifacts/verified_prototype.md"
+    prototype = root / ".codeanvil/report/01_demo/G3_artifacts/verified_prototype.md"
     prototype.parent.mkdir()
     prototype.write_text("# Prior prototype")
     if blocker == "draft":
@@ -135,40 +128,40 @@ def test_full_pass_chain_cannot_override_cycle_blockers(tmp_path, blocker):
     else:
         report(root, "RFD", "## Iteration 1\n| HITL | PASS |\nSuperseded by cycle: 02_new\n")
     result = read_overview(root)
-    assert result["completion"]["passed"] == 6
+    assert result["completion"]["passed"] == 8
     assert result["cycles"][0][blocker]
     assert not result["completion"]["complete"]
 
 
-def test_prototype_baseline_must_match_current_s2_and_g2_iterations(tmp_path):
+def test_prototype_baseline_must_match_current_s3_and_g3_iterations(tmp_path):
     root = project(tmp_path)
     for stage in ORDER:
         report(root, stage)
-    prototype = root / ".codeanvil/report/01_demo/G2_artifacts/verified_prototype.md"
+    prototype = root / ".codeanvil/report/01_demo/G3_artifacts/verified_prototype.md"
     prototype.parent.mkdir()
-    prototype.write_text("# Prototype\n## 1. Cycle\n| Based on | S2 iteration 1, G2 iteration 1 |\n")
+    prototype.write_text("# Prototype\n## 1. Cycle\n| Based on | S3 iteration 1, G3 iteration 1 |\n")
     assert read_overview(root)["completion"]["complete"]
-    g2 = root / ".codeanvil/report/01_demo/G2.md"
-    g2.write_text(g2.read_text() + "## Iteration 2\n| HITL | PASS |\nBased on: S2 iteration 1\n")
+    g3 = root / ".codeanvil/report/01_demo/G3.md"
+    g3.write_text(g3.read_text() + "## Iteration 2\n| HITL | PASS |\nBased on: S3 iteration 1\n")
     result = read_overview(root)
-    assert result["completion"]["passed"] == 6
+    assert result["completion"]["passed"] == 8
     assert not result["completion"]["complete"]
-    assert "Prototype is stale" in result["completion"]["reason"]
+    assert "Verified Prototype is stale" in result["completion"]["reason"]
     assert next(item for item in result["artifacts"] if item["kind"] == "prototype")["exists"]
-    prototype.write_text("# Prototype\n## 1. Cycle\n| Based on | S2 iteration 1, G2 iteration 2 |\n")
+    prototype.write_text("# Prototype\n## 1. Cycle\n| Based on | S3 iteration 1, G3 iteration 2 |\n")
     assert read_overview(root)["completion"]["complete"]
 
 
 @pytest.mark.parametrize("content", [
     "# Prototype without baseline",
     "## 1. Cycle\n| Based on | Unknown |\n",
-    "## 1. Cycle\n~~~markdown\n| Based on | S2 iteration 1, G2 iteration 1 |\n~~~\n",
+    "## 1. Cycle\n~~~markdown\n| Based on | S3 iteration 1, G3 iteration 1 |\n~~~\n",
 ])
 def test_unknown_or_fenced_prototype_baseline_is_not_current(tmp_path, content):
     root = project(tmp_path)
     for stage in ORDER:
         report(root, stage)
-    prototype = root / ".codeanvil/report/01_demo/G2_artifacts/verified_prototype.md"
+    prototype = root / ".codeanvil/report/01_demo/G3_artifacts/verified_prototype.md"
     prototype.parent.mkdir()
     prototype.write_text(content)
     result = read_overview(root)
@@ -180,27 +173,6 @@ def test_fenced_rfd_instruction_does_not_suspend_cycle(tmp_path):
     root = project(tmp_path)
     report(root, "G1", "## Iteration 1\n| HITL | PASS |\n### Description\n~~~text\nVerdict: RFD\n~~~\n")
     assert not read_overview(root)["cycles"][0]["suspended"]
-
-
-def test_nested_artifacts_and_graph_are_readable_without_writes():
-    root = EXAMPLES / "panel_prototipo"
-    source = root / ".codeanvil/design/dependency_graph.html"
-    before = hashlib.sha256(source.read_bytes()).hexdigest()
-    result = read_artifact(root, None, ".codeanvil/design/dependency_graph.html")
-    assert result["format"] == "html"
-    # panel_prototipo is a frozen v0.7.0 snapshot whose graph still references the
-    # pre-rename skill folder (S1_design_services). The reader inlines only the
-    # current copied asset path (S1_design_system), so a legacy graph is returned
-    # intact rather than inlined. Inlining of the current asset is covered by
-    # test_both_graph_variants_use_the_local_library_and_report_actual_presence.
-    assert '<script src="../../.agents/skills/S1_design_services/' in result["content"]
-    assert hashlib.sha256(source.read_bytes()).hexdigest() == before
-    for path in ("S2_artifacts/test_run.md", "G2_artifacts/verified_prototype.md"):
-        result = read_artifact(root, None, f".codeanvil/report/01_ui_demo/{path}")
-        assert result["format"] == "markdown"
-        assert "SYNTHETIC UI FIXTURE" in result["content"]
-    artifacts = read_overview(root)["artifacts"]
-    assert all(item.get("working_copy") for item in artifacts if item["kind"] in {"gt", "design"})
 
 
 def test_both_graph_variants_use_the_local_library_and_report_actual_presence(tmp_path):
@@ -257,6 +229,8 @@ def test_iteration_selection_keeps_fenced_header_and_raw_quoted_content(tmp_path
 
 
 @pytest.mark.parametrize("path", ["../.env", "/etc/passwd", ".codeanvil/project.yaml", ".codeanvil/report/01_demo/../S0.md",
+                                 ".codeanvil/report/01_demo/S2_artifacts/test_run.md",
+                                 ".codeanvil/report/01_demo/G2_artifacts/verified_prototype.md",
                                  ".codeanvil/design/custom.html", ".codeanvil/design/dependency_graph_dark.html"])
 def test_unapproved_paths_are_rejected(tmp_path, path):
     with pytest.raises(HTTPException) as error:
@@ -280,11 +254,11 @@ def test_nested_artifact_symlink_escape_is_rejected(tmp_path):
     root = project(tmp_path)
     outside = tmp_path / "private.md"
     outside.write_text("Private")
-    path = root / ".codeanvil/report/01_demo/S2_artifacts/test_run.md"
+    path = root / ".codeanvil/report/01_demo/S3_artifacts/test_run.md"
     path.parent.mkdir(parents=True)
     path.symlink_to(outside)
     with pytest.raises(HTTPException) as error:
-        read_artifact(root, None, ".codeanvil/report/01_demo/S2_artifacts/test_run.md")
+        read_artifact(root, None, ".codeanvil/report/01_demo/S3_artifacts/test_run.md")
     assert error.value.status_code == 400
 
 
