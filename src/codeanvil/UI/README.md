@@ -26,6 +26,27 @@ project sidebar lists CLI agents and desktop apps from the launcher registry. Th
 includes telemetry plots and a VL-2 evidence view. Automatic refresh, a hardware
 gallery and native packaging remain later work.
 
+### Upload Build Package source documents
+
+In **Ground truth → Build Package**, click **Upload Build Package** and select
+one or more files. Expand ZIP, 7z, RAR, TAR and common compressed variants by
+uploading the archive directly. Each extracted document shows its source archive
+and the upload date. Double-click a row to open the embedded preview, or select
+the row and click **Open preview**.
+
+The preview renders Markdown, paginates PDF, and displays CSV, XLS and XLSX
+as tables. Excel files with multiple worksheets have a sheet selector. Other
+files open as plain text. Large text and table previews display their first rows
+or bytes. Keep uploads under 128 MiB per selection and 256 MiB after extraction.
+7z, RAR and other extended archive formats use the system libarchive library,
+which can be located with `LIBARCHIVE` on systems where it is installed outside
+the default search paths.
+
+Uploaded documents and extracted members are stored in
+`.codeanvil/GT/build_package_uploads/`.
+Use their content to prepare `.codeanvil/GT/build_package.md`, the Markdown
+source S0 reads. The existing document remains available in the same view.
+
 ### Use the local terminal (Linux / WSL)
 
 Open a project, choose an installed agent in **Agents & IDEs** at the

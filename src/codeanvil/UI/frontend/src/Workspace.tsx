@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ArrowUpRight, FileText, RefreshCw, ShieldCheck } from 'lucide-react'
 import { ArtifactViewer } from './ArtifactViewer'
+import { BuildPackage } from './BuildPackage'
 import { TelemetryView } from './TelemetryView'
 import { type Artifact, type Overview, type Project, type Report, request, workspaceUrl } from './api'
 
@@ -56,8 +57,9 @@ export function Workspace({ project, active, onSetActive, revision = 0, theme = 
     || graphs.find(item => item.exists) || graphs.find(item => item.graph_theme === theme) || graphs[0]
   const artifacts = viewArtifacts.filter(item => !item.graph_theme || item.path === graph?.path)
   const selectedGraph = selection?.view === active && graphs.some(item => item.path === selection.path)
+  const buildPackage = active === 'Ground truth' && artifacts.find(item => item.path === '.codeanvil/GT/build_package.md')
   const selectedArtifact = (selectedGraph ? graph : artifacts.find(item => selection?.view === active && item.path === selection.path))
-    || artifacts.find(item => item.exists) || artifacts[0] || null
+    || buildPackage || artifacts.find(item => item.exists) || artifacts[0] || null
 
   function openArtifact(artifact: Artifact) {
     const view = artifact.kind === 'test_run' || artifact.kind === 'prototype' ? 'Verification' : 'Reports'
@@ -147,12 +149,15 @@ export function Workspace({ project, active, onSetActive, revision = 0, theme = 
               className={`artifact-option ${selectedArtifact?.path === artifact.path ? 'selected' : ''}`}
               aria-pressed={selectedArtifact?.path === artifact.path}
               onClick={() => setSelection({ path: artifact.path, view: active })}>
-              <FileText size={16} /><span><b>{artifact.label}</b><small>{artifact.exists ? artifact.kind === 'report' ? 'Iterative report' : artifact.working_copy ? 'Working copy' : 'Cycle artifact' : 'Not produced yet'}</small></span>
+              <FileText size={16} /><span><b>{artifact.label}</b><small>{artifact === buildPackage ? 'Source documents'
+                : artifact.exists ? artifact.kind === 'report' ? 'Iterative report' : artifact.working_copy ? 'Working copy' : 'Cycle artifact' : 'Not produced yet'}</small></span>
             </button>)}
             {!artifacts.length && <p className="muted-copy">No {active.toLowerCase()} artifacts for this cycle.</p>}
           </nav>
-          <ArtifactViewer key={`${project.path}:${selectedArtifact?.path || ''}`} artifact={selectedArtifact}
-            projectPath={project.path} revision={refresh + revision} />
+          {buildPackage && selectedArtifact === buildPackage
+            ? <BuildPackage key={project.path} artifact={buildPackage} projectPath={project.path} revision={refresh + revision} />
+            : <ArtifactViewer key={`${project.path}:${selectedArtifact?.path || ''}`} artifact={selectedArtifact}
+              projectPath={project.path} revision={refresh + revision} />}
         </div>}
       </>}
   </div>

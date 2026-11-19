@@ -1,0 +1,54 @@
+.build-layout {
+  display: grid;
+  grid-template-columns: minmax(155px, 1fr) minmax(0, 2fr);
+  flex: 1;
+  min-height: 0;
+}
+.build-inventory { display: flex; flex-direction: column; min-height: 0; min-width: 0; border-right: 1px solid var(--line); }
+.build-list-toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; padding: 10px; }
+.build-list-toolbar b { font-size: 12px; }
+.build-list-toolbar button:disabled { opacity: .5; cursor: default; }
+.build-files { overflow: auto; padding: 0 6px 8px; }
+.build-file {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 7px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: none;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.build-file:hover { background: var(--raised); }
+.build-file[aria-pressed="true"] { border-color: var(--ember-soft); background: #f0783c10; }
+.build-file > svg { color: var(--ember); flex: none; margin-top: 1px; }
+.build-file span { display: grid; gap: 4px; min-width: 0; }
+.build-file b { font-size: 12px; font-weight: 500; }
+.build-file time, .build-file small { font: 10px/1.4 var(--mono); color: var(--muted); }
+.build-layout > .artifact-viewer { border: 0; border-radius: 0; }
+.build-notice { padding: 10px; color: var(--muted); font-size: 12px; }
+.build-notice[role="alert"] { color: var(--text); }
+.build-page-controls, .build-sheet { display: flex; align-items: center; gap: 10px; padding: 8px 12px; font-size: 12px; }
+.build-page-controls button:disabled { opacity: .5; cursor: default; }
+.build-sheet select {
+  min-width: 0;
+  max-width: 75%;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--raised);
+  color: var(--text);
+}
+.build-pdf, .build-table { flex: 1; overflow: auto; min-height: 0; padding: 10px; background: var(--bg); }
+.build-pdf img { display: block; width: 100%; max-width: 880px; height: auto; margin: 0 auto; background: white; }
+.build-table table { border-collapse: collapse; font: 12px/1.5 var(--mono); }
+.build-table td, .build-table th { padding: 5px 9px; border: 1px solid var(--line); vertical-align: top; white-space: pre-wrap; min-width: 45px; max-width: 420px; overflow-wrap: anywhere; }
+.build-table th { position: sticky; left: 0; background: var(--raised); color: var(--muted); }
+.build-document .markdown-body pre { margin-top: 0; }
+@media (max-width: 760px) {
+  .build-layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(140px, 1fr); overflow: auto; }
+  .build-inventory { max-height: 160px; border-right: 0; border-bottom: 1px solid var(--line); }
+  .build-layout > .artifact-viewer { min-height: 140px; }
+}

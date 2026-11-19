@@ -3,6 +3,16 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { type Artifact, type ArtifactDocument, request, workspaceUrl } from './api'
 
+export function MarkdownContent({ content }: { content: string }) {
+  return <ReactMarkdown remarkPlugins={[remarkGfm]} skipHtml components={{
+    a: ({ children, href }) => {
+      const external = href?.startsWith('https://') || href?.startsWith('http://')
+      return <a href={href} target={external ? '_blank' : undefined} rel={external ? 'noopener noreferrer' : undefined}>{children}</a>
+    },
+    img: ({ alt }) => <span className="image-placeholder">{alt || 'Image'} · external images are not loaded automatically</span>,
+  }}>{content}</ReactMarkdown>
+}
+
 export function ArtifactViewer({ artifact, projectPath, revision = 0 }: {
   artifact: Artifact | null
   projectPath: string
@@ -63,13 +73,7 @@ export function ArtifactViewer({ artifact, projectPath, revision = 0 }: {
       : document?.format === 'html' ? <iframe className="document-frame" title={artifact.label} sandbox="allow-scripts" srcDoc={document.content} />
       : document ? <article className="markdown-body">
         {document.format === 'markdown'
-          ? <ReactMarkdown remarkPlugins={[remarkGfm]} skipHtml components={{
-            a: ({ children, href }) => {
-              const external = href?.startsWith('https://') || href?.startsWith('http://')
-              return <a href={href} target={external ? '_blank' : undefined} rel={external ? 'noopener noreferrer' : undefined}>{children}</a>
-            },
-            img: ({ alt }) => <span className="image-placeholder">{alt || 'Image'} · external images are not loaded automatically</span>,
-          }}>{document.content}</ReactMarkdown>
+          ? <MarkdownContent content={document.content} />
           : <pre>{document.content}</pre>}
       </article> : null}
   </section>

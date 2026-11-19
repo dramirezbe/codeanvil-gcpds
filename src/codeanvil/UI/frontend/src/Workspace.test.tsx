@@ -127,6 +127,30 @@ describe('Workspace', () => {
     render(<Workspace project={project} active="Overview" onSetActive={vi.fn()} />)
     expect(await screen.findByRole('alert')).toHaveTextContent('Manifest is malformed')
   })
+
+  it('uploads multiple Build Package files and reuses the Markdown viewer on double-click', async () => {
+    const user = userEvent.setup()
+    const artifact: Artifact = { path: '.codeanvil/GT/build_package.md', label: 'Build Package', kind: 'gt', exists: false }
+    const item = { batch: 'f'.repeat(32), index: 0, name: 'spec.md', archive: 'inputs.zip', uploaded_at: '2026-11-19T12:00:00Z' }
+    const fetcher = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.includes('/overview?')) return response({ ...overview, artifacts: [artifact] })
+      if (init?.method === 'POST') return response({ files: [item] }, 201)
+      if (url.includes('/preview?')) return response({ format: 'markdown', content: '# Uploaded requirements', clipped: false })
+      return response({ files: [] })
+    })
+    vi.stubGlobal('fetch', fetcher)
+    const view = render(<Workspace project={project} active="Ground truth" onSetActive={vi.fn()} />)
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Upload Build Package' })).toBeEnabled())
+    const input = view.container.querySelector('input[type=file]') as HTMLInputElement
+    await user.upload(input, [new File(['inputs'], 'inputs.zip'), new File(['notes'], 'notes.txt')])
+    const post = fetcher.mock.calls.find(([, init]) => init?.method === 'POST')!
+    expect((post[1]?.body as FormData).getAll('files')).toHaveLength(2)
+    const row = await screen.findByRole('button', { name: /spec\.md/ })
+    expect(row.querySelector('time')).toHaveAttribute('datetime', item.uploaded_at)
+    expect(row).toHaveTextContent('From inputs.zip')
+    await user.dblClick(row)
+    expect(await screen.findByRole('heading', { name: 'Uploaded requirements' })).toBeInTheDocument()
+  })
 })
 
 describe('ArtifactViewer', () => {
