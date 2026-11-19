@@ -16,7 +16,12 @@ from codeanvil.UI.project_context import project_context, project_summary
 _CYCLE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]*\Z")
 _DEVIATION = re.compile(r"RFD-\d{3}\.md\Z")
 _TELEMETRY_LOG = re.compile(r"(?:pytest|vitest)_vl[012]\.txt\Z")
+_RUN_ID = re.compile(
+    r"(?P<cycle>[A-Za-z0-9][A-Za-z0-9_-]*)_\d+_\d{4}-\d{2}-\d{2}_"
+    r"\d{2}-\d{2}-\d{2}(?:-\d{3})?\Z"
+)
 _REPORTS = tuple(CONFIG["report_order"])
+_EVIDENCE_FILE_BYTES = 5 * 1024 * 1024
 _GT = {"build_package.md": "Build Package", "StRS.md": "Stakeholder requirements", "SyRS.md": "System requirements"}
 _GRAPH_THEMES = {"dependency_graph.html": "dark", "dependency_graph_light.html": "light"}
 _DESIGN = {"SDD.md": "System design", "dependency_graph.html": "Dependency graph",
@@ -81,6 +86,11 @@ def _read(root: Path, relative: str) -> str:
     if not path.is_file():
         raise HTTPException(status_code=404, detail="Artifact not found")
     try:
+        if PurePosixPath(relative).parts[:2] == ("verification", "telemetry"):
+            data = _read_evidence_bytes(path, _EVIDENCE_FILE_BYTES)
+            if data is None:
+                raise HTTPException(status_code=413, detail="Evidence file exceeds the size limit")
+            return data.decode("utf-8")
         return path.read_text(encoding="utf-8")
     except (OSError, UnicodeError) as exc:
         raise HTTPException(status_code=400, detail="Artifact is not readable UTF-8 text") from exc
@@ -201,35 +211,49 @@ def _vl2_claims(project: Path, cycle: str) -> dict:
     items = []
     for title, key in (("## 4. Module evidence", "Module"), ("## 5. Path evidence", "Path")):
         for row in _table_rows(sections.get(title, "")):
-            level = row.get("required_vl") or row.get("Declared")
-            if level == "VL-2":
+            required = row.get("required_vl")
+            declared = row.get("Declared level") or row.get("Declared")
+            if "VL-2" in (required, declared):
                 items.append({
-                    "scope": key.lower(), "id": row.get(key, ""), "level": level,
+                    "scope": key.lower(), "id": row.get(key, ""), "level": "VL-2",
                     "environment": row.get("Environment", ""), "command": row.get("Command", ""),
                     "result": row.get("Result", ""), "telemetry": row.get("Telemetry", ""),
                 })
     honesty = sections.get("## 7. Honesty declaration", "")
-    statement = next((re.sub(r"^[-*]\s*", "", line).strip() for line in honesty.splitlines()
-                      if re.search(r"\bVL-2\s*:", line, re.IGNORECASE)),
+    statement = next((re.sub(r"^\s*[-*]\s+|\*\*", "", line).strip() for line in honesty.splitlines()
+                      if re.search(r"^\s*[-*]\s+(?:\*\*)?(?:VL-2\s*:|VALIDATED\s*\(VL-2\b)",
+                                   line, re.IGNORECASE)),
                      "G3 report has no explicit VL-2 honesty statement.")
-    manual_telemetry = _table_rows(sections.get("## 6. Telemetry report", ""))
+    manual_telemetry = [
+        row for row in _table_rows(sections.get("## 6. Telemetry report", ""))
+        if "Signal" in row and "Reading" in row
+    ]
     return {"statement": statement, "items": items, "manual_telemetry": manual_telemetry}
 
 
-def _evidence_files(project: Path) -> list[Path]:
+def _evidence_files(project: Path, cycle: str | None) -> list[Path]:
     base = _contained(project, "verification/telemetry")
-    if not base.is_dir():
+    if not cycle or not base.is_dir():
         return []
     found = []
     for path in base.rglob("*"):
-        if not path.is_file():
+        run = _RUN_ID.fullmatch(path.parent.name)
+        if run is None or run["cycle"] != cycle or not path.is_file():
             continue
         name = path.name
         if name == "measurement.json" or name.endswith(".jsonl") or _TELEMETRY_LOG.fullmatch(name):
             resolved = _contained(project, path.relative_to(project).as_posix())
-            if resolved == path and len(found) < 200:
+            if resolved == path:
                 found.append(path)
+                if len(found) == 200:
+                    break
     return sorted(found, key=lambda item: item.as_posix())
+
+
+def _read_evidence_bytes(path: Path, limit: int) -> bytes | None:
+    with path.open("rb") as stream:
+        data = stream.read(limit + 1)
+    return data if len(data) <= limit else None
 
 
 def _unavailable_signals(records: list[dict]) -> list[dict]:
@@ -254,15 +278,22 @@ def read_evidence(root: Path, project_path: str | None = None, cycle: str | None
         raise HTTPException(status_code=400, detail="Invalid cycle")
     telemetry, measurements, test_logs = [], [], []
     total_bytes = 0
-    for path in _evidence_files(project):
+    for path in _evidence_files(project, selected):
         relative = path.relative_to(project).as_posix()
-        size = path.stat().st_size
-        if size > 5 * 1024 * 1024 or total_bytes + size > 25 * 1024 * 1024:
+        limit = min(_EVIDENCE_FILE_BYTES, 25 * 1024 * 1024 - total_bytes)
+        try:
+            size = path.stat().st_size
+            if size > limit:
+                continue
+            data = _read_evidence_bytes(path, limit) if path.suffix != ".txt" else None
+        except OSError:
             continue
-        total_bytes += size
+        if data is None and path.suffix != ".txt":
+            continue
+        total_bytes += len(data) if data is not None else size
         if path.suffix == ".jsonl":
             try:
-                lines = path.read_bytes().splitlines(keepends=True)
+                lines = data.splitlines(keepends=True)
                 records, truncated = [], False
                 for number, line in enumerate(lines[:10000], start=1):
                     try:
@@ -286,7 +317,7 @@ def read_evidence(root: Path, project_path: str | None = None, cycle: str | None
                                   "truncated_count": False, "error": str(exc)})
         elif path.name == "measurement.json":
             try:
-                record = json.loads(path.read_text(encoding="utf-8"))
+                record = json.loads(data.decode("utf-8"))
                 valid = isinstance(record, dict) and type(record.get("schema_version")) is int and record.get("schema_version") == 2 and record.get("stage") in {"S3", "G3"} and type(record.get("iteration")) is int and type(record.get("exit_code")) is int and isinstance(record.get("measurements"), list) and all(
                     key in record for key in ("cycle", "stage", "iteration", "run_id", "target", "command",
                                               "started_at", "finished_at", "exit_code", "measurements"))
@@ -297,14 +328,15 @@ def read_evidence(root: Path, project_path: str | None = None, cycle: str | None
                                 and isinstance(item.get("criterion"), str)
                                 and item.get("result") in {"pass", "fail", "inconclusive"}
                                 for item in record["measurements"])
-                if valid and (selected is None or record.get("cycle") == selected):
+                if valid and record["cycle"] == selected and record["run_id"] == path.parent.name:
                     measurements.append({"path": relative, "record": record, "valid_v2": True})
-                elif not valid and (selected is None or selected in relative):
-                    measurements.append({"path": relative, "record": record if isinstance(record, dict) else {},
-                                         "valid_v2": False})
+                elif isinstance(record, dict) and record.get("cycle") not in (None, selected):
+                    continue
+                else:
+                    measurements.append({"path": relative, "record": {}, "valid_v2": False})
             except (OSError, UnicodeError, json.JSONDecodeError) as exc:
                 measurements.append({"path": relative, "record": {}, "valid_v2": False, "error": str(exc)})
-        elif selected is None or selected in relative:
+        else:
             test_logs.append({"path": relative, "label": path.name, "size_bytes": size})
     vl2 = _vl2_claims(project, selected) if selected else {"statement": "No cycle selected.", "items": [], "manual_telemetry": []}
     prototype_path = f".codeanvil/report/{selected}/G3_artifacts/verified_prototype.md" if selected else ""
@@ -320,7 +352,7 @@ def read_evidence(root: Path, project_path: str | None = None, cycle: str | None
         vl2["freshness"] = "No current G3 Verified Prototype"
     return {
         "cycle": selected,
-        "telemetry": [item for item in telemetry if selected is None or selected in item["path"]],
+        "telemetry": telemetry,
         "measurements": measurements,
         "test_logs": test_logs,
         "vl2": vl2,

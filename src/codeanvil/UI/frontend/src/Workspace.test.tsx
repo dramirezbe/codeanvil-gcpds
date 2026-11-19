@@ -5,6 +5,8 @@ import { ArtifactViewer } from './ArtifactViewer'
 import { Workspace } from './Workspace'
 import { type Artifact, type ArtifactDocument, type Overview } from './api'
 
+vi.mock('uplot', () => ({ default: vi.fn() }))
+
 const project = { id: 'sample', name: 'Sample project', path: '/projects/sample' }
 const reportPath = '.codeanvil/report/01_demo/S0.md'
 const reportArtifact: Artifact = { path: reportPath, label: 'S0 report', kind: 'report', cycle: '01_demo', exists: true }
@@ -14,9 +16,9 @@ const overview: Overview = {
   reports: [
     { id: 'S0', iteration: 1, hitl: 'PASS', state: 'delivered' },
     { id: 'G0', iteration: 1, hitl: 'PASS', state: 'PASS', based_on: ['S0', 1] },
-    ...['S1', 'G1', 'S2', 'G2'].map(id => ({ id, iteration: null, hitl: null, state: 'missing' })),
+    ...['S1', 'G1', 'S2', 'G2', 'S3', 'G3'].map(id => ({ id, iteration: null, hitl: null, state: 'missing' })),
   ],
-  completion: { passed: 2, total: 6, complete: false, reason: 'G2 must pass before completion.' },
+  completion: { passed: 2, total: 8, complete: false, reason: 'G3 must pass before completion.' },
   synthetic_fixture: true,
   artifacts: [reportArtifact],
 }
@@ -87,8 +89,8 @@ describe('Workspace', () => {
     expect(screen.getByText('DRAFT')).toBeInTheDocument()
     expect(screen.getByText('Suspended by RFD')).toBeInTheDocument()
     expect(screen.getAllByText('STALE')).toHaveLength(2)
-    expect(screen.getByText('G2 must pass before completion.')).toBeInTheDocument()
-    expect(screen.getAllByText('Not started')).toHaveLength(8)
+    expect(screen.getByText('G3 must pass before completion.')).toBeInTheDocument()
+    expect(screen.getAllByText('Not started')).toHaveLength(12)
   })
 
   it('changes cycles without changing active-cycle identity or retaining the previous document', async () => {

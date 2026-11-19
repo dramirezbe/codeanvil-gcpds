@@ -33,20 +33,23 @@ function metricLabel(key: string): Metric {
   return { key, label, unit }
 }
 
-function formatValue(value: number, unit: string) {
+function formatValue(value: number | null | undefined, unit: string) {
+  if (value == null) return '—'
   const shown = unit === 'bytes' ? `${(value / 1024 / 1024).toFixed(1)} MB` : `${Number(value.toFixed(2))}${unit ? ` ${unit}` : ''}`
   return shown
 }
 
 function TelemetryPlot({ stream, metric }: { stream: TelemetryStream; metric: Metric }) {
-  const values = stream.samples.map(sample => new Map(metricsFor(sample)).get(metric.key) ?? null)
+  const values = useMemo(() => stream.samples.map(sample =>
+    new Map(metricsFor(sample)).get(metric.key) ?? null), [stream, metric.key])
   const present = values.filter((value): value is number => value !== null)
   const mount = useRef<HTMLDivElement>(null)
   const plot = useRef<uPlot | null>(null)
   const low = present.length ? Math.min(...present) : 0, high = present.length ? Math.max(...present) : 0
   const mean = present.length ? present.reduce((sum, value) => sum + value, 0) / present.length : 0
   const timed = stream.samples.length > 0 && stream.samples.every(sample => sample.timestamp && Number.isFinite(Date.parse(sample.timestamp)))
-  const xValues = stream.samples.map((sample, index) => timed ? Date.parse(sample.timestamp!) / 1000 : index)
+  const xValues = useMemo(() => stream.samples.map((sample, index) =>
+    timed ? Date.parse(sample.timestamp!) / 1000 : index), [stream, timed])
   const xMin = Math.min(...xValues), xMax = Math.max(...xValues)
   const xPad = xMin === xMax ? (timed ? 1 : 0.5) : 0
   const yPad = high === low ? Math.max(Math.abs(high) * 0.08, 1) : (high - low) * 0.08
@@ -73,7 +76,7 @@ function TelemetryPlot({ stream, metric }: { stream: TelemetryStream; metric: Me
       ],
       series: [
         {},
-        { label: metric.label, stroke: accent, width: 2, points: { show: false },
+        { label: metric.label, stroke: accent, width: 2, spanGaps: false, points: { show: false },
           value: (_plot, value) => formatValue(value, metric.unit) },
       ],
     }
@@ -101,11 +104,12 @@ function TelemetryPlot({ stream, metric }: { stream: TelemetryStream; metric: Me
   </div>
 }
 
-function ResultTag({ value }: { value: string }) {
-  const normalized = value.toLowerCase()
-  const kind = normalized.includes('pass') || normalized.includes('ok') ? 'pass'
-    : normalized.includes('fail') || normalized.includes('blocked') ? 'fail'
-      : normalized.includes('missing') || normalized.includes('inconclusive') ? 'inconclusive' : 'unknown'
+function ResultTag({ value, level }: { value: string; level?: 'VL-2' }) {
+  const scoped = level && value.match(/\bVL-2\s*:?\s+([^;]+)/i)?.[1]
+  const result = scoped || value
+  const kind = /\b(?:fail(?:ed)?|blocked)\b/i.test(result) ? 'fail'
+    : /\b(?:missing|inconclusive|no evidence)\b/i.test(result) ? 'inconclusive'
+      : /^(?:pass|passed|ok)\b/i.test(result) ? 'pass' : 'unknown'
   return <span className={`evidence-result ${kind}`}>{value || 'Not recorded'}</span>
 }
 
@@ -209,7 +213,8 @@ export function TelemetryView({ projectPath, cycle, revision = 0, theme = 'dark'
           <div><b>Manually recorded target readings</b><small>Shown as written in G3; these readings are not a time series.</small></div>
           <div className="manual-reading-grid">{data.vl2.manual_telemetry.map((reading, index) => <article key={`${reading.Signal}-${index}`}>
             <span>{reading.Signal || 'Signal'}</span><b>{reading.Reading || '—'}</b>
-            <small>{reading['Envelope (Pi 5)'] || reading.Envelope || ''}</small><ResultTag value={reading.Status || 'Not recorded'} />
+            <small>{Object.entries(reading).find(([name]) => /^Envelope\b/i.test(name))?.[1]}</small>
+            <ResultTag value={reading.Status || 'Not recorded'} />
           </article>)}</div>
         </div>}
       </section>
@@ -225,7 +230,7 @@ export function TelemetryView({ projectPath, cycle, revision = 0, theme = 'dark'
           <div className="vl2-table-wrap"><table className="vl2-table"><thead><tr><th>Scope</th><th>Item</th><th>Environment</th><th>Command</th><th>Recorded result</th><th>Telemetry</th></tr></thead>
             <tbody>{vl2Items.map((item, index) => <tr key={`${item.scope}-${item.id}-${index}`}>
               <td>{item.scope}</td><td><b>{item.id}</b><small>{item.level}</small></td><td>{item.environment || '—'}</td>
-              <td><code>{item.command || '—'}</code></td><td><ResultTag value={item.result}/></td><td>{item.telemetry || '—'}</td>
+              <td><code>{item.command || '—'}</code></td><td><ResultTag value={item.result} level="VL-2"/></td><td>{item.telemetry || '—'}</td>
             </tr>)}</tbody></table></div>}
       </section>
 

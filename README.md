@@ -12,8 +12,9 @@ in `G3_artifacts/`. Accepted deltas use S0/S1 delta-sync with custody digests an
 RFD originates only from S1, G1 or G3. There is no migration command: v3 projects need a new
 v4 scaffold/cycle; archived v3 evidence is not reclassified as a v4 verdict.
 
-`codeanvil ui` includes a v4 workspace for the current 0.9.6/0.9.7 project format,
-including the full S0–G3 chain and S3/G3 evidence. It has no v3 workspace fallback.
+The CodeAnvil 0.10.0 workspace supports the V-SIL v4 project format used by
+0.9.6 and 0.9.7. It shows the full S0–G3 chain, S3/G3 artifacts, and the selected
+cycle's telemetry and measurement evidence.
 Release [v0.9.5](https://github.com/dramirezbe/codeanvil-gcpds/releases/tag/v0.9.5)
 backs up plan directories with distinct nested paths and applies S3 pause schedules by scope.
 Per module is valid for slice 0; its first checkpoint follows infrastructure and checks.

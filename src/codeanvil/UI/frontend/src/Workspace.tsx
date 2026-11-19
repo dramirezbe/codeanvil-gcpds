@@ -4,11 +4,10 @@ import { ArtifactViewer } from './ArtifactViewer'
 import { TelemetryView } from './TelemetryView'
 import { type Artifact, type Overview, type Project, type Report, request, workspaceUrl } from './api'
 
-const stages = [
-  ['S0', 'Normalize'], ['G0', 'GT Gate'], ['S1', 'Design'],
-  ['G1', 'Review'], ['S2', 'Plan'], ['G2', 'Plan Gate'],
-  ['S3', 'Implement'], ['G3', 'Verify'],
-]
+const stageNames: Record<string, string> = {
+  S0: 'Normalize', G0: 'GT Gate', S1: 'Design', G1: 'Review',
+  S2: 'Plan', G2: 'Plan Gate', S3: 'Implement', G3: 'Verify',
+}
 
 export function ReportBadge({ report }: { report: Report }) {
   const label = report.stale_reason ? 'STALE' : report.state
@@ -44,6 +43,7 @@ export function Workspace({ project, active, onSetActive, revision = 0, theme = 
   }, [project.path, cycle, refresh, revision])
 
   const currentCycle = overview?.cycles.find(item => item.name === overview.selected_cycle)
+  const stages = overview?.reports.filter(report => report.id !== 'RFD') || []
   const viewArtifacts = overview?.artifacts.filter(artifact => {
     if (active === 'Ground truth') return artifact.kind === 'gt'
     if (active === 'Design') return artifact.kind === 'design'
@@ -105,13 +105,13 @@ export function Workspace({ project, active, onSetActive, revision = 0, theme = 
             <div className="panel-head"><div><span className="eyebrow">{overview.selected_cycle || 'EMPTY PROJECT'}</span><h2>V-SIL progress</h2></div>
               <span className="progress-total">{overview.completion.passed}<small>/{overview.completion.total}</small></span>
             </div>
-            <div className="flow-line">{stages.map(([id, label], index) => {
-              const report = overview.reports.find(item => item.id === id)
-              const done = !!report && !report.stale_reason && (report.state === 'PASS' || report.state === 'delivered')
+            <div className="flow-line">{stages.map((report, index) => {
+              const { id } = report
+              const done = !report.stale_reason && (report.state === 'PASS' || report.state === 'delivered')
               return <div key={id} className={`flow-stage ${done ? 'done' : ''}`}>
                 <div className="stage-node">{done ? <ShieldCheck size={16} /> : id}</div>
-                <span className="stage-id">{id}</span><span className="stage-name">{label}</span>
-                {report && <ReportBadge report={report} />}
+                <span className="stage-id">{id}</span><span className="stage-name">{stageNames[id] || id}</span>
+                <ReportBadge report={report} />
                 {index < stages.length - 1 && <div className="stage-connector" />}
               </div>
             })}</div>

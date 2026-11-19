@@ -11,10 +11,10 @@ purpose-built views while reusing their existing Python logic.
 > change CLI behavior, project formats or database schema just to support UI
 > workflows.
 
-The v0.7.0 audit and examples below are historical design inputs only. The
-active workspace contract is the v4 full-flow snapshot at
-`methodology/test/0.9.6-full-flow-hackrf-rpi-mvp/`; no v3 artifact fallback is
-part of the current workspace.
+The active workspace contract comes from `templates/config.yaml` and the
+V-SIL v4 skills. Browser acceptance uses the archived 0.9.6 full flow and an
+independent fixture assembled from those templates. The v0.7.0 audit and
+examples below are historical design inputs.
 
 **Implemented:** project creation/addition,
 cycle and report-iteration browsing, shared stale/delivered states, safe
@@ -325,8 +325,10 @@ views from planned workflows.
 - **Backups**: `.codeanvil/backups/<cycle>/` with MANIFEST SHA-256.
 - **Telemetry and VL-2 evidence**: plot numeric process/system/temperature and
   counter samples from `verification/telemetry/**/*.jsonl`; show v2
-  `measurement.json` results and G3's declared VL-2 module/path evidence. Missing
-  or unavailable samples stay explicit. Test-run text logs remain text evidence
+  `measurement.json` results and G3's declared VL-2 module/path evidence. Run
+  directories identify the cycle, including in nested remote snapshots.
+  Unavailable samples appear as gaps in the chart and as empty cursor values.
+  Test-run text logs remain text evidence
   and are never plotted. The archived 0.9.6 project has no JSONL samples or v2
   measurement records, so the view shows its documented gaps and manual idle
   readings without manufacturing a trend.
