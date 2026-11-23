@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Codeanvil · Desarrollo e implementación</title>
+<style>
+:root{--ink:#12261A;--green:#456A3E;--orange:#D97757;--blue:#4D6BFE;--red:#A61B30;--lime-lo:#6F8C26;--lime:#C8E07C;--paper:#F5F1E8;
+  --sans:"IBM Plex Sans","Inter","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --mono:"IBM Plex Mono","JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#0f1a13;overflow:hidden;font-family:var(--sans)}
+.stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:center center}
+.slide{position:absolute;inset:0;width:1920px;height:1080px;overflow:hidden;background:var(--paper);color:var(--ink);display:none}
+.slide.active{display:block}
+.slide::after{content:attr(data-num);position:absolute;right:56px;bottom:30px;font:500 18px var(--mono);color:#8a9a8e}
+.stage::before{content:attr(data-tag);position:absolute;left:80px;bottom:30px;z-index:2;font:500 18px var(--mono);color:#8a9a8e;letter-spacing:.06em}
+.head{position:absolute;left:80px;top:62px;right:80px}
+.eyebrow{font:600 22px var(--mono);color:var(--green);letter-spacing:.14em;text-transform:uppercase}
+.eyebrow::before{content:"> ";color:var(--orange)}
+h2{font:700 64px/1.1 var(--sans);letter-spacing:-.01em;margin:16px 0 0;color:var(--ink)}
+mark{background:var(--lime);color:inherit;padding:0 .12em;border-radius:6px}
+.notes{display:none;position:absolute;left:0;right:0;bottom:0;max-height:42%;overflow:auto;background:rgba(18,38,26,.95);color:#eef3e8;font:400 24px/1.45 var(--sans);padding:28px 80px;z-index:5}
+body.show-notes .slide.active .notes{display:block}
+.hud{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);font:400 13px var(--mono);color:#cfd9cf;background:rgba(0,0,0,.45);padding:6px 12px;border-radius:8px;opacity:.7}
+.hud kbd{font:inherit;border:1px solid #6b7a6e;border-radius:4px;padding:0 5px;margin:0 2px}
+body.overview{overflow:auto}
+body.overview .stage{position:static;transform:none!important;width:auto;height:auto;display:flex;flex-wrap:wrap;gap:24px;padding:24px;justify-content:center}
+body.overview .slide{display:block;position:relative;flex:none;zoom:.3;cursor:pointer}
+/* Diagramas */
+.dia.p2-dia{position:absolute;left:80px;right:80px;top:240px;bottom:80px;display:flex;align-items:center;justify-content:center}
+.dia.p2-dia svg{width:100%;height:100%;overflow:visible}
+svg text{font-family:var(--sans)}
+.d-box{fill:#fff;stroke:var(--ink);stroke-width:3.5}
+.d-ent{fill:#E3EDD3;stroke:var(--green);stroke-width:3.5}
+.d-gate{fill:var(--lime);stroke:var(--ink);stroke-width:3.5}
+.d-rfd{fill:#F8E3E5;stroke:var(--red);stroke-width:3.5}
+.d-t{font-weight:600;font-size:28px;fill:var(--ink)}
+.d-s{font-weight:400;font-size:20px;fill:#4b5b50}
+.d-m{font-family:var(--mono)!important;font-weight:500;font-size:18px;fill:var(--green)}
+.d-g{font-weight:600;font-size:20px;fill:var(--ink)}
+.d-a{fill:none;stroke:var(--ink);stroke-width:3.5}
+.d-ao{fill:none;stroke:var(--orange);stroke-width:3.5}
+.d-ab{fill:none;stroke:var(--blue);stroke-width:3.5}
+.d-ar{fill:none;stroke:var(--red);stroke-width:3.5;stroke-dasharray:10 7}
+.d-hx{fill:#fff;stroke:var(--orange);stroke-width:2.5}
+.d-hm{font-family:var(--mono)!important;font-weight:600;font-size:20px;fill:var(--orange)}
+.d-li{font-size:19px;fill:#3b4b40}
+.d-tile{fill:#fff;stroke:var(--green);stroke-width:2.5}
+.d-tt{font-weight:600;font-size:20px;fill:var(--ink)}
+.d-fchip{fill:#FBE9E2;stroke:var(--orange);stroke-width:2.5}
+.d-ft{font-weight:600;font-size:18px;fill:var(--ink)}
+.p2-l0{fill:#6F8C26;fill-opacity:.13;stroke:#6F8C26;stroke-width:4}
+.p2-l1{fill:#D97757;fill-opacity:.07;stroke:#D97757;stroke-width:3.5;stroke-dasharray:12 8}
+.p2-l2{fill:#A61B30;fill-opacity:.05;stroke:#A61B30;stroke-width:3.5;stroke-dasharray:12 8}
+.p2-src0{fill:#6F8C26;fill-opacity:.13;stroke:#6F8C26;stroke-width:4}
+.p2-src1{fill:#D97757;fill-opacity:.13;stroke:#D97757;stroke-width:4}
+.p2-src2{fill:#A61B30;fill-opacity:.09;stroke:#A61B30;stroke-width:4}
+.p2-tel{fill:#4D6BFE;fill-opacity:.09;stroke:#4D6BFE;stroke-width:3.5}
+.p2-active{stroke:#D97757!important;stroke-width:6!important}
+.p2-stub{stroke-dasharray:10 7;opacity:.6}
+.p2-dash{stroke-dasharray:9 7}
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage" data-tag="Codeanvil · SDR">
+
+<!-- ================= 1 · FLUJO DE LA ETAPA ================= -->
+<section class="slide light" data-wm="ctxA" data-title="Desarrollo · Flujo">
+  <div class="head cpt">
+    <div class="eyebrow">Desarrollo e implementación</div>
+    <h2>Del paquete al <mark>prototipo verificado</mark></h2>
+  </div>
+  <div class="dia p2-dia">
+    <svg viewBox="-10 -30 1970 760" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="p2a-title p2a-desc">
+      <title id="p2a-title">Flujo de desarrollo e implementación</title>
+      <desc id="p2a-desc">Paquete de construcción, normalizar requisitos, validar estructura, diseño del sistema, revisar diseño, planificar módulos, revisar plan, implementar por capas, verificar por nivel y prototipo verificado. Cada compuerta devuelve el trabajo para corregir. La verificación clasifica defectos de módulo, plan o diseño, itera al siguiente módulo y, si los requisitos son inviables, emite una solicitud de desviación que retorna requisitos actualizados al paquete.</desc>
+      <defs>
+        <marker id="p2a-arrow" viewBox="0 0 12 12" refX="9" refY="6" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1L11 6L1 11z" fill="#12261A"/></marker>
+        <marker id="p2a-rework" viewBox="0 0 12 12" refX="9" refY="6" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1L11 6L1 11z" fill="#D97757"/></marker>
+        <marker id="p2a-iter" viewBox="0 0 12 12" refX="9" refY="6" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1L11 6L1 11z" fill="#4D6BFE"/></marker>
+        <marker id="p2a-return" viewBox="0 0 12 12" refX="9" refY="6" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1L11 6L1 11z" fill="#A61B30"/></marker>
+      </defs>
+
+      <!-- Retrabajo: cada compuerta devuelve a quien puede corregir -->
+      <path class="d-ao" d="M490,226 C490,140 297,140 297,232" marker-end="url(#p2a-rework)"/>
+      <text class="d-m" x="393" y="150" text-anchor="middle" style="fill:var(--orange,#D97757)">corregir</text>
+      <path class="d-ao" d="M876,226 C876,140 703,140 703,232" marker-end="url(#p2a-rework)"/>
+      <text class="d-m" x="790" y="150" text-anchor="middle" style="fill:var(--orange,#D97757)">corregir</text>
+      <path class="d-ao" d="M1262,226 C1262,140 1089,140 1089,232" marker-end="url(#p2a-rework)"/>
+      <text class="d-m" x="1175" y="150" text-anchor="middle" style="fill:var(--orange,#D97757)">corregir</text>
+      <path class="d-ao" d="M1642,240 C1642,150 1455,150 1455,218" marker-end="url(#p2a-rework)"/>
+      <text class="d-m" x="1518" y="160" text-anchor="middle" style="fill:var(--orange,#D97757);font-size:16px">defecto de módulo</text>
+      <path class="d-ao" d="M1662,224 C1662,50 1049,50 1049,232" marker-end="url(#p2a-rework)"/>
+      <text class="d-m" x="1355" y="80" text-anchor="middle" style="fill:var(--orange,#D97757)">defecto de plan</text>
+      <path class="d-ao" d="M1682,240 C1682,-40 663,-40 663,232" marker-end="url(#p2a-rework)"/>
+      <text class="d-m" x="1172" y="16" text-anchor="middle" style="fill:var(--orange,#D97757)">defecto de diseño</text>
+
+      <!-- Iteración: un módulo a la vez -->
+      <path class="d-ab" d="M1650,362 C1650,470 1069,470 1069,368" marker-end="url(#p2a-iter)"/>
+      <text class="d-m" x="1360" y="480" text-anchor="middle" style="fill:var(--blue,#4D6BFE)">siguiente módulo</text>
+
+      <!-- Inviable → solicitud de desviación → paquete -->
+      <path class="d-ar" d="M683,368 C683,605 760,605 816,605" marker-end="url(#p2a-return)"/>
+      <text class="d-m" x="668" y="490" text-anchor="end" style="fill:var(--red,#A61B30)">inviable</text>
+      <path class="d-ar" d="M876,374 V556" marker-end="url(#p2a-return)"/>
+      <text class="d-m" x="890" y="470" text-anchor="start" style="fill:var(--red,#A61B30)">inviable</text>
+      <path class="d-ar" d="M1674,362 C1674,605 1300,605 1144,605" marker-end="url(#p2a-return)"/>
+      <text class="d-m" x="1694" y="470" text-anchor="start" style="fill:var(--red,#A61B30)">inviable</text>
+      <path class="d-ar" d="M980,654 V690 H90 V368" marker-end="url(#p2a-return)"/>
+      <text class="d-m" x="535" y="678" text-anchor="middle" style="fill:var(--red,#A61B30)">requisitos actualizados</text>
+
+      <!-- Avance -->
+      <path class="d-a" d="M184,300 H208" marker-end="url(#p2a-arrow)"/>
+      <path class="d-a" d="M386,300 H410" marker-end="url(#p2a-arrow)"/>
+      <path class="d-a" d="M570,300 H594" marker-end="url(#p2a-arrow)"/>
+      <path class="d-a" d="M772,300 H796" marker-end="url(#p2a-arrow)"/>
+      <path class="d-a" d="M956,300 H980" marker-end="url(#p2a-arrow)"/>
+      <path class="d-a" d="M1158,300 H1182" marker-end="url(#p2a-arrow)"/>
+      <path class="d-a" d="M1342,300 H1366" marker-end="url(#p2a-arrow)"/>
+      <path class="d-a" d="M1558,300 H1582" marker-end="url(#p2a-arrow)"/>
+      <path class="d-a" d="M1742,300 H1766" marker-end="url(#p2a-arrow)"/>
+
+      <!-- Nodos -->
+      <rect class="d-ent" x="0" y="236" width="180" height="128" rx="26" style="stroke-width:5"/>
+      <text class="d-t" x="90" y="292" text-anchor="middle" style="font-size:23px">Paquete de</text>
+      <text class="d-t" x="90" y="324" text-anchor="middle" style="font-size:23px">construcción</text>
+
+      <rect class="d-box" x="212" y="236" width="170" height="128" rx="22"/>
+      <text class="d-t" x="297" y="292" text-anchor="middle" style="font-size:25px">Normalizar</text>
+      <text class="d-t" x="297" y="326" text-anchor="middle" style="font-size:25px">requisitos</text>
+
+      <polygon class="d-gate" points="490,230 566,300 490,370 414,300"/>
+      <text class="d-g" x="490" y="295" text-anchor="middle" style="font-size:19px">Validar</text>
+      <text class="d-g" x="490" y="319" text-anchor="middle" style="font-size:19px">estructura</text>
+
+      <rect class="d-box" x="598" y="236" width="170" height="128" rx="22"/>
+      <text class="d-t" x="683" y="292" text-anchor="middle" style="font-size:25px">Diseño del</text>
+      <text class="d-t" x="683" y="326" text-anchor="middle" style="font-size:25px">sistema</text>
+
+      <polygon class="d-gate" points="876,230 952,300 876,370 800,300"/>
+      <text class="d-g" x="876" y="295" text-anchor="middle" style="font-size:19px">Revisar</text>
+      <text class="d-g" x="876" y="319" text-anchor="middle" style="font-size:19px">diseño</text>
+
+      <rect class="d-box" x="984" y="236" width="170" height="128" rx="22"/>
+      <text class="d-t" x="1069" y="292" text-anchor="middle" style="font-size:25px">Planificar</text>
+      <text class="d-t" x="1069" y="326" text-anchor="middle" style="font-size:25px">módulos</text>
+
+      <polygon class="d-gate" points="1262,230 1338,300 1262,370 1186,300"/>
+      <text class="d-g" x="1262" y="295" text-anchor="middle" style="font-size:19px">Revisar</text>
+      <text class="d-g" x="1262" y="319" text-anchor="middle" style="font-size:19px">plan</text>
+
+      <rect class="d-box" x="1384" y="224" width="170" height="128" rx="22" style="opacity:.5"/>
+      <rect class="d-box" x="1377" y="230" width="170" height="128" rx="22" style="opacity:.8"/>
+      <rect class="d-box" x="1370" y="236" width="170" height="128" rx="22"/>
+      <text class="d-t" x="1455" y="292" text-anchor="middle" style="font-size:25px">Implementar</text>
+      <text class="d-t" x="1455" y="326" text-anchor="middle" style="font-size:25px">por capas</text>
+
+      <polygon class="d-gate" points="1662,230 1738,300 1662,370 1586,300"/>
+      <text class="d-g" x="1662" y="295" text-anchor="middle" style="font-size:19px">Verificar</text>
+      <text class="d-g" x="1662" y="319" text-anchor="middle" style="font-size:19px">por nivel</text>
+
+      <rect class="d-ent" x="1770" y="234" width="180" height="132" rx="26" style="stroke-width:6"/>
+      <text class="d-t" x="1860" y="292" text-anchor="middle" style="font-size:25px">Prototipo</text>
+      <text class="d-t" x="1860" y="326" text-anchor="middle" style="font-size:25px">verificado</text>
+
+      <rect class="d-rfd" x="820" y="560" width="320" height="90" rx="22"/>
+      <text class="d-t" x="980" y="600" text-anchor="middle" style="font-size:23px;fill:var(--red,#A61B30)">Solicitud de desviación</text>
+      <text class="d-s" x="980" y="630" text-anchor="middle" style="font-size:18px">requisitos inviables</text>
+
+      <!-- Leyenda -->
+      <g transform="translate(1180,712)">
+        <rect x="0" y="-16" width="26" height="20" rx="6" class="d-box" style="stroke-width:2.5"/><text class="d-m" x="36" y="0" style="font-size:15px">Etapa</text>
+        <polygon points="114,-18 128,-6 114,6 100,-6" class="d-gate" style="stroke-width:2.5"/><text class="d-m" x="138" y="0" style="font-size:15px">Compuerta</text>
+        <line x1="256" y1="-6" x2="290" y2="-6" class="d-a" style="stroke-width:3"/><text class="d-m" x="298" y="0" style="font-size:15px">Avance</text>
+        <line x1="378" y1="-6" x2="412" y2="-6" class="d-ao" style="stroke-width:3"/><text class="d-m" x="420" y="0" style="font-size:15px">Retrabajo</text>
+        <line x1="520" y1="-6" x2="554" y2="-6" class="d-ab" style="stroke-width:3"/><text class="d-m" x="562" y="0" style="font-size:15px">Iteración</text>
+        <line x1="656" y1="-6" x2="690" y2="-6" class="d-ar" style="stroke-width:3"/><text class="d-m" x="698" y="0" style="font-size:15px">Desviación</text>
+      </g>
+    </svg>
+  </div>
+  <aside class="notes">La etapa recibe el paquete de construcción y entrega un prototipo verificado. Son cuatro pasos de trabajo, cada uno seguido de una compuerta. Validar estructura es una comprobación automática y determinista; después la persona aprueba. Las demás compuertas las prepara el agente y las decide la persona. Cada paso deja un reporte; si sus entradas cambian, el reporte queda obsoleto y la compuerta lo rechaza. La verificación clasifica cada falla y la devuelve a quien puede corregirla: un defecto de módulo vuelve a implementación, uno de plan a planificación y uno de diseño a diseño. Una falla del entorno, como permisos o acceso al equipo, se corrige y se repite la verificación sin tocar el código. El módulo es la unidad de iteración: al verificar uno se planifica el siguiente. Si los requisitos no se pueden cumplir en el hardware declarado, se emite una solicitud de desviación y el proceso espera un paquete actualizado.</aside>
+</section>
+
+<!-- ================= 2 · IMPLEMENTACIÓN POR CAPAS ================= -->
+<section class="slide light" data-wm="ctxA" data-title="Implementación por capas">
+  <div class="head cpt">
+    <div class="eyebrow">Implementación por capas</div>
+    <h2>Primero la base, luego <mark>módulo a módulo</mark></h2>
+  </div>
+  <div class="dia p2-dia">
+    <svg viewBox="0 -20 1760 740" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="p2b-title p2b-desc">
+      <title id="p2b-title">Implementación por capas</title>
+      <desc id="p2b-desc">Ciclo por módulo: plan del módulo, revisar plan, implementar en contexto limpio, verificar y pasar al siguiente módulo. Cada paso lo ejecuta un subagente con un rol distinto: planificador, revisor, implementador y oráculo; el oráculo no es el revisor. Los módulos se construyen por capas sobre la capa 0, base y kit de verificación: capa 1 sin dependencias, capa 2 y capa 3 dependientes, capa 4 integración entre subsistemas. Módulos genéricos: adquisición, interfaz, procesamiento, control, decisión y salida. Los módulos integrados se conectan a la base, el módulo en construcción se ejercita con un driver y los pendientes son stubs.</desc>
+      <defs>
+        <marker id="p2b-arrow" viewBox="0 0 12 12" refX="9" refY="6" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1L11 6L1 11z" fill="#12261A"/></marker>
+        <marker id="p2b-orange" viewBox="0 0 12 12" refX="9" refY="6" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1L11 6L1 11z" fill="#D97757"/></marker>
+        <marker id="p2b-iter" viewBox="0 0 12 12" refX="9" refY="6" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1L11 6L1 11z" fill="#4D6BFE"/></marker>
+      </defs>
+
+      <!-- Ciclo de cada módulo -->
+      <text class="d-hm" x="0" y="100" style="font-size:20px">Cada módulo</text>
+      <rect class="d-fchip" x="290" y="70" width="200" height="44" rx="22"/><text class="d-ft" x="390" y="99" text-anchor="middle">Plan del módulo</text>
+      <path class="d-ao" d="M494,92 H516" marker-end="url(#p2b-orange)" style="stroke-width:3"/>
+      <rect class="d-fchip" x="520" y="70" width="160" height="44" rx="22"/><text class="d-ft" x="600" y="99" text-anchor="middle">Revisar plan</text>
+      <path class="d-ao" d="M684,92 H706" marker-end="url(#p2b-orange)" style="stroke-width:3"/>
+      <rect class="d-fchip" x="710" y="70" width="180" height="44" rx="22"/><text class="d-ft" x="800" y="99" text-anchor="middle">Implementar</text>
+      <path class="d-ao" d="M894,92 H916" marker-end="url(#p2b-orange)" style="stroke-width:3"/>
+      <rect class="d-fchip" x="920" y="70" width="150" height="44" rx="22"/><text class="d-ft" x="995" y="99" text-anchor="middle">Verificar</text>
+      <path class="d-ab" d="M995,66 C995,8 390,8 390,64" marker-end="url(#p2b-iter)"/>
+      <text class="d-m" x="692" y="12" text-anchor="middle" style="fill:var(--blue,#4D6BFE)">siguiente módulo</text>
+
+      <!-- Leyenda de estados -->
+      <rect class="d-box" x="1250" y="78" width="34" height="24" rx="7" style="stroke-width:3"/>
+      <text class="d-m" x="1294" y="97" style="font-size:16px">integrado</text>
+      <rect class="d-box p2-active" x="1410" y="78" width="34" height="24" rx="7" style="stroke-width:3"/>
+      <text class="d-m" x="1454" y="97" style="font-size:16px">en construcción</text>
+      <rect class="d-box p2-stub" x="1640" y="78" width="34" height="24" rx="7" style="stroke-width:3"/>
+      <text class="d-m" x="1684" y="97" style="font-size:16px">stub</text>
+
+      <!-- Subagentes por rol -->
+      <text class="d-m" x="390" y="140" text-anchor="middle" style="font-size:15px">◉ planificador</text>
+      <text class="d-m" x="600" y="140" text-anchor="middle" style="font-size:15px">◉ revisor</text>
+      <text class="d-m" x="800" y="140" text-anchor="middle" style="font-size:15px">◉ implementador</text>
+      <text class="d-m" x="995" y="140" text-anchor="middle" style="font-size:15px">◉ oráculo</text>
+      <text class="d-m" x="0" y="140" style="font-size:15px">◉ subagente por rol</text>
+      <rect x="0" y="156" width="212" height="36" rx="18" style="fill:#fff;stroke:var(--orange,#D97757);stroke-width:2.5"/>
+      <text class="d-m" x="106" y="180" text-anchor="middle" style="font-size:17px;font-weight:600;fill:var(--orange,#D97757)">oráculo ≠ revisor</text>
+
+      <!-- Contexto limpio + driver -->
+      <path class="d-a" d="M800,150 V210" marker-end="url(#p2b-arrow)"/>
+      <text class="d-m" x="816" y="176" style="font-size:16px">contexto limpio</text>
+      <text class="d-m" x="816" y="198" style="font-size:16px">plan + contratos</text>
+      <rect class="d-tile" x="730" y="214" width="140" height="48" rx="14"/>
+      <text class="d-tt" x="800" y="245" text-anchor="middle" style="font-size:20px">driver</text>
+      <path class="d-a" d="M800,266 V340" marker-end="url(#p2b-arrow)"/>
+
+      <!-- Encabezados de capa -->
+      <text class="d-t" x="210" y="300" text-anchor="middle" style="font-size:22px">Capa 1</text>
+      <text class="d-s" x="210" y="328" text-anchor="middle" style="font-size:17px">sin dependencias</text>
+      <text class="d-t" x="690" y="300" text-anchor="middle" style="font-size:22px">Capa 2</text>
+      <text class="d-s" x="690" y="328" text-anchor="middle" style="font-size:17px">dependen de capa 1</text>
+      <text class="d-t" x="1170" y="300" text-anchor="middle" style="font-size:22px">Capa 3</text>
+      <text class="d-s" x="1170" y="328" text-anchor="middle" style="font-size:17px">dependen de capa 2</text>
+      <text class="d-t" x="1600" y="300" text-anchor="middle" style="font-size:22px">Capa 4</text>
+      <text class="d-s" x="1600" y="328" text-anchor="middle" style="font-size:17px">subsistemas conectados</text>
+
+      <!-- Conexiones a la base -->
+      <path class="d-a" d="M100,450 V512" marker-end="url(#p2b-arrow)"/>
+      <path class="d-a" d="M320,450 V512" marker-end="url(#p2b-arrow)"/>
+      <path class="d-a" d="M580,450 V512" marker-end="url(#p2b-arrow)"/>
+      <path class="d-a" d="M800,450 V512" marker-end="url(#p2b-arrow)"/>
+      <path class="d-a p2-dash" d="M1060,450 V512" marker-end="url(#p2b-arrow)" style="opacity:.6"/>
+      <path class="d-a p2-dash" d="M1280,450 V512" marker-end="url(#p2b-arrow)" style="opacity:.6"/>
+      <path class="d-a p2-dash" d="M1600,450 V512" marker-end="url(#p2b-arrow)" style="opacity:.6"/>
+
+      <!-- Módulos -->
+      <rect class="d-box" x="0" y="346" width="200" height="100" rx="20"/>
+      <text class="d-t" x="100" y="390" text-anchor="middle" style="font-size:23px">Adquisición</text>
+      <text class="d-s" x="100" y="424" text-anchor="middle" style="font-size:17px">acceso al hardware</text>
+      <text class="d-t" x="182" y="372" text-anchor="end" style="font-size:18px;fill:var(--lime-lo,#6F8C26)">✓</text>
+      <rect class="d-box" x="220" y="346" width="200" height="100" rx="20"/>
+      <text class="d-t" x="320" y="390" text-anchor="middle" style="font-size:23px">Interfaz</text>
+      <text class="d-s" x="320" y="424" text-anchor="middle" style="font-size:17px">usuario y comandos</text>
+      <text class="d-t" x="402" y="372" text-anchor="end" style="font-size:18px;fill:var(--lime-lo,#6F8C26)">✓</text>
+
+      <rect class="d-box" x="480" y="346" width="200" height="100" rx="20"/>
+      <text class="d-t" x="580" y="390" text-anchor="middle" style="font-size:21px">Procesamiento</text>
+      <text class="d-s" x="580" y="424" text-anchor="middle" style="font-size:17px">transforma los datos</text>
+      <text class="d-t" x="662" y="372" text-anchor="end" style="font-size:18px;fill:var(--lime-lo,#6F8C26)">✓</text>
+      <rect class="d-box p2-active" x="700" y="346" width="200" height="100" rx="20"/>
+      <text class="d-t" x="800" y="390" text-anchor="middle" style="font-size:23px">Control</text>
+      <text class="d-s" x="800" y="424" text-anchor="middle" style="font-size:17px">configura el equipo</text>
+
+      <rect class="d-box p2-stub" x="960" y="346" width="200" height="100" rx="20"/>
+      <text class="d-t" x="1060" y="390" text-anchor="middle" style="font-size:23px;opacity:.6">Decisión</text>
+      <text class="d-s" x="1060" y="424" text-anchor="middle" style="font-size:17px;opacity:.7">detecta y clasifica</text>
+      <rect class="d-box p2-stub" x="1180" y="346" width="200" height="100" rx="20"/>
+      <text class="d-t" x="1280" y="390" text-anchor="middle" style="font-size:23px;opacity:.6">Salida</text>
+      <text class="d-s" x="1280" y="424" text-anchor="middle" style="font-size:17px;opacity:.7">registro y reporte</text>
+
+      <rect class="d-box p2-stub" x="1440" y="346" width="320" height="100" rx="20"/>
+      <text class="d-t" x="1600" y="390" text-anchor="middle" style="font-size:23px;opacity:.6">Integración</text>
+      <text class="d-s" x="1600" y="424" text-anchor="middle" style="font-size:17px;opacity:.7">contratos y rutas del sistema</text>
+
+      <!-- Capa 0 -->
+      <rect class="d-ent" x="0" y="516" width="1760" height="104" rx="24" style="stroke-width:5"/>
+      <text class="d-t" x="880" y="558" text-anchor="middle" style="font-size:26px">Capa 0 · Base + kit de verificación</text>
+      <text class="d-s" x="880" y="594" text-anchor="middle" style="font-size:19px">orquestación · HAL · enrutamiento   |   HAL simulado · vectores de referencia · stubs · telemetría</text>
+
+      <!-- Orden -->
+      <path class="d-a" d="M0,660 H1750" marker-end="url(#p2b-arrow)"/>
+      <text class="d-m" x="880" y="694" text-anchor="middle" style="font-size:18px">orden de construcción</text>
+    </svg>
+  </div>
+  <aside class="notes">El diseño divide el sistema en subsistemas; cada uno tiene una base y módulos con su grafo de dependencias. Se construye en ese orden. La capa 0 es la base (orquestación, HAL y enrutamiento) más el kit de verificación: HAL simulado, vectores de referencia, stubs, pares falsos, drivers y monitor de telemetría. Al inicio todos los módulos son stubs y se prueba la base con ellos (integración descendente). Luego cada módulo, capa por capa, se implementa en un contexto limpio que solo lleva su plan y los contratos que toca; se prueba de forma unitaria y un driver lo ejercita a través de la base (integración ascendente). Dentro de una capa, los módulos independientes se pueden construir en paralelo. Cada paso del ciclo lo ejecuta un subagente con un rol distinto: planificador, revisor, implementador y oráculo. El oráculo que verifica no es el mismo que revisa ni el que implementa, y corre en un contexto aparte de solo lectura. Los módulos solo se comunican por la base. La última capa prueba los contratos entre subsistemas y las rutas de extremo a extremo.</aside>
+</section>
+
+<!-- ================= 3 · VERIFICACIÓN POR NIVELES ================= -->
+<section class="slide light" data-wm="ctxA" data-title="Verificación por niveles">
+  <div class="head cpt">
+    <div class="eyebrow">Verificación por niveles</div>
+    <h2>Cada afirmación <mark>nombra su entorno</mark></h2>
+  </div>
+  <div class="dia p2-dia">
+    <svg viewBox="0 0 1760 740" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="p2c-title p2c-desc">
+      <title id="p2c-title">Verificación por niveles</title>
+      <desc id="p2c-desc">Tres niveles anidados: lógica, obligatorio; simulación con datos sintéticos; hardware real. Tres fuentes de datos se conectan al mismo puerto: HAL simulado con vectores deterministas, HAL simulado con datos sintéticos y HAL real con el equipo COTS. El sistema bajo prueba (DUT) produce un registro de evidencia que lleva el estado de la unidad de cómputo leído por el monitor de telemetría. Lo simulado se declara verificado; solo el hardware real se declara validado.</desc>
+      <defs>
+        <marker id="p2c-arrow" viewBox="0 0 12 12" refX="9" refY="6" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1L11 6L1 11z" fill="#12261A"/></marker>
+        <marker id="p2c-orange" viewBox="0 0 12 12" refX="9" refY="6" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1L11 6L1 11z" fill="#D97757"/></marker>
+        <marker id="p2c-blue" viewBox="0 0 12 12" refX="9" refY="6" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1L11 6L1 11z" fill="#4D6BFE"/></marker>
+      </defs>
+
+      <!-- Niveles anidados -->
+      <rect class="p2-l2" x="0" y="0" width="720" height="600" rx="34"/>
+      <text class="d-t" x="30" y="46" style="font-size:26px;fill:var(--red,#A61B30)">Hardware real (HIL)</text>
+      <text class="d-s" x="30" y="78" style="font-size:18px">opcional · equipo COTS real · resultado: validado</text>
+      <rect class="p2-l1" x="40" y="110" width="640" height="450" rx="28"/>
+      <text class="d-t" x="70" y="154" style="font-size:26px;fill:var(--orange,#D97757)">Simulación (SIL)</text>
+      <text class="d-s" x="70" y="186" style="font-size:18px">opcional · datos sintéticos · resultado: verificado</text>
+      <rect class="p2-l0" x="80" y="220" width="560" height="300" rx="24"/>
+      <text class="d-t" x="110" y="266" style="font-size:26px;fill:var(--lime-lo,#6F8C26)">Lógica</text>
+      <text class="d-s" x="110" y="298" style="font-size:18px">obligatorio en cada ciclo</text>
+      <rect class="d-tile" x="110" y="326" width="240" height="64" rx="14"/><text class="d-tt" x="230" y="366" text-anchor="middle" style="font-size:20px">Unitarias</text>
+      <rect class="d-tile" x="370" y="326" width="240" height="64" rx="14"/><text class="d-tt" x="490" y="366" text-anchor="middle" style="font-size:20px">Sándwich</text>
+      <rect class="d-tile" x="110" y="406" width="240" height="64" rx="14"/><text class="d-tt" x="230" y="446" text-anchor="middle" style="font-size:20px">Contratos</text>
+      <rect class="d-tile" x="370" y="406" width="240" height="64" rx="14"/><text class="d-tt" x="490" y="446" text-anchor="middle" style="font-size:20px">Rutas del sistema</text>
+      <text class="d-m" x="360" y="636" text-anchor="middle" style="font-size:17px">cada nivel incluye al anterior · se elige por módulo</text>
+
+      <!-- Fuentes intercambiables detrás del mismo puerto -->
+      <rect class="p2-src0" x="800" y="40" width="340" height="96" rx="20"/>
+      <text class="d-t" x="826" y="80" style="font-size:24px;fill:var(--lime-lo,#6F8C26)">Lógica</text>
+      <text class="d-s" x="826" y="114" style="font-size:18px">HAL simulado · vectores fijos</text>
+
+      <rect class="p2-src1" x="800" y="170" width="340" height="96" rx="20"/>
+      <text class="d-t" x="826" y="210" style="font-size:24px;fill:var(--orange,#D97757)">Simulación</text>
+      <text class="d-s" x="826" y="244" style="font-size:18px">HAL simulado · datos sintéticos</text>
+
+      <rect class="p2-src2" x="800" y="300" width="340" height="96" rx="20"/>
+      <text class="d-t" x="826" y="340" style="font-size:24px;fill:var(--red,#A61B30)">Hardware real</text>
+      <text class="d-s" x="826" y="374" style="font-size:18px">HAL real · equipo COTS</text>
+
+      <path class="d-a" d="M1140,88 C1180,88 1170,198 1204,198" marker-end="url(#p2c-arrow)"/>
+      <path class="d-a" d="M1140,218 H1204" marker-end="url(#p2c-arrow)"/>
+      <path class="d-a" d="M1140,348 C1180,348 1170,238 1204,238" marker-end="url(#p2c-arrow)"/>
+
+      <rect class="d-box" x="1210" y="168" width="180" height="100" rx="20"/>
+      <text class="d-t" x="1300" y="210" text-anchor="middle" style="font-size:22px">Mismo puerto</text>
+      <text class="d-s" x="1300" y="244" text-anchor="middle" style="font-size:16px">un solo contrato</text>
+
+      <path class="d-a" d="M1394,218 H1446" marker-end="url(#p2c-arrow)"/>
+      <rect class="d-ent" x="1450" y="168" width="310" height="100" rx="24"/>
+      <text class="d-t" x="1605" y="210" text-anchor="middle" style="font-size:24px">Sistema bajo prueba</text>
+      <text class="d-s" x="1605" y="244" text-anchor="middle" style="font-size:20px;font-weight:600">(DUT)</text>
+
+      <path class="d-a" d="M1605,272 V414" marker-end="url(#p2c-arrow)"/>
+      <text class="d-m" x="1620" y="350" style="font-size:16px">resultado</text>
+
+      <rect class="d-box" x="1450" y="420" width="310" height="140" rx="24" style="stroke-width:5"/>
+      <text class="d-t" x="1605" y="466" text-anchor="middle" style="font-size:24px">Registro de</text>
+      <text class="d-t" x="1605" y="498" text-anchor="middle" style="font-size:24px">evidencia</text>
+      <text class="d-s" x="1605" y="534" text-anchor="middle" style="font-size:16px">resultado + nivel + estado CPU</text>
+
+      <!-- Regla de honestidad -->
+      <rect class="d-hx" x="800" y="440" width="590" height="160" rx="18"/>
+      <text class="d-hm" x="826" y="478">Regla de honestidad</text>
+      <rect x="828" y="500" width="12" height="12" fill="#D97757"/><text class="d-li" x="850" y="512">Ninguna afirmación supera el entorno probado</text>
+      <rect x="828" y="536" width="12" height="12" fill="#D97757"/><text class="d-li" x="850" y="548">Simulado → <tspan style="font-weight:600;fill:#12261A">verificado</tspan> · hardware real → <tspan style="font-weight:600;fill:#A61B30">validado</tspan></text>
+      <rect x="828" y="572" width="12" height="12" fill="#D97757"/><text class="d-li" x="850" y="584">CPU fuera de su envolvente → evidencia marcada</text>
+      <path class="d-ao" d="M1394,500 H1446" marker-end="url(#p2c-orange)"/>
+
+      <!-- Telemetría -->
+      <path class="d-ab" d="M1605,660 V566" marker-end="url(#p2c-blue)" style="stroke-dasharray:9 7"/>
+      <text class="d-m" x="1620" y="622" style="font-size:16px;fill:var(--blue,#4D6BFE)">estado de la CPU</text>
+      <rect class="p2-tel" x="0" y="664" width="1760" height="66" rx="22"/>
+      <text class="d-t" x="30" y="706" style="font-size:22px">Monitor de telemetría · en cada prueba y nivel</text>
+      <text class="d-s" x="1730" y="706" text-anchor="end" style="font-size:19px">CPU · memoria · temperatura · buffers perdidos</text>
+    </svg>
+  </div>
+  <aside class="notes">Tres niveles anidados: cada uno incluye las pruebas del anterior. El nivel lógico es el piso: es obligatorio para cada módulo, contrato y ruta del sistema en cada ciclo. La simulación agrega datos sintéticos en condiciones conocidas. El nivel de hardware real agrega el equipo COTS y solo existe si el diseño declara un HAL real. La persona elige el nivel por módulo y por ciclo. Pasar de un nivel a otro es cambiar el HAL detrás del mismo puerto, sin tocar los módulos. Las pruebas las escribe la implementación y las ejecuta un contexto verificador aparte, de solo lectura: quien verifica no aprueba su propio trabajo. El monitor de telemetría registra el estado de la unidad de cómputo durante cada prueba; la evidencia tomada fuera de su envolvente se marca. Lo probado en simulación se declara verificado; solo lo probado en hardware real se declara validado.</aside>
+</section>
+
+</div>
+
+<div class="hud" id="hud"><kbd>←</kbd><kbd>→</kbd> navegar · <kbd>N</kbd> notas · <kbd>F</kbd> pantalla completa · <kbd>O</kbd> vista general</div>
+<script>
+(()=>{
+  const stage=document.getElementById('stage');
+  const slides=[...document.querySelectorAll('.slide')];
+  slides.forEach((s,i)=>s.dataset.num=(i+1)+' / '+slides.length);
+  let i=Math.max(0,Math.min(slides.length-1,(parseInt(location.hash.slice(1))||1)-1));
+  const fit=()=>{const k=Math.min(innerWidth/1920,innerHeight/1080);stage.style.transform=`translate(-50%,-50%) scale(${k})`;};
+  const show=n=>{i=(n+slides.length)%slides.length;slides.forEach((s,j)=>s.classList.toggle('active',j===i));history.replaceState(null,'','#'+(i+1));};
+  addEventListener('resize',fit);
+  addEventListener('keydown',e=>{
+    if(['ArrowRight','PageDown',' '].includes(e.key)){e.preventDefault();show(i+1);}
+    else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();show(i-1);}
+    else if(e.key==='n'||e.key==='N')document.body.classList.toggle('show-notes');
+    else if(e.key==='f'||e.key==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(e.key==='o'||e.key==='O'){document.body.classList.toggle('overview');if(!document.body.classList.contains('overview'))fit();}
+  });
+  slides.forEach((s,j)=>s.addEventListener('click',()=>{if(document.body.classList.contains('overview')){document.body.classList.remove('overview');fit();show(j);}}));
+  fit();show(i);
+})();
+</script>
+</body>
+</html>

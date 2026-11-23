@@ -158,6 +158,7 @@ def test_generated_s1_g1_ship_the_delivery_reference_and_recovery_route(tmp_path
     g1 = (skills / 'G1_design_review/SKILL.md').read_text()
     assert '../S1_design_system/references/rework_delivery.md' in g1
     agents = (project / 'AGENTS.md').read_text()
-    assert 'resume the `Next:` step' in agents
+    assert "cycle's fresh `Next:` result" in agents
+    assert 'rerun `codeanvil status`' in agents
     assert 'Rework from: G1 iteration <N>' in agents
     assert 'templates/skills/' not in reference.read_text()

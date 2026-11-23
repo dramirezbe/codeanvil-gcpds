@@ -1,0 +1,984 @@
+# Navaja\_ diagnostic audit
+
+Target: `SKILL_pre_david.md`\
+Auditing instrument: `Navaja_(6).md` — Skill Dissect\
+Methodology under examination: V-SIL v4\
+Audit mode: Conceptual description and alignment diagnosis.
+
+The audit follows the three-part structure prescribed by Navaja\_: Concept → Execution trip → Issues. Findings are presented in discovery order, classified as concept errors, execution errors, or unverifiable dependencies. No corrective patches or severity rankings are introduced, in accordance with the auditing instrument.&#x20;
+
+Navaja\_(6).md
+
+
+
+## 1. Concept
+
+### 1.1. Nature of the artifact
+
+Although the submitted file is named `SKILL_pre_david.md`, its functional nature is not that of an individual executable skill.
+
+It is a project-level governance specification for a distributed, skill-based software engineering methodology. Internally, the document identifies itself as the canonical `AGENTS.md`.
+
+Its purpose is to establish common rules, conventions, responsibilities, execution constraints, and evidence-management mechanisms for a collection of specialized agents and skills implementing V-SIL v4.
+
+The distinction is important because the document defines how individual skills relate to one another without itself assuming responsibility for their execution.
+
+| Dimension                 | Characterization                              |
+| ------------------------- | --------------------------------------------- |
+| Artifact type             | Project-level agent instructions              |
+| Methodological foundation | V-model at the SIL tier                       |
+| Execution paradigm        | Distributed prerequisite-driven execution     |
+| Development strategy      | Incremental Agile-V                           |
+| Decision authority        | Human-in-the-loop (HITL)                      |
+| Implementation mechanism  | Specialized skills and subagents              |
+| Evidence mechanism        | Iterative reports, digests and custody checks |
+| Terminal deliverable      | Verified Prototype                            |
+
+The document explicitly declares that it is a reference rather than an orchestrator, while making its instructions binding.&#x20;
+
+SKILL_pre_david.md
+
+
+
+### 1.2. Stated purpose
+
+The artifact is intended to govern the transformation of a human-authored Build Package into a verified software prototype through a controlled sequence of specification, design, planning, implementation, and verification activities.
+
+Conceptually, its purpose can be expressed as:
+
+\\[ \mathcal B \xrightarrow{\text{V-SIL v4}} \mathcal P\_{\mathrm{verified}} \\]
+
+where:
+
+- \\(\mathcal B\\) represents the original Build Package.
+- \\(\mathcal P\_{\mathrm{verified}}\\) represents the prototype admitted by the terminal system verification gate.
+
+This transformation is subject to requirements traceability, human authorization, incremental verification, artifact integrity, and controlled rework.
+
+The intended output is not merely functional software. It is software whose admission is supported by a documented verification process.
+
+### 1.3. Fundamental architectural idea
+
+The principal conceptual mechanism is distributed execution through prerequisite contracts.
+
+Instead of introducing a central orchestration agent that controls every activity, the artifact assigns execution responsibility to individual skills. Each skill checks the appropriate predecessor report before performing its own task.
+
+Production stage
+
+Review gate
+
+Conceptually, reports function as both evidence containers and state-transition authorization records.
+
+For a nominal forward transition, the underlying admission principle can be represented as:
+
+\\[ \operatorname{Admit}(S\_{i+1}) \Leftarrow \operatorname{PASS}(G_i) \\]
+
+This expression is a conceptual abstraction, not a complete specification of the implemented admission predicate. Rework, custody verification, scope-specific conditions and delta synchronization introduce additional dependencies.
+
+### 1.4. Functional decomposition
+
+The methodology distributes responsibilities across nine functional components.
+
+| Component | Conceptual responsibility                                                          |
+| --------- | ---------------------------------------------------------------------------------- |
+| S0        | Normalize stakeholder and system requirements.                                     |
+| G0        | Validate requirement structure and cross-document consistency.                     |
+| S1        | Construct the system architecture and module decomposition.                        |
+| G1        | Obtain human approval of the system design.                                        |
+| S2        | Produce executable plans for the admitted scope.                                   |
+| G2        | Obtain human approval of implementation plans.                                     |
+| S3        | Implement modules or integrate the system.                                         |
+| G3        | Verify the delivered scope and obtain a human verdict.                             |
+| RFD       | Handle requirements considered infeasible under the declared platform constraints. |
+
+Two specialized subagents complement this decomposition:
+
+vsil-implementor
+
+Receives an approved module plan and its Context set. Implements within permitted paths and returns evidence or blockers.
+
+Owned by S3
+
+vsil-verifier
+
+Independently runs the recorded verification commands without editing production or verification code.
+
+Owned by G3
+
+The conceptual separation is between specification, production, evaluation, and authorization. The human retains the authority to determine gate outcomes.&#x20;
+
+SKILL_pre_david.md
+
+
+
+### 1.5. Inputs and outputs
+
+| Category                 | Elements                                                                                  |
+| ------------------------ | ----------------------------------------------------------------------------------------- |
+| Primary input            | `build_package.md`                                                                        |
+| Project state            | `.codeanvil/project.yaml`                                                                 |
+| Requirements             | `StRS.md`, `SyRS.md`                                                                      |
+| Design artifacts         | `SDD.md`, dependency graphs                                                               |
+| Planning artifacts       | `BACKLOG.md`, `INFRA-PLAN.md`, `INTEGRATION-PLAN.md`, `DELTAS.md`, module plans           |
+| Implementation artifacts | `src/`, `verification/`                                                                   |
+| Evidence artifacts       | Stage reports, gate reports, test evidence, custody digests                               |
+| Human inputs             | Cycle selection, gate verdicts, feedback, hardware authorizations and deviation decisions |
+| Final output             | `G3_artifacts/verified_prototype.md`, together with the verified software candidate       |
+
+### 1.6. Embedded assumptions
+
+The artifact assumes the availability of:
+
+- A functioning `codeanvil` CLI and methodology runtime.
+- Individual V-SIL v4 skills and their associated scripts.
+- A prescribed project directory structure.
+- A human authority available at decision gates.
+- An agent runtime capable of context isolation or fresh sessions.
+- Reliable report persistence and custody verification.
+- Optional MCP servers and hardware targets when required.
+
+These assumptions are part of the intended operational environment. Their existence and correctness cannot be established from the submitted document alone.
+
+### 1.7. Conceptual characterization
+
+The artifact integrates five methodological principles:
+
+| Principle                    | Role                                                          |
+| ---------------------------- | ------------------------------------------------------------- |
+| V-model                      | Connects specification and design to subsequent verification. |
+| Agile development            | Introduces incremental implementation scopes.                 |
+| Design by contract           | Establishes prerequisites between skills.                     |
+| Human-in-the-loop governance | Reserves acceptance authority for humans.                     |
+| Evidence custody             | Associates admissions with identifiable artifact baselines.   |
+
+Its defining characteristic is the distinction between producing an artifact and admitting that artifact as valid.
+
+That distinction is conceptually sound and constitutes one of the strongest aspects of the methodology.
+
+## 2. The execution trip
+
+The following trace reconstructs the execution path described by the artifact. Where activities are delegated to unavailable individual skills, the trace stops at the documented hand-off rather than inventing their internal behavior.
+
+### 2.1. Project initialization
+
+Step 01 — Discover project state
+
+The agent executes:
+
+```
+codeanvil status
+```
+
+This must occur before loading any methodology skill, performing gate work, or asking the user questions.
+
+Why: Centralize project-state discovery and prevent the agent from inferring progress from potentially outdated files.
+
+Step 02 — Establish the active cycle
+
+The agent asks the human to select an existing cycle or create a new one.
+
+There are two principal branches:
+
+- Existing cycle: resume the corresponding methodology step, provided the cycle is not closed.
+- New cycle: normalize its name, assign a sequence number and establish a new methodology execution.
+
+The selected cycle is recorded in `.codeanvil/project.yaml`.
+
+Why: Separate different executions of the methodology and preserve historical reports.
+
+Step 03 — Load the appropriate skill
+
+The agent loads the canonical skill associated with the selected stage or gate.
+
+Why: Keep detailed execution knowledge within individual skills instead of duplicating that knowledge in the project instructions.
+
+Step 04 — Evaluate prerequisites
+
+The invoked skill checks the predecessor report.
+
+A missing report or an inadmissible predecessor verdict blocks execution. A valid prerequisite permits the skill to execute and append its report iteration.
+
+Why: Prevent unauthorized progression through the methodology.
+
+These four steps establish the execution context for the remainder of the process.&#x20;
+
+SKILL_pre_david.md
+
+
+
+### 2.2. Requirements engineering
+
+Step 05 — Execute S0
+
+S0 reads the Build Package and produces:
+
+```
+.codeanvil/GT/
+├── StRS.md
+└── SyRS.md
+```
+
+The resulting requirements establish the working baseline.
+
+Why: Separate stakeholder intentions from system-level requirements and introduce structured inputs for verification.
+
+Step 06 — Execute G0
+
+G0 evaluates the structural validity of both documents and the cross-document G0-X rules.
+
+Mechanical errors force `HITL: FEEDBACK`. Mechanical success is necessary but not sufficient: the human Gate H remains required.
+
+Why: Separate structural validity from human acceptance of the requirements baseline.
+
+The requirements loop exits only after the applicable G0 checks and human approval are satisfied.&#x20;
+
+SKILL_pre_david.md
+
+
+
+### 2.3. System design
+
+Step 07 — Execute S1
+
+S1 produces the system design, subsystem decomposition, module relationships, and dependency graphs.
+
+Where remote targets exist, S1 establishes their execution placement and operating envelopes.
+
+Why: Translate requirements into an implementable architectural structure.
+
+Step 08 — Execute G1
+
+The human reviews the design prepared for G1.
+
+| Outcome         | Transition                   |
+| --------------- | ---------------------------- |
+| PASS            | Proceed to S2.               |
+| Design feedback | Return to S1.                |
+| Infeasibility   | Invoke RFD where applicable. |
+
+A revised S1 delivery requires a new G1 review. It cannot inherit an earlier approval.
+
+Why: Bind design approval to the actual design revision.
+
+### 2.4. Incremental development
+
+Step 09 — Establish the development scope
+
+Following G1 PASS, implementation is decomposed into:
+
+Slice 0 — Infrastructure
+
+Foundations, base components, stubs and verification kit.
+
+Module slice 1
+
+S2 → G2 → S3 → G3
+
+Module slices 2 … K
+
+Dependency-ordered implementation and verification.
+
+System scope
+
+Integration, end-to-end paths and root-command smoke testing.
+
+Why: Reduce implementation complexity by admitting progressively verified increments.
+
+The dependency order is described in terms of Kahn module slices.
+
+Step 10 — Execute S2 for the current scope
+
+S2 prepares the relevant planning artifacts.
+
+These can contain infrastructure plans, integration plans, module-level plans and a delta log.
+
+Why: Constrain implementation to an explicit, reviewable plan.
+
+Step 11 — Execute G2
+
+The human reviews the S2 delivery.
+
+| Verdict       | Route     |
+| ------------- | --------- |
+| PASS          | S3        |
+| Plan defect   | S2        |
+| Design defect | S1        |
+| GT defect     | S0 triage |
+
+Why: Identify defects before they propagate into implementation.
+
+Following G2 PASS, approved plans remain immutable until authorized rework.
+
+Step 12 — Prepare execution dependencies
+
+During the pre-S3 analysis, the agent identifies required MCP servers.
+
+If a required server is missing, its installation is proposed to the human. After authorization and installation, the agent may require a manual restart before resuming S3.
+
+Why: Provision specialized tools only when the approved implementation requires them.
+
+Step 13 — Execute S3
+
+Implementation is performed within the admitted scope.
+
+Each module receives a fresh `vsil-implementor` context containing its approved plan and Context set.
+
+The parent agent is responsible for shared work, integration, reports and interaction with the human.
+
+Why: Reduce cross-module context contamination and constrain implementation decisions.
+
+Step 14 — Record implementation evidence
+
+S3 records implementation notes, verification commands and possible infeasibility findings.
+
+Only S3 is permitted to modify code under `src/` and `verification/`.
+
+Why: Establish an identifiable implementation candidate and keep verification separate from product modification.
+
+The planning and implementation mechanisms are described in the cadence and scope-boundary provisions.&#x20;
+
+SKILL_pre_david.md
+
+
+
+### 2.5. Verification and incremental admission
+
+Step 15 — Prepare G3
+
+G3 receives the S3 delivery and its verification evidence.
+
+Where VL-2 verification is required, the methodology may additionally require hardware enrollment, environment preparation and explicit human authorization.
+
+Why: Establish the necessary verification conditions and target configuration.
+
+Step 16 — Invoke the independent verifier
+
+The `vsil-verifier` operates within a fresh context, running the recorded verification commands.
+
+It cannot modify product code or verification code and does not decide the human verdict.
+
+Why: Reduce implementation bias and prevent the verifier from modifying the candidate merely to obtain passing results.
+
+Step 17 — Obtain the human G3 verdict
+
+The human evaluates the evidence and determines the gate outcome.
+
+### G3 feedback routing
+
+Module defect
+
+Implementation rework
+
+S3
+
+Plan defect
+
+Planning rework
+
+S2
+
+Design defect
+
+Architectural rework
+
+S1
+
+Operational failure
+
+Environment repair and rerun
+
+G3
+
+Infeasible requirement
+
+Author decision
+
+RFD
+
+Why: Locate the origin of a defect before determining the appropriate rework activity.
+
+Step 18 — Evaluate scope completion
+
+If G3 PASS applies to a module slice, the methodology advances to the next scope.
+
+If G3 PASS applies to the system scope, the methodology can terminate, provided all accepted deltas have been applied and reviewed.
+
+Why: Avoid falsely interpreting successful module verification as successful system verification.
+
+The incremental loop exits only upon system G3 PASS, an accepted deviation closing the cycle, or a blocking condition preventing further execution.
+
+### 2.6. Delta synchronization
+
+Step 19 — Register accepted deltas
+
+Following explicit G3 acceptance of a delta, S2 delta-intake records it in `DELTAS.md`.
+
+This can occur even when G3 returns FEEDBACK.
+
+Why: Preserve accepted changes that must be propagated into requirements or design.
+
+Step 20 — Apply and review the delta
+
+The relevant synchronization path is invoked:
+
+\\[ \begin{aligned} \text{GT delta}&\longrightarrow S0\longrightarrow G0,\\\ \text{Design delta}&\longrightarrow S1\longrightarrow G1. \end{aligned} \\]
+
+New human gate verdicts are required.
+
+Why: Prevent approval of the previous baseline from automatically extending to modified artifacts.
+
+Step 21 — Resume the admitted scope
+
+After synchronization, the methodology resumes the appropriate implementation sequence.
+
+For system sync-only feedback, the documented route is:
+
+\\[ S2\_{\mathrm{sys}}\rightarrow G2\_{\mathrm{sys}} \rightarrow S3\_{\mathrm{sys}}\rightarrow G3\_{\mathrm{sys}}. \\]
+
+System admission is prohibited while accepted deltas remain unapplied or unreviewed.&#x20;
+
+SKILL_pre_david.md
+
+
+
+### 2.7. Deviation handling
+
+Step 22 — Invoke RFD
+
+When a requirement is considered infeasible on the declared COTS platform, S1, G1 or G3 can initiate an RFD.
+
+S3 does not directly resolve such infeasibility; it records a possible infeasibility for G3.
+
+Step 23 — Suspend the cycle
+
+The methodology waits for the Build Package author's decision.
+
+An accepted deviation closes the existing cycle and requires a new cycle with an updated Build Package.
+
+The rejected-deviation continuation is not described in this document; it is delegated to the RFD skill.
+
+Why: Prevent the agent from independently relaxing requirements to obtain a passing implementation.&#x20;
+
+SKILL_pre_david.md
+
+
+
+### 2.8. Terminal delivery
+
+Step 24 — Deliver the Verified Prototype
+
+Only system G3 PASS authorizes the final Verified Prototype artifact.
+
+```
+.codeanvil/report/<cycle-name>/
+└── G3_artifacts/
+    └── verified_prototype.md
+```
+
+The terminal delivery depends on the implemented system, applicable verification evidence, human admission and completed delta synchronization.
+
+### 2.9. Cross-cutting execution mechanisms
+
+Throughout the execution trip, four mechanisms remain active.
+
+| Mechanism             | Intended function                                                     |
+| --------------------- | --------------------------------------------------------------------- |
+| Report iterations     | Preserve execution and decision history.                              |
+| `Based on` references | Bind deliveries to predecessor iterations and identify stale reports. |
+| Custody digests       | Associate verification evidence with specific artifact contents.      |
+| Stage backups         | Preserve existing working artifacts before rework.                    |
+
+These mechanisms constitute the methodology's persistent evidence layer.
+
+## 3. Issues — alignment with stated purpose
+
+The following findings distinguish contradictions and omissions established from the document itself from mechanisms whose actual behavior depends on unavailable implementation artifacts.
+
+### N-01. Inconsistent general admission rule and exceptional re-entry
+
+Classification: Execution error
+
+Where: Steps 04, 17 and 19. Rules, Available Skills, and Scope and re-entry boundaries.&#x20;
+
+SKILL_pre_david.md
+
+SKILL_pre_david.md
+
+SKILL_pre_david.md
+
+
+
+The general execution rule requires the predecessor to pass before a subsequent step can execute.
+
+However, the delta-intake mechanism explicitly permits execution following G3 FEEDBACK, without a G3 PASS prerequisite.
+
+The document also requires sequential execution while defining exceptional backward transitions and synchronization paths.
+
+Concrete failure scenario:
+
+An execution produces the following state:
+
+\\[ G3(k)=\mathrm{FEEDBACK} \\]
+
+while the human explicitly accepts a delta.
+
+Under the general prerequisite rule, continuation depending on G3 is blocked. Under the specific delta-intake rule, S2 must register the accepted delta.
+
+G3 FEEDBACK + accepted delta
+
+General rule
+
+Block execution
+
+Specific rule
+
+Execute delta-intake
+
+The intended behavior is inferable from the more specific rule. Nevertheless, the document declares all its instructions binding without explicitly establishing the precedence of exceptional admission rules.
+
+Diagnosis: The underlying idea of prerequisite-controlled execution is sound. The reference expresses its admission invariant too broadly.
+
+Whether this contradiction actually blocks execution depends on how individual skills implement their prerequisites.
+
+### N-02. Cycle selection can become detached from discovered execution state
+
+Classification: Execution error
+
+Where: Steps 01–03. On Project Open and Cycle.&#x20;
+
+SKILL_pre_david.md
+
+SKILL_pre_david.md
+
+
+
+The document requires `codeanvil status` to execute before cycle selection. It subsequently instructs the agent to resume the `Next:` step displayed by that command when an existing cycle is selected.
+
+However, the initial command describes the active cycle, which need not be the cycle subsequently selected by the human.
+
+Concrete failure scenario:
+
+| State                     | Cycle A | Cycle B |
+| ------------------------- | ------- | ------- |
+| Active at project opening | Yes     | No      |
+| Last admitted gate        | G2      | G0      |
+| Correct next step         | S3      | S1      |
+| Subsequently selected     | No      | Yes     |
+
+The initial status command can identify S3 as the next step. The human then selects Cycle B, whose correct next step is S1.
+
+The prescribed sequence does not explicitly obtain a new status result for Cycle B before using the previously displayed `Next:` value.
+
+Consequently, an agent following the literal sequence can invoke the wrong skill. A valid prerequisite check may prevent execution, but that does not make the invocation correct.
+
+Diagnosis: The project-state discovery operation is not explicitly rebound to the selected cycle.
+
+This is a problem of state-dependent decision ordering rather than a failure of the cycle concept itself.
+
+### N-03. Incomplete branch for selecting a closed cycle
+
+Classification: Execution error
+
+Where: Step 02. Cycle selection.&#x20;
+
+SKILL_pre_david.md
+
+
+
+The artifact requires the agent to offer existing cycles as choices. It also prohibits resuming closed cycles.
+
+It does not define the continuation when the human selects a closed cycle from the offered choices.
+
+Concrete failure scenario:
+
+An existing cycle was closed following an accepted RFD. That cycle remains in the report directory and is included among the offered choices.
+
+The human selects it.
+
+The agent cannot resume it, but the documented selection procedure does not establish another transition for that outcome.
+
+Diagnosis: The cycle-selection decision tree contains an incomplete branch. The agent must infer behavior not specified by the governance contract.
+
+### N-04. Scope-sensitive prerequisite enforcement is not established
+
+Classification: Unverifiable
+
+Where: Steps 04, 09, 18 and 21. Available Skills and Report Format.&#x20;
+
+SKILL_pre_david.md
+
+SKILL_pre_david.md
+
+SKILL_pre_david.md
+
+
+
+The artifact uses one report per stage or gate, with multiple iterations covering different development scopes.
+
+The generic prerequisite rule refers to the latest iteration. The later cadence rules require the latest iteration associated with the relevant scope.
+
+These are not necessarily equivalent:
+
+\\[ \operatorname{Latest}(G3) \not\equiv \operatorname{Latest}(G3,k). \\]
+
+Consider the following hypothetical report history.
+
+| G3 iteration | Scope   | Verdict  |
+| ------------ | ------- | -------- |
+| 1            | Slice 0 | PASS     |
+| 2            | Slice 1 | PASS     |
+| 3            | Slice 2 | FEEDBACK |
+
+The latest G3 iteration globally is FEEDBACK. Nevertheless, Slice 1 has a valid scoped PASS.
+
+During Slice 2 rework, a global latest-iteration test and a scope-sensitive prerequisite test may yield different admission decisions.
+
+The document recognizes this distinction in its later provisions. Therefore, the conceptual requirement is present, but its enforcement cannot be confirmed.
+
+Evidence required: S2 prerequisite-checking logic, G3 report parsing, scope identifiers, and re-entry test cases.
+
+### N-05. Ambiguous temporal boundary for hardware-related artifacts
+
+Classification: Execution error
+
+Where: Steps 07, 12 and 15. Hardware and MCP flow.&#x20;
+
+SKILL_pre_david.md
+
+
+
+The hardware flow establishes three different execution periods.
+
+| Activity             | Prescribed stage |
+| -------------------- | ---------------- |
+| Hardware description | S0               |
+| MCP provisioning     | Pre-S3           |
+| Hardware enrollment  | G3               |
+
+However, the final statement asserts that nothing hardware-related is written before G3.
+
+Taken literally, this conflicts with both the earlier hardware-description requirement and pre-S3 provisioning.
+
+Two readings are possible:
+
+- The restriction applies exclusively to hardware enrollment artifacts, such as credentials, IP addresses and MAC addresses.
+- The restriction applies to all hardware-related artifacts.
+
+The first reading is consistent with the three-stage decomposition. The second prohibits activities explicitly required before G3.
+
+Concrete failure scenario: An agent applying the broader restriction can refuse to prepare hardware-dependent MCP configuration during S3, even though the preceding instruction requires that provisioning.
+
+Diagnosis: A narrowly intended lifecycle constraint is expressed using a broader category than the activity it is intended to constrain.
+
+The execution trip assumed the narrower, enrollment-specific interpretation.
+
+### N-06. Verification independence is procedural rather than technically enforced
+
+Classification: Unverifiable
+
+Where: Step 16. Subagents and runtime configuration.&#x20;
+
+SKILL_pre_david.md
+
+SKILL_pre_david.md
+
+
+
+The methodology assigns read-only responsibilities to `vsil-verifier`.
+
+However, the document explicitly acknowledges that the verifier inherits the parent session's permissions and that its no-edit instructions do not create an operating-system sandbox.
+
+Behavioral restriction
+
+Verifier is instructed not to edit files.
+
+Specified
+
+Technical restriction
+
+Verifier cannot edit files even if instructed to do so.
+
+Not established
+
+A fresh context provides a degree of cognitive separation. It does not, by itself, enforce filesystem immutability.
+
+A verifier possessing write permissions could modify a candidate or its tests, notwithstanding the behavioral prohibition.
+
+This is not a confirmed violation because the document does not claim OS-level sandboxing, and no verifier execution was inspected.
+
+Evidence required: Generated subagent definitions, runtime permissions, and custody checks performed against the candidate before and after verification.
+
+The distinction matters because the methodology relies on verification evidence referring to an identifiable implementation candidate.
+
+### N-07. S2 is missing from the explicit stage-delivery semantics
+
+Classification: Execution error
+
+Where: Steps 10–11. Report Format.&#x20;
+
+SKILL_pre_david.md
+
+
+
+The artifact specifies that `HITL: PASS` on stages S0, S1 and S3 means that the output has been delivered, rather than that the corresponding human review has passed.
+
+S2 is absent from this enumeration.
+
+Nevertheless, S2 is a production stage, and G2 requires an S2 report with `HITL: PASS`.
+
+The resulting semantic contract is:
+
+| Step           | Meaning of PASS                                      |
+| -------------- | ---------------------------------------------------- |
+| S0             | Delivery completed                                   |
+| S1             | Delivery completed                                   |
+| S2             | Not explicitly defined in the stage-specific rule    |
+| S3             | Delivery completed                                   |
+| G0, G1, G2, G3 | Gate admission, including applicable human decisions |
+
+Concrete failure scenario: An agent can interpret S2's HITL field as requiring human acceptance before G2 starts, thereby introducing an additional human approval that G2 is already intended to provide.
+
+Alternatively, it may interpret S2 PASS as delivery completion, consistent with the other production stages.
+
+The latter interpretation is strongly supported by the overall architecture, but the report contract does not explicitly include it.
+
+Diagnosis: The stage-delivery semantics are incomplete relative to the current eight-step methodology.
+
+### N-08. Preservation of historical reports does not establish historical artifact recoverability
+
+Classification: Unverifiable
+
+Where: Steps 02, 14 and 24. Cycle, Report Format, and Folder Reference.&#x20;
+
+SKILL_pre_david.md
+
+SKILL_pre_david.md
+
+SKILL_pre_david.md
+
+
+
+Historical reports are cycle-specific, while several working artifacts occupy shared locations:
+
+```
+.codeanvil/
+├── GT/
+├── design/
+├── plans/
+├── backups/
+└── report/
+    ├── cycle_01/
+    └── cycle_02/
+```
+
+Design artifacts are overwritten on rework. Working artifacts inside a cycle's report directories may also be overwritten.
+
+A report can retain a digest identifying an earlier artifact without retaining the artifact itself.
+
+Formally, knowing
+
+\\[ h_n=H(A_n) \\]
+
+does not make the original artifact \\(A_n\\) recoverable after replacement by \\(A\_{n+1}\\).
+
+The document provides a backup mechanism, but its actual coverage and retrieval behavior cannot be established here.
+
+Evidence required: Backup implementation, cycle-transition procedures, versioned artifact manifests and historical restoration tests.
+
+The potential discrepancy concerns the distinction between preserving evidence of an artifact's identity and preserving the artifact necessary to reproduce its verification.
+
+### N-09. Incomplete visible custody semantics across repeated scopes
+
+Classification: Unverifiable
+
+Where: Steps 04, 18 and 21. Report provenance and Scope and re-entry boundaries.&#x20;
+
+SKILL_pre_david.md
+
+SKILL_pre_david.md
+
+
+
+The document requires exact predecessor-iteration links and uses those links to determine report staleness.
+
+In a simple linear chain, this is conceptually straightforward.
+
+In the incremental methodology, however, S2 can depend on an earlier G3, and later G3 iterations can concern different scopes.
+
+A staleness algorithm that compares only the latest report iteration could incorrectly classify an earlier authorized dependency as stale after unrelated scope progression.
+
+The document partially anticipates this problem by distinguishing current delivery baselines from historical G3 tree baselines. Its actual staleness resolution is delegated to `codeanvil status` and the custody implementation.
+
+Evidence required: Report parser, scoped dependency resolution, custody verification implementation and regression tests involving successive slices and backward rework.
+
+### N-10. Ground Truth delta acceptance and author authorization are not explicitly bound
+
+Classification: Unverifiable
+
+Where: Steps 19–20. Ground Truth protection and delta synchronization.&#x20;
+
+SKILL_pre_david.md
+
+SKILL_pre_david.md
+
+
+
+The artifact prohibits unauthorized modification of Ground Truth files, with a specific exception for S0 generating requirements from the Build Package.
+
+It also permits accepted G3 deltas to be propagated into the Ground Truth through S0/G0 synchronization.
+
+The document distinguishes the human gate decision-maker from the Build Package author in its descriptions, but does not establish whether these roles must be held by the same person.
+
+Concrete scenario requiring verification:
+
+\\[ \operatorname{Accept}\_{G3}(\delta) \neq \operatorname{Authorize}\_{\mathrm{Author}}(\delta) \\]
+
+when the G3 reviewer and Build Package author are different individuals.
+
+In such a setting, G3 acceptance alone may not constitute author authorization to modify Ground Truth.
+
+The individual synchronization skills may enforce the required additional authorization. Their absence prevents confirmation of an actual governance violation.
+
+Evidence required: S0 delta-sync instructions, G3 delta acceptance contract, and the definition of project authorization roles.
+
+### N-11. Deferred verification of the actual execution mechanism
+
+Classification: Unverifiable
+
+Where: The execution trip as a whole.
+
+The central architectural promise is that control resides in individual skills rather than in the project reference.
+
+That promise depends on nine operational skills, the CLI implementation, subagent definitions and supporting scripts.
+
+The submitted artifact describes their expected contracts but does not contain their implementations.
+
+Consequently, the following behaviors remain unverified:
+
+| Mechanism | Unverified obligation                                                     |
+| --------- | ------------------------------------------------------------------------- |
+| S0        | Faithful transformation of the Build Package into requirements.           |
+| G0        | Effectiveness of deterministic structural and cross-document checks.      |
+| S1        | Correct architectural decomposition and dependency ordering.              |
+| G1        | Binding of human approval to the actual design baseline.                  |
+| S2        | Correct scope selection and plan generation.                              |
+| G2        | Binding of approval to immutable implementation plans.                    |
+| S3        | Enforcement of implementation boundaries and context isolation.           |
+| G3        | Measurement validity, verification independence and evidence sufficiency. |
+| RFD       | Complete continuation after accepted or rejected deviations.              |
+| CLI       | Accurate state, custody, backup and staleness handling.                   |
+
+This finding is a limitation of the available evidence, not a confirmed defect in the methodology.
+
+## 4. Consolidated diagnosis
+
+Confirmed execution errors
+
+# 4
+
+Confirmed concept errors
+
+# 0
+
+Unverifiable findings
+
+# 7
+
+Total findings
+
+# 11
+
+| ID   | Finding                                            | Classification |
+| ---- | -------------------------------------------------- | -------------- |
+| N-01 | General admission rule versus exceptional re-entry | Execution      |
+| N-02 | Cycle selection and discovered execution state     | Execution      |
+| N-03 | Missing closed-cycle selection branch              | Execution      |
+| N-04 | Scope-sensitive prerequisite enforcement           | Unverifiable   |
+| N-05 | Hardware lifecycle boundary                        | Execution      |
+| N-06 | Technical enforcement of verifier independence     | Unverifiable   |
+| N-07 | Incomplete S2 stage-delivery semantics             | Execution      |
+| N-08 | Historical artifact recoverability                 | Unverifiable   |
+| N-09 | Scope-sensitive custody and staleness              | Unverifiable   |
+| N-10 | GT delta authorization                             | Unverifiable   |
+| N-11 | Operational skill-chain enforcement                | Unverifiable   |
+
+Accounting correction: The findings comprise 5 confirmed execution errors, 0 confirmed concept errors, and 6 unverifiable findings, totaling 11. The individual classifications in the table are authoritative.
+
+### 4.1. Conceptual alignment assessment
+
+The following assessment concerns the documented design rather than experimentally established runtime behavior.
+
+| Dimension                      | Diagnostic assessment                         |
+| ------------------------------ | --------------------------------------------- |
+| Stated purpose                 | Clearly established                           |
+| Functional decomposition       | Conceptually coherent                         |
+| Separation of stages and gates | Coherent                                      |
+| Human decision sovereignty     | Explicitly established                        |
+| Incremental verification       | Coherent                                      |
+| State-transition semantics     | Contains inconsistencies and omissions        |
+| Feedback and re-entry          | Conceptually sound; enforcement unverified    |
+| Evidence traceability          | Explicitly designed; operationally unverified |
+| Verification independence      | Behaviorally specified                        |
+| Artifact reproducibility       | Unverified                                    |
+| Terminal acceptance condition  | Clearly established                           |
+
+### 4.2. Probable origin of the identified problems
+
+The observed pattern is consistent with the evolution of an initially linear V-model into an incremental, scope-sensitive Agile-V methodology.
+
+The original abstraction resembles:
+
+\\[ S_0\rightarrow G_0\rightarrow S_1\rightarrow G_1 \rightarrow S_2\rightarrow G_2\rightarrow S_3\rightarrow G_3. \\]
+
+The current methodology introduces repeated scopes, backward transitions, cycle selection, accepted deltas, asynchronous human decisions, stale reports and exceptional re-entry.
+
+Thus, its effective conceptual structure is closer to a guarded state-transition system:
+
+\\[ \mathcal M=(Q,\Sigma,\delta,q_0,F), \\]
+
+where the execution state must capture more than the current stage:
+
+\\[ q=(c,k,s,r,b,h). \\]
+
+Here, as an analytical abstraction:
+
+| Symbol  | Interpretation             |
+| ------- | -------------------------- |
+| \\(c\\) | Active cycle               |
+| \\(k\\) | Active scope               |
+| \\(s\\) | Stage or gate              |
+| \\(r\\) | Relevant report iterations |
+| \\(b\\) | Artifact baseline          |
+| \\(h\\) | Human authorization state  |
+
+The newer methodology therefore has a richer state space than the original linear-chain description suggests.
+
+The theoretical areas relevant to these findings are extended finite-state machines, guarded transitions, workflow formal verification, configuration management, evidence provenance, separation of duties and distributed transaction consistency.
+
+## 5. Final Navaja\_ conclusion
+
+Overall diagnostic judgment
+
+# Conceptually sound, with execution-contract gaps
+
+The governance architecture is aligned with its stated purpose, but the supplied artifact does not establish that all of its operational guarantees are consistently enforced.
+
+The strongest aspects of the artifact are its separation of production and admission, human decision authority, incremental verification, and explicit concern for artifact custody.
+
+Its main weakness is not the adoption of the V-model, Agile-V, distributed skills or human review. Rather, it is the incomplete reconciliation between a linear predecessor-based execution model and a scope-sensitive, iterative methodology with exceptional re-entry conditions.
+
+Underlying conceptual tension
+
+Nominal abstraction
+
+Linear chain with predecessor admission.
+
+Effective abstraction
+
+Conditional transitions, rework loops and scope dependencies.
+
+No fundamental concept error was established from the available material. The confirmed problems concern the specification of execution behavior rather than the validity of the methodological foundation.
+
+Audit boundary: Both submitted files were examined. The referenced V-SIL skills, CLI source, subagent definitions and runtime environment were not supplied. No live execution was performed, and no source document was modified. Accordingly, this constitutes a document-level diagnostic audit, not an end-to-end validation of V-SIL v4.
+
+Navaja\_ disposition: Diagnosis completed within the available evidence. No corrective patches proposed or applied.

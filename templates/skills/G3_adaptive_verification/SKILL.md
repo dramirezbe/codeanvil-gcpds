@@ -294,6 +294,16 @@ Diagnostic artifacts may be kept under `G3_artifacts/`; they do not become repor
   rerunning G3 after module feedback on the same Based-on iteration.
 - G3 is a **gate**: its `PASS` is the human's verdict.
 
+**Feedback handoff.** Publish the completed FEEDBACK iteration before rework. Its
+`### Description` holds the reasons, evidence, scope/modules, concrete correction
+suggestions and route; preserve human reasons verbatim and label agent suggestions.
+The same parent agent then loads the routed stage's skill, reads this Description
+and resumes the bounded rework. Do not stop after naming the route or ask the user
+to repeat recorded feedback. Process accepted deltas through the required S2 intake
+first. Keep missing-authority/input, explicit-stop, real-blocker and RFD boundaries.
+Never edit the candidate as G3 or through the verifier: change to the owning stage
+skill first, preserving fresh module/verifier contexts and a new human gate verdict.
+
 ## Output Contract
 
 Return the results table (flagged rows first), the honesty declaration, the human's answer, the
